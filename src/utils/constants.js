@@ -225,7 +225,7 @@ export const MAGE_SHIELD_BONUS_EVERY  = 5;   // +1 def and +1 round per this man
 export const MAGE_SHIELD_MIN_LEVEL    = 3;   // mage must be at least this level
 
 export const NECRO_SUMMON_MANA_COST = 7;
-export const NECRO_LIFE_DRAIN_CHANCE = 0.20;
+export const NECRO_LIFE_DRAIN_CHANCE = 0.25;
 export const NECRO_LIFE_DRAIN_AMOUNT = 2;
 
 export const MONK_MELEE_MANA_COST = 1;    // monks also burn mana on melee

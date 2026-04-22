@@ -141,7 +141,7 @@ export const CLASSES = {
         canUseShield: false, // Rule 8
         drainPerLevel: NECRO_DRAIN_PER_LEVEL,
         special: 'summon',
-        description: 'Dark caster. -50% HP/ST, +100% mana. Cloth armor only; cannot use shields. Summon undead (7 MP, combat only) — L1 Skeleton, then Zombie / Ghoul / Spectre / Mummy / Ghost / Vampire / Death Knight unlocked at odd levels. Life drain (20% on magic) heals self AND own undead; +1 per level.',
+        description: 'Dark caster. -50% HP/ST, +100% mana. Cloth armor only; cannot use shields. Summon undead (7 MP, combat only) — L1 Skeleton, then Zombie / Ghoul / Spectre / Mummy / Ghost / Vampire / Death Knight unlocked at odd levels. Life drain (25% per enemy hit by magic) heals self AND own undead; +1 per level.',
     },
     bard: {
         // Phase 8 rule 14 — support caster with a party-wide song buff.

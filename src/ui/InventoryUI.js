@@ -658,7 +658,7 @@ export class InventoryUI {
             const base = NECRO_LIFE_DRAIN_AMOUNT;
             const cur  = base + member.getDrainBonus();
             perk.push(`Life drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance, +${cur} HP`);
-            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance on magic attack\n  Base drain: ${base} HP, current: ${cur} HP (heals self and own undead)\n  (+${cls.drainPerLevel} HP/level)`);
+            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance per enemy hit by magic (AoE rolls independently)\n  Base drain: ${base} HP, current: ${cur} HP (heals self and own undead)\n  (+${cls.drainPerLevel} HP/level)`);
         }
         // Ranger favored enemy — show instakill pct if one is selected
         if (member.classId === 'ranger' && member.favoredEnemy) {

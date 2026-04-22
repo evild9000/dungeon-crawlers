@@ -454,11 +454,11 @@ export class CombatSystem {
                 this._addLog(`\u26A1 ${this._eName(e)} is stunned by arcane force!`);
             }
             if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
-        }
-
-        if (m.classId === 'necromancer' && Math.random() < NECRO_LIFE_DRAIN_CHANCE) {
-            const amount = NECRO_LIFE_DRAIN_AMOUNT + m.getDrainBonus();
-            this._drainHeal(m, amount);
+            // Necromancer drain: roll independently per enemy hit
+            if (m.classId === 'necromancer' && Math.random() < NECRO_LIFE_DRAIN_CHANCE) {
+                const amount = NECRO_LIFE_DRAIN_AMOUNT + m.getDrainBonus();
+                this._drainHeal(m, amount);
+            }
         }
 
         this._advancePlayerTurn();
