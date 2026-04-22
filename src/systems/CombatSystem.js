@@ -5,6 +5,8 @@ import {
     MONSTER_MELEE_STAMINA_COST, MONSTER_MELEE_DAMAGE_MIN, MONSTER_MELEE_DAMAGE_MAX,
     MONSTER_MAGIC_MANA_COST, MONSTER_MAGIC_DAMAGE_MIN, MONSTER_MAGIC_DAMAGE_MAX,
     MONSTER_DAMAGE_PER_LEVEL,
+    MONSTER_DAMAGE_BONUS_THRESHOLD, MONSTER_DAMAGE_BONUS_PER_LEVEL,
+    INITIATIVE_DIE,
     FLEE_CHANCE, POST_COMBAT_RECOVERY,
     ENEMY_TYPES,
     LOOT_GOLD_MIN, LOOT_GOLD_MAX,
@@ -94,7 +96,9 @@ export class CombatSystem {
         this.onUpdate = null;
         this.turnNumber = 0;
         this.dungeonLevel = 1;
-        this._pendingEnemyRound = false;
+        // Initiative — sorted list of {kind:'party'|'enemy', ref, init, skipThisRound}
+        this._initiativeOrder = [];
+        this._initTurnIdx = 0;
         // Shared reference to the party inventory (artificer golem crafting /
         // healing consumes reagents). Set via startCombat or setInventory.
         this.inventory = null;
@@ -142,7 +146,18 @@ export class CombatSystem {
         const lvlStr = this.dungeonLevel > 1 ? ` (dungeon L${this.dungeonLevel})` : '';
         this._addLog(`${n} enem${n > 1 ? 'ies' : 'y'} encountered${lvlStr}!`);
 
-        this._beginPlayerRound();
+        // Roll initiative for all combatants and log the order.
+        this._initiativeOrder = this._buildInitiativeOrder();
+        this._initTurnIdx = 0;
+        const initStr = this._initiativeOrder
+            .map(s => {
+                const name = s.kind === 'party' ? s.ref.name : this._eName(s.ref);
+                return `${name}(${s.init})`;
+            })
+            .join(', ');
+        this._addLog(`\u26A1 Initiative: ${initStr}`);
+
+        this._advanceThroughInitiative();
     }
 
     // ────────────────────────────────────────────
@@ -580,6 +595,7 @@ export class CombatSystem {
         this.party.push(undead);
 
         this._addLog(`\u{1F480} ${m.name} summons a ${preset.name} to fight alongside the party!`);
+        this._registerNewSummon(undead);
         this._advancePlayerTurn();
     }
 
@@ -629,6 +645,7 @@ export class CombatSystem {
         this.party.push(beast);
 
         this._addLog(`${preset.icon} ${m.name} summons a ${preset.name}!`);
+        this._registerNewSummon(beast);
         this._advancePlayerTurn();
     }
 
@@ -741,7 +758,10 @@ export class CombatSystem {
         if (Array.isArray(this.party)) this.party.push(golem);
         this._addLog(`${tier.icon} ${m.name} forges a ${tier.name}! It thunders into line.`);
 
-        if (spendTurn && this.party && this.party.length) this._advancePlayerTurn();
+        if (spendTurn && this.party && this.party.length) {
+            this._registerNewSummon(golem);
+            this._advancePlayerTurn();
+        }
         return golem;
     }
 
@@ -983,7 +1003,7 @@ export class CombatSystem {
             this._notify();
         } else {
             this._addLog('Failed to flee! The enemies close in...');
-            this._executeEnemyRound();
+            this._advancePlayerTurn();
         }
     }
 
@@ -992,12 +1012,7 @@ export class CombatSystem {
         if (!m || m.health <= 0) return;
         m.row = 'front';
         this._addLog(`${m.name} moves to the front row!`);
-        if (this._pendingEnemyRound) {
-            this._pendingEnemyRound = false;
-            this._executeEnemyRound();
-        } else {
-            this._beginPlayerRound();
-        }
+        this._advanceThroughInitiative();
     }
 
     // ────────────────────────────────────────────
@@ -1115,13 +1130,85 @@ export class CombatSystem {
     }
 
     // ────────────────────────────────────────────
+    // Initiative helpers
+    // ────────────────────────────────────────────
+
+    /**
+     * Roll initiative for a single participant.
+     * Rogues, monks, and rangers get +1.
+     * Golems and undead summons get -1. Enemy undead (tagged) get -1.
+     */
+    _rollInitiative(ref, kind) {
+        const roll = randomInt(1, INITIATIVE_DIE);
+        let bonus = 0;
+        if (kind === 'party') {
+            const classId = ref.classId;
+            if (classId === 'rogue' || classId === 'monk' || classId === 'ranger') bonus += 1;
+            if (ref.isSummoned && ref.summonStats) {
+                const ss = ref.summonStats;
+                const isGolem  = Boolean(ss.tierId);
+                const isUndead = !ss.beastKind && !ss.tierId;
+                if (isGolem || isUndead) bonus -= 1;
+            }
+        } else {
+            const typeDef = ENEMY_TYPES[ref.type] || {};
+            const tags = Array.isArray(typeDef.tags) ? typeDef.tags : [];
+            if (tags.includes('undead')) bonus -= 1;
+        }
+        return Math.max(1, roll + bonus);
+    }
+
+    /**
+     * Build the sorted initiative order for the current combatants.
+     * Returns array of slots sorted descending by initiative; ties broken randomly.
+     */
+    _buildInitiativeOrder() {
+        const entries = [];
+        for (const m of this.party) {
+            if (m.health <= 0) continue;
+            const init = this._rollInitiative(m, 'party');
+            entries.push({ kind: 'party', ref: m, init, skipThisRound: false });
+        }
+        for (const e of this.enemies) {
+            if (e.health <= 0) continue;
+            const init = this._rollInitiative(e, 'enemy');
+            entries.push({ kind: 'enemy', ref: e, init, skipThisRound: false });
+        }
+        entries.sort((a, b) => b.init - a.init || (Math.random() < 0.5 ? -1 : 1));
+        return entries;
+    }
+
+    /**
+     * Register a newly summoned member into the initiative order at the
+     * correct sorted position. Flagged to skip this round — acts next round.
+     * Only runs when combat is actively in progress.
+     */
+    _registerNewSummon(member) {
+        if (this.phase !== 'PLAYER_TURN' && this.phase !== 'ENEMY_TURN') return;
+        if (!this._initiativeOrder.length) return;
+        const init = this._rollInitiative(member, 'party');
+        this._addLog(`\u26A1 ${member.name} enters the fray (initiative ${init}) — acts next round.`);
+        // Find insertion position (keep sorted descending)
+        let insertIdx = this._initiativeOrder.length;
+        for (let i = 0; i < this._initiativeOrder.length; i++) {
+            if (init > this._initiativeOrder[i].init) { insertIdx = i; break; }
+        }
+        this._initiativeOrder.splice(insertIdx, 0, { kind: 'party', ref: member, init, skipThisRound: true });
+        // If we inserted before the current turn, adjust index to keep position
+        if (insertIdx <= this._initTurnIdx) this._initTurnIdx++;
+    }
+
+    // ────────────────────────────────────────────
     // Turn flow
     // ────────────────────────────────────────────
 
-    _beginPlayerRound() {
+    /**
+     * Start a new initiative round: reset defending, tick all effects,
+     * then advance through the order.
+     */
+    _beginInitiativeRound() {
         for (const m of this.party) m._defending = false;
 
-        // Tick DoTs / buffs at the start of every player round.
         this._tickPartyEffects();
         if (this.aliveParty.length === 0) {
             this.phase = 'DEFEAT';
@@ -1130,66 +1217,84 @@ export class CombatSystem {
             return;
         }
 
-        this.currentMemberIndex = 0;
-        this._skipDead();
+        this._tickEnemyEffects();
+        if (this.aliveEnemies.length === 0) {
+            this._finishVictory();
+            return;
+        }
 
-        if (this.aliveParty.length === 0) {
-            this.phase = 'DEFEAT';
-            this._addLog('--- Your party has been defeated! ---');
+        this._initTurnIdx = 0;
+        this._advanceThroughInitiative();
+    }
+
+    /**
+     * Advance through the initiative order until we reach a player-controlled
+     * member (pause for input) or a terminal phase (DEFEAT/VICTORY/etc.).
+     * Enemy and summon turns execute automatically without pausing.
+     */
+    _advanceThroughInitiative() {
+        while (this._initTurnIdx < this._initiativeOrder.length) {
+            const slot = this._initiativeOrder[this._initTurnIdx];
+            const ref  = slot.ref;
+
+            // Skip dead participants.
+            if (ref.health <= 0) { this._initTurnIdx++; continue; }
+
+            // Skip summons that were created this round — they act next round.
+            if (slot.skipThisRound) {
+                slot.skipThisRound = false;
+                this._initTurnIdx++;
+                continue;
+            }
+
+            if (slot.kind === 'enemy') {
+                this._executeOneEnemyTurn(ref);
+                if (this.phase === 'DEFEAT' || this.phase === 'FLED' || this.phase === 'VICTORY') return;
+                if (this.phase === 'NEED_PROMOTION') return; // _initTurnIdx already handled
+                if (this.aliveEnemies.length === 0) { this._finishVictory(); return; }
+                this._initTurnIdx++;
+                continue;
+            }
+
+            // Party member's turn.
+            const m = ref;
+
+            // Web-skip
+            if (m.webbedRounds && m.webbedRounds > 0) {
+                this._addLog(`\u{1F578}\uFE0F ${m.name} struggles against the webbing and cannot act! (${m.webbedRounds} rd left)`);
+                m.webbedRounds--;
+                this._initTurnIdx++;
+                continue;
+            }
+
+            // Stun-skip
+            if (m.stunned) {
+                this._addLog(`${m.name} is stunned and cannot act!`);
+                m.stunned = false;
+                this._initTurnIdx++;
+                continue;
+            }
+
+            // Summoned AI auto-turn
+            if (m.isSummoned) {
+                this._addLog(`--- ${m.name}'s turn ---`);
+                this._takeSummonTurn(m);
+                if (this.aliveEnemies.length === 0) { this._finishVictory(); return; }
+                this._initTurnIdx++;
+                continue;
+            }
+
+            // Human-controlled: set currentMemberIndex and wait for player input.
+            this.currentMemberIndex = this.party.indexOf(m);
+            this.phase = 'PLAYER_TURN';
+            this._addLog(`--- Turn ${this.turnNumber}: ${m.name}'s turn ---`);
             this._notify();
             return;
         }
 
-        this._advanceThroughAutoTurns();
-    }
-
-    /**
-     * Run through summon turns + stun-skips until we stop on a player-controlled
-     * member whose turn it is, or the round ends.
-     */
-    _advanceThroughAutoTurns() {
-        while (this.currentMemberIndex < this.party.length) {
-            const m = this.party[this.currentMemberIndex];
-            if (!m || m.health <= 0) { this.currentMemberIndex++; continue; }
-
-            // Web-skip (Phase 11). Webbed characters are locked for
-            // WEB_DURATION_ROUNDS total; decrement once per own turn.
-            if (m.webbedRounds && m.webbedRounds > 0) {
-                this._addLog(`\u{1F578}\uFE0F ${m.name} struggles against the webbing and cannot act! (${m.webbedRounds} rd left)`);
-                m.webbedRounds--;
-                this.currentMemberIndex++;
-                continue;
-            }
-
-            // Stun-skip (template — mage magic stun could target players later)
-            if (m.stunned) {
-                this._addLog(`${m.name} is stunned and cannot act!`);
-                m.stunned = false;
-                this.currentMemberIndex++;
-                continue;
-            }
-
-            if (m.isSummoned) {
-                this._addLog(`--- ${m.name}'s turn ---`);
-                this._takeSummonTurn(m);
-                if (this.aliveEnemies.length === 0) {
-                    this._finishVictory();
-                    return;
-                }
-                this.currentMemberIndex++;
-                continue;
-            }
-            break;
-        }
-
-        if (this.currentMemberIndex >= this.party.length) {
-            this._executeEnemyRound();
-            return;
-        }
-
-        this.phase = 'PLAYER_TURN';
-        this._addLog(`--- Turn ${this.turnNumber}: ${this.currentMember.name}'s turn ---`);
-        this._notify();
+        // All slots exhausted — start a new round.
+        this.turnNumber++;
+        this._beginInitiativeRound();
     }
 
     _advancePlayerTurn() {
@@ -1197,89 +1302,78 @@ export class CombatSystem {
             this._finishVictory();
             return;
         }
-        this.currentMemberIndex++;
-        this._advanceThroughAutoTurns();
+        this._initTurnIdx++;
+        this._advanceThroughInitiative();
     }
 
-    _executeEnemyRound() {
-        this.phase = 'ENEMY_TURN';
-        this._notify();
+    /**
+     * Execute a single enemy's turn. Handles stun-skip, AoE magic, and
+     * melee/magic attacks with the level-3+ damage bonus.
+     *
+     * NEED_PROMOTION logic:
+     *   Pre-attack (front already empty): sets phase, does NOT increment
+     *     _initTurnIdx — the enemy will try again after promotion.
+     *   Post-attack (front fell from this hit): pre-increments _initTurnIdx
+     *     so the caller knows this slot is done before returning.
+     */
+    _executeOneEnemyTurn(e) {
+        const eName = this._eName(e);
 
-        // Tick enemy DoTs and troll regen before they act.
-        this._tickEnemyEffects();
-
-        const front = this.aliveFront;
-        if (front.length === 0 && this.aliveBack.length > 0) {
-            this._pendingEnemyRound = true;
-            this.phase = 'NEED_PROMOTION';
-            this._addLog('\u26A0\uFE0F The front line has fallen! Promote a back-row ally forward.');
-            this._notify();
-            return;
-        }
-        if (front.length === 0) {
+        // Pre-attack check: can't attack without a front row.
+        const liveFront = this.aliveFront;
+        if (liveFront.length === 0) {
+            if (this.aliveBack.length > 0) {
+                this.phase = 'NEED_PROMOTION';
+                this._addLog('\u26A0\uFE0F The front line has fallen! Promote a back-row ally forward.');
+                this._notify();
+                return;
+            }
             this.phase = 'DEFEAT';
             this._addLog('--- Your party has been defeated! ---');
             this._notify();
             return;
         }
 
+        // Stun skip.
+        if (e.stunned) {
+            this._addLog(`${eName} is stunned and cannot act!`);
+            e.stunned = false;
+            return;
+        }
+
         const dlvl = this.dungeonLevel;
-        const lvlBoost = Math.max(0, dlvl - 1);
+        const lvlBoost      = Math.max(0, dlvl - 1);
+        const lvlThreeBonus = Math.max(0, dlvl - (MONSTER_DAMAGE_BONUS_THRESHOLD - 1));
+        const typeDef = ENEMY_TYPES[e.type] || {};
 
-        for (const e of this.aliveEnemies) {
-            if (e.stunned) {
-                const eName = this._eName(e);
-                this._addLog(`${eName} is stunned and cannot act!`);
-                e.stunned = false;
-                continue;
+        // AoE magic (cultist) path — hits all party members.
+        if (typeDef.aoeMagic && e.mana >= MONSTER_MAGIC_MANA_COST) {
+            e.mana -= MONSTER_MAGIC_MANA_COST;
+            const dmin = MONSTER_MAGIC_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MAGIC_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            let dmg = randomInt(dmin, dmax);
+            dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+            dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+            this._addLog(`\u{1F52E} ${eName} unleashes a roaring chant of dark power — the whole party is caught in the blast!`);
+            const aoeTargets = this.aliveParty.slice();
+            for (const target of aoeTargets) {
+                this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
+                if (this.aliveParty.length === 0) break;
             }
-
-            const liveFront = this.aliveFront;
-            if (liveFront.length === 0) {
-                this._pendingEnemyRound = true;
-                this.phase = 'NEED_PROMOTION';
-                this._addLog('\u26A0\uFE0F The front line has fallen! Promote a back-row ally forward.');
-                this._notify();
-                return;
-            }
-
-            const typeDef = ENEMY_TYPES[e.type] || {};
-
-            // Cultist / AoE-magic attack path
-            if (typeDef.aoeMagic && e.mana >= MONSTER_MAGIC_MANA_COST) {
-                e.mana -= MONSTER_MAGIC_MANA_COST;
-                const dmin = MONSTER_MAGIC_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost;
-                const dmax = MONSTER_MAGIC_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost;
-                let dmg = randomInt(dmin, dmax);
-                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
-                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-
-                const eName = this._eName(e);
-                this._addLog(`\u{1F52E} ${eName} unleashes a roaring chant of dark power — the whole party is caught in the blast!`);
-                // Phase 10 bug fix: cultist AoE must hit the ENTIRE party
-                // (both rows + any summons), not just the front line.
-                const aoeTargets = this.aliveParty.slice();
-                for (const target of aoeTargets) {
-                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
-                    if (this.aliveParty.length === 0) break;
-                }
-                continue;
-            }
-
+        } else {
             const target = liveFront[Math.floor(Math.random() * liveFront.length)];
-
             if (e.stamina >= MONSTER_MELEE_STAMINA_COST) {
                 e.stamina -= MONSTER_MELEE_STAMINA_COST;
-                const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost;
-                const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost;
+                const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+                const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
                 let dmg = randomInt(dmin, dmax);
                 dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
                 this._applyEnemyHit(e, target, dmg, 'melee');
             } else if (e.mana >= MONSTER_MAGIC_MANA_COST) {
                 e.mana -= MONSTER_MAGIC_MANA_COST;
-                const dmin = MONSTER_MAGIC_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost;
-                const dmax = MONSTER_MAGIC_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost;
+                const dmin = MONSTER_MAGIC_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+                const dmax = MONSTER_MAGIC_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
                 let dmg = randomInt(dmin, dmax);
                 dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
@@ -1287,10 +1381,9 @@ export class CombatSystem {
             } else {
                 this._applyEnemyHit(e, target, 1, 'weak');
             }
-
-            if (this.aliveParty.length === 0) break;
         }
 
+        // Post-attack checks.
         if (this.aliveParty.length === 0) {
             this.phase = 'DEFEAT';
             this._addLog('--- Your party has been defeated! ---');
@@ -1298,8 +1391,14 @@ export class CombatSystem {
             return;
         }
 
-        this.turnNumber++;
-        this._beginPlayerRound();
+        // If the front row just fell from this attack, bump past this slot
+        // so promoteToFront resumes at the next enemy / party slot.
+        if (this.aliveFront.length === 0 && this.aliveBack.length > 0) {
+            this._initTurnIdx++;
+            this.phase = 'NEED_PROMOTION';
+            this._addLog('\u26A0\uFE0F The front line has fallen! Promote a back-row ally forward.');
+            this._notify();
+        }
     }
 
     /**

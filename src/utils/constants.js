@@ -158,6 +158,15 @@ export const MONSTER_DAMAGE_PER_LEVEL = 2;   // +2 min & +2 max per level above 
 export const MONSTER_DEFENSE_PER_2_LVL = 1;  // +1 defense per 2 levels (floor)
 export const MONSTER_HP_PER_LEVEL_MULT = 1.0; // stats rolled × level
 
+// Extra scaling at dungeon level 3+
+export const MONSTER_DAMAGE_BONUS_THRESHOLD = 3; // dungeon level where extra damage starts
+export const MONSTER_DAMAGE_BONUS_PER_LEVEL = 1; // +1 flat damage per level at/above threshold
+export const MONSTER_HP_BONUS_THRESHOLD = 3;     // dungeon level where HP compound bonus starts
+export const MONSTER_HP_BONUS_PER_LEVEL = 0.15;  // +15% HP (compound) per level at/above threshold
+
+// Initiative
+export const INITIATIVE_DIE = 12; // d12 roll for each participant
+
 // Combat — misc
 export const FLEE_CHANCE = 0.5;
 export const POST_COMBAT_RECOVERY = 2; // each stat recovered after victory

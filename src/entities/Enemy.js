@@ -8,6 +8,8 @@ import {
     ENEMY_STAT_MAX,
     TINKERER_TYPE,
     MONSTER_DEFENSE_PER_2_LVL,
+    MONSTER_HP_BONUS_THRESHOLD,
+    MONSTER_HP_BONUS_PER_LEVEL,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 
@@ -53,7 +55,13 @@ export class Enemy {
         const rH = Math.round(randomStat() * lvMult);
         const rS = Math.round(randomStat() * lvMult);
         const rM = Math.round(randomStat() * lvMult);
-        this.health     = health    ?? rH;
+
+        // Extra HP bonus at dungeon level 3+: compound +15% per level above threshold.
+        const hpExtraLevels = Math.max(0, this.level - (MONSTER_HP_BONUS_THRESHOLD - 1));
+        const hpBonus = hpExtraLevels > 0 ? Math.pow(1 + MONSTER_HP_BONUS_PER_LEVEL, hpExtraLevels) : 1;
+        const baseH = hpExtraLevels > 0 ? Math.round(rH * hpBonus) : rH;
+
+        this.health     = health    ?? baseH;
         this.maxHealth  = maxHealth ?? this.health;
         this.stamina    = stamina   ?? rS;
         this.maxStamina = maxStamina ?? this.stamina;
