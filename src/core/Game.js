@@ -22,6 +22,7 @@ import {
     POISON_DURATION_ROUNDS, POISON_DAMAGE_FRACTION,
     BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD,
     ENABLE_SHADOWS,
+    XP_LEVEL_BASE,
 } from '../utils/constants.js';
 import { InputManager } from './InputManager.js';
 import { SaveManager } from './SaveManager.js';
@@ -48,6 +49,7 @@ import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
 import { POISON_EXPLORATION_TICK_SEC } from '../utils/constants.js';
+import { PartySpellModal } from '../ui/PartySpellModal.js';
 
 /**
  * Game — top-level orchestrator.
@@ -139,6 +141,36 @@ export class Game {
         // --- Minimap / fog-of-war (Phase 11) ---
         this.minimapSystem = new MinimapSystem();
         this.minimapUI = new MinimapUI();
+
+        // --- Party Spell Modal (V key) ---
+        this.partySpellModal = new PartySpellModal((party) => {
+            this._reapplySongEffects();
+            this._updateSongTooltip();
+            if (this.partyHUD && this.gameState) {
+                this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+            }
+            this._saveNow();
+        });
+
+        // --- Active song tooltip (upper-right, below compass) ---
+        this._songTooltip = document.createElement('div');
+        Object.assign(this._songTooltip.style, {
+            position: 'fixed',
+            top: '70px',
+            right: '20px',
+            background: 'rgba(10,10,30,0.82)',
+            border: '1px solid #447',
+            borderRadius: '6px',
+            padding: '4px 10px',
+            color: '#ccf',
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            pointerEvents: 'none',
+            display: 'none',
+            zIndex: '500',
+            lineHeight: '1.5',
+        });
+        document.body.appendChild(this._songTooltip);
 
         // --- UI refs ---
         this.gameUI       = document.getElementById('game-ui');
@@ -264,7 +296,8 @@ export class Game {
             || (this._portalModal && this._portalModal.style.display === 'flex')
             || (this._trapModal && this._trapModal.style.display === 'flex')
             || (this._bagpickModal && this._bagpickModal.style.display === 'flex')
-            || (this.lightPickerUI && this.lightPickerUI.isOpen);
+            || (this.lightPickerUI && this.lightPickerUI.isOpen)
+            || (this.partySpellModal && this.partySpellModal.isOpen);
     }
 
     // ────────────────────────────────────────────
@@ -326,6 +359,7 @@ export class Game {
                 else if (this._trapModal && this._trapModal.style.display === 'flex') this._skipTrap();
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
+                else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
             }
             return;
         }
@@ -337,6 +371,7 @@ export class Game {
             case 'b': e.preventDefault(); this._onOpenBagPicker(); break;
             case 't': e.preventDefault(); this._onOpenLightPicker(); break;
             case 'k': e.preventDefault(); this._onOpenCrafting(); break;
+            case 'v': e.preventDefault(); this._onOpenPartySpells(); break;
         }
     }
 
@@ -367,6 +402,43 @@ export class Game {
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
         this.lightPickerUI.show();
+    }
+
+    _onOpenPartySpells() {
+        if (!this.partySpellModal || !this.gameState) return;
+        if (this.state !== STATE.PLAYING) return;
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+        this.partySpellModal.show(this.gameState.party);
+    }
+
+    /**
+     * Re-derive bard song activeEffects on every party member from each bard's
+     * persisted activeSongs list.  Call this on load and after any song change.
+     */
+    _reapplySongEffects() {
+        if (!this.gameState) return;
+        PartySpellModal.reapplySongEffects(this.gameState.party);
+    }
+
+    /**
+     * Update the fixed upper-right tooltip that shows currently active songs.
+     */
+    _updateSongTooltip() {
+        if (!this._songTooltip || !this.gameState) return;
+        const lines = [];
+        for (const m of this.gameState.party) {
+            if (m.classId !== 'bard' || !Array.isArray(m.activeSongs) || m.activeSongs.length === 0) continue;
+            const songLabels = { haste: '⚡ Haste', battle: '⚔️ Battle', healing: '💚 Healing' };
+            const names = m.activeSongs.map(s => songLabels[s] || s).join(', ');
+            lines.push(`🎶 ${m.name}: ${names}`);
+        }
+        if (lines.length > 0) {
+            this._songTooltip.innerHTML = lines.join('<br>');
+            this._songTooltip.style.display = 'block';
+        } else {
+            this._songTooltip.style.display = 'none';
+        }
     }
 
     _showLog() {
@@ -495,6 +567,10 @@ export class Game {
     _enterGame(isNew) {
         this.menuScreen.hide();
         this._buildScene(isNew);
+        // Re-derive bard song effects from the persisted activeSongs lists
+        // (needed on load; harmless on new game where no songs are active).
+        this._reapplySongEffects();
+        this._updateSongTooltip();
         this.state = STATE.PLAYING;
         this.gameUI.style.display = 'block';
         this.pauseOverlay.style.display = 'flex';
@@ -690,7 +766,11 @@ export class Game {
                     anyChange = true;
                 }
             }
-            if (anyChange && this.partyHUD) {
+            // Throttle HUD updates to 10fps — DOM bar updates are expensive at 60fps.
+            if (!this._hudRegenTimer) this._hudRegenTimer = 0;
+            this._hudRegenTimer += dt;
+            if (anyChange && this.partyHUD && this._hudRegenTimer >= 0.1) {
+                this._hudRegenTimer = 0;
                 this.partyHUD.update(this.gameState.party, this.gameState.inventory);
             }
         }
@@ -808,6 +888,7 @@ export class Game {
         this.state = STATE.COMBAT;
         this.pauseOverlay.style.display = 'none';
         this.crosshair.style.display = 'none';
+        if (this.inventoryUI) this.inventoryUI._inCombat = true;
 
         this._combatLogCursor = 0;
         this.combatSystem.onUpdate = () => {
@@ -859,7 +940,7 @@ export class Game {
         // there's always at least one foe per party member (rule 5).
         if (group.size < partySize) {
             const need = partySize - group.size;
-            const fresh = this.enemyManager.forceSpawnNear(gx, gz, need);
+            const fresh = this.enemyManager.forceSpawnNear(gx, gz, need, trigger.type);
             for (const e of fresh) group.add(e);
         }
 
@@ -895,6 +976,7 @@ export class Game {
         }
 
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+        if (this.inventoryUI) this.inventoryUI._inCombat = false;
 
         if (result === 'defeat') {
             this._clearScene();
@@ -1027,19 +1109,20 @@ export class Game {
             t.x === gx && t.z === gz && !t.triggered && !t.spotted);
         if (!trap) return;
 
-        // Find the highest-level rogue still alive — they get the spot check.
+        // Each alive rogue rolls independently to spot the trap.
         const rogues = (this.gameState.party || []).filter(
             m => !m.isSummoned && m.classId === 'rogue' && m.health > 0,
-        ).sort((a, b) => b.level - a.level);
-        const rogue = rogues[0];
+        );
 
-        if (rogue) {
-            const spotChance = TRAP_SPOT_BASE + TRAP_SPOT_PER_LEVEL * Math.max(0, rogue.level - 1);
-            if (Math.random() < spotChance) {
-                trap.spotted = true;
-                this._showTrapModal(trap, rogue);
-                return;
-            }
+        const spottingRogues = rogues.filter(r => {
+            const spotChance = TRAP_SPOT_BASE + TRAP_SPOT_PER_LEVEL * Math.max(0, r.level - 1);
+            return Math.random() < spotChance;
+        });
+
+        if (spottingRogues.length > 0) {
+            trap.spotted = true;
+            this._showTrapModal(trap, spottingRogues);
+            return;
         }
         // Un-spotted trap — trigger on the party.
         this._triggerTrap(trap, null);
@@ -1086,28 +1169,50 @@ export class Game {
         this._trapModal.style.display = 'flex';
     }
 
-    _showTrapModal(trap, rogue) {
+    _showTrapModal(trap, rogues) {
+        // Support both old single-rogue callers and new array form.
+        const rogueList = Array.isArray(rogues) ? rogues : [rogues];
+        const rogue = rogueList[0]; // default disarmer
         if (!this._trapModal) {
-            // No modal wired up yet — fall back to auto-disarm attempt.
             this._attemptDisarm(trap, rogue);
             return;
         }
-        this._pendingTrap = { trap, rogue };
+        this._pendingTrap = { trap, rogue, rogueList };
         const def = this._trapDef(trap);
         const disarmChance = TRAP_DISARM_BASE + TRAP_DISARM_PER_LEVEL * Math.max(0, rogue.level - 1);
 
         const title = `${def.icon} ${def.name} Spotted!`;
-        const body =
-            `<b>${rogue.name}</b> (rogue L${rogue.level}) spots a <b>${def.name}</b> on the floor.<br>` +
-            `<i>${def.hint}</i><br><br>` +
-            `Attempt to disarm it (<b>${Math.round(disarmChance * 100)}%</b> chance)?<br>` +
-            `Success may uncover a small treasure. Failure will hurt only <b>${rogue.name}</b>.<br>` +
-            `Skipping lets the party walk carefully around it.`;
 
-        this._showTrapDialog(title, body, [
-            { label: 'Attempt Disarm', onClick: () => this._confirmDisarm() },
-            { label: 'Step Carefully', secondary: true, onClick: () => this._skipTrap() },
-        ]);
+        let body;
+        if (rogueList.length > 1) {
+            const names = rogueList.map(r => `<b>${r.name}</b> (L${r.level})`).join(' and ');
+            body = `${names} all spot a <b>${def.name}</b> on the floor.<br>` +
+                `<i>${def.hint}</i><br><br>` +
+                `Choose who attempts to disarm it, or step carefully around it.<br>` +
+                `Success may uncover a small treasure. Failure hurts only the chosen rogue.`;
+        } else {
+            body = `<b>${rogue.name}</b> (rogue L${rogue.level}) spots a <b>${def.name}</b> on the floor.<br>` +
+                `<i>${def.hint}</i><br><br>` +
+                `Attempt to disarm it (<b>${Math.round(disarmChance * 100)}%</b> chance)?<br>` +
+                `Success may uncover a small treasure. Failure will hurt only <b>${rogue.name}</b>.<br>` +
+                `Skipping lets the party walk carefully around it.`;
+        }
+
+        const buttons = [];
+        if (rogueList.length > 1) {
+            for (const r of rogueList) {
+                const dc = TRAP_DISARM_BASE + TRAP_DISARM_PER_LEVEL * Math.max(0, r.level - 1);
+                buttons.push({ label: `${r.name} disarms (${Math.round(dc * 100)}%)`, onClick: () => {
+                    this._pendingTrap.rogue = r;
+                    this._confirmDisarm();
+                }});
+            }
+        } else {
+            buttons.push({ label: 'Attempt Disarm', onClick: () => this._confirmDisarm() });
+        }
+        buttons.push({ label: 'Step Carefully', secondary: true, onClick: () => this._skipTrap() });
+
+        this._showTrapDialog(title, body, buttons);
     }
 
     _hideTrapModal() {
@@ -1145,8 +1250,9 @@ export class Game {
 
     _skipTrap() {
         if (!this._pendingTrap) { this._hideTrapModal(); return; }
-        const { rogue } = this._pendingTrap;
-        this._log(`\u{1F977} ${rogue.name} guides the party carefully around the trap.`);
+        const { rogueList, rogue } = this._pendingTrap;
+        const spotter = (rogueList && rogueList[0]) || rogue;
+        this._log(`\u{1F977} ${spotter.name} guides the party carefully around the trap.`);
         this._hideTrapModal();
     }
 
@@ -1477,6 +1583,8 @@ export class Game {
             while (newMember.level < targetLvl && typeof newMember._levelUp === 'function') {
                 newMember._levelUp();
             }
+            // Set XP to the bottom of the starting level band so the XP bar shows progress.
+            newMember.xp = XP_LEVEL_BASE * Math.pow(Math.max(0, newMember.level - 1), 2);
         }
 
         this.gameState.party.push(newMember);

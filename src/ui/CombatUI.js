@@ -13,7 +13,7 @@ import {
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
     RANGER_SUMMON_MANA_COST,
-    BARD_SONG_MANA_COST, BARD_SONG_BASE_BONUS,
+    BARD_SONG_MANA_COST, BARD_SONG_BASE_BONUS, BARD_DISRUPT_MANA_COST,
     DRUID_ENTANGLE_MANA_COST, DRUID_ENTANGLE_BASE_DEBUFF, DRUID_ENTANGLE_CHANCE,
     DRUID_SUMMON_MANA_COST,
     SCATTER_SPLASH_BASE, SCATTER_SPLASH_EVERY, SCATTER_SPLASH_FRACTION,
@@ -433,21 +433,23 @@ export class CombatUI {
             ].filter(Boolean).join('\n');
         }
 
-        // Bard: Sing an inspiring song (once per combat)
+        // Bard: AoE Disrupt (once per combat)
         if (m.classId === 'bard') {
-            const can = m.mana >= BARD_SONG_MANA_COST && !m.usedBardSong;
-            const bonus = BARD_SONG_BASE_BONUS + Math.floor(Math.max(0, m.level - 1) / 2);
+            const scale  = Math.max(1, Math.floor(m.level / 5));
+            const can = m.mana >= BARD_DISRUPT_MANA_COST && !m.usedBardSong;
             const label = m.usedBardSong
-                ? '\u{1F3B6} Song (already sung)'
-                : `\u{1F3B6} Sing Song (-${BARD_SONG_MANA_COST} MP, +${bonus})`;
-            const btn = this._addBtn(label, can, () => this.combat.bardSong());
+                ? '\u{1F3B6} Disrupt (used)'
+                : `\u{1F3B6} Disrupt (-${BARD_DISRUPT_MANA_COST} MP)`;
+            const btn = this._addBtn(label, can, () => this.combat.bardDisrupt());
             btn.classList.add('combat-special-btn');
             btn.title = [
-                'Bard special: Inspiring Song.',
-                `Costs ${BARD_SONG_MANA_COST} mana. One use per combat.`,
-                `Grants the whole party +${bonus} defense and +${bonus} melee/ranged/magic damage for the rest of the fight.`,
-                'Bonus rises by +1 every other level beyond L1 (L3=+3, L5=+4\u2026).',
-                m.usedBardSong ? 'You have already sung this battle.' : '',
+                'Bard special: Dissonant Chord (AoE Disruption).',
+                `Costs ${BARD_DISRUPT_MANA_COST} mana. One use per combat.`,
+                `Hits ALL enemies: -${scale} attack, -${scale} defense for 1 round.`,
+                `Deals magic damage (+${scale} bonus) to each enemy.`,
+                '50% chance to stun each enemy for 1 round.',
+                `Bonus scales +1 per 5 bard levels (currently scale: ${scale}).`,
+                m.usedBardSong ? 'Already used this fight.' : '',
                 !can && !m.usedBardSong ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
         }

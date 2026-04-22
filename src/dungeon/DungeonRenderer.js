@@ -295,19 +295,25 @@ export class DungeonRenderer {
      */
     updateTorches(elapsedTime, playerPos) {
         // --- Dynamic culling: keep the N nearest torches as real lights ---
-        if (playerPos && this.torchLights.length > ACTIVE_TORCH_LIGHT_CAP) {
-            const scored = this.torchLights.map(l => {
-                const dx = l.position.x - playerPos.x;
-                const dz = l.position.z - playerPos.z;
-                return { l, d: dx * dx + dz * dz };
-            });
-            scored.sort((a, b) => a.d - b.d);
-            for (let i = 0; i < scored.length; i++) {
-                scored[i].l.visible = i < ACTIVE_TORCH_LIGHT_CAP;
+        // Culling sort is expensive; throttle it to run at most 4× per second.
+        const now = elapsedTime;
+        if (!this._lastCullTime) this._lastCullTime = 0;
+        if (playerPos && (now - this._lastCullTime) > 0.25) {
+            this._lastCullTime = now;
+            if (this.torchLights.length > ACTIVE_TORCH_LIGHT_CAP) {
+                const scored = this.torchLights.map(l => {
+                    const dx = l.position.x - playerPos.x;
+                    const dz = l.position.z - playerPos.z;
+                    return { l, d: dx * dx + dz * dz };
+                });
+                scored.sort((a, b) => a.d - b.d);
+                for (let i = 0; i < scored.length; i++) {
+                    scored[i].l.visible = i < ACTIVE_TORCH_LIGHT_CAP;
+                }
+            } else {
+                // Few enough torches → keep all visible.
+                for (const l of this.torchLights) l.visible = true;
             }
-        } else if (playerPos) {
-            // Few enough torches → keep all visible.
-            for (const l of this.torchLights) l.visible = true;
         }
 
         // --- Flicker only visible lights (flame meshes always animate) ---

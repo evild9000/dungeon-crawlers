@@ -23,6 +23,15 @@ import {
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
     POTION_BUFF_DURATION_SEC,
+    MELEE_STUN_CHANCE, RANGED_CRIT_CHANCE,
+    BACKSTAB_INSTAKILL_CHANCE, MONK_DODGE_CHANCE, MONK_WHIRLWIND_CHANCE,
+    CLERIC_HEAL_PERCENT, CLERIC_HEAL_MANA_COST,
+    NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
+    NECRO_SUMMON_MANA_COST,
+    MONK_MELEE_MANA_COST,
+    MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
+    PALADIN_SMITE_MANA_COST, PALADIN_SMITE_INSTAKILL_BASE,
+    PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
 } from '../utils/constants.js';
 
 /**
@@ -282,7 +291,12 @@ export class InventoryUI {
 
         const portrait = document.createElement('img');
         portrait.className = 'pinv-portrait';
-        portrait.src = this._getPortraitURL(member.portraitSeed, member.speciesId);
+        const summonPreset = getSummonPreset(member);
+        if (summonPreset) {
+            portrait.src = this._getSummonPortraitURL(summonPreset);
+        } else {
+            portrait.src = this._getPortraitURL(member.portraitSeed, member.speciesId);
+        }
         header.appendChild(portrait);
 
         const idBlock = document.createElement('div');
@@ -295,7 +309,6 @@ export class InventoryUI {
 
         const cls = member.classDef;
         const sp  = member.speciesDef;
-        const summonPreset = getSummonPreset(member);
         const subtitle = document.createElement('div');
         subtitle.className = 'pinv-subtitle';
         if (summonPreset) {
@@ -319,6 +332,11 @@ export class InventoryUI {
 
         // Combat Row toggle
         this.personalContent.appendChild(this._buildRowToggle(member));
+
+        // Ranger favored enemy picker
+        if (member.classId === 'ranger' && !member.isSummoned) {
+            this.personalContent.appendChild(this._buildFavoredEnemy(member));
+        }
 
         // Equipment slots
         const eqSection = document.createElement('div');
@@ -579,20 +597,82 @@ export class InventoryUI {
 
         // --- Per-class scaling percentages, if any ---
         const perk = [];
-        if (cls.stunPerLevel)         perk.push(`Stun on hit: ${(member.getMeleeStunBonus() * 100).toFixed(0)}%`);
-        if (cls.critPerLevel)         perk.push(`Ranged crit: ${(member.getRangedCritBonus() * 100).toFixed(0)}%`);
-        if (cls.magicStunPerLevel)    perk.push(`Magic stun: ${(member.getMagicStunBonus() * 100).toFixed(0)}%`);
-        if (cls.instakillPerLevel)    perk.push(`Instakill: ${(member.getInstakillBonus() * 100).toFixed(0)}%`);
-        if (cls.dodgePerLevel)        perk.push(`Dodge: ${(member.getEffectiveDodgePct() * 100).toFixed(0)}% (all dmg taken reduced by same %; cap 95%)`);
-        if (cls.whirlwindPerLevel)    perk.push(`Whirlwind: ${(member.getWhirlwindBonus() * 100).toFixed(0)}%`);
-        if (cls.healPercentPerLevel)  perk.push(`Heal+: ${(member.getHealPercentBonus() * 100).toFixed(0)}%`);
-        if (cls.drainPerLevel)        perk.push(`Drain +${member.getDrainBonus()} HP`);
+        const perkDetails = [];
+
+        if (cls.stunPerLevel) {
+            const base = Math.round(MELEE_STUN_CHANCE * 100);
+            const cur  = Math.round((MELEE_STUN_CHANCE + member.getMeleeStunBonus()) * 100);
+            perk.push(`Stun on hit: ${cur}%`);
+            perkDetails.push(`Warrior Stun: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  (+${Math.round(cls.stunPerLevel * 100)}%/level, applied on melee hits)`);
+        }
+        if (cls.critPerLevel) {
+            const base = Math.round(RANGED_CRIT_CHANCE * 100);
+            const cur  = Math.round((RANGED_CRIT_CHANCE + member.getRangedCritBonus()) * 100);
+            perk.push(`Ranged crit: ${cur}%`);
+            perkDetails.push(`Ranger Crit: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  (crit = 2× ranged damage; +${Math.round(cls.critPerLevel * 100)}%/level)`);
+        }
+        if (cls.magicStunPerLevel) {
+            const base = 0;
+            const cur  = Math.round(member.getMagicStunBonus() * 100);
+            perk.push(`Magic stun: ${cur}%`);
+            perkDetails.push(`Mage Magic Stun: base ${base}% + ${cur}% from levels = ${cur}% total\n  (+${Math.round(cls.magicStunPerLevel * 100)}%/level)`);
+        }
+        if (cls.instakillPerLevel) {
+            const isRogue   = member.classId === 'rogue';
+            const isPaladin = member.classId === 'paladin';
+            if (isRogue) {
+                const base = Math.round(BACKSTAB_INSTAKILL_CHANCE * 100);
+                const cur  = Math.round((BACKSTAB_INSTAKILL_CHANCE + member.getInstakillBonus()) * 100);
+                perk.push(`Backstab instakill: ${cur}%`);
+                perkDetails.push(`Rogue Backstab Instakill: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  (+${Math.round(cls.instakillPerLevel * 100)}%/level)`);
+            } else if (isPaladin) {
+                const base = Math.round((PALADIN_SMITE_INSTAKILL_BASE || 0) * 100);
+                const cur  = Math.round(((PALADIN_SMITE_INSTAKILL_BASE || 0) + member.getInstakillBonus()) * 100);
+                perk.push(`Smite instakill (Undead/Demon): ${cur}%`);
+                perkDetails.push(`Paladin Smite Instakill vs Undead/Demon: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  (Smite costs ${PALADIN_SMITE_MANA_COST} MP; +${Math.round(cls.instakillPerLevel * 100)}%/level)`);
+            }
+        }
+        if (cls.dodgePerLevel) {
+            const base = Math.round(MONK_DODGE_CHANCE * 100);
+            const cur  = Math.round(member.getEffectiveDodgePct() * 100);
+            perk.push(`Dodge: ${cur}%`);
+            perkDetails.push(`Monk Dodge: base ${base}% + ${cur - base}% from levels = ${cur}% (cap 95%)\n  Costs ${MONK_DODGE_STAMINA_COST} ST + ${MONK_DODGE_MANA_COST} MP; reduces all damage by dodge% on non-dodge hits.\n  (+${Math.round(cls.dodgePerLevel * 100)}%/level)`);
+        }
+        if (cls.whirlwindPerLevel) {
+            const base = Math.round(MONK_WHIRLWIND_CHANCE * 100);
+            const cur  = Math.round((MONK_WHIRLWIND_CHANCE + member.getWhirlwindBonus()) * 100);
+            perk.push(`Whirlwind: ${cur}%`);
+            perkDetails.push(`Monk Whirlwind: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  Chance to also hit EACH other enemy on melee. Costs ${MONK_MELEE_MANA_COST} extra MP per melee.\n  (+${Math.round(cls.whirlwindPerLevel * 100)}%/level)`);
+        }
+        if (cls.healPercentPerLevel) {
+            const isCleric  = member.classId === 'cleric';
+            const isPaladin = member.classId === 'paladin';
+            const baseHeal  = isCleric ? CLERIC_HEAL_PERCENT : (PALADIN_HEAL_PERCENT || 0);
+            const basePct   = Math.round(baseHeal * 100);
+            const cur       = Math.round((baseHeal + member.getHealPercentBonus()) * 100);
+            const costMP    = isCleric ? CLERIC_HEAL_MANA_COST : PALADIN_HEAL_MANA_COST;
+            perk.push(`Heal: ${cur}% max HP`);
+            perkDetails.push(`${isCleric ? 'Cleric' : 'Paladin'} Heal: base ${basePct}% + ${cur - basePct}% from levels = ${cur}% max HP restored\n  Costs ${costMP} MP per cast. (+${Math.round(cls.healPercentPerLevel * 100)}%/level)`);
+        }
+        if (cls.drainPerLevel) {
+            const base = NECRO_LIFE_DRAIN_AMOUNT;
+            const cur  = base + member.getDrainBonus();
+            perk.push(`Life drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance, +${cur} HP`);
+            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance on magic attack\n  Base drain: ${base} HP, current: ${cur} HP (heals self and own undead)\n  (+${cls.drainPerLevel} HP/level)`);
+        }
+        // Ranger favored enemy — show instakill pct if one is selected
+        if (member.classId === 'ranger' && member.favoredEnemy) {
+            const ikPct = Math.round(member.getFavoredEnemyInstakillChance() * 100);
+            perk.push(`Favored [${member.favoredEnemy}]: ${ikPct}% instakill`);
+            perkDetails.push(`Ranger Favored Enemy (${member.favoredEnemy}): ignores defense, ${ikPct}% instakill chance\n  (1% per 3 levels; currently L${member.level})`);
+        }
 
         if (perk.length > 0) {
             const perkRow = document.createElement('div');
             perkRow.className = 'pinv-stat-row pinv-perk-row';
             perkRow.innerHTML = `<span class="pinv-stat-label">Class perks:</span>
                 <span class="pinv-stat-value">${perk.join(', ')}</span>`;
+            perkRow.title = perkDetails.join('\n\n');
             section.appendChild(perkRow);
         }
 
@@ -674,6 +754,55 @@ export class InventoryUI {
         return section;
     }
 
+    _buildFavoredEnemy(member) {
+        const section = document.createElement('div');
+        section.className = 'pinv-section pinv-favored-enemy';
+        section.innerHTML = '<div class="pinv-section-title">🎯 Favored Enemy</div>';
+
+        const help = document.createElement('div');
+        help.className = 'pinv-row-help';
+        const instakillPct = Math.round(member.getFavoredEnemyInstakillChance() * 100);
+        help.textContent = member.favoredEnemy
+            ? `Selected: ${member.favoredEnemy}. Ignores defense and has ${instakillPct}% instakill chance (1% per 3 levels) vs. this type. Change any time outside combat.`
+            : 'Choose a monster category to specialize against. Rangers ignore defense and gain a 1% per 3 levels instakill chance vs. their favored type.';
+        section.appendChild(help);
+
+        const FAVORED_TAGS = [
+            { id: 'vermin',   label: '🐛 Vermin',   desc: 'Slimes, spiders, rats, bats, wasps, worms…' },
+            { id: 'undead',   label: '💀 Undead',   desc: 'Skeletons, zombies, ghosts, wraiths…' },
+            { id: 'humanoid', label: '👺 Humanoids', desc: 'Goblins, orcs, trolls, cultists, kobolds…' },
+            { id: 'monster',  label: '🐉 Monsters',  desc: 'Drakes, basilisks, mimics, imps, fungi…' },
+        ];
+
+        const btnWrap = document.createElement('div');
+        btnWrap.className = 'pinv-row-btn-wrap';
+
+        // Disable buttons if in combat (check via a flag the caller can set)
+        const inCombat = !!(this._inCombat);
+
+        for (const tag of FAVORED_TAGS) {
+            const btn = document.createElement('button');
+            btn.className = 'pinv-row-btn';
+            if (member.favoredEnemy === tag.id) btn.classList.add('pinv-row-btn-active');
+            btn.textContent = tag.label;
+            btn.title = tag.desc + (inCombat ? '\n(Cannot change during combat)' : '');
+            if (inCombat) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+            } else {
+                btn.addEventListener('click', () => {
+                    member.favoredEnemy = (member.favoredEnemy === tag.id) ? null : tag.id;
+                    this._onChanged();
+                    this._renderPersonal();
+                });
+            }
+            btnWrap.appendChild(btn);
+        }
+
+        section.appendChild(btnWrap);
+        return section;
+    }
+
     _equipSlot(member, slot, label) {
         const row = document.createElement('div');
         row.className = 'pinv-equip-slot';
@@ -747,5 +876,29 @@ export class InventoryUI {
             this._portraitCache.set(key, canvas.toDataURL());
         }
         return this._portraitCache.get(key);
+    }
+
+    _getSummonPortraitURL(summon) {
+        const key = `summon:${summon.id}`;
+        if (this._portraitCache.has(key)) return this._portraitCache.get(key);
+        const size = 96;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const isUndead = summon.kind === 'undead';
+        const grad = ctx.createRadialGradient(size/2, size/2, 6, size/2, size/2, size/2);
+        if (isUndead) { grad.addColorStop(0, '#3b2a55'); grad.addColorStop(1, '#0e0a1b'); }
+        else          { grad.addColorStop(0, '#2f5c2a'); grad.addColorStop(1, '#0c1a0a'); }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+        ctx.strokeStyle = isUndead ? '#6a4a9a' : '#4a8a44';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, size-2, size-2);
+        ctx.font = `${Math.round(size * 0.52)}px serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(summon.icon || '?', size/2, size/2 + 2);
+        const url = canvas.toDataURL();
+        this._portraitCache.set(key, url);
+        return url;
     }
 }

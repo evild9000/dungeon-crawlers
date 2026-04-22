@@ -137,9 +137,20 @@ export class Enemy {
         this.sprite = new THREE.Mesh(geo, material);
         this._updateSpritePosition();
 
-        // Y-axis billboard — face the camera horizontally each frame
+        // Y-axis billboard — face the camera horizontally each frame.
+        // Only update rotation when the enemy sprite is within render range and
+        // when the camera has moved enough to matter (throttle distant enemies).
         const _camPos = new THREE.Vector3();
+        let _lastRotFrame = 0;
         this.sprite.onBeforeRender = (_r, _s, cam) => {
+            // Throttle: skip every other frame for enemies > 12 units away,
+            // skip 3 out of 4 frames for enemies > 24 units away.
+            const frameId = ++_lastRotFrame;
+            const dx0 = cam.position.x - this.sprite.position.x;
+            const dz0 = cam.position.z - this.sprite.position.z;
+            const distSq = dx0 * dx0 + dz0 * dz0;
+            if (distSq > 576 && (frameId & 3) !== 0) return; // > 24 units: update 1/4 frames
+            if (distSq > 144 && (frameId & 1) !== 0) return; // > 12 units: update 1/2 frames
             cam.getWorldPosition(_camPos);
             const dx = _camPos.x - this.sprite.position.x;
             const dz = _camPos.z - this.sprite.position.z;
@@ -230,6 +241,7 @@ export class Enemy {
             // Valid move
             this.isMoving = true;
             this.moveProgress = 0;
+            this._spritePosSet = false;
             this.targetGridX = nx;
             this.targetGridZ = nz;
             this.startWorldX = this.worldX;
@@ -245,8 +257,10 @@ export class Enemy {
 
     _updateSpritePosition() {
         if (!this.sprite) return;
+        if (!this.isMoving && this._spritePosSet) return; // skip if not moving and already placed
         const def = ENEMY_TYPES[this.type] || (this.type === 'tinkerer' ? TINKERER_TYPE : ENEMY_TYPES.skeleton);
         this.sprite.position.set(this.worldX, def.spriteH / 2, this.worldZ);
+        this._spritePosSet = true;
     }
 
     /** Serialise to a plain object for IndexedDB. */

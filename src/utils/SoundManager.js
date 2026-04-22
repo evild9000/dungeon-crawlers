@@ -670,6 +670,164 @@ class SoundManager {
         const t = this.ctx.currentTime;
         this.playTone(1500, 'sine', 0.6, 0.12, this.masterGain, t);
     }
+
+    // -------------------------------------------------------
+    //  Bard song loop sounds
+    // -------------------------------------------------------
+
+    /**
+     * Start a looping ambient sound for the given out-of-combat bard song.
+     * Only one loop plays at a time — calling this while another is active
+     * will stop the previous one first.
+     *   songId: 'haste' | 'battle' | 'healing'
+     */
+    playBardSongLoop(songId) {
+        this.stopBardSongLoop();
+        if (this.muted) return;
+        this.ensureContext();
+
+        const ctx = this.ctx;
+        const master = this.masterGain;
+
+        // Gain node so we can fade in and also stop cleanly.
+        const loopGain = ctx.createGain();
+        loopGain.gain.setValueAtTime(0.0, ctx.currentTime);
+        loopGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.4);
+        loopGain.connect(master);
+
+        const oscs = [];
+
+        if (songId === 'haste') {
+            // Fast upbeat arpeggio: triangle wave, cycling through 5 notes.
+            const notes = [523, 659, 784, 988, 784, 659]; // C5 E5 G5 B5 G5 E5
+            let step = 0;
+            const bpm = 360; // fast
+            const stepSec = 60 / bpm;
+            const schedule = () => {
+                if (!this._songLoopActive) return;
+                const osc = ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.value = notes[step % notes.length];
+                step++;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + stepSec * 0.9);
+                osc.connect(g);
+                g.connect(loopGain);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + stepSec);
+                this._songOscs.push(osc);
+                this._songTimer = setTimeout(schedule, stepSec * 1000 - 10);
+            };
+            this._songLoopActive = true;
+            this._songOscs = oscs;
+            this._songTimer = setTimeout(schedule, 0);
+
+        } else if (songId === 'battle') {
+            // Heroic power fifths: two triangle oscillators a fifth apart, slow pulse.
+            const pairs = [[196, 294], [220, 330], [247, 370], [220, 330]]; // G3/D4 pattern
+            let step = 0;
+            const stepSec = 0.6;
+            const schedule = () => {
+                if (!this._songLoopActive) return;
+                const [f1, f2] = pairs[step % pairs.length];
+                step++;
+                [f1, f2].forEach(freq => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    const g = ctx.createGain();
+                    g.gain.setValueAtTime(1, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + stepSec * 0.85);
+                    osc.connect(g);
+                    g.connect(loopGain);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + stepSec);
+                    this._songOscs.push(osc);
+                });
+                this._songTimer = setTimeout(schedule, stepSec * 1000 - 10);
+            };
+            this._songLoopActive = true;
+            this._songOscs = oscs;
+            this._songTimer = setTimeout(schedule, 0);
+
+        } else if (songId === 'healing') {
+            // Gentle sine lullaby: slow descending phrase.
+            const notes = [523, 494, 440, 392, 440, 494]; // C5 B4 A4 G4 A4 B4
+            let step = 0;
+            const stepSec = 0.9;
+            const schedule = () => {
+                if (!this._songLoopActive) return;
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = notes[step % notes.length];
+                step++;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + stepSec * 0.95);
+                osc.connect(g);
+                g.connect(loopGain);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + stepSec);
+                this._songOscs.push(osc);
+                this._songTimer = setTimeout(schedule, stepSec * 1000 - 10);
+            };
+            this._songLoopActive = true;
+            this._songOscs = oscs;
+            this._songTimer = setTimeout(schedule, 0);
+        }
+
+        this._songLoopGain = loopGain;
+    }
+
+    /** Stop the currently-playing bard song loop (if any). */
+    stopBardSongLoop() {
+        this._songLoopActive = false;
+        if (this._songTimer) { clearTimeout(this._songTimer); this._songTimer = null; }
+        if (this._songLoopGain) {
+            try {
+                const g = this._songLoopGain;
+                g.gain.setValueAtTime(g.gain.value, this.ctx.currentTime);
+                g.gain.linearRampToValueAtTime(0.0, this.ctx.currentTime + 0.3);
+            } catch (_) { /* context may be closed */ }
+            this._songLoopGain = null;
+        }
+        if (this._songOscs) {
+            for (const o of this._songOscs) {
+                try { o.stop(); } catch (_) {}
+            }
+            this._songOscs = [];
+        }
+    }
+
+    /**
+     * Short dramatic AoE disruption sound for the bard's in-combat disrupt ability:
+     * a descending sweep of three quick notes followed by a noise burst.
+     */
+    playBardDisrupt() {
+        if (this.muted) return;
+        this.ensureContext();
+        const t = this.ctx.currentTime;
+        // Descending tritone sweep
+        const notes = [880, 622, 440, 311];
+        for (let i = 0; i < notes.length; i++) {
+            this.playTone(notes[i], 'sawtooth', 0.12, 0.1, this.masterGain, t + i * 0.08);
+        }
+        // Quick noise burst at the end
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.createNoiseBuffer(0.15);
+        const flt = this.ctx.createBiquadFilter();
+        flt.type = 'bandpass';
+        flt.frequency.value = 1200;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.12, t + 0.32);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.48);
+        src.connect(flt);
+        flt.connect(g);
+        g.connect(this.masterGain);
+        src.start(t + 0.32);
+        src.stop(t + 0.5);
+    }
 }
 
 export const soundManager = new SoundManager();

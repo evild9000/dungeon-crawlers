@@ -190,14 +190,36 @@ export class EnemyManager {
      * (used by combat to guarantee N=partySize foes per Phase 8 rule 5).
      * Ignores the minimum-distance constraint so they can appear adjacent.
      *
+     * If `triggerType` is supplied (the type string of the enemy that triggered
+     * combat), the extras are drawn from the same tag group to keep encounters
+     * thematic (all undead, all humanoids, all vermin, etc.). Falls back to the
+     * full spawnable pool when no matching same-tag types exist.
+     *
      * @param {number} centerX
      * @param {number} centerZ
      * @param {number} count
+     * @param {string} [triggerType]  optional trigger enemy type key
      * @returns {Enemy[]} newly-spawned enemies
      */
-    forceSpawnNear(centerX, centerZ, count) {
+    forceSpawnNear(centerX, centerZ, count, triggerType) {
         const spawned = [];
         if (count <= 0) return spawned;
+
+        // Build a thematic pool from the trigger enemy's tags.
+        let pool = this._spawnableTypes;
+        if (triggerType) {
+            const triggerDef = ENEMY_TYPES[triggerType];
+            const triggerTags = (triggerDef && triggerDef.tags) ? triggerDef.tags : [];
+            if (triggerTags.length > 0) {
+                // Pick the most-specific first tag as the primary group key.
+                const primaryTag = triggerTags[0];
+                const themed = this._spawnableTypes.filter(t => {
+                    const def = ENEMY_TYPES[t];
+                    return def && def.tags && def.tags.includes(primaryTag);
+                });
+                if (themed.length > 0) pool = themed;
+            }
+        }
 
         // Sort walkable cells by distance to center (closest first).
         const candidates = this._walkableCells
@@ -213,7 +235,7 @@ export class EnemyManager {
             const occupied = this.enemies.some(e => e.gridX === cell.x && e.gridZ === cell.z);
             if (occupied) continue;
 
-            const type = this._spawnableTypes[Math.floor(Math.random() * this._spawnableTypes.length)];
+            const type = pool[Math.floor(Math.random() * pool.length)];
             const enemy = new Enemy({
                 type, gridX: cell.x, gridZ: cell.z, level: this.dungeonLevel,
             });

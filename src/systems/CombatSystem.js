@@ -24,6 +24,7 @@ import {
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
     RANGER_SUMMON_MANA_COST,
     BARD_SONG_MANA_COST, BARD_SONG_BASE_BONUS,
+    BARD_DISRUPT_MANA_COST,
     DRUID_ENTANGLE_MANA_COST, DRUID_ENTANGLE_BASE_DEBUFF, DRUID_ENTANGLE_CHANCE,
     DRUID_SUMMON_MANA_COST,
     POISON_DURATION_ROUNDS, POISON_DAMAGE_FRACTION,
@@ -276,6 +277,23 @@ export class CombatSystem {
         const exhausted = m.stamina < RANGED_STAMINA_COST;
         m.stamina = Math.max(0, m.stamina - RANGED_STAMINA_COST);
 
+        // Ranger favored enemy check
+        const favoredTag = m.classId === 'ranger' ? m.favoredEnemy : null;
+        const targetDef = ENEMY_TYPES[targetEnemy.type];
+        const targetTags = (targetDef && targetDef.tags) ? targetDef.tags : [];
+        const isFavored = favoredTag && targetTags.includes(favoredTag);
+
+        // Instakill: 1% per 3 ranger levels vs favored enemy
+        if (isFavored) {
+            const instakillChance = m.getFavoredEnemyInstakillChance();
+            if (instakillChance > 0 && Math.random() < instakillChance) {
+                targetEnemy.health = 0;
+                this._addLog(`🎯 ${m.name} lands a LETHAL SHOT on the ${this._eName(targetEnemy)}! (Favored enemy instakill!)`);
+                this._advancePlayerTurn();
+                return;
+            }
+        }
+
         let dmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
         dmg += m.getWeaponBonus('ranged');
         dmg += m.getClassDamageBonus('ranged');
@@ -288,12 +306,13 @@ export class CombatSystem {
             isCrit = true;
         }
 
-        const dealt = this._damageEnemy(targetEnemy, dmg);
+        const dealt = this._damageEnemy(targetEnemy, dmg, isFavored);
 
         const eName = this._eName(targetEnemy);
         const exhaustStr = exhausted ? ' (exhausted!)' : '';
         const critStr = isCrit ? ' \u{1F4A5} CRITICAL HIT!' : '';
-        this._addLog(`${m.name} shoots ${eName} for ${dealt} damage!${exhaustStr}${critStr}`);
+        const favoredStr = isFavored ? ' [Favored Enemy — armor ignored]' : '';
+        this._addLog(`${m.name} shoots ${eName} for ${dealt} damage!${exhaustStr}${critStr}${favoredStr}`);
 
         this._applyWeaponRider(m, targetEnemy, dealt);
 
@@ -310,6 +329,18 @@ export class CombatSystem {
             }
             const shotExhausted = m.stamina < RANGED_STAMINA_COST;
             m.stamina = Math.max(0, m.stamina - RANGED_STAMINA_COST);
+            // Check favored enemy instakill for extra shots too
+            const xtDef = ENEMY_TYPES[curT.type];
+            const xtTags = (xtDef && xtDef.tags) ? xtDef.tags : [];
+            const xtFavored = favoredTag && xtTags.includes(favoredTag);
+            if (xtFavored) {
+                const xtInstakill = m.getFavoredEnemyInstakillChance();
+                if (xtInstakill > 0 && Math.random() < xtInstakill) {
+                    curT.health = 0;
+                    this._addLog(`🎯 ${m.name} lands a LETHAL SHOT on the ${this._eName(curT)}! (Favored enemy instakill!)`);
+                    continue;
+                }
+            }
             let sdmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
             sdmg += m.getWeaponBonus('ranged');
             sdmg += m.getClassDamageBonus('ranged');
@@ -318,10 +349,11 @@ export class CombatSystem {
             const scritChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus();
             if (Math.random() < scritChance) { sdmg *= 2; scrit = true; }
             const sTargetName = this._eName(curT);
-            const sDealt = this._damageEnemy(curT, sdmg);
+            const sDealt = this._damageEnemy(curT, sdmg, xtFavored);
             const sExhaust = shotExhausted ? ' (exhausted!)' : '';
             const sCrit = scrit ? ' \u{1F4A5} CRITICAL HIT!' : '';
-            this._addLog(`\u{1F3F9} ${m.name} looses another arrow at ${sTargetName} for ${sDealt} damage!${sExhaust}${sCrit}`);
+            const sFav = xtFavored ? ' [Favored Enemy — armor ignored]' : '';
+            this._addLog(`\u{1F3F9} ${m.name} looses another arrow at ${sTargetName} for ${sDealt} damage!${sExhaust}${sCrit}${sFav}`);
             this._applyWeaponRider(m, curT, sDealt);
             if (curT.health <= 0) this._addLog(`${sTargetName} is defeated!`);
         }
@@ -585,7 +617,7 @@ export class CombatSystem {
             summonType: preset.id,
             summonerId: m.id,
             canBeHealed: false, // undead — only life-drain heals them
-            row: 'back', // undead always start in the back row
+            row: 'front', // undead fight on the front line
             summonStats: {
                 meleeMin: stats.meleeMin,
                 meleeMax: stats.meleeMax,
@@ -633,7 +665,8 @@ export class CombatSystem {
             summonType: preset.id,
             summonerId: m.id,
             canBeHealed: true,
-            row: m.row,
+            // Bear is a melee brawler → front row; eagle and pixie stay back.
+            row: beastId === 'bear' ? 'front' : 'back',
             summonStats: {
                 meleeMin:  stats.meleeMin,  meleeMax:  stats.meleeMax,
                 rangedMin: stats.rangedMin, rangedMax: stats.rangedMax,
@@ -914,36 +947,64 @@ export class CombatSystem {
     }
 
     /**
-     * Bard Song — once per combat. Party-wide +2 defense and +2 melee/ranged/magic
-     * damage. Bonus scales +1 per odd level beyond L1 (L3=+3, L5=+4, …).
+     * Bard Disrupt — once per combat AoE. Targets all enemies:
+     *   - Applies attack/defense debuff (-1 per 5 bard levels)
+     *   - Deals magic damage scaled with bard magic bonus + debuff scale
+     *   - 50% chance to stun each enemy for 1 round
+     * Costs BARD_DISRUPT_MANA_COST mana.
      */
-    bardSong() {
+    bardDisrupt() {
         const m = this.currentMember;
         if (!m || m.health <= 0) return;
         if (m.classId !== 'bard') return;
         if (m.usedBardSong) {
-            this._addLog(`${m.name} has already sung their song this fight.`);
+            this._addLog(`${m.name} has already used their disrupt this fight.`);
             return;
         }
-        if (m.mana < BARD_SONG_MANA_COST) {
-            this._addLog(`${m.name} has too little mana to sing (needs ${BARD_SONG_MANA_COST}).`);
+        if (m.mana < BARD_DISRUPT_MANA_COST) {
+            this._addLog(`${m.name} has too little mana to disrupt (needs ${BARD_DISRUPT_MANA_COST}).`);
             return;
         }
 
-        m.mana -= BARD_SONG_MANA_COST;
+        m.mana -= BARD_DISRUPT_MANA_COST;
         m.usedBardSong = true;
 
-        const bonus = BARD_SONG_BASE_BONUS + Math.floor(Math.max(0, m.level - 1) / 2);
-        for (const ally of this.party) {
-            if (ally.health <= 0) continue;
-            ally.addEffect({
-                type: 'song',
-                damageBonus:  bonus,
-                defenseBonus: bonus,
+        const scale   = Math.max(1, Math.floor(m.level / 5));
+        const debuff  = scale;
+        const dmgBase = m.getClassDamageBonus('magic') + scale;
+
+        this._addLog(`\u{1F3B6} ${m.name} unleashes a dissonant chord! AoE disruption!`);
+
+        let stunCount = 0;
+        for (const e of this.aliveEnemies) {
+            // Debuff
+            e.activeEffects = e.activeEffects || [];
+            e.activeEffects = e.activeEffects.filter(x => x.type !== 'bard_disrupt');
+            e.activeEffects.push({
+                type: 'bard_disrupt',
+                rounds: 1,
+                damageBonus:  -debuff,
+                defenseBonus: -debuff,
             });
+
+            // Magic damage via _damageEnemy (handles entangle/debuff interactions)
+            const dmg = Math.max(1, dmgBase + randomInt(1, 4));
+            const dealt = this._damageEnemy(e, dmg);
+            const eName = this._eName(e);
+            this._addLog(`  🎵 ${eName} takes ${dealt} magic dmg (-${debuff} atk/-${debuff} def)`);
+            if (e.health <= 0) this._addLog(`${eName} is defeated!`);
+
+            // 50% stun
+            if (Math.random() < 0.5) {
+                e.stunned = true;
+                stunCount++;
+            }
         }
 
-        this._addLog(`\u{1F3B6} ${m.name} sings an inspiring song! (+${bonus} dmg / +${bonus} def party-wide)`);
+        if (stunCount > 0) {
+            this._addLog(`  ⚡ ${stunCount} enem${stunCount === 1 ? 'y' : 'ies'} stunned!`);
+        }
+
         this._advancePlayerTurn();
     }
 
@@ -1149,6 +1210,13 @@ export class CombatSystem {
                 const isGolem  = Boolean(ss.tierId);
                 const isUndead = !ss.beastKind && !ss.tierId;
                 if (isGolem || isUndead) bonus -= 1;
+            }
+            // Haste song initiative bonus
+            const hasteEffect = Array.isArray(ref.activeEffects)
+                ? ref.activeEffects.find(e => e && e.type === 'bard_song_haste')
+                : null;
+            if (hasteEffect && typeof hasteEffect.initiativeBonus === 'number') {
+                bonus += hasteEffect.initiativeBonus;
             }
         } else {
             const typeDef = ENEMY_TYPES[ref.type] || {};
@@ -1549,7 +1617,7 @@ export class CombatSystem {
     // ────────────────────────────────────────────
 
     /** Apply raw damage to an enemy after its entangle defense debuff is taken into account. */
-    _damageEnemy(enemy, amount) {
+    _damageEnemy(enemy, amount, ignoreDefense = false) {
         // Entangle adds to `defenseBonus` which is negative; so it *lowers* the
         // enemy's effective defense — i.e., player damage goes UP. That matches
         // "victim takes more damage" because defenseBonus comes off the top.
@@ -1561,8 +1629,11 @@ export class CombatSystem {
         // If defMod is negative, damage is amplified by `-defMod`.
         let final = amount;
         if (defMod < 0) final = Math.max(1, amount - defMod); // - of negative = +
-        // We don't subtract positive enemy defense here because existing code
-        // doesn't model enemy armor mitigation against player attacks.
+        // Apply enemy base defense as flat damage reduction (min 1 dealt).
+        // ignoreDefense = true bypasses this (e.g. ranger vs favored enemy).
+        if (!ignoreDefense) {
+            final = Math.max(1, final - (enemy.defense || 0));
+        }
         final = Math.max(1, Math.round(final));
         enemy.health = Math.max(0, enemy.health - final);
         return final;

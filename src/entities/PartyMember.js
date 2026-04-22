@@ -67,6 +67,8 @@ export class PartyMember {
         isSummoned, summonType, summonerId, canBeHealed, summonStats,
         isPersistent,
         level, xp, row,
+        activeSongs,
+        favoredEnemy,
     }) {
         this.id = id || generateId();
         this.name = name;
@@ -116,6 +118,16 @@ export class PartyMember {
         this.stunned = false;
         this.webbedRounds = 0;   // Phase 11 — web lockdown counter (rounds left)
         this.usedBardSong = false;  // "once per combat" tracker
+
+        // Persistent bard out-of-combat songs (serialized). Array of song IDs:
+        //   'haste' | 'battle' | 'healing'
+        // Effects are re-applied to all party members via Game._reapplySongEffects().
+        this.activeSongs = Array.isArray(activeSongs) ? [...activeSongs] : [];
+
+        // Ranger favored enemy tag — one of: 'vermin', 'undead', 'humanoid', 'monster'
+        // Rangers ignore defense of enemies with this tag and gain an instakill
+        // chance scaling with level. null = none selected yet.
+        this.favoredEnemy = favoredEnemy || null;
 
         // Summoned state
         this.isSummoned   = !!isSummoned;
@@ -246,6 +258,15 @@ export class PartyMember {
     getDrainBonus()       { return (this.classDef.drainPerLevel || 0) * Math.max(0, this.level - 1); }
 
     /**
+     * Ranger favored-enemy instakill chance: 1% per 3 ranger levels (floor).
+     * Only rangers have this; returns 0 for all other classes.
+     */
+    getFavoredEnemyInstakillChance() {
+        if (this.classId !== 'ranger' || !this.favoredEnemy) return 0;
+        return Math.floor(this.level / 3) * 0.01;
+    }
+
+    /**
      * Extra melee swings per turn (warriors only). +1 swing at every multiple
      * of 5 levels: L5→+1, L10→+2, L15→+3, L20→+4.
      */
@@ -264,7 +285,11 @@ export class PartyMember {
     /** Regen rate per minute for a given pool, including class + species bonuses. */
     getRegenRate(pool) {
         const c = this.classDef, s = this.speciesDef;
-        if (pool === 'hp') return REGEN_HP_PER_MIN + (c.regenHp || 0) + (s.regenHp || 0);
+        if (pool === 'hp') {
+            const songEffect = this.activeEffects.find(e => e && e.type === 'bard_song_healing');
+            const songBonus  = songEffect ? (songEffect.hpPerMin || 0) : 0;
+            return REGEN_HP_PER_MIN + (c.regenHp || 0) + (s.regenHp || 0) + songBonus;
+        }
         if (pool === 'st') return REGEN_ST_PER_MIN + (c.regenSt || 0) + (s.regenSt || 0);
         if (pool === 'mp') return REGEN_MP_PER_MIN + (c.regenMp || 0) + (s.regenMp || 0);
         return 0;
@@ -627,11 +652,12 @@ export class PartyMember {
      * etc.) are stripped as before.
      */
     clearCombatState() {
-        // Keep: poison (so out-of-combat DoT tick works) and any timed elixirs
-        //       (warding/wrath) that still have wall-clock time remaining.
+        // Keep: poison (so out-of-combat DoT tick works), timed elixirs that
+        // still have wall-clock time remaining, and persistent bard song buffs.
         this.activeEffects = (this.activeEffects || []).filter(e => {
             if (!e) return false;
             if (e.type === 'poison') return true;
+            if (e.source === 'bard_song') return true;
             if (typeof e.expiresAt === 'number' && e.expiresAt > Date.now()) return true;
             return false;
         });
@@ -699,6 +725,8 @@ export class PartyMember {
             // Deep-copy equipment because slots can hold instance objects
             // (itemId + enchant) as well as plain strings.
             equipment: this._serializeEquipment(),
+            activeSongs: [...(this.activeSongs || [])],
+            favoredEnemy: this.favoredEnemy || null,
             equipmentEnchants: {
                 weapon: this.equipmentEnchants && this.equipmentEnchants.weapon
                     ? { ...this.equipmentEnchants.weapon } : null,

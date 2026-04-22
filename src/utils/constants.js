@@ -46,13 +46,13 @@ export const FOG_NEAR = 4;
 export const FOG_FAR = 60;
 
 // Enemy system — quadrupled to suit the 40×40 procedural dungeon.
-export const ENEMY_SPAWN_INTERVAL = 30;    // seconds between spawns
+export const ENEMY_SPAWN_INTERVAL = 15;    // seconds between spawns (doubled rate)
 export const ENEMY_MOVE_INTERVAL = 15;     // seconds between moves
 export const ENEMY_MOVE_DURATION = 1.5;    // seconds for smooth interpolation
-export const ENEMY_MAX_COUNT = 160;        // soft cap on active enemies (was 40)
+export const ENEMY_MAX_COUNT = 213;        // soft cap on active enemies (scaled with initial count)
 export const ENEMY_MIN_SPAWN_DISTANCE = 5; // grid cells from player
 export const ENEMY_COLLISION_RADIUS = 0.9; // world units
-export const ENEMY_INITIAL_COUNT = 32;     // enemies spawned on new game (was 8)
+export const ENEMY_INITIAL_COUNT = 43;     // enemies spawned on new game (+33%)
 
 // Enemy stat range (randomised per enemy)
 export const ENEMY_STAT_MIN = 15;
@@ -85,46 +85,46 @@ export const ENEMY_STAT_MAX = 25;
 export const ENEMY_TYPES = {
     // ── Original roster (unbounded dungeon level) ─────────────────────
     skeleton: { name: 'Skeleton', spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25 },
-    goblin:   { name: 'Goblin',   spriteW: 1.2, spriteH: 1.4 },
+    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['vermin'] },
+    goblin:   { name: 'Goblin',   spriteW: 1.2, spriteH: 1.4, tags: ['humanoid'] },
     // Phase 11: spider gains webChance on top of its existing poison bite.
     // The two effects roll independently — a single hit can poison, web,
     // both, or neither.
-    spider:   { name: 'Spider',   spriteW: 1.8, spriteH: 1.2, poisonChance: 0.35, webChance: 0.25, tags: ['beast'] },
+    spider:   { name: 'Spider',   spriteW: 1.8, spriteH: 1.2, poisonChance: 0.35, webChance: 0.25, tags: ['beast', 'vermin'] },
     wraith:   { name: 'Wraith',   spriteW: 1.4, spriteH: 2.0, tags: ['undead'] },
-    bat:      { name: 'Bat',      spriteW: 1.6, spriteH: 1.0, tags: ['beast'] },
-    rat:      { name: 'Giant Rat', spriteW: 1.4, spriteH: 1.0, tags: ['beast'] },
+    bat:      { name: 'Bat',      spriteW: 1.6, spriteH: 1.0, tags: ['beast', 'vermin'] },
+    rat:      { name: 'Giant Rat', spriteW: 1.4, spriteH: 1.0, tags: ['beast', 'vermin'] },
     zombie:   { name: 'Zombie',   spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    troll:    { name: 'Troll',    spriteW: 1.6, spriteH: 2.0, stunChance: 0.33, regenPercent: 0.15 },
+    troll:    { name: 'Troll',    spriteW: 1.6, spriteH: 2.0, stunChance: 0.33, regenPercent: 0.15, tags: ['humanoid'] },
     ghost:    { name: 'Ghost',    spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    drake:    { name: 'Drake',    spriteW: 1.6, spriteH: 1.4, tags: ['beast'] },
-    mimic:    { name: 'Mimic',    spriteW: 1.4, spriteH: 1.2 },
-    orc:      { name: 'Orc',      spriteW: 1.4, spriteH: 1.8 },
+    drake:    { name: 'Drake',    spriteW: 1.6, spriteH: 1.4, tags: ['beast', 'monster'] },
+    mimic:    { name: 'Mimic',    spriteW: 1.4, spriteH: 1.2, tags: ['monster'] },
+    orc:      { name: 'Orc',      spriteW: 1.4, spriteH: 1.8, tags: ['humanoid'] },
     imp:      { name: 'Imp',      spriteW: 1.0, spriteH: 1.2, tags: ['demon'] },
-    basilisk: { name: 'Basilisk', spriteW: 1.8, spriteH: 1.4, poisonChance: 0.30, tags: ['beast'] },
-    cultist:  { name: 'Cultist',  spriteW: 1.4, spriteH: 1.9, aoeMagic: true },
+    basilisk: { name: 'Basilisk', spriteW: 1.8, spriteH: 1.4, poisonChance: 0.30, tags: ['beast', 'monster'] },
+    cultist:  { name: 'Cultist',  spriteW: 1.4, spriteH: 1.9, aoeMagic: true, tags: ['humanoid', 'cultist'] },
 
     // ── Phase 11: early-dungeon roster (dungeon levels 1-3 only) ──────
-    centipede:    { name: 'Giant Centipede', spriteW: 2.0, spriteH: 0.8, poisonChance: 0.45, maxLevel: 3, tags: ['beast'] },
-    cave_crawler: { name: 'Cave Crawler',    spriteW: 1.4, spriteH: 1.0, stunChance: 0.30, maxLevel: 3, tags: ['beast'] },
-    widow:        { name: 'Black Widow',     spriteW: 1.6, spriteH: 1.4, poisonChance: 0.40, webChance: 0.35, maxLevel: 3, tags: ['beast'] },
-    spore_fungus: { name: 'Spore Fungus',    spriteW: 1.4, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.35, maxLevel: 3 },
-    shrieker:     { name: 'Shrieker',        spriteW: 1.2, spriteH: 1.6, aoeMagic: true, aoeStunChance: 0.20, maxLevel: 3 },
-    kobold:       { name: 'Kobold',          spriteW: 1.0, spriteH: 1.4, maxLevel: 3 },
-    kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, maxLevel: 3 },
-    cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, maxLevel: 3, tags: ['beast'] },
-    stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, regenPercent: 0.10, maxLevel: 3, tags: ['beast'] },
-    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, maxLevel: 3 },
+    centipede:    { name: 'Giant Centipede', spriteW: 2.0, spriteH: 0.8, poisonChance: 0.45, maxLevel: 3, tags: ['beast', 'vermin'] },
+    cave_crawler: { name: 'Cave Crawler',    spriteW: 1.4, spriteH: 1.0, stunChance: 0.30, maxLevel: 3, tags: ['beast', 'vermin'] },
+    widow:        { name: 'Black Widow',     spriteW: 1.6, spriteH: 1.4, poisonChance: 0.40, webChance: 0.35, maxLevel: 3, tags: ['beast', 'vermin'] },
+    spore_fungus: { name: 'Spore Fungus',    spriteW: 1.4, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.35, maxLevel: 3, tags: ['monster'] },
+    shrieker:     { name: 'Shrieker',        spriteW: 1.2, spriteH: 1.6, aoeMagic: true, aoeStunChance: 0.20, maxLevel: 3, tags: ['monster'] },
+    kobold:       { name: 'Kobold',          spriteW: 1.0, spriteH: 1.4, maxLevel: 3, tags: ['humanoid'] },
+    kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, maxLevel: 3, tags: ['humanoid'] },
+    cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, maxLevel: 3, tags: ['beast', 'vermin'] },
+    stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, regenPercent: 0.10, maxLevel: 3, tags: ['beast', 'vermin'] },
+    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, maxLevel: 3, tags: ['vermin'] },
     flame_imp:    { name: 'Flame Imp',       spriteW: 1.0, spriteH: 1.2, aoeMagic: true, maxLevel: 3, tags: ['demon'] },
     bone_gnasher: { name: 'Bone Gnasher',    spriteW: 1.4, spriteH: 1.4, stunChance: 0.35, maxLevel: 3, tags: ['undead'] },
-    blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, maxLevel: 3, tags: ['beast'] },
-    ice_sprite:   { name: 'Ice Sprite',      spriteW: 1.0, spriteH: 1.2, aoeMagic: true, aoeStunChance: 0.15, maxLevel: 3 },
-    stone_hag:    { name: 'Stone Hag',       spriteW: 1.4, spriteH: 1.8, stunChance: 0.30, regenPercent: 0.08, maxLevel: 3 },
+    blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, maxLevel: 3, tags: ['beast', 'vermin'] },
+    ice_sprite:   { name: 'Ice Sprite',      spriteW: 1.0, spriteH: 1.2, aoeMagic: true, aoeStunChance: 0.15, maxLevel: 3, tags: ['monster'] },
+    stone_hag:    { name: 'Stone Hag',       spriteW: 1.4, spriteH: 1.8, stunChance: 0.30, regenPercent: 0.08, maxLevel: 3, tags: ['humanoid'] },
     ghoul_pup:    { name: 'Ghoul Pup',       spriteW: 1.2, spriteH: 1.2, poisonChance: 0.30, stunChance: 0.20, maxLevel: 3, tags: ['undead'] },
-    myconid:      { name: 'Myconid',         spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoePoisonChance: 0.25, maxLevel: 3 },
+    myconid:      { name: 'Myconid',         spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoePoisonChance: 0.25, maxLevel: 3, tags: ['monster'] },
     dust_devil:   { name: 'Dust Devil',      spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.10, maxLevel: 3, tags: ['demon'] },
-    vampire_bat:  { name: 'Vampire Bat',     spriteW: 1.6, spriteH: 1.0, regenPercent: 0.12, maxLevel: 3, tags: ['beast'] },
-    tunnel_worm:  { name: 'Tunnel Worm',     spriteW: 1.8, spriteH: 1.0, poisonChance: 0.40, webChance: 0.15, maxLevel: 3, tags: ['beast'] },
+    vampire_bat:  { name: 'Vampire Bat',     spriteW: 1.6, spriteH: 1.0, regenPercent: 0.12, maxLevel: 3, tags: ['beast', 'vermin'] },
+    tunnel_worm:  { name: 'Tunnel Worm',     spriteW: 1.8, spriteH: 1.0, poisonChance: 0.40, webChance: 0.15, maxLevel: 3, tags: ['beast', 'vermin'] },
 };
 // Only enemy types (excludes tinkerer for spawning purposes)
 export const ENEMY_TYPE_KEYS = Object.keys(ENEMY_TYPES);
@@ -282,6 +282,16 @@ export const DUNGEON_PORTAL_RADIUS = 1.2; // world units: how close to trigger p
 // Scales +1 per odd level beyond 1 (level 3 = +3, level 5 = +4…).
 export const BARD_SONG_MANA_COST = 7;
 export const BARD_SONG_BASE_BONUS = 2;
+
+// Out-of-combat bard songs — opened via V-key party spell modal.
+// Max active songs = Math.max(1, Math.floor(bardLevel / 5)).
+// Bonus per song scales as Math.max(1, Math.floor(bardLevel / 5)).
+export const BARD_DISRUPT_MANA_COST  = 7;   // in-combat AoE disruption (replaces old song in combat)
+export const BARD_HASTE_MANA_COST    = 5;   // initiative bonus for whole party
+export const BARD_BATTLE_MANA_COST   = 6;   // attack + defense bonus for whole party
+export const BARD_HEALING_MANA_COST  = 5;   // HP regen bonus for whole party
+export const BARD_HASTE_MAX          = 5;   // cap on initiative bonus per member
+export const BARD_BATTLE_MAX         = 10;  // cap on attack/defense bonus per member
 
 // Entangle (druid): 8 MP, targets all enemies. Each roll-independent 50%
 // chance to apply -2 defense / -2 damage debuff. Debuff magnitude scales
