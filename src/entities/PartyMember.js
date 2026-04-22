@@ -35,6 +35,7 @@ import {
     LEVEL_HP_PER, LEVEL_ST_PER, LEVEL_MP_PER,
     MAX_LEVEL, XP_LEVEL_BASE,
     MONK_DODGE_CHANCE, MONK_DODGE_MAX,
+    FOOD_HUNGRY_PENALTY, FOOD_DYING_HP_PER_MIN,
 } from '../utils/constants.js';
 
 function generateId() {
@@ -69,6 +70,7 @@ export class PartyMember {
         level, xp, row,
         activeSongs,
         favoredEnemy,
+        hungerState, foodTimer,
     }) {
         this.id = id || generateId();
         this.name = name;
@@ -128,6 +130,16 @@ export class PartyMember {
         // Rangers ignore defense of enemies with this tag and gain an instakill
         // chance scaling with level. null = none selected yet.
         this.favoredEnemy = favoredEnemy || null;
+
+        // ── Food / Hunger ──
+        // hungerState: null (fed) | 'hungry' | 'starving' | 'dying'
+        // foodTimer: seconds of exploration elapsed since the last successful meal.
+        // requiresFood: false for all summoned/constructed creatures (undead, beasts,
+        //   golems). Set true for future permanent animals/familiars at creation time.
+        this.hungerState = hungerState || null;
+        this.foodTimer   = (typeof foodTimer === 'number') ? foodTimer : 0;
+        this.requiresFood = !isSummoned; // summoned creatures never need food
+        this._dyingDrainAcc = 0;         // accumulator for sub-1 HP drain ticks
 
         // Summoned state
         this.isSummoned   = !!isSummoned;
@@ -201,25 +213,34 @@ export class PartyMember {
     }
 
     /** Flat damage bonus for a given attack type, including per-level scaling and trinkets. */
+    /** Returns the hunger tier (0=fed, 1=hungry, 2=starving, 3=dying). */
+    getHungerTier() {
+        if (this.hungerState === 'dying')    return 3;
+        if (this.hungerState === 'starving') return 2;
+        if (this.hungerState === 'hungry')   return 1;
+        return 0;
+    }
+
     getClassDamageBonus(type) {
         const c = this.classDef, s = this.speciesDef;
         const bonusBeyondL1 = Math.max(0, this.level - 1);
         const trinket = this.getTrinketBonus(type);
         const effect  = this.getEffectModifier('damage');
+        const hunger  = this.getHungerTier() * FOOD_HUNGRY_PENALTY;
         if (type === 'melee') {
             return (c.meleeBonus || 0) + (s.meleeBonus || 0)
                  + (c.meleePerLevel || 0) * bonusBeyondL1
-                 + trinket + effect;
+                 + trinket + effect - hunger;
         }
         if (type === 'ranged') {
             return (c.rangedBonus || 0) + (s.rangedBonus || 0)
                  + (c.rangedPerLevel || 0) * bonusBeyondL1
-                 + trinket + effect;
+                 + trinket + effect - hunger;
         }
         if (type === 'magic') {
             return (c.magicBonus || 0) + (s.magicBonus || 0)
                  + (c.magicPerLevel || 0) * bonusBeyondL1
-                 + trinket + effect;
+                 + trinket + effect - hunger;
         }
         return 0;
     }
@@ -229,11 +250,13 @@ export class PartyMember {
         if (this.isSummoned) return (this.summonStats && this.summonStats.defense) || 0;
         const c = this.classDef, s = this.speciesDef;
         const beyond = Math.max(0, this.level - 1);
+        const hunger  = this.getHungerTier() * FOOD_HUNGRY_PENALTY;
         return (c.defenseBonus || 0)
              + (s.defenseBonus || 0)
              + (c.defensePerLevel || 0) * beyond
              + this.getTrinketBonus('defense')
-             + this.getEffectModifier('defense');
+             + this.getEffectModifier('defense')
+             - hunger;
     }
 
     /** Warrior melee-stun chance (beyond base). */
@@ -676,6 +699,19 @@ export class PartyMember {
         // Expire any timed elixir buffs / other wall-clock effects.
         this.expireEffects();
 
+        // Dying HP drain — applied even when dead-by-hunger, before regen block.
+        if (this.hungerState === 'dying') {
+            this._dyingDrainAcc += FOOD_DYING_HP_PER_MIN * dt / 60;
+            if (this._dyingDrainAcc >= 1) {
+                const dmg = Math.floor(this._dyingDrainAcc);
+                this._dyingDrainAcc -= dmg;
+                this.health = Math.max(0, this.health - dmg);
+            }
+        }
+
+        // Starving / dying blocks all regeneration.
+        if (this.hungerState === 'starving' || this.hungerState === 'dying') return;
+
         this._regenHpAcc += this.getRegenRate('hp') * dt / 60;
         this._regenStAcc += this.getRegenRate('st') * dt / 60;
         this._regenMpAcc += this.getRegenRate('mp') * dt / 60;
@@ -727,6 +763,8 @@ export class PartyMember {
             equipment: this._serializeEquipment(),
             activeSongs: [...(this.activeSongs || [])],
             favoredEnemy: this.favoredEnemy || null,
+            hungerState: this.hungerState || null,
+            foodTimer:   this.foodTimer   || 0,
             equipmentEnchants: {
                 weapon: this.equipmentEnchants && this.equipmentEnchants.weapon
                     ? { ...this.equipmentEnchants.weapon } : null,

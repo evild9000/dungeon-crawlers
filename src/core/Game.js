@@ -48,7 +48,7 @@ import { LightPickerUI } from '../ui/LightPickerUI.js';
 import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
-import { POISON_EXPLORATION_TICK_SEC } from '../utils/constants.js';
+import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL } from '../utils/constants.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 
 /**
@@ -137,6 +137,7 @@ export class Game {
             log: (msg) => this._log(msg),
         });
         this._poisonTickTimer = 0;
+        this._foodTickAccum   = {}; // per-member food timer accumulation (seconds)
 
         // --- Minimap / fog-of-war (Phase 11) ---
         this.minimapSystem = new MinimapSystem();
@@ -857,6 +858,9 @@ export class Game {
                 this._tickExplorationPoison();
             }
 
+            // Food / hunger tick — per-member timers advance during exploration.
+            this._tickFood(dt);
+
             this.autoSaveTimer += dt;
             if (this.autoSaveTimer >= AUTO_SAVE_INTERVAL) {
                 this.autoSaveTimer = 0;
@@ -1376,6 +1380,78 @@ export class Game {
         }
         if (diedThisTick && this._isPartyWiped()) {
             this._onPartyWipe();
+        }
+    }
+
+    /**
+     * Food / hunger tick — called every exploration frame.
+     * Each party member's foodTimer advances by dt seconds. When it reaches
+     * FOOD_CHECK_INTERVAL the member needs to eat: personal inventory first,
+     * group inventory second. Missing a check advances the hunger state.
+     */
+    _tickFood(dt) {
+        if (!this.gameState || !this.gameState.party) return;
+        let hudDirty = false;
+
+        for (const m of this.gameState.party) {
+            // Skip: creatures that don't need food, or already dead members.
+            if (!m.requiresFood) continue;
+            if (m.health <= 0) continue;
+
+            m.foodTimer = (m.foodTimer || 0) + dt;
+            if (m.foodTimer < FOOD_CHECK_INTERVAL) continue;
+
+            // Time to eat — consume one food.
+            m.foodTimer -= FOOD_CHECK_INTERVAL;
+
+            let ate = false;
+            // 1. Personal inventory (PartyMember.inventory is a plain array of {itemId,quantity}).
+            const personalSlot = m.inventory.find(i => i.itemId === 'food' && i.quantity > 0);
+            if (personalSlot) {
+                personalSlot.quantity -= 1;
+                if (personalSlot.quantity <= 0) {
+                    m.inventory.splice(m.inventory.indexOf(personalSlot), 1);
+                }
+                ate = true;
+            }
+            // 2. Group inventory.
+            if (!ate && this.gameState.inventory.getItemCount('food') > 0) {
+                this.gameState.inventory.removeItem('food', 1);
+                ate = true;
+            }
+
+            if (ate) {
+                if (m.hungerState) {
+                    const prev = m.hungerState;
+                    m.hungerState = null;
+                    m._dyingDrainAcc = 0;
+                    this._log(`\u{1F35E} ${m.name} eats and recovers from ${prev}.`);
+                    if (this.partyHUD) this.partyHUD.showToast(`${m.name} is no longer ${prev}.`);
+                    hudDirty = true;
+                }
+            } else {
+                // No food available — advance hunger state.
+                const prev = m.hungerState;
+                if (!m.hungerState) {
+                    m.hungerState = 'hungry';
+                    this._log(`\u{1F37D}\uFE0F ${m.name} is hungry! \u22121 to damage and defense.`);
+                    if (this.partyHUD) this.partyHUD.showToast(`${m.name} is hungry!`);
+                } else if (m.hungerState === 'hungry') {
+                    m.hungerState = 'starving';
+                    this._log(`\u{1F630} ${m.name} is starving! \u22122 damage/defense, no regen.`);
+                    if (this.partyHUD) this.partyHUD.showToast(`${m.name} is STARVING!`);
+                } else if (m.hungerState === 'starving') {
+                    m.hungerState = 'dying';
+                    this._log(`\u{1F480} ${m.name} is dying of hunger! \u22123 penalty, losing HP.`);
+                    if (this.partyHUD) this.partyHUD.showToast(`${m.name} is DYING of hunger!`);
+                }
+                // Already 'dying' — state stays, HP drain handled in tickRegen.
+                if (m.hungerState !== prev) hudDirty = true;
+            }
+        }
+
+        if (hudDirty && this.partyHUD) {
+            this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         }
     }
 

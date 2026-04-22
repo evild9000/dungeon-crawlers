@@ -387,6 +387,50 @@ export class PartyHUD {
             }
         }
 
+        // Hunger badge — shown when hungerState is 'hungry', 'starving', or 'dying'.
+        if (portraitWrap) {
+            let hungerBadge = portraitWrap.querySelector('.party-hunger-badge');
+            const hs = member.hungerState;
+            if (hs === 'hungry' || hs === 'starving' || hs === 'dying') {
+                if (!hungerBadge) {
+                    hungerBadge = document.createElement('span');
+                    hungerBadge.className = 'party-hunger-badge';
+                    hungerBadge.style.position = 'absolute';
+                    hungerBadge.style.bottom = '-4px';
+                    hungerBadge.style.right = '-4px';
+                    hungerBadge.style.width = '22px';
+                    hungerBadge.style.height = '22px';
+                    hungerBadge.style.display = 'flex';
+                    hungerBadge.style.alignItems = 'center';
+                    hungerBadge.style.justifyContent = 'center';
+                    hungerBadge.style.fontSize = '14px';
+                    hungerBadge.style.borderRadius = '50%';
+                    hungerBadge.style.border = '2px solid #000';
+                    hungerBadge.style.pointerEvents = 'auto';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(hungerBadge);
+                }
+                if (hs === 'hungry') {
+                    hungerBadge.textContent = '\u{1F37D}\uFE0F'; // 🍽️
+                    hungerBadge.style.background = 'radial-gradient(circle,#ffe066 20%,#b07000 100%)';
+                    hungerBadge.style.boxShadow = '0 0 5px rgba(255,200,0,0.8)';
+                    hungerBadge.title = 'Hungry: \u22121 to all damage and defense';
+                } else if (hs === 'starving') {
+                    hungerBadge.textContent = '\u{1F630}'; // 😰
+                    hungerBadge.style.background = 'radial-gradient(circle,#ff9900 20%,#7a3b00 100%)';
+                    hungerBadge.style.boxShadow = '0 0 5px rgba(255,130,0,0.8)';
+                    hungerBadge.title = 'Starving: \u22122 to all damage/defense, no regeneration';
+                } else {
+                    hungerBadge.textContent = '\u{1F480}'; // 💀
+                    hungerBadge.style.background = 'radial-gradient(circle,#ff4444 20%,#660000 100%)';
+                    hungerBadge.style.boxShadow = '0 0 6px rgba(255,0,0,0.9)';
+                    hungerBadge.title = 'Dying of hunger: \u22123 penalty, losing 2 HP/min';
+                }
+            } else if (hungerBadge) {
+                hungerBadge.remove();
+            }
+        }
+
         // Row indicator — green outline for front row, orange for back row.
         card.style.outline = member.row === 'front'
             ? '2px solid rgba(80,220,80,0.75)'

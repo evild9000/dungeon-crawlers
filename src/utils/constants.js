@@ -428,6 +428,16 @@ export const CLERIC_REVIVE_HEAL_FRAC   = 0.25; // heals back to 25% HP
 export const POISON_EXPLORATION_TICK_SEC = 10; // one "round" every 10 seconds outside combat
 
 // ──────────────────────────────────────────
+// Food / Hunger system
+// ──────────────────────────────────────────
+// Food is consumed once per FOOD_CHECK_INTERVAL seconds of exploration time.
+// Missed checks advance: null → 'hungry' → 'starving' → 'dying'.
+// Eating immediately resets to null (fed).
+export const FOOD_CHECK_INTERVAL    = 1800; // 30 minutes of exploration time
+export const FOOD_HUNGRY_PENALTY    = 1;    // -1 damage & defense per missed check tier
+export const FOOD_DYING_HP_PER_MIN  = 2;    // HP drained per real minute when 'dying'
+
+// ──────────────────────────────────────────
 // Phase 12 — Artificer / Paladin / Reagent tiers / Crafting
 // ──────────────────────────────────────────
 
