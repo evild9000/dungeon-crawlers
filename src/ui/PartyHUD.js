@@ -387,6 +387,13 @@ export class PartyHUD {
             }
         }
 
+        // Row indicator — green outline for front row, orange for back row.
+        card.style.outline = member.row === 'front'
+            ? '2px solid rgba(80,220,80,0.75)'
+            : '2px solid rgba(255,165,0,0.75)';
+        card.title = card.title.replace(/ \[(Front|Back) Row\]/g, '');
+        // We don't override card.title here; the outline color is self-explanatory.
+
         // Update equipment icons
         const eqRow = card.querySelector('.party-equip-row');
         if (eqRow) {

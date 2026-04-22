@@ -495,8 +495,8 @@ export const POTION_WRATH_DMG_BONUS   = 2;
 export const POTION_COSTS = {
     minor_healing_potion:  { gold: 25, common: 2, uncommon: 0, rare: 0 },
     greater_healing_potion:{ gold: 25, common: 1, uncommon: 1, rare: 0 },
-    elixir_warding:        { gold: 25, common: 0, uncommon: 3, rare: 0 },
-    elixir_wrath:          { gold: 25, common: 0, uncommon: 3, rare: 0 },
+    elixir_warding:        { gold: 25, common: 2, uncommon: 0, rare: 0 },
+    elixir_wrath:          { gold: 25, common: 2, uncommon: 0, rare: 0 },
 };
 
 // Golems — persistent artificer summons. Damage = melee roll + artificer level.

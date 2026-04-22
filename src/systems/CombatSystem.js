@@ -585,7 +585,7 @@ export class CombatSystem {
             summonType: preset.id,
             summonerId: m.id,
             canBeHealed: false, // undead — only life-drain heals them
-            row: m.row,
+            row: 'back', // undead always start in the back row
             summonStats: {
                 meleeMin: stats.meleeMin,
                 meleeMax: stats.meleeMax,

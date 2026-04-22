@@ -195,7 +195,7 @@ export const WEAPONS = {
     rusty_sword:  { id: 'rusty_sword',  name: 'Rusty Sword',  category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MELEE, power: 1, description: '+1 melee damage',  icon: '\u{1F5E1}' },
     iron_sword:   { id: 'iron_sword',   name: 'Iron Sword',   category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MELEE, power: 2, description: '+2 melee damage',  icon: '\u{2694}' },
     steel_blade:  { id: 'steel_blade',  name: 'Steel Blade',  category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MELEE, power: 3, description: '+3 melee damage',  icon: '\u{2694}' },
-    flame_sword:  { id: 'flame_sword',  name: 'Flame Sword',  category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MELEE, power: 4, description: '+4 melee damage',  icon: '\u{1F525}' },
+    flame_sword:  { id: 'flame_sword',  name: 'War Blade',    category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MELEE, power: 4, description: '+4 melee damage',  icon: '\u{1F5E1}' },
 
     // Ranged (power 1-4)
     shortbow:     { id: 'shortbow',     name: 'Shortbow',     category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.RANGED, power: 1, description: '+1 ranged damage', icon: '\u{1F3F9}' },

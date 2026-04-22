@@ -15,9 +15,10 @@
  * Summoned creatures are skipped here — they have no inventory UI.
  */
 
-import { getItemDef, ITEM_CATEGORY } from '../items/ItemTypes.js';
+import { getItemDef, ITEM_CATEGORY, WEAPON_SUBTYPE } from '../items/ItemTypes.js';
 import { generatePortrait } from '../utils/PortraitGenerator.js';
 import { soundManager } from '../utils/SoundManager.js';
+import { getSummonPreset } from '../entities/Summons.js';
 import {
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
@@ -294,10 +295,16 @@ export class InventoryUI {
 
         const cls = member.classDef;
         const sp  = member.speciesDef;
+        const summonPreset = getSummonPreset(member);
         const subtitle = document.createElement('div');
         subtitle.className = 'pinv-subtitle';
-        subtitle.textContent = `${cls.icon} ${cls.name}  ·  ${sp.icon} ${sp.name}`;
-        subtitle.title = `${cls.description}\n\n${sp.description}`;
+        if (summonPreset) {
+            subtitle.textContent = `${summonPreset.icon}  ${summonPreset.speciesLabel || summonPreset.name}`;
+            subtitle.title = summonPreset.description || '';
+        } else {
+            subtitle.textContent = `${cls.icon} ${cls.name}  ·  ${sp.icon} ${sp.name}`;
+            subtitle.title = `${cls.description}\n\n${sp.description}`;
+        }
         idBlock.appendChild(subtitle);
 
         // XP progress bar
@@ -318,9 +325,10 @@ export class InventoryUI {
         eqSection.className = 'pinv-section';
         eqSection.innerHTML = '<div class="pinv-section-title">Equipment</div>';
 
-        eqSection.appendChild(this._equipSlot(member, 'weapon', 'Weapon'));
-        eqSection.appendChild(this._equipSlot(member, 'armor',  'Armor'));
-        eqSection.appendChild(this._equipSlot(member, 'shield', 'Shield'));
+        eqSection.appendChild(this._equipSlot(member, 'weapon',  'Main Hand'));
+        eqSection.appendChild(this._equipSlot(member, 'offhand', 'Off Hand'));
+        eqSection.appendChild(this._equipSlot(member, 'armor',   'Armor'));
+        eqSection.appendChild(this._equipSlot(member, 'shield',  'Shield'));
 
         // Trinket slots (Phase 8)
         eqSection.appendChild(this._equipSlot(member, 'cloak',  '\u{1F9E3} Cloak'));
@@ -359,27 +367,71 @@ export class InventoryUI {
                 const btnGroup = document.createElement('div');
                 btnGroup.className = 'pinv-item-actions';
 
-                // Equip button (weapons, armor, shields, trinkets)
+                // Equip button(s) — melee weapons get separate Main / Off buttons;
+                // all other equippable categories get a single Equip button.
                 if (def.category === ITEM_CATEGORY.WEAPON ||
                     def.category === ITEM_CATEGORY.ARMOR ||
                     def.category === ITEM_CATEGORY.SHIELD ||
                     def.category === ITEM_CATEGORY.TRINKET) {
-                    const equipBtn = document.createElement('button');
-                    equipBtn.className = 'pinv-action-btn pinv-equip-btn';
-                    equipBtn.textContent = 'Equip';
-                    const check = member.canEquip(entry.itemId);
-                    if (!check.ok) {
-                        equipBtn.disabled = true;
-                        equipBtn.title = check.reason || 'Cannot equip this item.';
-                        equipBtn.classList.add('pinv-equip-btn-disabled');
+
+                    const isMelee = def.category === ITEM_CATEGORY.WEAPON
+                        && def.subtype === WEAPON_SUBTYPE.MELEE;
+
+                    if (isMelee) {
+                        // Main hand button
+                        const mainBtn = document.createElement('button');
+                        mainBtn.className = 'pinv-action-btn pinv-equip-btn';
+                        mainBtn.textContent = 'Main';
+                        const mainCheck = member.canEquip(entry.itemId, 'weapon');
+                        if (!mainCheck.ok) {
+                            mainBtn.disabled = true;
+                            mainBtn.title = mainCheck.reason;
+                            mainBtn.classList.add('pinv-equip-btn-disabled');
+                        } else {
+                            mainBtn.addEventListener('click', () => {
+                                member.equip(entry.itemId, 'weapon');
+                                this._onChanged();
+                                this._renderPersonal();
+                            });
+                        }
+                        btnGroup.appendChild(mainBtn);
+
+                        // Off hand button
+                        const offBtn = document.createElement('button');
+                        offBtn.className = 'pinv-action-btn pinv-equip-btn';
+                        offBtn.textContent = 'Off';
+                        const offCheck = member.canEquip(entry.itemId, 'offhand');
+                        if (!offCheck.ok) {
+                            offBtn.disabled = true;
+                            offBtn.title = offCheck.reason;
+                            offBtn.classList.add('pinv-equip-btn-disabled');
+                        } else {
+                            offBtn.addEventListener('click', () => {
+                                member.equip(entry.itemId, 'offhand');
+                                this._onChanged();
+                                this._renderPersonal();
+                            });
+                        }
+                        btnGroup.appendChild(offBtn);
                     } else {
-                        equipBtn.addEventListener('click', () => {
-                            member.equip(entry.itemId);
-                            this._onChanged();
-                            this._renderPersonal();
-                        });
+                        // Single Equip button for ranged/magic weapons, armor, shields, trinkets.
+                        const equipBtn = document.createElement('button');
+                        equipBtn.className = 'pinv-action-btn pinv-equip-btn';
+                        equipBtn.textContent = 'Equip';
+                        const check = member.canEquip(entry.itemId);
+                        if (!check.ok) {
+                            equipBtn.disabled = true;
+                            equipBtn.title = check.reason || 'Cannot equip this item.';
+                            equipBtn.classList.add('pinv-equip-btn-disabled');
+                        } else {
+                            equipBtn.addEventListener('click', () => {
+                                member.equip(entry.itemId);
+                                this._onChanged();
+                                this._renderPersonal();
+                            });
+                        }
+                        btnGroup.appendChild(equipBtn);
                     }
-                    btnGroup.appendChild(equipBtn);
                 }
 
                 // Use button (consumables)

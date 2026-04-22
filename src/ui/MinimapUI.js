@@ -29,50 +29,65 @@ export class MinimapUI {
         this._mmSystem = null;
         this._playerInfo = null; // { gx, gz, yaw }
 
-        // --- Root overlay (dims the whole screen) ---
+        // --- Root panel — fixed to bottom-right, never blocks movement ---
         this.root = document.createElement('div');
         Object.assign(this.root.style, {
             position: 'fixed',
-            inset: '0',
-            background: 'rgba(0,0,0,0.85)',
+            bottom: '20px',
+            right: '20px',
             display: 'none',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: '80',
-            fontFamily: '"Cinzel", serif',
-        });
-        this.root.addEventListener('click', (e) => {
-            if (e.target === this.root) this.hide();
-        });
-
-        // --- Panel wrapper (content) ---
-        const panel = document.createElement('div');
-        Object.assign(panel.style, {
-            background: 'linear-gradient(180deg, rgba(45,30,18,0.98), rgba(20,12,6,0.98))',
-            border: '2px solid rgba(200,160,90,0.85)',
-            borderRadius: '10px',
-            boxShadow: '0 0 20px rgba(0,0,0,0.8), inset 0 0 12px rgba(255,200,120,0.1)',
-            padding: '18px 20px 14px',
-            display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '10px',
-            maxWidth: '90vw',
-            maxHeight: '92vh',
+            gap: '6px',
+            zIndex: '50',
+            fontFamily: '"Cinzel", serif',
+            background: 'linear-gradient(180deg, rgba(45,30,18,0.97), rgba(20,12,6,0.97))',
+            border: '2px solid rgba(200,160,90,0.85)',
+            borderRadius: '8px',
+            boxShadow: '0 0 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,200,120,0.1)',
+            padding: '8px 10px 6px',
+            maxWidth: '260px',
         });
-        this.root.appendChild(panel);
 
-        // --- Title ---
+        // --- Title row (label + close button) ---
+        const titleRow = document.createElement('div');
+        Object.assign(titleRow.style, {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            gap: '8px',
+        });
+
         this.titleEl = document.createElement('div');
         Object.assign(this.titleEl.style, {
             color: 'rgba(255,220,160,1)',
-            fontSize: '22px',
+            fontSize: '13px',
             fontWeight: '700',
-            letterSpacing: '2px',
+            letterSpacing: '1px',
             textShadow: '0 0 6px rgba(255,150,50,0.4)',
+            flex: '1',
         });
         this.titleEl.textContent = 'Dungeon Level 1';
-        panel.appendChild(this.titleEl);
+        titleRow.appendChild(this.titleEl);
+
+        const closeBtn = document.createElement('button');
+        Object.assign(closeBtn.style, {
+            background: 'none',
+            border: '1px solid rgba(200,160,90,0.45)',
+            borderRadius: '4px',
+            color: 'rgba(220,180,100,0.9)',
+            cursor: 'pointer',
+            fontSize: '10px',
+            padding: '1px 5px',
+            fontFamily: 'inherit',
+        });
+        closeBtn.textContent = '[M]';
+        closeBtn.title = 'Close minimap (M)';
+        closeBtn.addEventListener('click', () => this.hide());
+        titleRow.appendChild(closeBtn);
+
+        this.root.appendChild(titleRow);
 
         // --- Canvas (sized on first refresh) ---
         this.canvas = document.createElement('canvas');
@@ -82,37 +97,25 @@ export class MinimapUI {
             border: '1px solid rgba(160,120,60,0.6)',
             imageRendering: 'pixelated',
         });
-        panel.appendChild(this.canvas);
+        this.root.appendChild(this.canvas);
 
-        // --- Legend ---
+        // --- Compact legend ---
         const legend = document.createElement('div');
         Object.assign(legend.style, {
             display: 'flex',
-            gap: '18px',
-            fontSize: '12px',
-            color: 'rgba(220,200,160,0.9)',
-            marginTop: '4px',
+            flexWrap: 'wrap',
+            gap: '6px 10px',
+            fontSize: '10px',
+            color: 'rgba(220,200,160,0.85)',
         });
         legend.innerHTML = `
-            <span><span style="display:inline-block;width:10px;height:10px;background:${PLAYER_FL};border:1px solid ${PLAYER_STK};vertical-align:middle;"></span> You</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:${PORTAL_DN};vertical-align:middle;"></span> Down</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:${PORTAL_UP};vertical-align:middle;"></span> Up</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:${FLOOR_FILL};vertical-align:middle;"></span> Floor</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:${WALL_FILL};vertical-align:middle;"></span> Wall</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:${FOG_FILL};border:1px solid #1a1410;vertical-align:middle;"></span> Unexplored</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:${PLAYER_FL};border:1px solid ${PLAYER_STK};vertical-align:middle;"></span> You</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:${PORTAL_DN};vertical-align:middle;"></span> Down</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:${PORTAL_UP};vertical-align:middle;"></span> Up</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:${FLOOR_FILL};vertical-align:middle;"></span> Floor</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:${WALL_FILL};vertical-align:middle;"></span> Wall</span>
         `;
-        panel.appendChild(legend);
-
-        // --- Hint ---
-        const hint = document.createElement('div');
-        Object.assign(hint.style, {
-            fontSize: '11px',
-            color: 'rgba(180,160,120,0.7)',
-            fontStyle: 'italic',
-            letterSpacing: '1px',
-        });
-        hint.textContent = 'Press M or Esc to close';
-        panel.appendChild(hint);
+        this.root.appendChild(legend);
 
         document.body.appendChild(this.root);
     }
@@ -135,6 +138,15 @@ export class MinimapUI {
     hide() {
         this.isOpen = false;
         this.root.style.display = 'none';
+    }
+
+    /**
+     * Update the player position and redraw. Called every frame while open.
+     * @param {{gx:number, gz:number, yaw:number}} playerInfo
+     */
+    updatePlayer(playerInfo) {
+        this._playerInfo = playerInfo;
+        if (this.isOpen) this.refresh();
     }
 
     /** Re-draw the current state. Call after show() or if player moved. */
@@ -219,14 +231,14 @@ export class MinimapUI {
         ctx.stroke();
         ctx.restore();
 
-        // Clamp displayed size so the panel doesn't blow past the viewport
-        const maxW = window.innerWidth  * 0.85;
-        const maxH = window.innerHeight * 0.7;
+        // Clamp the canvas so the panel stays compact in the corner
+        const maxW = 240;
+        const maxH = 240;
         const scale = Math.min(1, maxW / cw, maxH / ch);
         this.canvas.style.width  = `${cw * scale}px`;
         this.canvas.style.height = `${ch * scale}px`;
 
-        void MARGIN_PX; // reserved — margins handled via panel padding
+        void MARGIN_PX; // reserved
     }
 
     destroy() {

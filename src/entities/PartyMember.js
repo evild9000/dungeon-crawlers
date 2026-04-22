@@ -101,9 +101,10 @@ export class PartyMember {
         this.inventory = inventory ? inventory.map(i => ({ ...i })) : [];
 
         // Equipment slots. Phase 8 adds five trinket slots
-        // (cloak, neck, ring1, ring2, belt).
+        // (cloak, neck, ring1, ring2, belt). offhand supports dual-wielding
+        // a second melee weapon.
         const DEFAULT_SLOTS = {
-            weapon: null, armor: null, shield: null,
+            weapon: null, offhand: null, armor: null, shield: null,
             cloak: null, neck: null, ring1: null, ring2: null, belt: null,
         };
         this.equipment = equipment
@@ -403,6 +404,16 @@ export class PartyMember {
                     };
                 }
             }
+            // Cannot equip a shield while dual-wielding (off-hand auto-unequips,
+            // so we allow it — equip() will clear the offhand slot).
+        }
+
+        // Off-hand weapon validation.
+        if (slotHint === 'offhand') {
+            if (def.category !== ITEM_CATEGORY.WEAPON || def.subtype !== 'melee') {
+                return { ok: false, reason: 'Only melee weapons can be used in the off hand.' };
+            }
+            // A shield blocks the off hand (will be auto-unequipped, allow it).
         }
 
         // Trinket gating — slotHint must match one of the allowed slots for this kind.
@@ -430,8 +441,10 @@ export class PartyMember {
         if (!check.ok) return false;
 
         let slot;
-        if (def.category === ITEM_CATEGORY.WEAPON)        slot = 'weapon';
-        else if (def.category === ITEM_CATEGORY.ARMOR)    slot = 'armor';
+        if (def.category === ITEM_CATEGORY.WEAPON) {
+            // Dual-wield: place in offhand slot when explicitly requested.
+            slot = (slotHint === 'offhand') ? 'offhand' : 'weapon';
+        } else if (def.category === ITEM_CATEGORY.ARMOR)    slot = 'armor';
         else if (def.category === ITEM_CATEGORY.SHIELD)   slot = 'shield';
         else if (def.category === ITEM_CATEGORY.TRINKET) {
             if (slotHint && (def.trinketSlots || []).includes(slotHint)) {
@@ -459,6 +472,16 @@ export class PartyMember {
             this.unequip('shield');
         }
 
+        // Dual-wield: equipping an off-hand weapon auto-unequips any shield.
+        if (slot === 'offhand' && this.equipment.shield) {
+            this.unequip('shield');
+        }
+
+        // Equipping a shield auto-unequips any off-hand weapon.
+        if (def.category === ITEM_CATEGORY.SHIELD && this.equipment.offhand) {
+            this.unequip('offhand');
+        }
+
         return true;
     }
 
@@ -477,15 +500,31 @@ export class PartyMember {
 
     getWeaponBonus(attackType) {
         const weaponId = this.equipment.weapon;
-        if (!weaponId) return 0;
-        const def = WEAPONS[weaponId];
-        if (!def) return 0;
-        if (def.subtype !== attackType) return 0;
-        // Flat enchant level adds to damage (applies to whichever attack type
-        // matches the weapon subtype, so a fire sword buffs melee only).
-        const ench = this.equipmentEnchants && this.equipmentEnchants.weapon;
-        const enchLvl = ench && ench.level ? ench.level : 0;
-        return (def.power || 0) + enchLvl;
+        let bonus = 0;
+
+        if (weaponId) {
+            const def = WEAPONS[weaponId];
+            if (def && def.subtype === attackType) {
+                // Flat enchant level adds to damage (applies to whichever attack type
+                // matches the weapon subtype, so a war blade buffs melee only).
+                const ench = this.equipmentEnchants && this.equipmentEnchants.weapon;
+                const enchLvl = ench && ench.level ? ench.level : 0;
+                bonus += (def.power || 0) + enchLvl;
+            }
+        }
+
+        // Dual-wield: add off-hand melee weapon power (no enchant for off hand).
+        if (attackType === 'melee') {
+            const offId = this.equipment.offhand;
+            if (offId) {
+                const def = WEAPONS[offId];
+                if (def && def.subtype === 'melee') {
+                    bonus += (def.power || 0);
+                }
+            }
+        }
+
+        return bonus;
     }
 
     getArmorBlocking() {

@@ -264,8 +264,7 @@ export class Game {
             || (this._portalModal && this._portalModal.style.display === 'flex')
             || (this._trapModal && this._trapModal.style.display === 'flex')
             || (this._bagpickModal && this._bagpickModal.style.display === 'flex')
-            || (this.lightPickerUI && this.lightPickerUI.isOpen)
-            || (this.minimapUI && this.minimapUI.isOpen);
+            || (this.lightPickerUI && this.lightPickerUI.isOpen);
     }
 
     // ────────────────────────────────────────────
@@ -301,6 +300,19 @@ export class Game {
 
         if (this.state !== STATE.PLAYING) return;
 
+        // M toggles the minimap at any time (even with other overlays open).
+        if ((e.key === 'm' || e.key === 'M') && !isTyping) {
+            e.preventDefault();
+            this._onToggleMinimap();
+            return;
+        }
+
+        // Escape can close the minimap when no blocking overlay is open.
+        if (e.key === 'Escape' && this.minimapUI && this.minimapUI.isOpen && !this._anyOverlayOpen()) {
+            this.minimapUI.hide();
+            return;
+        }
+
         if (this._anyOverlayOpen()) {
             if (e.key === 'Escape') {
                 if (this.shopUI.isOpen) this.shopUI.hide();
@@ -314,13 +326,6 @@ export class Game {
                 else if (this._trapModal && this._trapModal.style.display === 'flex') this._skipTrap();
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
-                else if (this.minimapUI && this.minimapUI.isOpen) this.minimapUI.hide();
-            }
-            // When the minimap is open, M also closes it (Esc handled above).
-            if ((e.key === 'm' || e.key === 'M')
-                && this.minimapUI && this.minimapUI.isOpen) {
-                e.preventDefault();
-                this.minimapUI.hide();
             }
             return;
         }
@@ -331,7 +336,6 @@ export class Game {
             case 'c': e.preventDefault(); this._onRecruit(); break;
             case 'b': e.preventDefault(); this._onOpenBagPicker(); break;
             case 't': e.preventDefault(); this._onOpenLightPicker(); break;
-            case 'm': e.preventDefault(); this._onToggleMinimap(); break;
             case 'k': e.preventDefault(); this._onOpenCrafting(); break;
         }
     }
@@ -348,8 +352,8 @@ export class Game {
     _onToggleMinimap() {
         if (!this.minimapUI || !this.dungeonData || !this.player) return;
         if (this.minimapUI.isOpen) { this.minimapUI.hide(); return; }
-        if (document.pointerLockElement) document.exitPointerLock();
-        this.pauseOverlay.style.display = 'none';
+        // Show without exiting pointer lock — the minimap is a non-blocking
+        // corner widget that stays visible while the player moves.
         const CS = CELL_SIZE;
         this.minimapUI.show(this.dungeonData, this.minimapSystem, {
             gx: Math.floor(this.player.container.position.x / CS),
@@ -721,6 +725,13 @@ export class Game {
             // render so the shape of the dungeon reads cleanly.
             this.minimapSystem.reveal(this.gameState.dungeonLevel || 1, playerGX, playerGZ);
 
+            // Keep the corner minimap widget in sync with player movement.
+            if (this.minimapUI && this.minimapUI.isOpen) {
+                this.minimapUI.updatePlayer({
+                    gx: playerGX, gz: playerGZ, yaw: this.player.yaw,
+                });
+            }
+
             this.gameState.lastSpawnTime = this.enemyManager.update(
                 dt,
                 this.gameState.gameTime,
@@ -981,11 +992,15 @@ export class Game {
         this.gameState.dungeonLevel = nextLvl;
         // Reset enemies for new floor (only current floor is active)
         this.gameState.enemies = [];
-        // Reset player position to this level's procedural start cell
-        const nextStart = getDungeonData(nextLvl).playerStart;
+        // Arrive at the connecting portal on the destination floor:
+        // going down → land at the up-portal on the new floor (so you can return)
+        // going up   → land at the down-portal on the new floor (so you can descend again)
+        const nextData = getDungeonData(nextLvl);
+        const arrivalCell = (kind === 'down' ? nextData.portalUp : nextData.portalDown)
+                          || nextData.playerStart;
         this.gameState.playerPosition = {
-            x: (nextStart.x + 0.5) * CELL_SIZE,
-            z: (nextStart.z + 0.5) * CELL_SIZE,
+            x: (arrivalCell.x + 0.5) * CELL_SIZE,
+            z: (arrivalCell.z + 0.5) * CELL_SIZE,
             yaw: 0, pitch: 0,
         };
         this._log(`\u{1F300} You travel to dungeon level ${nextLvl}.`);
@@ -1465,6 +1480,9 @@ export class Game {
         }
 
         this.gameState.party.push(newMember);
+        // New recruits default to the back row, except front-line classes.
+        const FRONT_ROW_CLASSES = new Set(['warrior', 'monk', 'paladin']);
+        if (!FRONT_ROW_CLASSES.has(newMember.classId)) newMember.row = 'back';
         soundManager.playRecruit();
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         this.partyHUD.showToast(`${clean} (L${newMember.level}) has joined the party!`);

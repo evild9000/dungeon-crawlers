@@ -170,7 +170,7 @@ export const BEAST_TYPES = {
         icon: '\u{1F9DA}',
         portraitClass: 'mage', portraitSpecies: 'gnome',
         attackType: 'magic',
-        speciesLabel: 'Beast \u2022 Pixie',
+        speciesLabel: 'Pixie',
         kind: 'beast',
         description: 'Low HP, weak AoE magic, dodge chance matches ranger crit.',
         abilities: [
