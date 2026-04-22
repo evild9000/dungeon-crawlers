@@ -46,7 +46,7 @@ export const FOG_NEAR = 4;
 export const FOG_FAR = 60;
 
 // Enemy system — quadrupled to suit the 40×40 procedural dungeon.
-export const ENEMY_SPAWN_INTERVAL = 15;    // seconds between spawns (doubled rate)
+export const ENEMY_SPAWN_INTERVAL = 8;     // seconds between spawns (quadrupled rate)
 export const ENEMY_MOVE_INTERVAL = 15;     // seconds between moves
 export const ENEMY_MOVE_DURATION = 1.5;    // seconds for smooth interpolation
 export const ENEMY_MAX_COUNT = 213;        // soft cap on active enemies (scaled with initial count)
@@ -542,7 +542,8 @@ export const GOLEM_TIERS = [
         meleeMin: 3, meleeMax: 8,
         // Regenerates 10% of max HP per own turn.
         regenPercent: 0.10,
-        description: 'Crude stitched flesh. Regenerates 10% of max HP each round. Cheap but soft.',
+        immune: ['poison', 'stun'],
+        description: 'Crude stitched flesh. Regenerates 10% of max HP each round. Cheap but soft. Immune to poison and stun.',
     },
     {
         id: 'clay',
@@ -557,7 +558,8 @@ export const GOLEM_TIERS = [
         // 25% chance to reflect 50% of incoming damage back at attacker.
         reflectChance: 0.25,
         reflectFraction: 0.5,
-        description: 'Hardened clay shell. 25% chance to reflect 50% of incoming damage.',
+        immune: ['poison', 'stun'],
+        description: 'Hardened clay shell. 25% chance to reflect 50% of incoming damage. Immune to poison and stun.',
     },
     {
         id: 'stone',
@@ -572,7 +574,8 @@ export const GOLEM_TIERS = [
         // AoE slam every 3 rounds; 25% stun on slam.
         slamEvery: 3,
         slamStunChance: 0.25,
-        description: 'Living masonry. Every 3rd round it slams the ground, hitting every enemy (25% stun).',
+        immune: ['poison', 'stun'],
+        description: 'Living masonry. Every 3rd round it slams the ground, hitting every enemy (25% stun). Immune to poison and stun.',
     },
     {
         id: 'iron',

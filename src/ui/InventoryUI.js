@@ -769,9 +769,12 @@ export class InventoryUI {
 
         const FAVORED_TAGS = [
             { id: 'vermin',   label: '🐛 Vermin',   desc: 'Slimes, spiders, rats, bats, wasps, worms…' },
-            { id: 'undead',   label: '💀 Undead',   desc: 'Skeletons, zombies, ghosts, wraiths…' },
-            { id: 'humanoid', label: '👺 Humanoids', desc: 'Goblins, orcs, trolls, cultists, kobolds…' },
-            { id: 'monster',  label: '🐉 Monsters',  desc: 'Drakes, basilisks, mimics, imps, fungi…' },
+            { id: 'beast',    label: '🐾 Beasts',   desc: 'Spiders, bats, rats, drakes, basilisks, cave crawlers…' },
+            { id: 'undead',   label: '💀 Undead',   desc: 'Skeletons, zombies, ghosts, wraiths, bone gnashers…' },
+            { id: 'humanoid', label: '👺 Humanoids', desc: 'Goblins, orcs, trolls, kobolds, stone hags…' },
+            { id: 'demon',    label: '😈 Demons',   desc: 'Imps, flame imps, dust devils…' },
+            { id: 'cultist',  label: '🕯️ Cultists', desc: 'Cultists — fanatical spellcasters with AoE magic.' },
+            { id: 'monster',  label: '👾 Monsters',  desc: 'Drakes, basilisks, mimics, fungi, shriekers…' },
         ];
 
         const btnWrap = document.createElement('div');

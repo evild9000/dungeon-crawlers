@@ -19,7 +19,7 @@ const FLOOR_FILL = '#6b5a3d';
 const EDGE_STROKE= '#2a2218';
 const PORTAL_DN  = '#ff3322';
 const PORTAL_UP  = '#33ff66';
-const PLAYER_FL  = '#ffcc55';
+const PLAYER_FL  = '#ffff00';
 const PLAYER_STK = '#000';
 
 export class MinimapUI {

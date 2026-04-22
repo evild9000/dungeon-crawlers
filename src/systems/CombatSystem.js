@@ -856,7 +856,7 @@ export class CombatSystem {
             summonType: tier.id,
             summonerId: m.id,
             canBeHealed: false,                // only artificer heals via healGolem
-            row: m.row,
+            row: 'front',
             summonStats: {
                 meleeMin:        stats.meleeMin,
                 meleeMax:        stats.meleeMax,
@@ -1814,6 +1814,12 @@ export class CombatSystem {
                 break;
             }
             case 'poison': {
+                // Undead enemies are immune to poison
+                const enemyTypeDef = ENEMY_TYPES[enemy.type];
+                if (Array.isArray(enemyTypeDef?.tags) && enemyTypeDef.tags.includes('undead')) {
+                    this._addLog(`\u{1F480} ${eName} is undead \u2014 immune to poison!`);
+                    break;
+                }
                 refresh({
                     type: 'poison_weapon',
                     rounds: dotRounds,

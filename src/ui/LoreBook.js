@@ -186,9 +186,7 @@ export class LoreBook {
         this._pageCounter.textContent = `${idx + 1} / ${total}`;
         this._prevBtn.disabled = total <= 1;
         this._nextBtn.disabled = total <= 1;
-        this._navLabel.textContent = total > 1
-            ? `${this._pageIdx > 0 ? this._pages[this._pageIdx - 1] && ENEMY_TYPES[this._pages[this._pageIdx-1]].name : ''}`
-            : '';
+        this._navLabel.textContent = total > 1 ? def.name : '';
 
         // Tags
         const tags = def.tags || [];
