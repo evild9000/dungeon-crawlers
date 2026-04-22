@@ -828,6 +828,21 @@ class SoundManager {
         src.start(t + 0.32);
         src.stop(t + 0.5);
     }
+
+    /**
+     * Sorrowful descending tone when a player party member is knocked out.
+     * Four slow, low sine-wave notes — a short dirge.
+     */
+    playPartyMemberKO() {
+        if (this.muted) return;
+        this.ensureContext();
+        const t = this.ctx.currentTime;
+        // Four descending notes: a mournful falling phrase
+        const notes = [330, 277, 220, 185]; // E4 C#4 A3 Gb3
+        for (let i = 0; i < notes.length; i++) {
+            this.playTone(notes[i], 'sine', 0.55, 0.18, this.masterGain, t + i * 0.28);
+        }
+    }
 }
 
 export const soundManager = new SoundManager();

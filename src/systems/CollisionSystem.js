@@ -43,6 +43,7 @@ export class CollisionSystem {
         const minDist = PLAYER_RADIUS + ENEMY_COLLISION_RADIUS;
         const minDist2 = minDist * minDist;
         for (const enemy of enemies) {
+            if (enemy.health <= 0) continue; // dead enemies don't block movement
             const dx = worldX - enemy.worldX;
             const dz = worldZ - enemy.worldZ;
             if (dx * dx + dz * dz < minDist2) {

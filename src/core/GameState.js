@@ -26,6 +26,7 @@ export class GameState {
         this.gameLog = [];                  // rolling log of combat / events shown on 'L' key
         this.activeLight = null;            // { type:'torch'|'lantern'|'light', remaining:sec } — party light
         this.explored = null;               // serialized MinimapSystem grids (object keyed by dungeonLevel)
+        this.discoveredMonsters = new Set(); // monster type keys encountered in combat
     }
 
     toSaveData() {
@@ -43,6 +44,7 @@ export class GameState {
             gameLog: this.gameLog.slice(-500), // cap saved log
             activeLight: this.activeLight ? { ...this.activeLight } : null,
             explored: this.explored || null,
+            discoveredMonsters: [...this.discoveredMonsters],
         };
         // Only include id when updating an existing save;
         // omitting it lets IndexedDB auto-generate the key.
@@ -72,6 +74,7 @@ export class GameState {
             ? { type: data.activeLight.type, remaining: data.activeLight.remaining || 0 }
             : null;
         s.explored = (data.explored && typeof data.explored === 'object') ? data.explored : null;
+        s.discoveredMonsters = new Set(Array.isArray(data.discoveredMonsters) ? data.discoveredMonsters : []);
         return s;
     }
 

@@ -9,6 +9,7 @@ import {
     BACKSTAB_DAMAGE_PER_LEVEL, BACKSTAB_INSTAKILL_CHANCE,
     CLERIC_HEAL_MANA_COST, CLERIC_HEAL_PERCENT,
     CLERIC_REVIVE_MANA_COST, CLERIC_REVIVE_MIN_LEVEL, CLERIC_REVIVE_HEAL_FRAC,
+    MAGE_SHIELD_MANA_COST, MAGE_SHIELD_BASE_DEF, MAGE_SHIELD_BASE_ROUNDS, MAGE_SHIELD_BONUS_EVERY, MAGE_SHIELD_MIN_LEVEL,
     NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
@@ -56,6 +57,7 @@ export class CombatUI {
     show(onEnd) {
         this._onCombatEnd = onEnd;
         this._active = true;
+        this._prevMemberHealth = {}; // track previous health to detect KO events
         this.overlay.style.display = 'flex';
         this._buildEnemyCards();
         this._refresh();
@@ -73,6 +75,19 @@ export class CombatUI {
 
     _refresh() {
         if (!this._active) return;
+
+        // Detect newly knocked-out party members (play sorrowful tone once per KO)
+        if (this.combat.party) {
+            for (const m of this.combat.party) {
+                if (m.isSummoned) continue;
+                const prev = this._prevMemberHealth[m.id];
+                if (prev > 0 && m.health <= 0) {
+                    soundManager.playPartyMemberKO();
+                }
+                this._prevMemberHealth[m.id] = m.health;
+            }
+        }
+
         this._updateEnemyCards();
         this._updateLog();
         this._updateActions();
@@ -120,6 +135,12 @@ export class CombatUI {
             stunBadge.style.display = 'none';
             card.appendChild(stunBadge);
 
+            const bleedBadge = document.createElement('div');
+            bleedBadge.className = 'combat-bleed-badge';
+            bleedBadge.textContent = '\u{1F7E5} Bleeding';
+            bleedBadge.style.cssText = 'display:none;background:rgba(160,0,0,0.75);color:#fcc;font-size:11px;padding:1px 5px;border-radius:3px;margin-top:2px;text-align:center;';
+            card.appendChild(bleedBadge);
+
             card.addEventListener('click', () => {
                 if (!this._selectingTarget || enemy.health <= 0) return;
                 this._selectingTarget = false;
@@ -156,6 +177,12 @@ export class CombatUI {
 
             const stunBadge = card.querySelector('.combat-stun-badge');
             if (stunBadge) stunBadge.style.display = enemy.stunned ? 'block' : 'none';
+
+            const bleedBadge = card.querySelector('.combat-bleed-badge');
+            if (bleedBadge) {
+                const hasBl = (enemy.activeEffects || []).some(e => e && e.type === 'bleed' && e.rounds > 0);
+                bleedBadge.style.display = hasBl ? 'block' : 'none';
+            }
         }
     }
 
@@ -165,7 +192,7 @@ export class CombatUI {
 
     _updateLog() {
         this.logEl.innerHTML = '';
-        const recent = this.combat.log.slice(-14);
+        const recent = this.combat.log.slice(-80);
         for (const msg of recent) {
             const p = document.createElement('p');
             p.textContent = msg;
@@ -331,6 +358,29 @@ export class CombatUI {
         }
         magicBtn.title = magicTip.join('\n');
 
+        // ── Mage-specific: Arcane Shield (level 3+)
+        if (m.classId === 'mage') {
+            const shieldUnlocked = m.level >= MAGE_SHIELD_MIN_LEVEL;
+            const shieldActive = (this.combat._mageShieldCasterId !== null);
+            const canShield = shieldUnlocked && !shieldActive && m.mana >= MAGE_SHIELD_MANA_COST;
+            const shieldBonus = MAGE_SHIELD_BASE_DEF + Math.floor(m.level / MAGE_SHIELD_BONUS_EVERY);
+            const shieldRounds = MAGE_SHIELD_BASE_ROUNDS + Math.floor(m.level / MAGE_SHIELD_BONUS_EVERY);
+            const shieldLabel = shieldUnlocked
+                ? `\u{1F6E1}\uFE0F Arcane Shield (-${MAGE_SHIELD_MANA_COST} MP)`
+                : `\u{1F6E1}\uFE0F Arcane Shield (L${MAGE_SHIELD_MIN_LEVEL})`;
+            const shieldBtn = this._addBtn(shieldLabel, canShield, () => this.combat.mageShield());
+            shieldBtn.classList.add('combat-special-btn');
+            shieldBtn.title = [
+                `Mage special: Arcane Shield (unlocks at level ${MAGE_SHIELD_MIN_LEVEL}).`,
+                `Costs ${MAGE_SHIELD_MANA_COST} mana.`,
+                `Grants all back-row party members +${shieldBonus} defense for ${shieldRounds} rounds.`,
+                'Only one Arcane Shield can be active at a time. Falls if the mage is defeated.',
+                !shieldUnlocked ? `Requires mage level ${MAGE_SHIELD_MIN_LEVEL}.` : '',
+                shieldActive ? 'An Arcane Shield is already active.' : '',
+                shieldUnlocked && !shieldActive && !canShield ? 'Not enough mana.' : '',
+            ].filter(Boolean).join('\n');
+        }
+
         // ── Class specials
         if (m.classId === 'rogue') {
             const cost = MELEE_STAMINA_COST * BACKSTAB_STAMINA_MULT;
@@ -396,6 +446,23 @@ export class CombatUI {
                 !reviveUnlocked ? `Requires cleric level ${CLERIC_REVIVE_MIN_LEVEL}.` : '',
                 reviveUnlocked && !hasDead ? 'No fallen allies to revive.' : '',
                 reviveUnlocked && m.mana < CLERIC_REVIVE_MANA_COST ? 'Not enough mana.' : '',
+            ].filter(Boolean).join('\n');
+
+            // Mass Heal — unlocked at level 4
+            const massUnlocked = m.level >= 4;
+            const canMass = massUnlocked && m.mana >= CLERIC_HEAL_MANA_COST;
+            const massLabel = massUnlocked
+                ? `\u2728\u2728 Mass Heal (-${CLERIC_HEAL_MANA_COST} MP)`
+                : `\u2728\u2728 Mass Heal (L4)`;
+            const massBtn = this._addBtn(massLabel, canMass, () => this.combat.clericMassHeal());
+            massBtn.classList.add('combat-special-btn');
+            const massPct = Math.round((CLERIC_HEAL_PERCENT + m.getHealPercentBonus()) * 50);
+            massBtn.title = [
+                'Cleric special: Mass Heal (unlocks at level 4).',
+                `Costs ${CLERIC_HEAL_MANA_COST} mana.`,
+                `Heals all living party members for ${massPct}% of their max HP.`,
+                !massUnlocked ? 'Requires cleric level 4.' : '',
+                massUnlocked && !canMass ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
         }
 

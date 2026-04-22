@@ -48,8 +48,10 @@ import { LightPickerUI } from '../ui/LightPickerUI.js';
 import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
-import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL } from '../utils/constants.js';
+import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_COMMON_MAX, REAGENT_TIER_UNCOMMON_MAX } from '../utils/constants.js';
+import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
+import { LoreBook } from '../ui/LoreBook.js';
 
 /**
  * Game — top-level orchestrator.
@@ -153,11 +155,13 @@ export class Game {
             this._saveNow();
         });
 
-        // --- Active song tooltip (upper-right, below compass) ---
+        this.loreBook = new LoreBook();
+
+        // --- Active song tooltip (upper-right, below dungeon level text) ---
         this._songTooltip = document.createElement('div');
         Object.assign(this._songTooltip.style, {
             position: 'fixed',
-            top: '70px',
+            top: '130px',
             right: '20px',
             background: 'rgba(10,10,30,0.82)',
             border: '1px solid #447',
@@ -298,7 +302,8 @@ export class Game {
             || (this._trapModal && this._trapModal.style.display === 'flex')
             || (this._bagpickModal && this._bagpickModal.style.display === 'flex')
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
-            || (this.partySpellModal && this.partySpellModal.isOpen);
+            || (this.partySpellModal && this.partySpellModal.isOpen)
+            || (this.loreBook && this.loreBook.isOpen);
     }
 
     // ────────────────────────────────────────────
@@ -361,6 +366,7 @@ export class Game {
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
+                else if (this.loreBook && this.loreBook.isOpen) this.loreBook.hide();
             }
             return;
         }
@@ -373,6 +379,7 @@ export class Game {
             case 't': e.preventDefault(); this._onOpenLightPicker(); break;
             case 'k': e.preventDefault(); this._onOpenCrafting(); break;
             case 'v': e.preventDefault(); this._onOpenPartySpells(); break;
+            case 'x': e.preventDefault(); this._onOpenLoreBook(); break;
         }
     }
 
@@ -411,6 +418,12 @@ export class Game {
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
         this.partySpellModal.show(this.gameState.party);
+    }
+
+    _onOpenLoreBook() {
+        if (!this.loreBook || !this.gameState) return;
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.loreBook.show(this.gameState.discoveredMonsters);
     }
 
     /**
@@ -886,7 +899,16 @@ export class Game {
     // ────────────────────────────────────────────
 
     _startCombat(triggerEnemy) {
+        if (!triggerEnemy || triggerEnemy.health <= 0) return;
         const nearby = this._gatherCombatGroup(triggerEnemy);
+        if (!nearby.length) return;
+
+        // Track monster discovery for the Lore Book
+        for (const e of nearby) {
+            if (e.type && this.gameState) {
+                this.gameState.discoveredMonsters.add(e.type);
+            }
+        }
 
         document.exitPointerLock();
         this.state = STATE.COMBAT;
@@ -910,6 +932,7 @@ export class Game {
     }
 
     _gatherCombatGroup(trigger) {
+        if (!trigger || trigger.health <= 0) return [];
         const gx = trigger.gridX;
         const gz = trigger.gridZ;
         // Phase 8 rule 5: always bring at least N=partySize enemies into the fight
@@ -1275,23 +1298,50 @@ export class Game {
             this._log(`\u{1F6E0}\uFE0F ${rogue.name} disarms the ${def.name}!`);
 
             let gold = 0;
+            const trapItems = [];
             if (Math.random() < TRAP_TREASURE_CHANCE) {
                 const dlvl = this.gameState.dungeonLevel || 1;
-                const low  = TRAP_TREASURE_MIN * dlvl;
-                const high = TRAP_TREASURE_MAX * dlvl;
+                const low  = TRAP_TREASURE_MIN * dlvl * 2;
+                const high = TRAP_TREASURE_MAX * dlvl * 2;
                 gold = low + Math.floor(Math.random() * (high - low + 1));
                 this.gameState.inventory.addGold(gold);
                 this._log(`\u{1F48E} A hidden cache reveals ${gold} gold!`);
                 if (this.partyHUD) this.partyHUD.showToast(`+${gold} gold`);
+
+                // Bonus item rolls equal to dungeon level
+                const numRolls = dlvl;
+                const reagentId = dlvl <= REAGENT_TIER_COMMON_MAX   ? 'reagent_common'
+                                : dlvl <= REAGENT_TIER_UNCOMMON_MAX  ? 'reagent_uncommon'
+                                :                                      'reagent_rare';
+                for (let r = 0; r < numRolls; r++) {
+                    const roll = Math.random();
+                    let itemId = null;
+                    if (roll < 0.35)      itemId = 'food';
+                    else if (roll < 0.55) itemId = reagentId;
+                    else if (roll < 0.70) itemId = 'healing_potion';
+                    else if (roll < 0.80) itemId = randomWeaponDrop();
+                    else if (roll < 0.90) itemId = randomArmorDrop();
+                    else                  itemId = randomShieldDrop();
+                    if (itemId) {
+                        this.gameState.inventory.addItem(itemId, 1);
+                        const def2 = getItemDef(itemId);
+                        const name = def2 ? def2.name : itemId;
+                        this._log(`\u{1F4E6} Found ${name}!`);
+                        trapItems.push(name);
+                    }
+                }
             }
 
             const title = `\u{1F6E0}\uFE0F ${def.name} Disarmed`;
-            const body = gold > 0
-                ? `<b>${rogue.name}</b> carefully disarms the <b>${def.name}</b>.<br><br>` +
-                  `\u{1F48E} A hidden cache contains <b>${gold} gold</b>!`
-                : `<b>${rogue.name}</b> carefully disarms the <b>${def.name}</b>.<br><br>` +
-                  `<i>No treasure was hidden with this one.</i>`;
-            this._showTrapDialog(title, body, [
+            let bodyLines = `<b>${rogue.name}</b> carefully disarms the <b>${def.name}</b>.`;
+            if (gold > 0 || trapItems.length > 0) {
+                bodyLines += '<br><br>';
+                if (gold > 0) bodyLines += `\u{1F48E} <b>${gold} gold</b> found!<br>`;
+                if (trapItems.length > 0) bodyLines += `\u{1F4E6} Items: ${trapItems.join(', ')}`;
+            } else {
+                bodyLines += '<br><br><i>No treasure was hidden with this one.</i>';
+            }
+            this._showTrapDialog(title, bodyLines, [
                 { label: 'Continue', onClick: () => this._hideTrapModal() },
             ]);
         } else {

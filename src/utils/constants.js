@@ -218,6 +218,12 @@ export const BACKSTAB_INSTAKILL_CHANCE = 0.05; // rogue: 5% chance to drop enemy
 export const CLERIC_HEAL_MANA_COST = 5;
 export const CLERIC_HEAL_PERCENT = 0.25;  // heals 25% of target's max HP
 
+export const MAGE_SHIELD_MANA_COST    = 6;   // mana cost for mage shield spell
+export const MAGE_SHIELD_BASE_DEF     = 3;   // base defense bonus for all back-row members
+export const MAGE_SHIELD_BASE_ROUNDS  = 3;   // base duration in rounds
+export const MAGE_SHIELD_BONUS_EVERY  = 5;   // +1 def and +1 round per this many mage levels
+export const MAGE_SHIELD_MIN_LEVEL    = 3;   // mage must be at least this level
+
 export const NECRO_SUMMON_MANA_COST = 7;
 export const NECRO_LIFE_DRAIN_CHANCE = 0.20;
 export const NECRO_LIFE_DRAIN_AMOUNT = 2;

@@ -52,6 +52,7 @@ export class CraftingUI {
 
         this._tab = 'enchant';          // 'enchant' | 'potions' | 'golems'
         this._enchantTarget = null;     // selected party member id
+        this._golemTarget = null;       // selected artificer id for golem tab
 
         this._ensureOverlay();
     }
@@ -88,6 +89,13 @@ export class CraftingUI {
         const state = this._getState();
         if (!state || !state.party) return null;
         return state.party.find(m => !m.isSummoned && m.classId === 'artificer' && m.health > 0) || null;
+    }
+
+    /** Returns all live artificers in the party. */
+    _findAllArtificers() {
+        const state = this._getState();
+        if (!state || !state.party) return [];
+        return state.party.filter(m => !m.isSummoned && m.classId === 'artificer' && m.health > 0);
     }
 
     /**
@@ -157,7 +165,15 @@ export class CraftingUI {
 
         if (this._tab === 'enchant') this._renderEnchant(body, state, artificer);
         else if (this._tab === 'potions') this._renderPotions(body, state, artificer);
-        else this._renderGolems(body, state, artificer);
+        else {
+            // For golems, allow choosing which artificer manages the golem.
+            const allArtificers = this._findAllArtificers();
+            if (!this._golemTarget || !allArtificers.find(m => m.id === this._golemTarget)) {
+                this._golemTarget = artificer.id;
+            }
+            const golemArtificer = allArtificers.find(m => m.id === this._golemTarget) || artificer;
+            this._renderGolems(body, state, golemArtificer, allArtificers);
+        }
     }
 
     // ── Enchant tab ─────────────────────────────
@@ -324,7 +340,26 @@ export class CraftingUI {
     }
 
     // ── Golems tab ──────────────────────────────
-    _renderGolems(body, state, artificer) {
+    _renderGolems(body, state, artificer, allArtificers = []) {
+        // Artificer picker (shown only when >1 artificer is present)
+        if (allArtificers.length > 1) {
+            const picker = document.createElement('div');
+            picker.className = 'craft-picker';
+            picker.appendChild(this._label('Forging artificer:'));
+            const sel = document.createElement('select');
+            sel.className = 'craft-select';
+            for (const m of allArtificers) {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.name} (Lv ${m.level})`;
+                if (m.id === artificer.id) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            sel.addEventListener('change', () => { this._golemTarget = sel.value; this._render(); });
+            picker.appendChild(sel);
+            body.appendChild(picker);
+        }
+
         const unlocked = getArtificerUnlockedGolems(artificer.level);
         const existingGolem = (state.party || []).find(
             p => p && p.isSummoned && p.summonerId === artificer.id &&

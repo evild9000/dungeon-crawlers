@@ -19,6 +19,7 @@ import {
     BACKSTAB_STAMINA_MULT, BACKSTAB_DAMAGE_MULT,
     BACKSTAB_DAMAGE_PER_LEVEL, BACKSTAB_INSTAKILL_CHANCE,
     CLERIC_HEAL_MANA_COST, CLERIC_HEAL_PERCENT,
+    MAGE_SHIELD_MANA_COST, MAGE_SHIELD_BASE_DEF, MAGE_SHIELD_BASE_ROUNDS, MAGE_SHIELD_BONUS_EVERY, MAGE_SHIELD_MIN_LEVEL,
     NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
@@ -100,6 +101,8 @@ export class CombatSystem {
         // Initiative — sorted list of {kind:'party'|'enemy', ref, init, skipThisRound}
         this._initiativeOrder = [];
         this._initTurnIdx = 0;
+        // Tracks which mage has an active shield so only one can be up at a time.
+        this._mageShieldCasterId = null;
         // Shared reference to the party inventory (artificer golem crafting /
         // healing consumes reagents). Set via startCombat or setInventory.
         this.inventory = null;
@@ -128,6 +131,7 @@ export class CombatSystem {
         this.currentMemberIndex = 0;
         this.log = [];
         this.loot = null;
+        this._mageShieldCasterId = null;
         this.xpEarned = 0;
         this.levelUpLogs = [];
         this.turnNumber = 1;
@@ -540,6 +544,39 @@ export class CombatSystem {
     }
 
     /**
+     * Cleric Mass Heal (level 4+). Costs CLERIC_HEAL_MANA_COST mana and heals
+     * every living party member for 50% of the normal single-target heal.
+     */
+    clericMassHeal() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'cleric') return;
+        if (m.level < 4) {
+            this._addLog(`${m.name} must be level 4 to cast Mass Heal.`);
+            return;
+        }
+        if (m.mana < CLERIC_HEAL_MANA_COST) {
+            this._addLog(`${m.name} has too little mana to cast Mass Heal (needs ${CLERIC_HEAL_MANA_COST}).`);
+            return;
+        }
+
+        m.mana -= CLERIC_HEAL_MANA_COST;
+        const pct = (CLERIC_HEAL_PERCENT + m.getHealPercentBonus()) * 0.5;
+        const targets = this.aliveParty;
+        let parts = [];
+        for (const t of targets) {
+            if (t.isSummoned && !t.canBeHealed) continue;
+            const amt = Math.max(1, Math.ceil(t.maxHealth * pct));
+            const before = t.health;
+            t.health = Math.min(t.maxHealth, t.health + amt);
+            parts.push(`${t.name} +${t.health - before}`);
+        }
+        this._addLog(`\u2728 ${m.name} calls down a Mass Heal! (${parts.join(', ')})`);
+
+        this._advancePlayerTurn();
+    }
+
+    /**
      * Phase 10 — Cleric Revive (level 3+). Costs CLERIC_REVIVE_MANA_COST mana
      * and brings a fallen ally back at CLERIC_REVIVE_HEAL_FRAC of max HP.
      * Cannot revive undead summons or living targets.
@@ -577,6 +614,56 @@ export class CombatSystem {
         }
         this._addLog(`\u{1F54A}\uFE0F ${m.name} calls ${targetMember.name} back from the brink! (+${amt} HP)`);
         this._advancePlayerTurn();
+    }
+
+    /**
+     * Mage Shield (level 3+). Costs MAGE_SHIELD_MANA_COST mana.
+     * Applies a defense buff to all back-row party members for several rounds.
+     * Only one mage shield can be active at a time; falls if the caster is defeated.
+     * Defense bonus = MAGE_SHIELD_BASE_DEF + floor(level / MAGE_SHIELD_BONUS_EVERY).
+     * Duration = MAGE_SHIELD_BASE_ROUNDS + floor(level / MAGE_SHIELD_BONUS_EVERY) rounds.
+     */
+    mageShield() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'mage') return;
+        if (m.level < MAGE_SHIELD_MIN_LEVEL) {
+            this._addLog(`${m.name} must be level ${MAGE_SHIELD_MIN_LEVEL} to cast Arcane Shield.`);
+            return;
+        }
+        if (m.mana < MAGE_SHIELD_MANA_COST) {
+            this._addLog(`${m.name} has too little mana to cast Arcane Shield (needs ${MAGE_SHIELD_MANA_COST}).`);
+            return;
+        }
+        if (this._mageShieldCasterId !== null) {
+            this._addLog(`An Arcane Shield is already active — only one shield at a time.`);
+            return;
+        }
+
+        const bonus = MAGE_SHIELD_BASE_DEF + Math.floor(m.level / MAGE_SHIELD_BONUS_EVERY);
+        const rounds = MAGE_SHIELD_BASE_ROUNDS + Math.floor(m.level / MAGE_SHIELD_BONUS_EVERY);
+
+        m.mana -= MAGE_SHIELD_MANA_COST;
+        this._mageShieldCasterId = m.id;
+
+        const backRow = this.party.filter(t => t.health > 0 && t.row === 'back');
+        for (const t of backRow) {
+            t.activeEffects = (t.activeEffects || []).filter(e => e.type !== 'mage_shield');
+            t.activeEffects.push({ type: 'mage_shield', defenseBonus: bonus, rounds, casterId: m.id });
+        }
+
+        this._addLog(`\u{1F6E1}\uFE0F ${m.name} raises an Arcane Shield! Back row gains +${bonus} def for ${rounds} rounds.`);
+        this._advancePlayerTurn();
+    }
+
+    /** Remove mage shield effects for a given caster (called when caster is defeated). */
+    _removeMageShield(casterId) {
+        if (!casterId) return;
+        for (const t of this.party) {
+            if (!t.activeEffects) continue;
+            t.activeEffects = t.activeEffects.filter(e => !(e.type === 'mage_shield' && e.casterId === casterId));
+        }
+        if (this._mageShieldCasterId === casterId) this._mageShieldCasterId = null;
     }
 
     getAvailableNecroTiers(necroLevel) {
@@ -665,8 +752,8 @@ export class CombatSystem {
             summonType: preset.id,
             summonerId: m.id,
             canBeHealed: true,
-            // Bear is a melee brawler → front row; eagle and pixie stay back.
-            row: beastId === 'bear' ? 'front' : 'back',
+            // Bear and wolf are melee brawlers → front row; eagle and pixie stay back.
+            row: (beastId === 'bear' || beastId === 'wolf') ? 'front' : 'back',
             summonStats: {
                 meleeMin:  stats.meleeMin,  meleeMax:  stats.meleeMax,
                 rangedMin: stats.rangedMin, rangedMax: stats.rangedMax,
@@ -1167,6 +1254,21 @@ export class CombatSystem {
             return;
         }
 
+        if (beastKind === 'wolf') {
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 7);
+            const dealt = this._damageEnemy(t, dmg);
+            this._addLog(`\u{1F43A} ${m.name} bites ${this._eName(t)} for ${dealt}!`);
+            // Apply bleed: 50% of dealt damage per round for 3 rounds
+            if (t.health > 0 && dealt > 0) {
+                const bleedDmg = Math.max(1, Math.round(dealt * 0.5));
+                this._applyEnemyEffect(t, { type: 'bleed', damage: bleedDmg, rounds: 3 });
+                this._addLog(`\u{1F7E5} ${this._eName(t)} is Bleeding! (${bleedDmg}/round)`);
+            }
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
         if (beastKind === 'bear') {
             const t = targets[Math.floor(Math.random() * targets.length)];
             const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
@@ -1204,7 +1306,11 @@ export class CombatSystem {
         let bonus = 0;
         if (kind === 'party') {
             const classId = ref.classId;
-            if (classId === 'rogue' || classId === 'monk' || classId === 'ranger') bonus += 1;
+            if (classId === 'rogue' || classId === 'monk' || classId === 'ranger') {
+                bonus += 1;
+                // Additional +1 per 5 levels beyond 1
+                bonus += Math.floor((ref.level || 1) / 5);
+            }
             if (ref.isSummoned && ref.summonStats) {
                 const ss = ref.summonStats;
                 const isGolem  = Boolean(ss.tierId);
@@ -1756,6 +1862,13 @@ export class CombatSystem {
                     totalPoison += (e.damage || 0);
                     e.rounds--;
                 }
+                // Tick down mage shield duration
+                if (e.type === 'mage_shield' && e.rounds > 0) {
+                    e.rounds--;
+                    if (e.rounds <= 0 && this._mageShieldCasterId === e.casterId) {
+                        this._mageShieldCasterId = null;
+                    }
+                }
             }
             if (totalPoison > 0) {
                 m.health = Math.max(0, m.health - totalPoison);
@@ -1763,6 +1876,15 @@ export class CombatSystem {
                 if (m.health <= 0) this._addLog(`${m.name} has fallen to the poison!`);
             }
             m.expireEffects();
+        }
+
+        // Remove mage shield if the caster has been defeated.
+        if (this._mageShieldCasterId !== null) {
+            const caster = this.party.find(t => t.id === this._mageShieldCasterId);
+            if (!caster || caster.health <= 0) {
+                this._removeMageShield(this._mageShieldCasterId);
+                this._addLog(`\u{1F6E1}\uFE0F The Arcane Shield collapses as its caster falls!`);
+            }
         }
     }
 
@@ -1788,7 +1910,7 @@ export class CombatSystem {
             // ── Weapon-rider DoTs on enemies (burn, acid_dot, poison_weapon).
             //    Each ticks per player round; damage rolled once per round.
             const effects = e.activeEffects || [];
-            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom' };
+            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', bleed: '\u{1F7E5} bleed' };
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {

@@ -132,6 +132,22 @@ export function rollUndeadStats(tierIndex) {
 // ────────────────────────────────────────────
 
 export const BEAST_TYPES = {
+    wolf: {
+        id: 'wolf',
+        name: 'Wolf',
+        icon: '\u{1F43A}',
+        portraitClass: 'rogue', portraitSpecies: 'human',
+        attackType: 'melee',
+        speciesLabel: 'Beast \u2022 Wolf',
+        kind: 'beast',
+        description: 'Swift melee striker. Bite inflicts Bleed (+50% bonus damage per round) for 3 rounds.',
+        abilities: [
+            'Single-target bite attack.',
+            'Applies Bleed: +50% of initial hit as bonus damage each round for 3 rounds.',
+            'Medium HP, faster initiative.',
+            'Can be healed by potions and Cleric heal.',
+        ],
+    },
     bear: {
         id: 'bear',
         name: 'Bear',
@@ -287,6 +303,15 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
     const roll = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
 
     switch (beastId) {
+        case 'wolf':
+            return {
+                maxHealth:  roll(16, 24) + lvBoost * 2,
+                maxStamina: roll(18, 26),
+                maxMana:    0,
+                meleeMin:   3 + lvBoost,
+                meleeMax:   8 + lvBoost,
+                defense:    0,
+            };
         case 'bear':
             return {
                 maxHealth:  roll(24, 32) + lvBoost * 3,

@@ -689,7 +689,7 @@
         #combat-log {
             width: 520px;
             max-width: 92vw;
-            height: 180px;
+            height: 280px;
             overflow-y: auto;
             background: rgba(10, 8, 4, 0.9);
             border: 1px solid #332a1a;
@@ -1986,6 +1986,8 @@
                 <div class="help-row"><span class="help-key">L</span> Open the Adventure Log (combat &amp; history)</div>
                 <div class="help-row"><span class="help-key">M</span> Open the dungeon Minimap (fog-of-war — only explored cells are shown)</div>
                 <div class="help-row"><span class="help-key">K</span> Open the <b>Crafting</b> menu (requires an Artificer in the party) — enchant weapons/armor, brew potions, forge &amp; repair golems</div>
+                <div class="help-row"><span class="help-key">V</span> Open the <b>Party Spells</b> panel out of combat — cast bard songs, druid Entangle prep, or other out-of-combat party abilities</div>
+                <div class="help-row"><span class="help-key">X</span> Open the <b>Lore Book</b> — browse monsters you have encountered, their tags, special abilities, and sprite</div>
                 <div class="help-row"><span class="help-key">H</span> Toggle this help menu</div>
                 <div class="help-row"><span class="help-key">Esc</span> Close any open overlay</div>
             </div>
@@ -2004,6 +2006,7 @@
                 <div class="help-row"><span class="help-stat-red">Red</span> — Health (HP). When this reaches 0 the character falls.</div>
                 <div class="help-row"><span class="help-stat-green">Green</span> — Stamina (ST). Powers melee and ranged attacks.</div>
                 <div class="help-row"><span class="help-stat-blue">Blue</span> — Mana (MP). Powers magic attacks.</div>
+                <div class="help-row"><span style="color:#a070ff;">Purple</span> — Experience (XP). Fills as your character earns XP; resets each time they level up.</div>
                 <div class="help-row">Attacking with insufficient stamina/mana still works, but deals <b>half damage</b>.</div>
             </div>
 
@@ -2019,7 +2022,7 @@
             <div class="help-section">
                 <div class="help-section-title">Combat Rows</div>
                 <div class="help-row">Every character is either <b>Front Row</b> (⚔) or <b>Back Row</b> (🏹). Toggle from the personal inventory screen.</div>
-                <div class="help-row">Monsters <b>only target front-row</b> characters. Back row is safe from damage — until the front falls.</div>
+                <div class="help-row">Monsters <b>only target front-row</b> characters with melee attacks. However, <b>ranged and spell attacks can reach back-row characters</b> directly.</div>
                 <div class="help-row">When the entire front row is down, combat pauses and you must <b>promote</b> a back-row ally forward.</div>
                 <div class="help-row">Only <b>Rogues</b> may melee from the back row (stealth). Everyone else is limited to ranged / magic / special abilities from the back.</div>
             </div>
@@ -2054,9 +2057,8 @@
                 <div class="help-row"><b>&#x26A1; Shocked</b> (Lightning rider) — stunned for 1 round <em>and</em> attack power reduced for several rounds. Enemy deals less damage while shocked.</div>
                 <div class="help-row"><b>&#x2744;&#xFE0F; Chilled</b> (Ice rider) — stunned for 1 round <em>and</em> defense reduced for several rounds. Enemy takes extra damage while chilled.</div>
                 <div class="help-row"><b>&#x1F343; Entangle</b> (druid) — roots an enemy: its defense is reduced, so your party deals extra damage for the duration.</div>
-                <div class="help-row"><b>&#x1F3B6; Bard Song</b> — party-wide damage &amp; defense buff; may be sung <b>once per combat</b>.</div>
-                <div class="help-row"><b>Troll regen</b>: trolls heal <b>15% of max HP</b> at the start of every enemy round — focus them down fast.</div>
-                <div class="help-row"><b>Cultist AoE</b>: cultists cast a dark rite that damages the <b>entire party</b> (front <i>and</i> back rows, plus any summons) in one turn.</div>
+                <div class="help-row"><b>&#x1F3B6; Bard Song</b> — AOE debuff applied to <b>all enemies</b>: reduces their attack and defense. Multiple songs may be active at once.</div>
+
             </div>
 
             <div class="help-section">
@@ -2065,7 +2067,7 @@
                 <div class="help-row"><b>Cloth / Leather</b>: Rogue, Druid, Artificer (no chain or plate)</div>
                 <div class="help-row"><b>Cloth / Leather / Chain</b>: Ranger, Bard (no plate)</div>
                 <div class="help-row"><b>All armor</b>: Warrior, Cleric, Paladin</div>
-                <div class="help-row"><b>No shields</b>: Mage, Monk, Necromancer, Artificer. A shield is also forced off whenever you equip a ranged weapon.</div>
+                <div class="help-row"><b>No shields</b>: Mage, Monk, Necromancer, Artificer. A shield is also forced off whenever you equip a ranged weapon or enable dual-wielding.</div>
             </div>
 
             <div class="help-section">
@@ -2073,7 +2075,7 @@
                 <div class="help-row">The dungeon has up to <b>100 floors</b>. Deeper floors spawn tougher monsters that deal more damage and drop more gold.</div>
                 <div class="help-row"><b>&#x1F534; Red portal</b> — descends to the next floor. Appears on every level.</div>
                 <div class="help-row"><b>&#x1F7E2; Green portal</b> — ascends to the previous floor. Appears on levels 2 and deeper.</div>
-                <div class="help-row">Entering a portal regenerates the dungeon, resets spawns, and teleports you to the starting crossroads.</div>
+                <div class="help-row">Step through a portal to travel to the next (or previous) dungeon floor.</div>
             </div>
 
             <div class="help-section">
@@ -2091,15 +2093,26 @@
             </div>
 
             <div class="help-section">
+                <div class="help-section-title">Food &amp; Hunger</div>
+                <div class="help-row">Every non-summoned party member needs to eat. Food is checked every <b>30 minutes</b> of real exploration time.</div>
+                <div class="help-row">When the check fires, the party automatically consumes <b>1 food</b> from the group inventory if any is available.</div>
+                <div class="help-row">If no food is left, hunger escalates through three stages:</div>
+                <div class="help-row" style="padding-left:20px;"><b>&#x1F7E1; Hungry</b> — minor stat penalty (−1 to all attacks and defense).</div>
+                <div class="help-row" style="padding-left:20px;"><b>&#x1F7E0; Starving</b> — significant penalty and stamina drain.</div>
+                <div class="help-row" style="padding-left:20px;"><b>&#x1F534; Dying</b> — characters lose HP each minute until they eat or fall.</div>
+                <div class="help-row">The hunger badge appears on each character's portrait in the HUD. Buy food at the Tinkerer (50g) or find it as monster loot. Resting also requires food.</div>
+            </div>
+
+            <div class="help-section">
                 <div class="help-section-title">Classes</div>
                 <div class="help-row"><b>&#x2694;&#xFE0F; Warrior</b> — Front-line tank. +50% HP/ST, no mana. +1 melee, base +1 defense. All armor, shields OK. <b>Per level:</b> +1 melee, +1 defense, +3% stun.</div>
-                <div class="help-row"><b>&#x1F3F9; Ranger</b> — Bowman. +25% HP/ST, -50% mana. +1 ranged. No plate. Shield OK (but not with a bow equipped). Can <b>Summon Woodland Beast</b> (7 MP): bear, eagle, or pixie. <b>Per level:</b> +1 ranged, +3% crit.</div>
+                <div class="help-row"><b>&#x1F3F9; Ranger</b> — Bowman. +25% HP/ST, -50% mana. +1 ranged. No plate. Shield OK (but not with a bow equipped). Can <b>Summon Woodland Beast</b> (7 MP): wolf, bear, eagle, or pixie. <b>Per level:</b> +1 ranged, +3% crit.</div>
                 <div class="help-row"><b>&#x1FA84; Mage</b> — Arcane caster. -25% HP/ST, +50% mana. +1 magic, +2 MP regen. Cloth only, <b>no shield</b>. <b>Per level:</b> +1 magic, +1% magic stun.</div>
                 <div class="help-row"><b>&#x1F5E1;&#xFE0F; Rogue</b> — Stealthy striker. +100% ST, no mana. +1 melee, +2 ST regen. Cloth or leather armor. Can melee from <b>back row</b>. <b>Backstab</b>: 3× stamina for <b>2× damage + 10% per rogue level</b>. Can <b>spot and disarm traps</b>. <b>Per level:</b> +1 melee, +1% instakill.</div>
                 <div class="help-row"><b>&#x1F9D8; Monk</b> — Martial artist. <b>Neutral stats</b> (no HP/ST/MP modifier). +1 melee, +1 ST/MP regen. Cloth only, <b>no shield</b>. Melee costs <b>both</b> ST &amp; MP. 50% whirlwind. <b>40% base dodge</b> (2 ST + 2 MP, melee only) — <b>caps at 95%</b>. <b>All incoming damage is also reduced by the monk's current dodge %</b>, so a L1 monk on a non-dodged hit still takes 60% damage. <b>Per level:</b> +1 melee, +1% whirlwind, +1% dodge.</div>
                 <div class="help-row"><b>&#x2728; Cleric</b> — Healer. +25% HP, -50% ST, +25% mana. All armor, shields OK. <b>Heal</b>: 5 MP → 25% max HP. <b>Revive</b> (unlocks at L3): 25 MP brings a fallen ally back at 25% max HP. <b>Per level:</b> +2% heal power.</div>
                 <div class="help-row"><b>&#x1F480; Necromancer</b> — Dark caster. -50% HP/ST, +100% mana. Cloth only, <b>no shield</b>. <b>Summon Undead</b> (7 MP, combat only): <b>Skeleton at L1</b>, then stronger tiers every 2 levels (zombie → ghoul → spectre → mummy → ghost → vampire → death knight). Magic drains HP to caster and own undead. <b>Per level:</b> +1 magic, +1 drain.</div>
-                <div class="help-row"><b>&#x1F3B6; Bard</b> — Inspiring performer. -20% ST, +20% MP. +1 MP regen. Cloth/leather/chain (no plate); shields OK. <b>Sing Song</b> (7 MP, <b>once per combat</b>): party-wide +2 defense &amp; +2 to all damage (rises by +1 every 2 levels beyond 1). <b>Per level:</b> +1 magic damage.</div>
+                <div class="help-row"><b>&#x1F3B6; Bard</b> — Inspiring performer. -20% ST, +20% MP. +1 MP regen. Cloth/leather/chain (no plate); shields OK. <b>Sing Song</b> (7 MP): AOE debuff to all enemies — reduces their attack and defense (rises by +1 every 2 levels). Multiple bard songs can stack. <b>Per level:</b> +1 magic damage.</div>
                 <div class="help-row"><b>&#x1F33F; Druid</b> — Nature caster. -15% HP/ST, +30% MP. +1 MP regen. Cloth/leather only (no chain or plate); shields OK. <b>Entangle</b> (8 MP): rolls 50% on each enemy to debuff -2 defense &amp; -2 damage (rises by +1 every 2 levels beyond 1). <b>Summon Woodland Beast</b> (7 MP): wolf/bear/eagle/pixie, like the ranger. <b>Per level:</b> +1 magic damage.</div>
                 <div class="help-row"><b>&#x1F6E1;&#xFE0F; Paladin</b> — Holy warrior. +25% HP, neutral ST, -25% MP. All armor, shields OK. <b>Smite</b> (5 MP, front row): armor-ignoring holy melee strike. Against <b>undead</b> or <b>demon</b> foes: +2 damage per paladin level AND a <b>1% + 1%/level</b> chance to <b>instantly purge</b> the foe. <b>Lay On Hands</b> (5 MP): half-strength cleric heal (12.5% max HP base, +1%/level). <b>Per level:</b> +1 melee, +1 defense, +1%/level smite chance, +1% heal.</div>
                 <div class="help-row"><b>&#x2699;&#xFE0F; Artificer</b> — Tinker-gunner. Neutral stats. Cloth/leather only (no chain or plate); <b>no shields</b>. <b>Scatter Shot</b> replaces the default ranged attack: primary shot hits at full damage, plus <b>2 splash shots</b> at 50% damage (+1 splash every 5 artificer levels). Can <b>forge persistent Golems</b> (Flesh / Clay / Stone / Iron — unlocked at L1/L3/L6/L10) and <b>Repair Golem</b> (1 matching reagent → 50% max HP). Golems survive between combats but <b>permadeath</b> on KO. Open Crafting with <b>K</b> to forge, enchant, brew, or dismiss a golem. <b>Per level:</b> +1 ranged.</div>
@@ -2107,9 +2120,15 @@
 
             <div class="help-section">
                 <div class="help-section-title">Monster Tags</div>
-                <div class="help-row">Some monsters carry hidden tags that unlock class interactions. Mouse over an enemy card in combat to see its tag line.</div>
-                <div class="help-row"><b>&#x1F9DF; Undead</b> &amp; <b>&#x1F608; Demon</b> — vulnerable to paladin <b>Smite</b> (bonus damage &amp; instakill chance). These same tags govern necromancer life-drain rules for allied undead.</div>
-                <div class="help-row"><b>&#x1F43A; Beast</b> — wild creatures. Reserved for future druid/ranger interactions.</div>
+                <div class="help-row">Some monsters carry tags that unlock class interactions. Mouse over an enemy card in combat to see its tag line.</div>
+                <div class="help-row"><b>&#x1F9DF; Undead</b> — vulnerable to paladin <b>Smite</b> (bonus damage &amp; instakill chance) and necromancer life-drain rules.</div>
+                <div class="help-row"><b>&#x1F608; Demon</b> — also vulnerable to paladin <b>Smite</b> bonus damage and instakill chance.</div>
+                <div class="help-row"><b>&#x1F43A; Beast</b> — wild creatures summoned or encountered in the dungeon.</div>
+                <div class="help-row"><b>&#x1F9E0; Aberration</b> — eldritch horrors with unusual resistances or abilities.</div>
+                <div class="help-row"><b>&#x1F40D; Venomous</b> — can apply poison on hit.</div>
+                <div class="help-row"><b>&#x1F525; Fireborn</b> — fire-attuned monsters; may deal burn damage.</div>
+                <div class="help-row"><b>&#x1F9AA; Construct</b> — magical constructs (golems, animated objects); immune to poison and some debuffs.</div>
+                <div class="help-row">Tags are listed in the enemy tooltip and appear on the <b>Lore Book</b> (X key).</div>
             </div>
 
             <div class="help-section">
@@ -2148,13 +2167,12 @@
             <div class="help-section">
                 <div class="help-section-title">Monster Drops</div>
                 <div class="help-row">Every slain monster rolls independently for each loot kind — gold, food, healing potion, weapon/armor/shield/trinket drops — as well as:</div>
-                <div class="help-row"><b>&#x1F526; Torch</b> — 3% chance per slain enemy. Keep the lights on!</div>
                 <div class="help-row"><b>&#x2728; Magical Reagents</b> — <b>Common / Uncommon / Rare</b> tiers drop from slain monsters (rarer reagents weight deeper in the dungeon). Reagents power the Crafting menu (K): enchants, potions, and golem forging/repair.</div>
             </div>
 
             <div class="help-section">
                 <div class="help-section-title">Trinkets &amp; Equipment</div>
-                <div class="help-row">Each non-summoned character now has <b>five extra equipment slots</b>: Cloak, Neck, Ring I, Ring II, and Belt.</div>
+                <div class="help-row">Each non-summoned character has <b>five extra equipment slots</b>: Cloak, Neck, Ring I, Ring II, and Belt.</div>
                 <div class="help-row">Trinkets come in four bonus types — <b>defense / melee / ranged / magic</b> — across four tiers (Common, Uncommon, Rare, Legendary) for <b>+1 to +4</b>.</div>
                 <div class="help-row">Trinkets are rare loot drops from defeated monsters (2% base chance, scaling with dungeon depth). The Tinkerer stocks a small rotating selection of lower-tier trinkets.</div>
                 <div class="help-row">Rings can be worn in either ring slot; cloaks/necks/belts each have a dedicated slot.</div>
