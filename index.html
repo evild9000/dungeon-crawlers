@@ -11,74 +11,2183 @@
             overflow: hidden;
             background: #000;
             font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+            color: #c4a86b;
         }
 
         canvas { display: block; }
 
-        /* --- Click-to-play overlay --- */
-        #overlay {
+        /* ================================================
+           MAIN MENU / LOAD / NAME INPUT
+           ================================================ */
+
+        .menu-screen {
             position: fixed;
             inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.65);
-            color: #c4a86b;
-            pointer-events: none;
-            z-index: 10;
-            gap: 16px;
+            background: radial-gradient(ellipse at center, #1a150e 0%, #0a0806 70%, #000 100%);
+            z-index: 20;
         }
-        #overlay h1 {
-            font-size: 42px;
-            letter-spacing: 6px;
+
+        .menu-screen h1 {
+            font-size: 48px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            text-shadow: 0 0 30px rgba(196, 168, 107, 0.4),
+                         0 2px 6px rgba(0, 0, 0, 0.8);
+            margin-bottom: 12px;
+        }
+
+        .menu-screen h2 {
+            font-size: 28px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .menu-subtitle {
+            font-size: 14px;
+            color: #665533;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 48px;
+        }
+
+        .menu-btn {
+            display: block;
+            width: 260px;
+            padding: 14px 0;
+            margin: 8px 0;
+            background: linear-gradient(180deg, #2a2218 0%, #1a150e 100%);
+            border: 1px solid #554430;
+            color: #c4a86b;
+            font-family: inherit;
+            font-size: 18px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .menu-btn:hover {
+            background: linear-gradient(180deg, #3a3020 0%, #2a2218 100%);
+            border-color: #887755;
+            color: #e8d5a8;
+            text-shadow: 0 0 12px rgba(196, 168, 107, 0.5);
+        }
+
+        .menu-btn:active { transform: scale(0.97); }
+
+        /* ---- Name Input ---- */
+
+        .name-label {
+            font-size: 16px;
+            color: #887755;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        #player-name {
+            width: 320px;
+            padding: 12px 16px;
+            background: #1a150e;
+            border: 1px solid #554430;
+            color: #e8d5a8;
+            font-family: inherit;
+            font-size: 18px;
+            text-align: center;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+
+        #player-name:focus { border-color: #887755; }
+        #player-name::placeholder { color: #443322; }
+
+        #name-error {
+            color: #cc5555;
+            font-size: 13px;
+            min-height: 20px;
+            margin-bottom: 16px;
+        }
+
+        /* ---- Load Screen ---- */
+
+        #save-slots-list {
+            width: 480px;
+            max-height: 360px;
+            overflow-y: auto;
+            margin-bottom: 24px;
+        }
+
+        #save-slots-list::-webkit-scrollbar { width: 6px; }
+        #save-slots-list::-webkit-scrollbar-track { background: #111; }
+        #save-slots-list::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+
+        .save-slot {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 1px solid #332a1a;
+            border-radius: 4px;
+            transition: border-color 0.2s;
+        }
+
+        .save-slot:hover { border-color: #665533; }
+
+        .save-slot-info { flex: 1; min-width: 0; }
+
+        .save-slot-name {
+            font-size: 16px;
+            color: #d4b87b;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .save-slot-details { font-size: 12px; color: #776644; }
+
+        .save-slot-btn {
+            padding: 6px 14px;
+            margin-left: 8px;
+            background: transparent;
+            border: 1px solid #443322;
+            color: #aa8855;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .load-btn:hover { background: #2a2218; border-color: #88aa55; color: #bbdd77; }
+        .delete-btn:hover { background: #2a1818; border-color: #aa5555; color: #dd7777; }
+
+        .no-saves {
+            text-align: center;
+            color: #554433;
+            font-size: 16px;
+            padding: 40px 0;
+            font-style: italic;
+        }
+
+        .back-btn { font-size: 14px; padding: 10px 32px; }
+
+        /* ================================================
+           PAUSE OVERLAY
+           ================================================ */
+
+        #pause-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 15;
+            gap: 16px;
+            cursor: pointer;
+        }
+
+        #pause-overlay h2 {
+            font-size: 32px;
+            letter-spacing: 4px;
             text-transform: uppercase;
             text-shadow: 0 0 20px rgba(196, 168, 107, 0.4);
         }
-        #overlay p {
-            font-size: 18px;
+
+        #pause-overlay p {
+            font-size: 16px;
             color: #887755;
             letter-spacing: 2px;
         }
 
-        /* --- Crosshair --- */
+        #btn-save-exit, #btn-save-now {
+            width: 200px;
+            margin-top: 8px;
+            font-size: 14px;
+            padding: 10px 0;
+            cursor: pointer;
+        }
+
+        /* ================================================
+           CHARACTER CREATE / RECRUIT DROPDOWNS
+           ================================================ */
+
+        .char-choice-row {
+            display: flex;
+            gap: 18px;
+            margin: 12px 0 6px;
+            width: 520px;
+            max-width: 92vw;
+            justify-content: center;
+        }
+
+        .char-choice-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+        }
+
+        .char-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #1a150e;
+            border: 1px solid #554430;
+            color: #e8d5a8;
+            font-family: inherit;
+            font-size: 15px;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .char-select:focus { border-color: #887755; }
+
+        .char-select option {
+            background: #1a150e;
+            color: #e8d5a8;
+        }
+
+        .char-desc {
+            font-size: 12px;
+            color: #887755;
+            min-height: 58px;
+            padding: 6px 8px;
+            background: rgba(10, 8, 4, 0.5);
+            border: 1px solid #332a1a;
+            border-radius: 3px;
+            line-height: 1.4;
+            font-style: italic;
+        }
+
+        #recruit-error {
+            color: #cc5555;
+            font-size: 13px;
+            min-height: 20px;
+            margin: 8px 0 12px;
+        }
+
+        #recruit-name {
+            width: 320px;
+            padding: 12px 16px;
+            background: #1a150e;
+            border: 1px solid #554430;
+            color: #e8d5a8;
+            font-family: inherit;
+            font-size: 18px;
+            text-align: center;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+
+        #recruit-name:focus { border-color: #887755; }
+
+        .recruit-btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        .recruit-btn-row .menu-btn { width: 180px; margin: 0; }
+
+        /* ================================================
+           GAME UI
+           ================================================ */
+
+        #game-ui { display: none; }
+
+        /* ---- Crosshair ---- */
+
         #crosshair {
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 5;
+            display: none;
         }
+
         #crosshair::before,
         #crosshair::after {
             content: '';
             position: absolute;
             background: rgba(255, 255, 255, 0.35);
         }
+
         #crosshair::before {
-            width: 2px;
-            height: 18px;
-            left: 50%;
-            top: 50%;
+            width: 2px; height: 18px;
+            left: 50%; top: 50%;
             transform: translate(-50%, -50%);
         }
+
         #crosshair::after {
-            width: 18px;
-            height: 2px;
-            left: 50%;
-            top: 50%;
+            width: 18px; height: 2px;
+            left: 50%; top: 50%;
             transform: translate(-50%, -50%);
+        }
+
+        /* ================================================
+           PARTY HUD (bottom bar)
+           ================================================ */
+
+        #party-hud {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 10px 16px;
+            background: linear-gradient(0deg,
+                rgba(0,0,0,0.85) 0%,
+                rgba(0,0,0,0.5) 70%,
+                transparent 100%
+            );
+            z-index: 30;
+            pointer-events: none;
+            flex-wrap: wrap;
+        }
+
+        /* ---- HUD top bar (gold, food, buttons) ---- */
+
+        .hud-top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+            pointer-events: auto;
+        }
+
+        .hud-resource {
+            font-size: 13px;
+            color: #d4b87b;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .hud-resource-icon { font-size: 16px; }
+        .hud-resource-val { font-weight: bold; }
+
+        .hud-btn {
+            padding: 5px 14px;
+            background: linear-gradient(180deg, #2a2218 0%, #1a150e 100%);
+            border: 1px solid #554430;
+            color: #c4a86b;
+            font-family: inherit;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .hud-btn:hover {
+            background: linear-gradient(180deg, #3a3020 0%, #2a2218 100%);
+            border-color: #887755;
+            color: #e8d5a8;
+        }
+
+        /* ---- Party cards ---- */
+
+        .party-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            padding: 6px;
+            background: rgba(20, 15, 8, 0.8);
+            border: 1px solid #332a1a;
+            border-radius: 4px;
+            pointer-events: auto;
+        }
+
+        .party-portrait-wrap {
+            position: relative;
+            margin-bottom: 4px;
+        }
+
+        .party-portrait {
+            width: 48px; height: 48px;
+            border: 1px solid #554430;
+            border-radius: 2px;
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        .party-class-badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 18px; height: 18px;
+            background: rgba(30, 20, 10, 0.95);
+            border: 1px solid #887755;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            line-height: 1;
+        }
+
+        .party-cs-row {
+            font-size: 10px;
+            color: #887755;
+            margin-bottom: 2px;
+        }
+
+        .party-name {
+            font-size: 10px;
+            color: #c4a86b;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .stat-bar {
+            width: 100%; height: 5px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 2px;
+            margin-bottom: 2px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%; width: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .bar-health  .stat-bar-fill { background: linear-gradient(90deg, #8b2020, #cc3333); }
+        .bar-stamina .stat-bar-fill { background: linear-gradient(90deg, #1a6b1a, #33aa33); }
+        .bar-mana    .stat-bar-fill { background: linear-gradient(90deg, #1a3a8b, #3366cc); }
+        .bar-xp      { height: 3px; }
+        .bar-xp      .stat-bar-fill { background: linear-gradient(90deg, #4a1a6b, #a855f7); }
+
+        /* Crafting UI (Artificer workshop, K hotkey) */
+        .craft-overlay {
+            position: fixed; inset: 0; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.88); z-index: 38;
+        }
+        .craft-content {
+            position: relative;
+            width: 640px; max-width: 96vw; max-height: 86vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #1b1a24 0%, #0f0e14 100%);
+            border: 1px solid #3d2a55; border-radius: 6px;
+            padding: 20px; color: #d8cde8;
+        }
+        .craft-content::-webkit-scrollbar { width: 6px; }
+        .craft-content::-webkit-scrollbar-thumb { background: #3d2a55; border-radius: 3px; }
+        .craft-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; padding-bottom: 10px;
+            border-bottom: 1px solid #2a1f38;
+        }
+        .craft-title { font-size: 18px; color: #e0c6ff; letter-spacing: 1px; }
+        .craft-gold  { font-size: 13px; color: #d8cde8; }
+        .craft-close {
+            position: absolute; top: 14px; right: 14px;
+            background: transparent; color: #c9b3ff;
+            border: 1px solid #3d2a55; border-radius: 3px;
+            width: 26px; height: 26px; cursor: pointer; font-size: 14px;
+        }
+        .craft-close:hover { background: #3d2a55; }
+        .craft-tab-bar { display: flex; gap: 6px; margin-bottom: 12px; }
+        .craft-tab {
+            flex: 1; padding: 8px; border-radius: 4px;
+            background: #1a1624; color: #b9a9e0;
+            border: 1px solid #2a1f38; cursor: pointer; font-size: 13px;
+        }
+        .craft-tab.active { background: #3d2a55; color: #fff; }
+        .craft-tab:hover:not(.active) { background: #241b32; }
+        .craft-body { display: flex; flex-direction: column; gap: 10px; }
+        .craft-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; background: #1a1624;
+            border: 1px solid #2a1f38; border-radius: 4px;
+        }
+        .craft-row-info { flex: 1; font-size: 13px; }
+        .craft-desc { color: #8f80b8; font-size: 12px; }
+        .craft-owned { color: #9f8fd0; font-size: 11px; }
+        .craft-locked { color: #6b5a8a; font-size: 11px; }
+        .craft-btn {
+            padding: 7px 14px; border-radius: 4px; cursor: pointer;
+            background: #3d2a55; color: #fff;
+            border: 1px solid #5a3f7a; font-size: 12px;
+            white-space: nowrap;
+        }
+        .craft-btn:hover:not(:disabled) { background: #5a3f7a; }
+        .craft-btn-disabled, .craft-btn:disabled {
+            background: #1a1624; color: #5b4f7a; cursor: not-allowed;
+            border-color: #241b32;
+        }
+        .craft-btn-warn {
+            background: #55201a; border-color: #8b3020; color: #ffdddd;
+        }
+        .craft-btn-warn:hover:not(:disabled) { background: #8b3020; }
+        .craft-note { font-size: 12px; color: #8f80b8; font-style: italic; padding: 6px 0; }
+        .craft-label { font-size: 12px; color: #c9b3ff; margin-right: 6px; }
+        .craft-picker {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px; background: #1a1624;
+            border: 1px solid #2a1f38; border-radius: 4px;
+        }
+        .craft-select {
+            flex: 1; padding: 4px 8px; background: #241b32; color: #d8cde8;
+            border: 1px solid #3d2a55; border-radius: 3px; font-size: 12px;
+        }
+        .craft-slot-panel {
+            padding: 10px; background: #1a1624;
+            border: 1px solid #2a1f38; border-radius: 4px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .craft-slot-title { color: #e0c6ff; font-weight: bold; font-size: 13px; }
+        .craft-rider-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .craft-rider-btn {
+            flex: 1; min-width: 80px;
+            padding: 6px; background: #241b32; color: #d8cde8;
+            border: 1px solid #3d2a55; border-radius: 3px;
+            cursor: pointer; font-size: 12px;
+        }
+        .craft-rider-btn:hover:not(:disabled) { background: #3d2a55; }
+        .craft-sep { text-align: center; color: #6b5a8a; font-size: 11px; padding: 6px 0; }
+
+        .party-equip-row {
+            display: flex;
+            gap: 2px;
+            min-height: 16px;
+            margin-top: 2px;
+        }
+
+        .party-equip-icon {
+            font-size: 12px;
+            cursor: default;
+        }
+
+        .party-bag-btn {
+            margin-top: 3px;
+            padding: 2px 6px;
+            background: rgba(40, 30, 15, 0.9);
+            border: 1px solid #443322;
+            border-radius: 3px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .party-bag-btn:hover {
+            border-color: #887755;
+            background: rgba(60, 45, 25, 0.9);
+        }
+
+        /* ================================================
+           COMBAT OVERLAY
+           ================================================ */
+
+        #combat-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 25;
+            padding: 24px 16px 130px;
+            overflow-y: auto;
+        }
+
+        /* ---- Enemy cards ---- */
+
+        #combat-enemies {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .combat-enemy-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background: rgba(30, 20, 10, 0.9);
+            border: 1px solid #443322;
+            border-radius: 4px;
+            width: 110px;
+            transition: all 0.2s;
+        }
+
+        .combat-enemy-card.defeated {
+            opacity: 0.25;
+            filter: grayscale(1);
+        }
+
+        .combat-enemy-card.targetable {
+            border-color: #ffaa44;
+            cursor: pointer;
+            animation: target-pulse 0.8s infinite alternate;
+        }
+
+        @keyframes target-pulse {
+            from { box-shadow: 0 0 4px rgba(255, 170, 68, 0.3); }
+            to   { box-shadow: 0 0 14px rgba(255, 170, 68, 0.7); }
+        }
+
+        .combat-enemy-sprite {
+            width: 48px; height: 48px;
+            image-rendering: pixelated;
+            margin-bottom: 4px;
+        }
+
+        .combat-enemy-name {
+            font-size: 12px;
+            color: #d4b87b;
+            margin-bottom: 6px;
+        }
+
+        .combat-stat-bar {
+            width: 100%; height: 4px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 2px;
+            margin-bottom: 2px;
+            overflow: hidden;
+        }
+
+        .combat-stat-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .combat-bar-health  .combat-stat-fill { background: linear-gradient(90deg, #8b2020, #cc3333); }
+        .combat-bar-stamina .combat-stat-fill { background: linear-gradient(90deg, #1a6b1a, #33aa33); }
+        .combat-bar-mana    .combat-stat-fill { background: linear-gradient(90deg, #1a3a8b, #3366cc); }
+
+        /* ---- Combat log ---- */
+
+        #combat-log {
+            width: 520px;
+            max-width: 92vw;
+            height: 180px;
+            overflow-y: auto;
+            background: rgba(10, 8, 4, 0.9);
+            border: 1px solid #332a1a;
+            border-radius: 4px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: #aa9966;
+        }
+
+        #combat-log::-webkit-scrollbar { width: 5px; }
+        #combat-log::-webkit-scrollbar-track { background: transparent; }
+        #combat-log::-webkit-scrollbar-thumb { background: #332a1a; border-radius: 3px; }
+
+        #combat-log p {
+            margin: 0 0 4px;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(50, 40, 25, 0.25);
+        }
+
+        /* ---- Turn info ---- */
+
+        #combat-turn-info {
+            font-size: 15px;
+            color: #d4b87b;
+            margin-bottom: 12px;
+            min-height: 22px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* ---- Action buttons ---- */
+
+        #combat-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .combat-action-btn {
+            padding: 10px 22px;
+            background: linear-gradient(180deg, #2a2218 0%, #1a150e 100%);
+            border: 1px solid #554430;
+            color: #c4a86b;
+            font-family: inherit;
+            font-size: 14px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .combat-action-btn:hover:not(:disabled) {
+            background: linear-gradient(180deg, #3a3020 0%, #2a2218 100%);
+            border-color: #887755;
+            color: #e8d5a8;
+        }
+
+        .combat-action-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .combat-continue-btn {
+            font-size: 16px;
+            padding: 12px 36px;
+            letter-spacing: 2px;
+        }
+
+        /* ---- End-of-combat messages ---- */
+
+        .combat-end-msg {
+            font-size: 30px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        .combat-end-msg.victory { color: #88cc44; text-shadow: 0 0 20px rgba(136,204,68,0.4); }
+        .combat-end-msg.defeat  { color: #cc4444; text-shadow: 0 0 20px rgba(204,68,68,0.4); }
+        .combat-end-msg.fled    { color: #ccaa44; text-shadow: 0 0 20px rgba(204,170,68,0.4); }
+
+        /* ---- Loot summary ---- */
+
+        .combat-loot-summary {
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .loot-line {
+            font-size: 14px;
+            color: #d4b87b;
+            margin: 4px 0;
+        }
+
+        .loot-gold {
+            color: #ffdd66;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .loot-xp {
+            color: #ffcc55;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .loot-levelup {
+            color: #ffee88;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 0 0 8px rgba(255, 220, 80, 0.35);
+            margin: 2px 0;
+        }
+
+        /* ================================================
+           LOG OVERLAY (press L)
+           ================================================ */
+
+        #log-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 42;
+        }
+
+        #log-panel {
+            width: 620px;
+            max-width: 94vw;
+            max-height: 78vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 1px solid #554430;
+            border-radius: 6px;
+            padding: 18px 22px;
+        }
+
+        #log-heading {
+            font-size: 18px;
+            letter-spacing: 3px;
+            color: #e8d5a8;
+            margin-bottom: 12px;
+            text-align: center;
+            text-transform: uppercase;
+            border-bottom: 1px solid #332a1a;
+            padding-bottom: 8px;
+        }
+
+        #log-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 13px;
+            color: #aa9966;
+            line-height: 1.5;
+            min-height: 0;
+        }
+
+        #log-content::-webkit-scrollbar { width: 5px; }
+        #log-content::-webkit-scrollbar-track { background: transparent; }
+        #log-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px dotted rgba(50, 40, 25, 0.25);
+        }
+
+        .log-empty {
+            text-align: center;
+            color: #554433;
+            font-style: italic;
+            padding: 24px 0;
+        }
+
+        .log-entry.log-levelup {
+            color: #ffee88;
+            font-weight: bold;
+        }
+        .log-entry.log-portal { color: #cc99ff; }
+        .log-entry.log-victory { color: #88cc44; }
+        .log-entry.log-defeat { color: #cc4444; }
+
+        #btn-close-log {
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        /* ================================================
+           PORTAL CONFIRM MODAL
+           ================================================ */
+
+        #portal-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.82);
+            z-index: 44;
+        }
+
+        #portal-modal-content {
+            width: 440px;
+            max-width: 92vw;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 2px solid #aa6666;
+            border-radius: 6px;
+            padding: 24px 28px;
+            box-shadow: 0 0 40px rgba(200, 80, 80, 0.25);
+            text-align: center;
+        }
+
+        #portal-modal-content.portal-up {
+            border-color: #66aa88;
+            box-shadow: 0 0 40px rgba(80, 200, 120, 0.25);
+        }
+
+        #portal-title {
+            font-size: 20px;
+            letter-spacing: 3px;
+            color: #e8d5a8;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        #portal-body {
+            font-size: 14px;
+            color: #aa9966;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        #portal-modal-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        #portal-modal-btns .menu-btn { width: 160px; margin: 0; }
+
+        /* ================================================
+           TRAP MODAL
+           ================================================ */
+
+        #trap-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.82);
+            z-index: 45;
+        }
+
+        #trap-modal-content {
+            width: 460px;
+            max-width: 92vw;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 2px solid #cc8844;
+            border-radius: 6px;
+            padding: 24px 28px;
+            box-shadow: 0 0 40px rgba(240, 160, 80, 0.3);
+            text-align: center;
+        }
+
+        #trap-title {
+            font-size: 20px;
+            letter-spacing: 3px;
+            color: #ffcc66;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            text-shadow: 0 0 8px rgba(255, 180, 80, 0.4);
+        }
+
+        #trap-body {
+            font-size: 14px;
+            color: #c4a86b;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        #trap-body b { color: #ffdd88; }
+
+        #trap-modal-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        #trap-modal-btns .menu-btn { width: 180px; margin: 0; }
+
+        /* ================================================
+           BAG PICKER MODAL
+           ================================================ */
+        #bagpick-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.82);
+            z-index: 45;
+        }
+        #bagpick-modal-content {
+            width: 480px;
+            max-width: 92vw;
+            background: linear-gradient(180deg, #151a22 0%, #0c1018 100%);
+            border: 2px solid #5b8eff;
+            border-radius: 6px;
+            padding: 22px 24px;
+            box-shadow: 0 0 40px rgba(80, 120, 220, 0.3);
+            text-align: center;
+        }
+        #bagpick-title {
+            font-size: 20px;
+            letter-spacing: 3px;
+            color: #8fb4ff;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            text-shadow: 0 0 8px rgba(120, 160, 240, 0.4);
+        }
+        #bagpick-sub {
+            font-size: 13px;
+            color: #8fa1c4;
+            margin-bottom: 14px;
+        }
+        #bagpick-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        #bagpick-list .bagpick-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(50, 70, 110, 0.35);
+            border: 1px solid #335680;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #cfd8ec;
+            font-size: 14px;
+            transition: background 0.12s;
+        }
+        #bagpick-list .bagpick-row:hover {
+            background: rgba(80, 110, 170, 0.55);
+            border-color: #6aa0ff;
+        }
+        #bagpick-list .bagpick-row.dead {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        #bagpick-list .bagpick-name   { flex: 1; text-align: left; font-weight: bold; color: #e0e8f8; }
+        #bagpick-list .bagpick-class  { color: #9bb0d4; font-size: 12px; }
+        #bagpick-list .bagpick-hp     { color: #dd7777; font-size: 12px; min-width: 70px; text-align: right; }
+        #bagpick-modal-btns {
+            display: flex;
+            justify-content: center;
+        }
+        #bagpick-modal-btns .menu-btn { width: 160px; margin: 0; }
+
+        /* ================================================
+           POOL ROW (HP/ST/MP on Combat Stats)
+           ================================================ */
+        .pinv-pool-row .pool-hp { color: #dd5555; }
+        .pinv-pool-row .pool-st { color: #77cc77; }
+        .pinv-pool-row .pool-mp { color: #6699dd; }
+
+        /* ================================================
+           INVENTORY OVERLAY (group)
+           ================================================ */
+
+        #inventory-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 35;
+        }
+
+        #inventory-content {
+            width: 440px;
+            max-width: 92vw;
+            max-height: 70vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 1px solid #554430;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        #inventory-content::-webkit-scrollbar { width: 5px; }
+        #inventory-content::-webkit-scrollbar-track { background: transparent; }
+        #inventory-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+
+        .inv-gold-row {
+            text-align: center;
+            font-size: 18px;
+            color: #ffdd66;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #332a1a;
+        }
+
+        .inv-gold-icon { font-size: 20px; }
+
+        .inv-empty {
+            text-align: center;
+            color: #665544;
+            font-style: italic;
+            padding: 20px 0;
+        }
+
+        .inv-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(50, 40, 25, 0.3);
+        }
+
+        .inv-item-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .inv-item-icon { font-size: 18px; }
+        .inv-item-name { color: #d4b87b; font-size: 14px; }
+        .inv-item-qty { color: #887755; font-size: 12px; }
+        .inv-item-desc { color: #665544; font-size: 11px; font-style: italic; }
+
+        .inv-transfer-btn {
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid #554430;
+            color: #aa9966;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 3px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .inv-transfer-btn:hover {
+            border-color: #887755;
+            color: #e8d5a8;
+        }
+
+        .inv-transfer-picker {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .inv-transfer-member-btn {
+            padding: 3px 8px;
+            background: #2a2218;
+            border: 1px solid #665533;
+            color: #c4a86b;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .inv-transfer-member-btn:hover {
+            background: #3a3020;
+            color: #e8d5a8;
+        }
+
+        .inv-close-btn, .pinv-close-btn {
+            margin-top: 16px;
+            width: 100%;
+        }
+
+        /* ================================================
+           PERSONAL INVENTORY OVERLAY
+           ================================================ */
+
+        #personal-inventory-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 36;
+        }
+
+        #personal-inventory-content {
+            width: 400px;
+            max-width: 92vw;
+            max-height: 70vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 1px solid #554430;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .pinv-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #332a1a;
+        }
+
+        .pinv-portrait {
+            width: 48px; height: 48px;
+            border: 1px solid #554430;
+            border-radius: 2px;
+            image-rendering: pixelated;
+        }
+
+        .pinv-id-block {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .pinv-name {
+            font-size: 18px;
+            color: #d4b87b;
+        }
+
+        .pinv-subtitle {
+            font-size: 12px;
+            color: #887755;
+            letter-spacing: 0.5px;
+        }
+
+        .pinv-equip-btn-disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pinv-section {
+            margin-bottom: 14px;
+        }
+
+        .pinv-section-title {
+            font-size: 13px;
+            color: #887755;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #332a1a;
+            padding-bottom: 4px;
+        }
+
+        .pinv-equip-slot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+        }
+
+        .pinv-slot-label {
+            color: #887755;
+            font-size: 13px;
+            min-width: 60px;
+        }
+
+        .pinv-equipped-name {
+            color: #d4b87b;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .pinv-slot-empty {
+            color: #554433;
+            font-size: 13px;
+            font-style: italic;
+        }
+
+        .pinv-empty {
+            color: #554433;
+            font-style: italic;
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        .pinv-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(50, 40, 25, 0.2);
+        }
+
+        .pinv-item-info {
+            color: #d4b87b;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .pinv-item-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pinv-action-btn {
+            padding: 3px 8px;
+            background: transparent;
+            border: 1px solid #443322;
+            color: #aa9966;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .pinv-equip-btn:hover { border-color: #88aa55; color: #bbdd77; }
+        .pinv-use-btn:hover { border-color: #5588cc; color: #77aaee; }
+        .pinv-unequip-btn:hover { border-color: #cc8855; color: #eeaa77; }
+        .pinv-move-btn:hover { border-color: #887755; color: #e8d5a8; }
+
+        /* ---- XP bar ---- */
+        .pinv-xp-wrap {
+            width: 100%;
+            margin-top: 6px;
+        }
+        .pinv-xp-label {
+            font-size: 11px;
+            color: #887755;
+            margin-bottom: 3px;
+        }
+        .xp-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #332a1a;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .xp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #aa7733, #ffdd66);
+            transition: width 0.3s ease;
+        }
+
+        /* ---- Combat stats panel ---- */
+        .pinv-stats .pinv-stat-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 0;
+            font-size: 12px;
+            border-bottom: 1px dotted rgba(50, 40, 25, 0.2);
+        }
+        .pinv-stats .pinv-stat-row:last-child { border-bottom: none; }
+        .pinv-stat-label {
+            color: #887755;
+            min-width: 96px;
+        }
+        .pinv-stat-value {
+            color: #e8d5a8;
+            font-weight: bold;
+        }
+        .pinv-stat-breakdown {
+            color: #554433;
+            font-size: 10px;
+            font-style: italic;
+            margin-left: auto;
+        }
+        .defense-row .pinv-stat-value { color: #88ccff; }
+        .pinv-perk-row .pinv-stat-value {
+            color: #d8a0ff;
+            font-weight: normal;
+            font-size: 11px;
+        }
+
+        /* ---- Row toggle ---- */
+        .pinv-row-help {
+            font-size: 11px;
+            color: #776644;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        .pinv-row-btn-wrap {
+            display: flex;
+            gap: 6px;
+        }
+        .pinv-row-btn {
+            flex: 1;
+            padding: 7px 10px;
+            background: #1a150e;
+            border: 1px solid #443322;
+            color: #aa9966;
+            font-family: inherit;
+            font-size: 13px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        .pinv-row-btn:hover { color: #e8d5a8; border-color: #887755; }
+        .pinv-row-btn-active {
+            background: #2a2218;
+            border-color: #aa8855;
+            color: #ffdd99;
+            font-weight: bold;
+        }
+
+        .inv-revive-msg {
+            font-size: 11px;
+            color: #887755;
+            font-style: italic;
+            padding: 4px 0;
+        }
+
+        /* ================================================
+           COMBAT SPECIAL ELEMENTS
+           ================================================ */
+
+        .combat-stun-badge {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #ffdd44;
+            background: rgba(80, 60, 0, 0.6);
+            border: 1px solid #aa8844;
+            padding: 1px 4px;
+            border-radius: 2px;
+            text-align: center;
+            width: 100%;
+        }
+
+        #combat-log p.log-crit {
+            color: #ff9944;
+            font-weight: bold;
+            text-shadow: 0 0 6px rgba(255, 140, 60, 0.5);
+        }
+
+        #combat-log p.log-stun {
+            color: #ffdd44;
+            font-weight: bold;
+        }
+
+        #combat-log p.log-shield {
+            color: #88ccff;
+            font-weight: bold;
+        }
+
+        #combat-log p.log-heal {
+            color: #88dd88;
+            font-weight: bold;
+        }
+
+        #combat-log p.log-summon {
+            color: #cc99ff;
+            font-weight: bold;
+        }
+
+        #combat-log p.log-dodge {
+            color: #aaeeaa;
+            font-style: italic;
+        }
+
+        /* Special (class-ability) combat button styling */
+        .combat-special-btn {
+            background: linear-gradient(180deg, #3a2a48 0%, #1a1028 100%) !important;
+            border-color: #6a4a88 !important;
+            color: #d8c0f0 !important;
+        }
+        .combat-special-btn:hover:not(:disabled) {
+            background: linear-gradient(180deg, #4a3458 0%, #2a1a38 100%) !important;
+            border-color: #9066bb !important;
+            color: #f0e0ff !important;
+        }
+
+        /* Heal target-picker buttons */
+        .combat-heal-target-btn {
+            padding: 8px 16px;
+            background: linear-gradient(180deg, #1e3a28 0%, #0e1e14 100%);
+            border: 1px solid #4a8855;
+            color: #bbdd99;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        .combat-heal-target-btn:hover {
+            background: linear-gradient(180deg, #2e5a38 0%, #1e3a24 100%);
+            border-color: #7acc88;
+            color: #ddffbb;
+        }
+        .combat-heal-target-btn.heal-cancel {
+            background: linear-gradient(180deg, #3a1e1e 0%, #1e0e0e 100%);
+            border-color: #884a4a;
+            color: #dd9999;
+        }
+
+        /* ================================================
+           HELP OVERLAY
+           ================================================ */
+
+        #help-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 40;
+        }
+
+        #help-content {
+            width: 560px;
+            max-width: 92vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 1px solid #554430;
+            border-radius: 6px;
+            padding: 24px 28px;
+        }
+
+        #help-content::-webkit-scrollbar { width: 5px; }
+        #help-content::-webkit-scrollbar-track { background: transparent; }
+        #help-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+
+        #help-content h2 {
+            font-size: 22px;
+            letter-spacing: 3px;
+            color: #e8d5a8;
+            margin-bottom: 16px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .help-section {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #332a1a;
+        }
+
+        .help-section:last-child { border-bottom: none; }
+
+        .help-section-title {
+            font-size: 14px;
+            color: #d4b87b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .help-row {
+            font-size: 13px;
+            color: #aa9966;
+            margin: 4px 0;
+            line-height: 1.5;
+        }
+
+        .help-key {
+            display: inline-block;
+            min-width: 24px;
+            padding: 2px 6px;
+            background: #332a1a;
+            border: 1px solid #665533;
+            border-radius: 3px;
+            color: #e8d5a8;
+            font-weight: bold;
+            text-align: center;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .help-stat-red { color: #dd5555; font-weight: bold; }
+        .help-stat-green { color: #77cc77; font-weight: bold; }
+        .help-stat-blue { color: #6699dd; font-weight: bold; }
+
+        #btn-close-help {
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        /* ================================================
+           MENU HOTKEY TOOLTIP (on main menu)
+           ================================================ */
+
+        .menu-hotkey-tip {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #665533;
+            letter-spacing: 2px;
+            text-align: center;
+            z-index: 21;
+            pointer-events: none;
+        }
+
+        .menu-hotkey-tip .tip-key {
+            display: inline-block;
+            padding: 1px 6px;
+            background: #332a1a;
+            border: 1px solid #554430;
+            border-radius: 2px;
+            color: #c4a86b;
+            margin: 0 3px;
+            font-weight: bold;
+        }
+
+        /* ================================================
+           HUD TOAST
+           ================================================ */
+
+        #hud-toast {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 12px 24px;
+            background: rgba(30, 20, 10, 0.92);
+            border: 1px solid #887755;
+            border-radius: 6px;
+            color: #e8d5a8;
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            text-shadow: 0 0 12px rgba(196, 168, 107, 0.4);
+        }
+
+        @keyframes toast-fade {
+            0%   { opacity: 0; transform: translate(-50%, -60%); }
+            15%  { opacity: 1; transform: translate(-50%, -50%); }
+            75%  { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -40%); }
+        }
+
+        #hud-toast.hud-toast-fade {
+            animation: toast-fade 2.5s ease-out forwards;
+        }
+
+        /* ================================================
+           SHOP OVERLAY
+           ================================================ */
+
+        #shop-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 38;
+        }
+
+        #shop-content {
+            width: 520px;
+            max-width: 94vw;
+            max-height: 78vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
+            border: 1px solid #554430;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        #shop-content::-webkit-scrollbar { width: 5px; }
+        #shop-content::-webkit-scrollbar-track { background: transparent; }
+        #shop-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #332a1a;
+        }
+
+        .shop-title {
+            font-size: 18px;
+            color: #e8d5a8;
+            letter-spacing: 2px;
+        }
+
+        .shop-gold {
+            font-size: 16px;
+            color: #ffdd66;
+            font-weight: bold;
+        }
+
+        .shop-tab-bar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .shop-tab {
+            flex: 1;
+            padding: 8px 0;
+            background: #1a150e;
+            border: 1px solid #443322;
+            color: #aa9966;
+            font-family: inherit;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .shop-tab:hover { color: #e8d5a8; border-color: #665533; }
+
+        .shop-tab.active {
+            background: #2a2218;
+            border-color: #887755;
+            color: #e8d5a8;
+            font-weight: bold;
+        }
+
+        .shop-item-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(50, 40, 25, 0.3);
+        }
+
+        .shop-item-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .shop-item-icon { font-size: 18px; }
+        .shop-item-name { color: #d4b87b; font-size: 14px; }
+        .shop-item-qty { color: #887755; font-size: 12px; }
+        .shop-item-desc {
+            color: #665544;
+            font-size: 11px;
+            font-style: italic;
+            margin-left: 4px;
+        }
+
+        .shop-item-price {
+            color: #ffdd66;
+            font-size: 13px;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .shop-sell-price { color: #88cc77; }
+
+        .shop-action-btn {
+            padding: 4px 12px;
+            background: transparent;
+            border: 1px solid #554430;
+            color: #aa9966;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+            min-width: 50px;
+        }
+
+        .shop-buy-btn:hover:not(:disabled) { border-color: #88aa55; color: #bbdd77; }
+        .shop-sell-btn:hover { border-color: #ccaa55; color: #eedd77; }
+
+        .shop-action-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .shop-empty {
+            color: #554433;
+            font-style: italic;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        #btn-close-shop {
+            margin-top: 12px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="overlay">
-        <h1>Dungeon Crawlers</h1>
-        <p>Click to enter the dungeon</p>
-    </div>
-    <div id="crosshair"></div>
 
+    <!-- ======== MAIN MENU ======== -->
+    <div id="main-menu" class="menu-screen" style="display: none;">
+        <h1>Dungeon Crawlers</h1>
+        <p class="menu-subtitle">A Procedural Adventure</p>
+        <button id="btn-new-game" class="menu-btn">New Game</button>
+        <button id="btn-load-game" class="menu-btn">Load Game</button>
+        <div class="menu-hotkey-tip">
+            In-game hotkeys:
+            <span class="tip-key">R</span>Rest
+            <span class="tip-key">I</span>Inventory
+            <span class="tip-key">C</span>Recruit
+            <span class="tip-key">B</span>Bag
+            <span class="tip-key">L</span>Log
+            <span class="tip-key">H</span>Help
+        </div>
+    </div>
+
+    <!-- ======== CHARACTER NAME INPUT ======== -->
+    <div id="name-input-modal" class="menu-screen" style="display: none;">
+        <h2>Create Your Character</h2>
+        <label class="name-label" for="player-name">Enter Your Name</label>
+        <input type="text" id="player-name" maxlength="32" autocomplete="off" placeholder="Your name...">
+        <div class="char-choice-row">
+            <div class="char-choice-col">
+                <label class="name-label" for="player-class">Class</label>
+                <select id="player-class" class="char-select"></select>
+                <div id="class-desc" class="char-desc"></div>
+            </div>
+            <div class="char-choice-col">
+                <label class="name-label" for="player-species">Species</label>
+                <select id="player-species" class="char-select"></select>
+                <div id="species-desc" class="char-desc"></div>
+            </div>
+        </div>
+        <div id="name-error"></div>
+        <button id="btn-start-adventure" class="menu-btn">Begin Adventure</button>
+        <button id="btn-cancel-name" class="menu-btn back-btn">Cancel</button>
+    </div>
+
+    <!-- ======== RECRUIT MODAL ======== -->
+    <div id="recruit-modal" class="menu-screen" style="display: none;">
+        <h2>Hire a Recruit</h2>
+        <p class="menu-subtitle" style="margin-bottom:24px;">Cost: <span id="recruit-cost">0</span> gold</p>
+        <label class="name-label" for="recruit-name">Recruit Name</label>
+        <input type="text" id="recruit-name" maxlength="32" autocomplete="off" placeholder="Recruit name...">
+        <div class="char-choice-row">
+            <div class="char-choice-col">
+                <label class="name-label" for="recruit-class">Class</label>
+                <select id="recruit-class" class="char-select"></select>
+                <div id="recruit-class-desc" class="char-desc"></div>
+            </div>
+            <div class="char-choice-col">
+                <label class="name-label" for="recruit-species">Species</label>
+                <select id="recruit-species" class="char-select"></select>
+                <div id="recruit-species-desc" class="char-desc"></div>
+            </div>
+        </div>
+        <div id="recruit-error"></div>
+        <div class="recruit-btn-row">
+            <button id="btn-recruit-confirm" class="menu-btn">Hire</button>
+            <button id="btn-recruit-cancel" class="menu-btn back-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ======== LOAD SCREEN ======== -->
+    <div id="load-screen" class="menu-screen" style="display: none;">
+        <h2>Load Game</h2>
+        <div id="save-slots-list"></div>
+        <button id="btn-back-menu" class="menu-btn back-btn">Back</button>
+    </div>
+
+    <!-- ======== PAUSE OVERLAY ======== -->
+    <div id="pause-overlay">
+        <h2>Paused</h2>
+        <p>Click anywhere to resume</p>
+        <button id="btn-save-now" class="menu-btn">Save</button>
+        <button id="btn-save-exit" class="menu-btn">Save &amp; Exit</button>
+    </div>
+
+    <!-- ======== COMBAT OVERLAY ======== -->
+    <div id="combat-overlay">
+        <div id="combat-enemies"></div>
+        <div id="combat-log"></div>
+        <div id="combat-turn-info"></div>
+        <div id="combat-actions"></div>
+    </div>
+
+    <!-- ======== GROUP INVENTORY OVERLAY ======== -->
+    <div id="inventory-overlay">
+        <div id="inventory-content"></div>
+        <button id="btn-close-inventory" class="menu-btn inv-close-btn">Close</button>
+    </div>
+
+    <!-- ======== PERSONAL INVENTORY OVERLAY ======== -->
+    <div id="personal-inventory-overlay">
+        <div id="personal-inventory-content"></div>
+        <button id="btn-close-personal" class="menu-btn pinv-close-btn">Close</button>
+    </div>
+
+    <!-- ======== SHOP OVERLAY (Tinkerer) ======== -->
+    <div id="shop-overlay">
+        <div id="shop-content"></div>
+        <button id="btn-close-shop" class="menu-btn">Leave Shop</button>
+    </div>
+
+    <!-- ======== LOG OVERLAY (press L) ======== -->
+    <div id="log-overlay">
+        <div id="log-panel">
+            <h2 id="log-heading">Adventure Log</h2>
+            <div id="log-content"></div>
+        </div>
+        <button id="btn-close-log" class="menu-btn">Close</button>
+    </div>
+
+    <!-- ======== PORTAL CONFIRM MODAL ======== -->
+    <div id="portal-modal">
+        <div id="portal-modal-content">
+            <div id="portal-title">Descend?</div>
+            <div id="portal-body"></div>
+            <div id="portal-modal-btns">
+                <button id="btn-portal-confirm" class="menu-btn">Enter</button>
+                <button id="btn-portal-cancel" class="menu-btn back-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== TRAP MODAL (rogue-spotted trap) ======== -->
+    <div id="trap-modal">
+        <div id="trap-modal-content">
+            <div id="trap-title">&#x26A0;&#xFE0F; Trap Spotted!</div>
+            <div id="trap-body"></div>
+            <div id="trap-modal-btns">
+                <button id="btn-trap-disarm" class="menu-btn">Attempt Disarm</button>
+                <button id="btn-trap-skip"   class="menu-btn back-btn">Step Carefully</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== BAG PICKER MODAL (B hotkey) ======== -->
+    <div id="bagpick-modal">
+        <div id="bagpick-modal-content">
+            <div id="bagpick-title">&#x1F392; Open Whose Bag?</div>
+            <div id="bagpick-sub">Mouse released from look — click a party member to open their pack, or Cancel.</div>
+            <div id="bagpick-list"></div>
+            <div id="bagpick-modal-btns">
+                <button id="btn-bagpick-cancel" class="menu-btn back-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== LIGHT PICKER MODAL (T hotkey) ======== -->
+    <div id="lightpick-modal" style="position:fixed; inset:0; display:none; background:rgba(0,0,0,0.65); z-index:1500; align-items:center; justify-content:center;">
+        <div style="background: #121826; border:2px solid #ffaa44; border-radius:12px; padding:22px 26px; min-width:420px; max-width:520px; box-shadow: 0 0 40px rgba(255,170,68,0.35); color:#e0e8f8; font-family: sans-serif;">
+            <div style="font-size:20px; font-weight:bold; color:#ffcc77; margin-bottom:8px;">&#x1F56F;&#xFE0F; Kindle a Light</div>
+            <div id="lightpick-sub" style="font-size:12px; color:#9bb0d4; margin-bottom:14px;">Choose a light source. Only one may burn at a time.</div>
+            <div id="lightpick-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
+            <div style="display:flex; justify-content:flex-end;">
+                <button id="btn-lightpick-cancel" class="menu-btn back-btn" style="width:140px; margin:0;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== HELP OVERLAY ======== -->
+    <div id="help-overlay">
+        <div id="help-content">
+            <h2>Help &amp; Controls</h2>
+
+            <div class="help-section">
+                <div class="help-section-title">Hotkeys</div>
+                <div class="help-row"><span class="help-key">R</span> Rest the party (consumes 1 food, recovers 33% HP/ST/MP)</div>
+                <div class="help-row"><span class="help-key">I</span> Open / close group inventory</div>
+                <div class="help-row"><span class="help-key">C</span> Recruit a new party member (cost scales with each hire; new recruits start one level below the main character)</div>
+                <div class="help-row"><span class="help-key">B</span> Open the bag picker — releases the mouse and lets you click any party member to view their personal bag</div>
+                <div class="help-row"><span class="help-key">T</span> Open the Light Picker — kindle a torch, burn lantern oil, or have a mage cast Light</div>
+                <div class="help-row"><span class="help-key">L</span> Open the Adventure Log (combat &amp; history)</div>
+                <div class="help-row"><span class="help-key">M</span> Open the dungeon Minimap (fog-of-war — only explored cells are shown)</div>
+                <div class="help-row"><span class="help-key">K</span> Open the <b>Crafting</b> menu (requires an Artificer in the party) — enchant weapons/armor, brew potions, forge &amp; repair golems</div>
+                <div class="help-row"><span class="help-key">H</span> Toggle this help menu</div>
+                <div class="help-row"><span class="help-key">Esc</span> Close any open overlay</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Light &amp; Darkness</div>
+                <div class="help-row">The dungeon is <b>genuinely dark</b> — only what your party carries is lit. You start with <b>3 torches</b>. When your light goes out, return to the Tinkerer or restock from monster drops.</div>
+                <div class="help-row"><b>&#x1F526; Torch</b> — 12-square radius, <b>10 minutes</b>, warm flickering flame. Buy for 25g; 3% chance to drop from any slain monster.</div>
+                <div class="help-row"><b>&#x1FAD9; Lantern</b> + <b>&#x1F6E2;&#xFE0F; Lantern Oil</b> — 24-square radius, <b>15 minutes</b> per oil, steady golden light. Lantern 100g (reusable), Oil 30g (consumed).</div>
+                <div class="help-row"><b>&#x2728; Light spell</b> — mage only. 10 MP for an <b>14-square</b> cool white light lasting <b>5 minutes</b>.</div>
+                <div class="help-row">Press <b>T</b> any time to pick a source. Only one light burns at a time; starting a new one replaces the old. Timers only tick during exploration (combat pauses them).</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Stat Bars</div>
+                <div class="help-row"><span class="help-stat-red">Red</span> — Health (HP). When this reaches 0 the character falls.</div>
+                <div class="help-row"><span class="help-stat-green">Green</span> — Stamina (ST). Powers melee and ranged attacks.</div>
+                <div class="help-row"><span class="help-stat-blue">Blue</span> — Mana (MP). Powers magic attacks.</div>
+                <div class="help-row">Attacking with insufficient stamina/mana still works, but deals <b>half damage</b>.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Levels &amp; XP</div>
+                <div class="help-row">Every character starts at <b>Level 1</b> and can reach <b>Level 100</b>.</div>
+                <div class="help-row">Defeating a monster grants <b>10 × its level</b> XP, split evenly across all living party members (summons excluded).</div>
+                <div class="help-row">Cumulative XP needed for level <i>N</i> is <b>100 × N²</b> (400 for L2, 900 for L3, 1,600 for L4, …).</div>
+                <div class="help-row">On level-up: <b>+12 HP / +12 ST / +12 MP</b> (scaled by class modifiers), and all pools refill to full.</div>
+                <div class="help-row">Each class gains <b>per-level scaling</b> (see Classes below) — higher levels grant better damage, stun/crit/dodge chances, and special bonuses.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Combat Rows</div>
+                <div class="help-row">Every character is either <b>Front Row</b> (⚔) or <b>Back Row</b> (🏹). Toggle from the personal inventory screen.</div>
+                <div class="help-row">Monsters <b>only target front-row</b> characters. Back row is safe from damage — until the front falls.</div>
+                <div class="help-row">When the entire front row is down, combat pauses and you must <b>promote</b> a back-row ally forward.</div>
+                <div class="help-row">Only <b>Rogues</b> may melee from the back row (stealth). Everyone else is limited to ranged / magic / special abilities from the back.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Combat Mechanics</div>
+                <div class="help-row"><b>Defense</b> = class + species + per-level bonus + armor + trinkets. Every point directly reduces incoming damage.</div>
+                <div class="help-row"><b>Melee attacks</b> have a <b>20% base stun chance</b>; warriors gain <b>+3% per level</b>.</div>
+                <div class="help-row"><b>Ranged attacks</b> have a <b>20% base crit chance</b>; rangers gain <b>+3% per level</b>. Ranged weapons roll <b>+1 min/+1 max</b> damage over other subtypes.</div>
+                <div class="help-row"><b>Magic attacks</b> hit all enemies; mages gain <b>+1% stun per level</b>.</div>
+                <div class="help-row"><b>Rogue Backstab</b>: 3× stamina for <b>2× damage plus +10% per rogue level</b> (+100% at L10). Rogues can also attempt to spot and disarm traps.</div>
+                <div class="help-row"><b>Equipped weapons</b> add their power to matching attack types.</div>
+                <div class="help-row"><b>Equipped armor</b> reduces incoming damage by its blocking value. See Armor Restrictions below.</div>
+                <div class="help-row"><b>Equipped shields</b> have a <b>25% chance to completely block</b> an incoming attack. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers cannot use shields at all.</div>
+                <div class="help-row"><b>Encounter size</b>: combat always pulls in enough adjacent monsters to match your party size (summons included).</div>
+                <div class="help-row">Fallen allies are <b>not</b> auto-revived at the end of combat — use a Resurrection Potion to bring them back.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Status Effects</div>
+                <div class="help-row"><b>&#x1F7E2; Poison</b> — ticks damage at the start of each of your rounds for several turns. Spiders and some monsters apply it on hit. A bigger dose refreshes and supersedes a weaker one. Poison from traps <b>persists out of combat</b> and continues ticking every <b>10 seconds</b> of exploration time. Poisoned characters show a <b>green &#x1F922; face badge</b> on their HUD portrait.</div>
+                <div class="help-row"><b>&#x2728; Stun</b> — the target loses its next action. Warriors, mages (via magic), and <b>trolls</b> can stun on hit.</div>
+                <div class="help-row"><b>&#x1F343; Entangle</b> (druid) — roots an enemy: its defense is reduced, so your party deals extra damage for the duration.</div>
+                <div class="help-row"><b>&#x1F3B6; Bard Song</b> — party-wide damage &amp; defense buff; may be sung <b>once per combat</b>.</div>
+                <div class="help-row"><b>Troll regen</b>: trolls heal <b>15% of max HP</b> at the start of every enemy round — focus them down fast.</div>
+                <div class="help-row"><b>Cultist AoE</b>: cultists cast a dark rite that damages the <b>entire party</b> (front <i>and</i> back rows, plus any summons) in one turn.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Armor &amp; Shield Restrictions</div>
+                <div class="help-row"><b>Cloth</b> only: Mage, Necromancer, Monk</div>
+                <div class="help-row"><b>Cloth / Leather</b>: Rogue, Druid, Artificer (no chain or plate)</div>
+                <div class="help-row"><b>Cloth / Leather / Chain</b>: Ranger, Bard (no plate)</div>
+                <div class="help-row"><b>All armor</b>: Warrior, Cleric, Paladin</div>
+                <div class="help-row"><b>No shields</b>: Mage, Monk, Necromancer. A shield is also forced off whenever you equip a ranged weapon.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Dungeon Levels &amp; Portals</div>
+                <div class="help-row">The dungeon has up to <b>100 floors</b>. Deeper floors spawn tougher monsters that deal more damage and drop more gold.</div>
+                <div class="help-row"><b>&#x1F534; Red portal</b> — descends to the next floor. Appears on every level.</div>
+                <div class="help-row"><b>&#x1F7E2; Green portal</b> — ascends to the previous floor. Appears on levels 2 and deeper.</div>
+                <div class="help-row">Entering a portal regenerates the dungeon, resets spawns, and teleports you to the starting crossroads.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Exploration</div>
+                <div class="help-row">Walk into enemies — or let them walk into you — to begin combat. Monsters in adjacent cells join the fight, scaled to party size.</div>
+                <div class="help-row">The <b>Wandering Tinkerer</b> roams the dungeon. Bumping into them opens a shop (no combat).</div>
+                <div class="help-row">Rest at any time in safety to recover. Keep food stocked!</div>
+                <div class="help-row"><b>&#x26A0;&#xFE0F; Traps</b>: invisible pressure plates lurk on most floor tiles. Types are randomised per trap — pit, swinging blade, dart volley, arrow trap, falling rocks, poison spray, acid jet, fire blast, lightning rune, choking gas, ceiling crusher, scything pendulum, snare net, spring spikes. If you have a <b>Rogue</b> in the party, they'll spot the trap before you step on it and you can attempt to disarm it — success scales with rogue level. Without a rogue, you trigger the trap and the whole party takes damage. A <b>modal dialog</b> announces every sprung trap, every successful disarm (revealing any hidden treasure), and every failed disarm. <b>Poison-kind traps</b> (darts, poison spray, choking gas) also apply a poison DoT.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Regeneration</div>
+                <div class="help-row">All characters slowly regenerate while exploring: <b>+1 HP/min, +3 ST/min, +2 MP/min</b> by default.</div>
+                <div class="help-row">Class and species add to these rates. Regen also continues while menus are open, but not during combat.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Classes</div>
+                <div class="help-row"><b>&#x2694;&#xFE0F; Warrior</b> — Front-line tank. +50% HP/ST, no mana. +1 melee, base +1 defense. All armor, shields OK. <b>Per level:</b> +1 melee, +1 defense, +3% stun.</div>
+                <div class="help-row"><b>&#x1F3F9; Ranger</b> — Bowman. +25% HP/ST, -50% mana. +1 ranged. No plate. Shield OK (but not with a bow equipped). Can <b>Summon Woodland Beast</b> (7 MP): bear, eagle, or pixie. <b>Per level:</b> +1 ranged, +3% crit.</div>
+                <div class="help-row"><b>&#x1FA84; Mage</b> — Arcane caster. -25% HP/ST, +50% mana. +1 magic, +2 MP regen. Cloth only, <b>no shield</b>. <b>Per level:</b> +1 magic, +1% magic stun.</div>
+                <div class="help-row"><b>&#x1F5E1;&#xFE0F; Rogue</b> — Stealthy striker. +100% ST, no mana. +1 melee, +2 ST regen. Cloth or leather armor. Can melee from <b>back row</b>. <b>Backstab</b>: 3× stamina for <b>2× damage + 10% per rogue level</b>. Can <b>spot and disarm traps</b>. <b>Per level:</b> +1 melee, +1% instakill.</div>
+                <div class="help-row"><b>&#x1F9D8; Monk</b> — Martial artist. <b>Neutral stats</b> (no HP/ST/MP modifier). +1 melee, +1 ST/MP regen. Cloth only, <b>no shield</b>. Melee costs <b>both</b> ST &amp; MP. 50% whirlwind. <b>40% base dodge</b> (2 ST + 2 MP, melee only) — <b>caps at 95%</b>. <b>All incoming damage is also reduced by the monk's current dodge %</b>, so a L1 monk on a non-dodged hit still takes 60% damage. <b>Per level:</b> +1 melee, +1% whirlwind, +1% dodge.</div>
+                <div class="help-row"><b>&#x2728; Cleric</b> — Healer. +25% HP, -50% ST, +25% mana. All armor, shields OK. <b>Heal</b>: 5 MP → 25% max HP. <b>Revive</b> (unlocks at L3): 25 MP brings a fallen ally back at 25% max HP. <b>Per level:</b> +2% heal power.</div>
+                <div class="help-row"><b>&#x1F480; Necromancer</b> — Dark caster. -50% HP/ST, +100% mana. Cloth only, <b>no shield</b>. <b>Summon Undead</b> (7 MP, combat only): <b>Skeleton at L1</b>, then stronger tiers every 2 levels (zombie → ghoul → spectre → mummy → ghost → vampire → death knight). Magic drains HP to caster and own undead. <b>Per level:</b> +1 magic, +1 drain.</div>
+                <div class="help-row"><b>&#x1F3B6; Bard</b> — Inspiring performer. -20% ST, +20% MP. +1 MP regen. Cloth/leather/chain (no plate); shields OK. <b>Sing Song</b> (7 MP, <b>once per combat</b>): party-wide +2 defense &amp; +2 to all damage (rises by +1 every 2 levels beyond 1). <b>Per level:</b> +1 magic damage.</div>
+                <div class="help-row"><b>&#x1F33F; Druid</b> — Nature caster. -15% HP/ST, +30% MP. +1 MP regen. Cloth/leather only (no chain or plate); shields OK. <b>Entangle</b> (8 MP): rolls 50% on each enemy to debuff -2 defense &amp; -2 damage (rises by +1 every 2 levels beyond 1). <b>Summon Woodland Beast</b> (7 MP): wolf/bear/eagle/pixie, like the ranger. <b>Per level:</b> +1 magic damage.</div>
+                <div class="help-row"><b>&#x1F6E1;&#xFE0F; Paladin</b> — Holy warrior. +25% HP, neutral ST, -25% MP. All armor, shields OK. <b>Smite</b> (5 MP, front row): armor-ignoring holy melee strike. Against <b>undead</b> or <b>demon</b> foes: +2 damage per paladin level AND a <b>1% + 1%/level</b> chance to <b>instantly purge</b> the foe. <b>Lay On Hands</b> (5 MP): half-strength cleric heal (12.5% max HP base, +1%/level). <b>Per level:</b> +1 melee, +1 defense, +1%/level smite chance, +1% heal.</div>
+                <div class="help-row"><b>&#x2699;&#xFE0F; Artificer</b> — Tinker-gunner. Neutral stats. Cloth/leather only (no chain or plate); shields OK with melee only. <b>Scatter Shot</b> replaces the default ranged attack: primary shot hits at full damage, plus <b>2 splash shots</b> at 50% damage (+1 splash every 5 artificer levels). Can <b>forge persistent Golems</b> (Flesh / Clay / Stone / Iron — unlocked at L1/L3/L6/L10) and <b>Repair Golem</b> (1 matching reagent → 50% max HP). Golems survive between combats but <b>permadeath</b> on KO. Open Crafting with <b>K</b> to forge, enchant, brew, or dismiss a golem. <b>Per level:</b> +1 ranged.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Monster Tags</div>
+                <div class="help-row">Some monsters carry hidden tags that unlock class interactions. Mouse over an enemy card in combat to see its tag line.</div>
+                <div class="help-row"><b>&#x1F9DF; Undead</b> &amp; <b>&#x1F608; Demon</b> — vulnerable to paladin <b>Smite</b> (bonus damage &amp; instakill chance). These same tags govern necromancer life-drain rules for allied undead.</div>
+                <div class="help-row"><b>&#x1F43A; Beast</b> — wild creatures. Reserved for future druid/ranger interactions.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Crafting (K)</div>
+                <div class="help-row">Press <b>K</b> while exploring to open the Crafting menu (requires an Artificer in the party). Three tabs: <b>Enchant</b>, <b>Potions</b>, <b>Golems</b>.</div>
+                <div class="help-row"><b>Reagents</b> come in three tiers — <b>Common / Uncommon / Rare</b> — dropping from slain monsters with rarer reagents deeper in the dungeon. Reagents are the universal crafting currency for enchanting, brewing, and golem work.</div>
+                <div class="help-row"><b>Weapon Enchants</b> — upgrade any equipped weapon to <b>+1 / +2 / +3</b> (each step flat +damage). After reaching +1 you may attune a single <b>elemental rider</b> (25% proc on melee/ranged hits):
+                    <ul style="margin:4px 0 0 24px;padding:0;">
+                        <li><b>&#x1F525; Fire</b> — 1.5× extra burn DoT for 1 additional round.</li>
+                        <li><b>&#x1F9EA; Acid</b> — DoT plus enemy defense debuff.</li>
+                        <li><b>&#x1F7E2; Poison</b> — DoT plus enemy damage debuff.</li>
+                        <li><b>&#x26A1; Lightning</b> — 1-round stun + attack (damage) debuff.</li>
+                        <li><b>&#x2744;&#xFE0F; Ice</b> — 1-round stun + defense debuff.</li>
+                    </ul>
+                </div>
+                <div class="help-row"><b>Armor Enchants</b> — +1 / +2 / +3 to an equipped armor piece (flat bonus defense). Unequipping clears the enchant.</div>
+                <div class="help-row"><b>Potions</b>:
+                    <ul style="margin:4px 0 0 24px;padding:0;">
+                        <li><b>&#x1F9EA; Minor Healing Potion</b> — restores a portion of max HP.</li>
+                        <li><b>&#x1F9EA; Greater Healing Potion</b> — restores more HP.</li>
+                        <li><b>&#x1F6E1;&#xFE0F; Elixir of Warding</b> — timed defense buff (wall-clock; persists across combats until it expires).</li>
+                        <li><b>&#x2694;&#xFE0F; Elixir of Wrath</b> — timed damage buff (same timing rules).</li>
+                    </ul>
+                </div>
+                <div class="help-row"><b>Golems</b>:
+                    <ul style="margin:4px 0 0 24px;padding:0;">
+                        <li><b>&#x1F9DF; Flesh Golem</b> (L1, common reagents) — regenerates HP each round.</li>
+                        <li><b>&#x1F9F1; Clay Golem</b> (L3, uncommon) — reflects a fraction of incoming damage.</li>
+                        <li><b>&#x1FAA8; Stone Golem</b> (L6, uncommon+rare) — periodic area-stun slam.</li>
+                        <li><b>&#x2699;&#xFE0F; Iron Golem</b> (L10, rare) — cleaves multiple foes, immune to some effects.</li>
+                    </ul>
+                </div>
+                <div class="help-row">Only <b>one golem per artificer</b> at a time. Golems are <b>persistent</b> (they travel with you between combats and floors) but die permanently on KO — no revive, no resurrect. The artificer may <b>Repair Golem</b> in or out of combat (spends 1 reagent of the golem's tier → 50% max HP).</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Monster Drops</div>
+                <div class="help-row">Every slain monster rolls independently for each loot kind — gold, food, healing potion, weapon/armor/shield/trinket drops — plus two new rolls:</div>
+                <div class="help-row"><b>&#x1F526; Torch</b> — 3% chance per slain enemy. Keep the lights on!</div>
+                <div class="help-row"><b>&#x2728; Magical Reagents</b> — <b>Common / Uncommon / Rare</b> tiers drop from slain monsters (rarer reagents weight deeper in the dungeon). Reagents power the Crafting menu (K): enchants, potions, and golem forging/repair.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Trinkets &amp; Equipment</div>
+                <div class="help-row">Each non-summoned character now has <b>five extra equipment slots</b>: Cloak, Neck, Ring I, Ring II, and Belt.</div>
+                <div class="help-row">Trinkets come in four bonus types — <b>defense / melee / ranged / magic</b> — across four tiers (Common, Uncommon, Rare, Legendary) for <b>+1 to +4</b>.</div>
+                <div class="help-row">Trinkets are rare loot drops from defeated monsters (2% base chance, scaling with dungeon depth). The Tinkerer stocks a small rotating selection of lower-tier trinkets.</div>
+                <div class="help-row">Rings can be worn in either ring slot; cloaks/necks/belts each have a dedicated slot.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Summons</div>
+                <div class="help-row"><b>&#x1F43A; Wolf / &#x1F43B; Bear:</b> heavy melee with stun. <b>&#x1F985; Eagle:</b> ranged crits. <b>&#x1F9DA; Pixie:</b> magic AoE.</div>
+                <div class="help-row"><b>&#x1F9B4; Necromancer undead</b> start at <b>Skeleton (L1)</b>, then every 2 levels unlock: zombie → ghoul → spectre → mummy → ghost → vampire → death knight. Each new tier grants +50% HP, +2 damage, +1 defense.</div>
+                <div class="help-row">Ranger &amp; Druid beasts can be healed by clerics. Necromancer undead cannot — but the necromancer's drain restores them.</div>
+                <div class="help-row"><b>Artificer Golems</b> are a separate summon family — persistent, one per artificer, permadeath on KO. Only the forging artificer may repair them (1 tier-matched reagent for 50% HP) and they survive between combats.</div>
+                <div class="help-row"><b>Summons appear in the party roster</b> during combat (and can be targeted &amp; healed), and are removed from the roster when combat ends — except for persistent golems, which remain in the roster until they fall.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Species</div>
+                <div class="help-row"><b>&#x1F464; Human</b> — Well-rounded. +1 HP regen, +1 ST regen.</div>
+                <div class="help-row"><b>&#x1F9DD; Elf</b> — Graceful archer-mages. +1 ranged, +1 magic.</div>
+                <div class="help-row"><b>&#x26CF;&#xFE0F; Dwarf</b> — Stout mountain-folk. +1 melee, +1 ST regen.</div>
+                <div class="help-row"><b>&#x1F479; Orc</b> — Brutish warriors. +1 melee, +1 HP regen.</div>
+                <div class="help-row"><b>&#x1F9D9; Gnome</b> — Tinkering illusionists. +1 magic, +1 MP regen.</div>
+                <div class="help-row"><b>&#x1F9D1; Halfling</b> — Nimble wanderers. +1 defense, +1 ST regen.</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Items &amp; Shop</div>
+                <div class="help-row"><b>&#x1F34E; Food</b> (50g) — consumed when resting.</div>
+                <div class="help-row"><b>&#x1F9EA; Healing Potion</b> (50g) — restores full HP to one character.</div>
+                <div class="help-row"><b>&#x1F56F;&#xFE0F; Resurrection Potion</b> (200g) — revives a fallen party member to full HP/ST/MP.</div>
+                <div class="help-row"><b>Artificer-crafted potions</b> (see Crafting): Minor / Greater Healing, Elixir of Warding (timed defense), Elixir of Wrath (timed damage). Elixirs tick by wall-clock and persist through combat boundaries until they expire.</div>
+                <div class="help-row">Weapons, armor, and shields are sold at the Wandering Tinkerer (50g per power/blocking, 150g shields). Sell any item at half price.</div>
+                <div class="help-row"><b>&#x1F9E3; Trinkets</b> — cloak/neck/ring/belt accessories. Tier 1 available at the shop (150g × tier), higher tiers drop from monsters.</div>
+            </div>
+        </div>
+        <button id="btn-close-help" class="menu-btn">Close</button>
+    </div>
+
+    <!-- ======== GAME UI ======== -->
+    <div id="game-ui">
+        <div id="crosshair"></div>
+        <div id="party-hud"></div>
+    </div>
+
+    <!-- ======== THREE.JS & GAME BOOT ======== -->
     <script type="importmap">
     {
         "imports": {

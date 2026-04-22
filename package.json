@@ -1,0 +1,9 @@
+{
+  "name": "dungeon-crawlers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dungeon Crawlers — A Procedural Adventure",
+  "scripts": {
+    "start": "npx serve -l 3000 --no-clipboard"
+  }
+}
