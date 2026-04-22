@@ -2033,7 +2033,7 @@
                 <div class="help-row"><b>Rogue Backstab</b>: 3× stamina for <b>2× damage plus +10% per rogue level</b> (+100% at L10). Rogues can also attempt to spot and disarm traps.</div>
                 <div class="help-row"><b>Equipped weapons</b> add their power to matching attack types.</div>
                 <div class="help-row"><b>Equipped armor</b> reduces incoming damage by its blocking value. See Armor Restrictions below.</div>
-                <div class="help-row"><b>Equipped shields</b> have a <b>25% chance to completely block</b> an incoming attack. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers cannot use shields at all.</div>
+                <div class="help-row"><b>Equipped shields</b> have a <b>25% chance to completely block</b> an incoming attack. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers/Artificers cannot use shields at all.</div>
                 <div class="help-row"><b>Encounter size</b>: combat always pulls in enough adjacent monsters to match your party size (summons included).</div>
                 <div class="help-row">Fallen allies are <b>not</b> auto-revived at the end of combat — use a Resurrection Potion to bring them back.</div>
             </div>
@@ -2041,7 +2041,9 @@
             <div class="help-section">
                 <div class="help-section-title">Status Effects</div>
                 <div class="help-row"><b>&#x1F7E2; Poison</b> — ticks damage at the start of each of your rounds for several turns. Spiders and some monsters apply it on hit. A bigger dose refreshes and supersedes a weaker one. Poison from traps <b>persists out of combat</b> and continues ticking every <b>10 seconds</b> of exploration time. Poisoned characters show a <b>green &#x1F922; face badge</b> on their HUD portrait.</div>
-                <div class="help-row"><b>&#x2728; Stun</b> — the target loses its next action. Warriors, mages (via magic), and <b>trolls</b> can stun on hit.</div>
+                <div class="help-row"><b>&#x2728; Stun</b> — the target loses its next action. Warriors, mages (via magic), and <b>trolls</b> can stun on hit. Weapon riders (&#x26A1; Lightning and &#x2744;&#xFE0F; Ice) also stun the target for 1 round when they proc.</div>
+                <div class="help-row"><b>&#x26A1; Shocked</b> (Lightning rider) — stunned for 1 round <em>and</em> attack power reduced for several rounds. Enemy deals less damage while shocked.</div>
+                <div class="help-row"><b>&#x2744;&#xFE0F; Chilled</b> (Ice rider) — stunned for 1 round <em>and</em> defense reduced for several rounds. Enemy takes extra damage while chilled.</div>
                 <div class="help-row"><b>&#x1F343; Entangle</b> (druid) — roots an enemy: its defense is reduced, so your party deals extra damage for the duration.</div>
                 <div class="help-row"><b>&#x1F3B6; Bard Song</b> — party-wide damage &amp; defense buff; may be sung <b>once per combat</b>.</div>
                 <div class="help-row"><b>Troll regen</b>: trolls heal <b>15% of max HP</b> at the start of every enemy round — focus them down fast.</div>
@@ -2054,7 +2056,7 @@
                 <div class="help-row"><b>Cloth / Leather</b>: Rogue, Druid, Artificer (no chain or plate)</div>
                 <div class="help-row"><b>Cloth / Leather / Chain</b>: Ranger, Bard (no plate)</div>
                 <div class="help-row"><b>All armor</b>: Warrior, Cleric, Paladin</div>
-                <div class="help-row"><b>No shields</b>: Mage, Monk, Necromancer. A shield is also forced off whenever you equip a ranged weapon.</div>
+                <div class="help-row"><b>No shields</b>: Mage, Monk, Necromancer, Artificer. A shield is also forced off whenever you equip a ranged weapon.</div>
             </div>
 
             <div class="help-section">
@@ -2091,7 +2093,7 @@
                 <div class="help-row"><b>&#x1F3B6; Bard</b> — Inspiring performer. -20% ST, +20% MP. +1 MP regen. Cloth/leather/chain (no plate); shields OK. <b>Sing Song</b> (7 MP, <b>once per combat</b>): party-wide +2 defense &amp; +2 to all damage (rises by +1 every 2 levels beyond 1). <b>Per level:</b> +1 magic damage.</div>
                 <div class="help-row"><b>&#x1F33F; Druid</b> — Nature caster. -15% HP/ST, +30% MP. +1 MP regen. Cloth/leather only (no chain or plate); shields OK. <b>Entangle</b> (8 MP): rolls 50% on each enemy to debuff -2 defense &amp; -2 damage (rises by +1 every 2 levels beyond 1). <b>Summon Woodland Beast</b> (7 MP): wolf/bear/eagle/pixie, like the ranger. <b>Per level:</b> +1 magic damage.</div>
                 <div class="help-row"><b>&#x1F6E1;&#xFE0F; Paladin</b> — Holy warrior. +25% HP, neutral ST, -25% MP. All armor, shields OK. <b>Smite</b> (5 MP, front row): armor-ignoring holy melee strike. Against <b>undead</b> or <b>demon</b> foes: +2 damage per paladin level AND a <b>1% + 1%/level</b> chance to <b>instantly purge</b> the foe. <b>Lay On Hands</b> (5 MP): half-strength cleric heal (12.5% max HP base, +1%/level). <b>Per level:</b> +1 melee, +1 defense, +1%/level smite chance, +1% heal.</div>
-                <div class="help-row"><b>&#x2699;&#xFE0F; Artificer</b> — Tinker-gunner. Neutral stats. Cloth/leather only (no chain or plate); shields OK with melee only. <b>Scatter Shot</b> replaces the default ranged attack: primary shot hits at full damage, plus <b>2 splash shots</b> at 50% damage (+1 splash every 5 artificer levels). Can <b>forge persistent Golems</b> (Flesh / Clay / Stone / Iron — unlocked at L1/L3/L6/L10) and <b>Repair Golem</b> (1 matching reagent → 50% max HP). Golems survive between combats but <b>permadeath</b> on KO. Open Crafting with <b>K</b> to forge, enchant, brew, or dismiss a golem. <b>Per level:</b> +1 ranged.</div>
+                <div class="help-row"><b>&#x2699;&#xFE0F; Artificer</b> — Tinker-gunner. Neutral stats. Cloth/leather only (no chain or plate); <b>no shields</b>. <b>Scatter Shot</b> replaces the default ranged attack: primary shot hits at full damage, plus <b>2 splash shots</b> at 50% damage (+1 splash every 5 artificer levels). Can <b>forge persistent Golems</b> (Flesh / Clay / Stone / Iron — unlocked at L1/L3/L6/L10) and <b>Repair Golem</b> (1 matching reagent → 50% max HP). Golems survive between combats but <b>permadeath</b> on KO. Open Crafting with <b>K</b> to forge, enchant, brew, or dismiss a golem. <b>Per level:</b> +1 ranged.</div>
             </div>
 
             <div class="help-section">
@@ -2136,7 +2138,7 @@
 
             <div class="help-section">
                 <div class="help-section-title">Monster Drops</div>
-                <div class="help-row">Every slain monster rolls independently for each loot kind — gold, food, healing potion, weapon/armor/shield/trinket drops — plus two new rolls:</div>
+                <div class="help-row">Every slain monster rolls independently for each loot kind — gold, food, healing potion, weapon/armor/shield/trinket drops — as well as:</div>
                 <div class="help-row"><b>&#x1F526; Torch</b> — 3% chance per slain enemy. Keep the lights on!</div>
                 <div class="help-row"><b>&#x2728; Magical Reagents</b> — <b>Common / Uncommon / Rare</b> tiers drop from slain monsters (rarer reagents weight deeper in the dungeon). Reagents power the Crafting menu (K): enchants, potions, and golem forging/repair.</div>
             </div>

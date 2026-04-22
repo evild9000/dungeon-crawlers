@@ -446,9 +446,9 @@ export class CraftingUI {
         if (!cost) return '—';
         const parts = [];
         if (cost.gold)     parts.push(`${cost.gold}g`);
-        if (cost.common)   parts.push(`${cost.common}\u{1F9EA}C`);
-        if (cost.uncommon) parts.push(`${cost.uncommon}\u{1F9EA}U`);
-        if (cost.rare)     parts.push(`${cost.rare}\u{1F9EA}R`);
+        if (cost.common)   parts.push(`${cost.common}\u2728C`);
+        if (cost.uncommon) parts.push(`${cost.uncommon}\u{1F535}U`);
+        if (cost.rare)     parts.push(`${cost.rare}\u{1F7E3}R`);
         return parts.join(' + ') || 'free';
     }
 
