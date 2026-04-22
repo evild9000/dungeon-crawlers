@@ -906,7 +906,7 @@ export class Game {
         // Track monster discovery for the Lore Book
         for (const e of nearby) {
             if (e.type && this.gameState) {
-                this.gameState.discoveredMonsters.add(e.type);
+                this.gameState.discoveredMonsters?.add(e.type);
             }
         }
 
