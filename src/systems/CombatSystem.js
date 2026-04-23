@@ -224,8 +224,9 @@ export class CombatSystem {
             this._addLog(`\u26A1 ${eName} is STUNNED and will skip next turn!`);
         }
 
-        // Weapon rider proc (fire/acid/poison/lightning/ice)
+        // Weapon rider proc (fire/acid/poison/lightning/ice) — main-hand then off-hand
         this._applyWeaponRider(m, targetEnemy, dealt);
+        this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
 
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
 
@@ -239,6 +240,7 @@ export class CombatSystem {
                     const d = this._damageEnemy(other, dmg);
                     this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}!`);
                     this._applyWeaponRider(m, other, d);
+                    this._applyWeaponRider(m, other, d, 'offhand');
                     if (other.health <= 0) this._addLog(`${this._eName(other)} is defeated!`);
                 }
             }
@@ -268,6 +270,7 @@ export class CombatSystem {
                 this._addLog(`\u26A1 ${swingName} is STUNNED and will skip next turn!`);
             }
             this._applyWeaponRider(m, curTarget, sDealt);
+            this._applyWeaponRider(m, curTarget, sDealt, 'offhand');
             if (curTarget.health <= 0) this._addLog(`${swingName} is defeated!`);
         }
 
@@ -512,6 +515,7 @@ export class CombatSystem {
         const suffix = exhausted ? ' (exhausted!)' : '';
         this._addLog(`\u{1F5E1}\uFE0F ${m.name} BACKSTABS ${this._eName(targetEnemy)} for ${dealt} damage!${suffix}`);
         this._applyWeaponRider(m, targetEnemy, dealt);
+        this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
         if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
 
         this._advancePlayerTurn();
@@ -997,6 +1001,7 @@ export class CombatSystem {
         this._addLog(flavour);
 
         this._applyWeaponRider(m, targetEnemy, dealt);
+        this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
 
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
         this._advancePlayerTurn();
@@ -1771,14 +1776,17 @@ export class CombatSystem {
      * @param {object}      enemy
      * @param {number}      rawDamage  damage dealt on THIS hit
      */
-    _applyWeaponRider(attacker, enemy, rawDamage) {
+    _applyWeaponRider(attacker, enemy, rawDamage, slot = 'weapon') {
         if (!attacker || !enemy || enemy.health <= 0) return;
-        if (typeof attacker.getWeaponRider !== 'function') return;
-        const rider = attacker.getWeaponRider();
+        const isOffhand = slot === 'offhand';
+        const getRider   = isOffhand ? 'getOffhandRider'        : 'getWeaponRider';
+        const getEnchLvl = isOffhand ? 'getOffhandEnchantLevel' : 'getWeaponEnchantLevel';
+        if (typeof attacker[getRider] !== 'function') return;
+        const rider = attacker[getRider]();
         if (!rider) return;
         if (Math.random() >= RIDER_PROC_CHANCE) return;
 
-        const enchLvl = attacker.getWeaponEnchantLevel ? attacker.getWeaponEnchantLevel() : 0;
+        const enchLvl = attacker[getEnchLvl] ? attacker[getEnchLvl]() : 0;
         const dotRounds    = RIDER_DOT_BASE_ROUNDS    + enchLvl;
         const debuffRounds = RIDER_DEBUFF_BASE_ROUNDS + enchLvl;
         const debuffMag    = 1 + enchLvl;

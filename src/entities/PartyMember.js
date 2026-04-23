@@ -153,11 +153,12 @@ export class PartyMember {
         this.isPersistent = !!isPersistent;
 
         // Per-member equipment enchantments. Keyed by equipment slot
-        // ('weapon', 'armor'). Enchants persist on the slot; unequipping
+        // ('weapon', 'offhand', 'armor'). Enchants persist on the slot; unequipping
         // removes the enchant (crafting cost is a commitment).
-        //   equipmentEnchants.weapon = { level:1..3, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
-        //   equipmentEnchants.armor  = { level:1..3 }
-        const DEFAULT_ENCHANTS = { weapon: null, armor: null };
+        //   equipmentEnchants.weapon  = { level:1..3, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
+        //   equipmentEnchants.offhand = { level:1..3, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
+        //   equipmentEnchants.armor   = { level:1..3 }
+        const DEFAULT_ENCHANTS = { weapon: null, offhand: null, armor: null };
         this.equipmentEnchants = equipmentEnchants
             ? { ...DEFAULT_ENCHANTS, ...equipmentEnchants }
             : { ...DEFAULT_ENCHANTS };
@@ -539,7 +540,7 @@ export class PartyMember {
         this.equipment[slot] = null;
         // Unequipping a weapon or armor wipes its enchantment (the artificer
         // "kit-tuned" the item to its wielder; swapping breaks the binding).
-        if (slot === 'weapon' || slot === 'armor') {
+        if (slot === 'weapon' || slot === 'offhand' || slot === 'armor') {
             if (this.equipmentEnchants) this.equipmentEnchants[slot] = null;
         }
         this.addItem(itemId);
@@ -561,13 +562,15 @@ export class PartyMember {
             }
         }
 
-        // Dual-wield: add off-hand melee weapon power (no enchant for off hand).
+        // Dual-wield: add off-hand melee weapon power + enchant level.
         if (attackType === 'melee') {
             const offId = this.equipment.offhand;
             if (offId) {
                 const def = WEAPONS[offId];
                 if (def && def.subtype === 'melee') {
-                    bonus += (def.power || 0);
+                    const offEnch = this.equipmentEnchants && this.equipmentEnchants.offhand;
+                    const offEnchLvl = offEnch && offEnch.level ? offEnch.level : 0;
+                    bonus += (def.power || 0) + offEnchLvl;
                 }
             }
         }
@@ -594,6 +597,18 @@ export class PartyMember {
     /** Current weapon enchant level (0-3). */
     getWeaponEnchantLevel() {
         const ench = this.equipmentEnchants && this.equipmentEnchants.weapon;
+        return (ench && ench.level) || 0;
+    }
+
+    /** Off-hand weapon rider (dual-wield only). */
+    getOffhandRider() {
+        const ench = this.equipmentEnchants && this.equipmentEnchants.offhand;
+        return (ench && ench.rider) || null;
+    }
+
+    /** Off-hand weapon enchant level (0-3, dual-wield only). */
+    getOffhandEnchantLevel() {
+        const ench = this.equipmentEnchants && this.equipmentEnchants.offhand;
         return (ench && ench.level) || 0;
     }
 

@@ -209,6 +209,13 @@ export class CraftingUI {
 
         // Weapon panel
         body.appendChild(this._enchantSlotPanel(state, artificer, target, 'weapon'));
+        // Off-hand weapon panel (dual-wield only)
+        if (target.equipment && target.equipment.offhand) {
+            const offDef = getItemDef(target.equipment.offhand);
+            if (offDef && offDef.category === 'weapon') {
+                body.appendChild(this._enchantSlotPanel(state, artificer, target, 'offhand'));
+            }
+        }
         // Armor panel
         body.appendChild(this._enchantSlotPanel(state, artificer, target, 'armor'));
     }
@@ -217,20 +224,26 @@ export class CraftingUI {
         const panel = document.createElement('div');
         panel.className = 'craft-slot-panel';
 
+        const isOffhand = slot === 'offhand';
         const equippedId = target.equipment && target.equipment[slot];
         const itemDef = equippedId ? getItemDef(equippedId) : null;
-        const enchLvl = slot === 'weapon' ? target.getWeaponEnchantLevel() : target.getArmorEnchantLevel();
-        const rider = slot === 'weapon' ? target.getWeaponRider() : null;
+        const enchLvl = isOffhand ? target.getOffhandEnchantLevel() :
+                        slot === 'weapon' ? target.getWeaponEnchantLevel() : target.getArmorEnchantLevel();
+        const rider = (slot === 'weapon' || isOffhand)
+            ? (isOffhand ? target.getOffhandRider() : target.getWeaponRider())
+            : null;
+
+        const slotLabel = isOffhand ? 'Off-hand' : slot[0].toUpperCase() + slot.slice(1);
 
         const title = document.createElement('div');
         title.className = 'craft-slot-title';
         if (!itemDef) {
-            title.textContent = `${slot === 'weapon' ? '\u{1F5E1}\uFE0F' : '\u{1F6E1}\uFE0F'} ${slot[0].toUpperCase()}${slot.slice(1)}: (none equipped)`;
+            title.textContent = `${slot === 'armor' ? '\u{1F6E1}\uFE0F' : '\u{1F5E1}\uFE0F'} ${slotLabel}: (none equipped)`;
             panel.appendChild(title);
             return panel;
         }
         const riderStr = rider ? ` — ${RIDER_ICONS[rider]} ${rider}` : '';
-        title.textContent = `${itemDef.icon || ''} ${itemDef.name}   +${enchLvl}${riderStr}`;
+        title.textContent = `${itemDef.icon || ''} ${slotLabel}: ${itemDef.name}   +${enchLvl}${riderStr}`;
         panel.appendChild(title);
 
         // Level-up buttons (enchLvl + 1 is next target, if < 3)
@@ -251,7 +264,7 @@ export class CraftingUI {
                 this._pay(state, cost);
                 const existing = target.equipmentEnchants[slot] || { level: 0, rider: null };
                 target.equipmentEnchants[slot] = { ...existing, level: next };
-                this._log(`\u{1F527} ${artificer.name} enchants ${target.name}'s ${itemDef.name} to +${next}.`);
+                this._log(`\u{1F527} ${artificer.name} enchants ${target.name}'s ${slotLabel} ${itemDef.name} to +${next}.`);
                 this._onChanged();
                 this._render();
             });
@@ -263,8 +276,8 @@ export class CraftingUI {
             panel.appendChild(max);
         }
 
-        // Weapon rider (only for weapon slot, only if enchanted, only if no rider yet)
-        if (slot === 'weapon') {
+        // Weapon rider (only for weapon/offhand slot, only if enchanted, only if no rider yet)
+        if (slot === 'weapon' || isOffhand) {
             if (enchLvl === 0) {
                 const hint = document.createElement('div');
                 hint.className = 'craft-note';
