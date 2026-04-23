@@ -224,7 +224,10 @@ export class MinimapUI {
         ctx.lineTo(size * 0.7, size * 0.7);
         ctx.lineTo(-size * 0.7, size * 0.7);
         ctx.closePath();
-        ctx.fillStyle = PLAYER_FL;
+        
+        const flash = Math.sin(Date.now() / 150) > 0;
+        ctx.fillStyle = flash ? PLAYER_FL : '#888800';
+
         ctx.fill();
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = PLAYER_STK;
