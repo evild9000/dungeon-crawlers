@@ -305,20 +305,20 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
     switch (beastId) {
         case 'wolf':
             return {
-                maxHealth:  roll(16, 24) + lvBoost * 2,
+                maxHealth:  roll(16, 24) + lvBoost * 5,
                 maxStamina: roll(18, 26),
                 maxMana:    0,
-                meleeMin:   3 + lvBoost,
-                meleeMax:   8 + lvBoost,
+                meleeMin:   3 + lvBoost *2,
+                meleeMax:   8 + lvBoost *2,
                 defense:    0,
             };
         case 'bear':
             return {
-                maxHealth:  roll(24, 32) + lvBoost * 3,
+                maxHealth:  roll(24, 32) + lvBoost * 10,
                 maxStamina: roll(20, 28),
                 maxMana:    0,
-                meleeMin:   3 + lvBoost,
-                meleeMax:   10 + lvBoost,
+                meleeMin:   3 + lvBoost *2,
+                meleeMax:   10 + lvBoost *2,
                 defense:    1,
             };
         case 'eagle':
@@ -326,8 +326,8 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
                 maxHealth:  roll(12, 18) + lvBoost * 2,
                 maxStamina: roll(20, 28),
                 maxMana:    0,
-                rangedMin:  3 + lvBoost,
-                rangedMax:  8 + lvBoost,
+                rangedMin:  3 + lvBoost *2,
+                rangedMax:  8 + lvBoost *2,
                 defense:    0,
             };
         case 'pixie':
@@ -335,8 +335,8 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
                 maxHealth:  roll(8, 14) + lvBoost,
                 maxStamina: 0,
                 maxMana:    roll(15, 22),
-                magicMin:   1 + Math.floor(lvBoost / 2),
-                magicMax:   5 + lvBoost,
+                magicMin:   1 + lvBoost *2,
+                magicMax:   5 + lvBoost *2,
                 defense:    0,
             };
         default:

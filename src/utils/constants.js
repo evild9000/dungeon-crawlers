@@ -174,10 +174,10 @@ export const POST_COMBAT_RECOVERY = 2; // each stat recovered after victory
 // Loot
 export const LOOT_GOLD_MIN = 10;
 export const LOOT_GOLD_MAX = 20;
-export const LOOT_FOOD_CHANCE = 0.40;
-export const LOOT_POTION_CHANCE = 0.15;
-export const LOOT_WEAPON_CHANCE = 0.10;
-export const LOOT_ARMOR_CHANCE = 0.10;
+export const LOOT_FOOD_CHANCE = 0.30;
+export const LOOT_POTION_CHANCE = 0.05;
+export const LOOT_WEAPON_CHANCE = 0.05;
+export const LOOT_ARMOR_CHANCE = 0.05;
 export const LOOT_SHIELD_CHANCE = 0.05;
 export const LOOT_EXTRA_CHAR_BONUS = 0.01; // +1% per extra character for equipment
 
@@ -449,8 +449,9 @@ export const FOOD_DYING_HP_PER_MIN  = 2;    // HP drained per real minute when '
 
 // Reagent drop tiers — keyed by dungeon level of the slain enemy.
 // L1-3 drops common, L4-6 uncommon, L7+ rare. Bosses drop 1-2 rare on top.
-export const REAGENT_TIER_COMMON_MAX    = 3;   // levels 1-3
-export const REAGENT_TIER_UNCOMMON_MAX  = 6;   // levels 4-6
+export const REAGENT_TIER_COMMON_MAX    = 3;   // can drop levels 1-3
+export const REAGENT_TIER_UNCOMMON_MAX  = 6;   // can drop levels 4-6
+export const REAGENT_TIER_RARE_MAX      = 100;   // can drop any level
 // Level 7+ → rare
 export const REAGENT_BOSS_RARE_MIN      = 1;
 export const REAGENT_BOSS_RARE_MAX      = 2;

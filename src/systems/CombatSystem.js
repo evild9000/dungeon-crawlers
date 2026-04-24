@@ -992,7 +992,17 @@ export class CombatSystem {
         // Otherwise a flat holy strike: melee roll + paladin scaling.
         let dmg = this._rollPlayerMeleeDamage(m);
         // Divine flavour bonus against smitable foes — +2 per paladin level.
-        if (isSmitable) dmg += 2 * m.level;
+        
+        if (isSmitable) {
+            // Fold in +2 per level first
+            dmg += 2 * m.level;
+            dmg *= (2 + 0.10 * m.level);
+        }
+
+        // Apply scaling:
+        // - Double damage
+        // - +10% per level
+        
         const dealt = this._damageEnemy(targetEnemy, dmg);
 
         const flavour = isSmitable

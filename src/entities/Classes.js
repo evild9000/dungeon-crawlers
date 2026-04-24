@@ -191,7 +191,7 @@ export const CLASSES = {
         healPercentPerLevel: PALADIN_HEAL_PER_LEVEL,     // half of cleric per-level
         instakillPerLevel: PALADIN_SMITE_INSTAKILL_PER_LEVEL, // reused for Smite
         special: 'paladin',
-        description: 'Holy warrior. +20% HP, -20% mana. +1 melee, +1 HP regen. Any armor + shield. Heal: 5 MP restores 12.5% of target max HP (+1%/level — half cleric strength). Smite (5 MP): armor-ignoring melee with 1%/level chance to instakill Undead or Demon foes. Per level: +1 melee, +1 defense.',
+        description: 'Holy warrior. +20% HP, -20% mana. +1 melee, +1 HP regen. Any armor + shield. Heal: 5 MP restores 12.5% of target max HP (+1%/level — half cleric strength). Smite (5 MP): armor-ignoring melee doing double damage (+10%/level over 1) and a 1%/level chance to instakill Undead or Demon foes. Per level: +1 melee, +1 defense.',
     },
     druid: {
         // Phase 8 rule 15 — nature caster with entangle + beast summon.
