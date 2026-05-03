@@ -9,6 +9,10 @@ import {
     FOG_COLOR,
     FOG_NEAR,
     FOG_FAR,
+    FOG_COLOR_DARK,
+    FOG_NEAR_DARK,
+    FOG_FAR_DARK,
+    AMBIENT_DARK,
     AUTO_SAVE_INTERVAL,
     ENEMY_INITIAL_COUNT,
     REST_RECOVERY_PERCENT,
@@ -48,8 +52,8 @@ import { LightPickerUI } from '../ui/LightPickerUI.js';
 import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
-import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_COMMON_MAX, REAGENT_TIER_UNCOMMON_MAX } from '../utils/constants.js';
-import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef } from '../items/ItemTypes.js';
+import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS } from '../utils/constants.js';
+import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { LoreBook } from '../ui/LoreBook.js';
 
@@ -140,6 +144,8 @@ export class Game {
         });
         this._poisonTickTimer = 0;
         this._foodTickAccum   = {}; // per-member food timer accumulation (seconds)
+        this._bardSongTimer   = 0;  // accumulates seconds for bard song mana drain
+        this._fountainCooldown = 0; // prevents re-triggering fountain immediately after dismiss
 
         // --- Minimap / fog-of-war (Phase 11) ---
         this.minimapSystem = new MinimapSystem();
@@ -149,6 +155,10 @@ export class Game {
         this.partySpellModal = new PartySpellModal((party) => {
             this._reapplySongEffects();
             this._updateSongTooltip();
+            if (this.gameState) {
+                // Persist bard music toggle state.
+                this.gameState.bardMusicEnabled = this.partySpellModal._musicEnabled;
+            }
             if (this.partyHUD && this.gameState) {
                 this.partyHUD.update(this.gameState.party, this.gameState.inventory);
             }
@@ -157,12 +167,24 @@ export class Game {
 
         this.loreBook = new LoreBook();
 
-        // --- Active song tooltip (upper-right, below dungeon level text) ---
-        this._songTooltip = document.createElement('div');
-        Object.assign(this._songTooltip.style, {
+        // --- Buff indicators panel (upper-right, below dungeon level) ---
+        // Shared flex-column container so bard song + scroll buffs never overlap.
+        this._buffPanel = document.createElement('div');
+        Object.assign(this._buffPanel.style, {
             position: 'fixed',
             top: '130px',
             right: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            zIndex: '500',
+            pointerEvents: 'none',
+        });
+        document.body.appendChild(this._buffPanel);
+
+        // Bard song row
+        this._songTooltip = document.createElement('div');
+        Object.assign(this._songTooltip.style, {
             background: 'rgba(10,10,30,0.82)',
             border: '1px solid #447',
             borderRadius: '6px',
@@ -170,12 +192,25 @@ export class Game {
             color: '#ccf',
             fontFamily: 'monospace',
             fontSize: '12px',
-            pointerEvents: 'none',
-            display: 'none',
-            zIndex: '500',
             lineHeight: '1.5',
+            display: 'none',
         });
-        document.body.appendChild(this._songTooltip);
+        this._buffPanel.appendChild(this._songTooltip);
+
+        // Scroll buffs row
+        this._scrollBuffEl = document.createElement('div');
+        Object.assign(this._scrollBuffEl.style, {
+            background: 'rgba(10,30,10,0.82)',
+            border: '1px solid #474',
+            borderRadius: '6px',
+            padding: '4px 10px',
+            color: '#cfc',
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            lineHeight: '1.5',
+            display: 'none',
+        });
+        this._buffPanel.appendChild(this._scrollBuffEl);
 
         // --- UI refs ---
         this.gameUI       = document.getElementById('game-ui');
@@ -234,6 +269,10 @@ export class Game {
         this._trapSkipBtn   = document.getElementById('btn-trap-skip');
         if (this._trapSkipBtn) this._trapSkipBtn.addEventListener('click', () => this._skipTrap());
         this._pendingTrap = null;
+
+        // --- Fountain modal (built dynamically — no HTML element needed) ---
+        this._fountainModal = null;   // created on first use
+        this._pendingFountain = null; // the dungeonData.fountains[] entry being offered
 
         // --- Bag picker modal (Phase 8 follow-up) ---
         this._bagpickModal  = document.getElementById('bagpick-modal');
@@ -300,6 +339,7 @@ export class Game {
             || (this._logOverlay && this._logOverlay.style.display === 'flex')
             || (this._portalModal && this._portalModal.style.display === 'flex')
             || (this._trapModal && this._trapModal.style.display === 'flex')
+            || (this._fountainModal && this._fountainModal.style.display === 'flex')
             || (this._bagpickModal && this._bagpickModal.style.display === 'flex')
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
             || (this.partySpellModal && this.partySpellModal.isOpen)
@@ -363,6 +403,7 @@ export class Game {
                 else if (this._logOverlay && this._logOverlay.style.display === 'flex') this._hideLog();
                 else if (this._portalModal && this._portalModal.style.display === 'flex') this._hidePortalModal();
                 else if (this._trapModal && this._trapModal.style.display === 'flex') this._skipTrap();
+                else if (this._fountainModal && this._fountainModal.style.display === 'flex') this._hideFountainModal();
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
@@ -394,15 +435,21 @@ export class Game {
 
     _onToggleMinimap() {
         if (!this.minimapUI || !this.dungeonData || !this.player) return;
+        if (this.state === STATE.COMBAT) return;  // no minimap during combat
         if (this.minimapUI.isOpen) { this.minimapUI.hide(); return; }
         // Show without exiting pointer lock — the minimap is a non-blocking
         // corner widget that stays visible while the player moves.
         const CS = CELL_SIZE;
-        this.minimapUI.show(this.dungeonData, this.minimapSystem, {
-            gx: Math.floor(this.player.container.position.x / CS),
-            gz: Math.floor(this.player.container.position.z / CS),
-            yaw: this.player.yaw,
-        });
+        this.minimapUI.show(
+            this.dungeonData,
+            this.minimapSystem,
+            {
+                gx: Math.floor(this.player.container.position.x / CS),
+                gz: Math.floor(this.player.container.position.z / CS),
+                yaw: this.player.yaw,
+            },
+            this._buildMinimapEntities(),
+        );
     }
 
     _onOpenLightPicker() {
@@ -436,22 +483,131 @@ export class Game {
     }
 
     /**
-     * Update the fixed upper-right tooltip that shows currently active songs.
+     * Update the fixed upper-right tooltip that shows currently active songs,
+     * including actual bonus values read from live activeEffects.
      */
     _updateSongTooltip() {
         if (!this._songTooltip || !this.gameState) return;
+        const party = this.gameState.party || [];
         const lines = [];
-        for (const m of this.gameState.party) {
+        for (const m of party) {
             if (m.classId !== 'bard' || !Array.isArray(m.activeSongs) || m.activeSongs.length === 0) continue;
-            const songLabels = { haste: '⚡ Haste', battle: '⚔️ Battle', healing: '💚 Healing' };
-            const names = m.activeSongs.map(s => songLabels[s] || s).join(', ');
-            lines.push(`🎶 ${m.name}: ${names}`);
+            if (m.activeSongs.includes('combined')) {
+                // Read actual bonus values from any living carrier (all members share the same values).
+                const carrier = party.find(p => !p.isSummoned && p.health > 0
+                    && (p.activeEffects || []).some(e => e && e.source === 'bard_song'));
+                const fx = carrier ? (carrier.activeEffects || []) : [];
+                const hasteEff  = fx.find(e => e && e.type === 'bard_song_haste');
+                const battleEff = fx.find(e => e && e.type === 'bard_song_battle');
+                const healEff   = fx.find(e => e && e.type === 'bard_song_healing');
+                const parts = [];
+                if (hasteEff  && hasteEff.initiativeBonus)  parts.push(`⚡+${hasteEff.initiativeBonus} init`);
+                if (battleEff && battleEff.damageBonus)      parts.push(`⚔️+${battleEff.damageBonus} atk/def`);
+                if (healEff   && healEff.hpPerMin)           parts.push(`💚+${healEff.hpPerMin} HP/min`);
+                const bonusStr = parts.length > 0 ? ` — ${parts.join(' · ')}` : '';
+                lines.push(`🎶 ${m.name}: Bard Song${bonusStr} (5 MP/min)`);
+            } else {
+                // Legacy save-data fallback
+                const songLabels = { haste: '⚡ Haste', battle: '⚔️ Battle', healing: '💚 Healing' };
+                const names = m.activeSongs.map(s => songLabels[s] || s).join(', ');
+                lines.push(`🎶 ${m.name}: ${names}`);
+            }
         }
         if (lines.length > 0) {
             this._songTooltip.innerHTML = lines.join('<br>');
             this._songTooltip.style.display = 'block';
         } else {
             this._songTooltip.style.display = 'none';
+        }
+    }
+
+    /**
+     * Update the scroll-buff indicator (Warding / Wrath) shown near the compass.
+     * Reads the first matching expiresAt found on any living party member.
+     */
+    _updateScrollBuff() {
+        if (!this._scrollBuffEl || !this.gameState) return;
+        const party = this.gameState.party || [];
+        const now = Date.now();
+        const lines = [];
+
+        // Helper: find the latest-expiring active effect of a given type among living members.
+        // Returns { expiresAt, bonus } where bonus is defenseBonus or damageBonus (whichever exists).
+        const latestEffect = (type) => {
+            let best = 0, bonus = 0;
+            for (const m of party) {
+                if (m.isSummoned || m.health <= 0) continue;
+                const eff = (m.activeEffects || []).find(
+                    e => e && e.type === type && typeof e.expiresAt === 'number' && e.expiresAt > now,
+                );
+                if (eff && eff.expiresAt > best) {
+                    best = eff.expiresAt;
+                    bonus = eff.defenseBonus || eff.damageBonus || 0;
+                }
+            }
+            return { expiresAt: best, bonus };
+        };
+        // Backward-compat alias used by fountain buffs below.
+        const latestExpiry = (type) => latestEffect(type).expiresAt;
+        const fmtTime = (expiresAt) => {
+            const secsLeft = Math.ceil((expiresAt - now) / 1000);
+            const mins = Math.floor(secsLeft / 60);
+            const secs = secsLeft % 60;
+            return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        };
+
+        // Scroll buffs — show actual bonus stored in the effect
+        for (const [type, icon, label] of [
+            ['elixir_warding', '\u{1F6E1}️', 'Warding'],
+            ['elixir_wrath',   '\u{1F525}',        'Wrath'],
+        ]) {
+            const { expiresAt: exp, bonus } = latestEffect(type);
+            if (exp > now) lines.push(`${icon} Scroll of ${label} +${bonus} — ${fmtTime(exp)}`);
+        }
+
+        // Fountain buffs (b–i) — all timed
+        for (const [type, icon, label] of [
+            ['fountain_melee',   '⚔️',   'Melee +2'],
+            ['fountain_ranged',  '\u{1F3F9}',       'Ranged +2'],
+            ['fountain_magic',   '✨',           'Magic +2'],
+            ['fountain_defense', '\u{1F6E1}️', 'Defense +3'],
+            ['fountain_hp',      '❤️',     'Max HP +'],
+            ['fountain_mp',      '\u{1F4A7}',        'Max Mana +'],
+            ['fountain_st',      '\u{1F4AA}',        'Max Stamina +'],
+            ['fountain_summon',  '\u{1F47E}',        'Summon Power +20%'],
+        ]) {
+            const exp = latestExpiry(type);
+            if (exp > now) lines.push(`${icon} Fountain: ${label} — ${fmtTime(exp)}`);
+        }
+
+        if (lines.length > 0) {
+            this._scrollBuffEl.innerHTML = lines.join('<br>');
+            this._scrollBuffEl.style.display = 'block';
+        } else {
+            this._scrollBuffEl.style.display = 'none';
+        }
+    }
+
+    /**
+     * Dynamically adjust fog and ambient light based on whether the party
+     * is carrying an active light source.
+     *
+     * No light  → pitch-black: fog starts at 0 and closes in at ~1 cell,
+     *             ambient drops to near-zero (AMBIENT_DARK ≈ 0.015).
+     * Has light → restore normal fog (FOG_NEAR/FAR) and ambient intensity.
+     */
+    _updateDarknessEffect() {
+        if (!this.scene || !this.ambientLight) return;
+        const hasLight = !!(this.partyLight && this.partyLight.active);
+        const fog = this.scene.fog;
+        if (hasLight) {
+            if (fog) { fog.near = FOG_NEAR; fog.far = FOG_FAR; fog.color.setHex(FOG_COLOR); }
+            this.scene.background && this.scene.background.setHex(FOG_COLOR);
+            this.ambientLight.intensity = AMBIENT_INTENSITY;
+        } else {
+            if (fog) { fog.near = FOG_NEAR_DARK; fog.far = FOG_FAR_DARK; fog.color.setHex(FOG_COLOR_DARK); }
+            this.scene.background && this.scene.background.setHex(FOG_COLOR_DARK);
+            this.ambientLight.intensity = AMBIENT_DARK;
         }
     }
 
@@ -585,6 +741,19 @@ export class Game {
         // (needed on load; harmless on new game where no songs are active).
         this._reapplySongEffects();
         this._updateSongTooltip();
+        this._updateScrollBuff();
+
+        // Restore bard music toggle and start/stop the loop as needed.
+        this.partySpellModal._musicEnabled = this.gameState.bardMusicEnabled !== false;
+        const hasSongActive = (this.gameState.party || []).some(
+            m => m.classId === 'bard' && Array.isArray(m.activeSongs)
+              && m.activeSongs.includes('combined') && m.health > 0,
+        );
+        if (hasSongActive && this.partySpellModal._musicEnabled) {
+            soundManager.playBardSongLoop('combined');
+        } else {
+            soundManager.stopBardSongLoop();
+        }
         this.state = STATE.PLAYING;
         this.gameUI.style.display = 'block';
         this.pauseOverlay.style.display = 'flex';
@@ -634,7 +803,8 @@ export class Game {
     _buildScene(isNew) {
         this._clearScene();
 
-        this.scene.add(new THREE.AmbientLight(0xffffff, AMBIENT_INTENSITY));
+        this.ambientLight = new THREE.AmbientLight(0xffffff, AMBIENT_INTENSITY);
+        this.scene.add(this.ambientLight);
 
         const dLvl = this.gameState.dungeonLevel || 1;
         this.dungeonData = getDungeonData(dLvl);
@@ -671,6 +841,8 @@ export class Game {
         if (this.gameState.activeLight) {
             this.partyLight.restore(this.gameState.activeLight);
         }
+        // Apply correct fog/ambient immediately so it matches light state on load.
+        this._updateDarknessEffect();
 
         // Phase 11 — restore per-level fog-of-war from the save.
         if (this.gameState.explored) {
@@ -795,6 +967,7 @@ export class Game {
             this.player.update(dt, enemies);
 
             if (this._portalCooldown > 0) this._portalCooldown -= dt;
+            if (this._fountainCooldown > 0) this._fountainCooldown -= dt;
 
             if (this._combatCooldown > 0) {
                 this._combatCooldown -= dt;
@@ -811,6 +984,9 @@ export class Game {
             // Trap proximity check (Phase 8)
             this._checkTraps();
 
+            // Fountain proximity check
+            if (this._fountainCooldown <= 0) this._checkFountains();
+
             const playerGX = Math.floor(this.player.container.position.x / CELL_SIZE);
             const playerGZ = Math.floor(this.player.container.position.z / CELL_SIZE);
 
@@ -821,9 +997,10 @@ export class Game {
 
             // Keep the corner minimap widget in sync with player movement.
             if (this.minimapUI && this.minimapUI.isOpen) {
-                this.minimapUI.updatePlayer({
-                    gx: playerGX, gz: playerGZ, yaw: this.player.yaw,
-                });
+                this.minimapUI.updatePlayer(
+                    { gx: playerGX, gz: playerGZ, yaw: this.player.yaw },
+                    this._buildMinimapEntities(),
+                );
             }
 
             this.gameState.lastSpawnTime = this.enemyManager.update(
@@ -871,6 +1048,13 @@ export class Game {
                 this._tickExplorationPoison();
             }
 
+            // Bard song ongoing mana drain — 5 MP per minute while songs are active.
+            this._bardSongTimer += dt;
+            if (this._bardSongTimer >= 60) {
+                this._bardSongTimer -= 60;
+                this._drainBardSongMana();
+            }
+
             // Food / hunger tick — per-member timers advance during exploration.
             this._tickFood(dt);
 
@@ -887,6 +1071,8 @@ export class Game {
         if (this.compassUI) {
             this.compassUI.setYaw(this.player.yaw);
         }
+        this._updateScrollBuff();
+        this._updateDarknessEffect();
         if (this.composer) {
             this.composer.render();
         } else {
@@ -915,6 +1101,9 @@ export class Game {
         this.pauseOverlay.style.display = 'none';
         this.crosshair.style.display = 'none';
         if (this.inventoryUI) this.inventoryUI._inCombat = true;
+        // Hide the minimap for the duration of combat so it doesn't overlap the HUD.
+        this._minimapWasOpen = !!(this.minimapUI && this.minimapUI.isOpen);
+        if (this.minimapUI && this.minimapUI.isOpen) this.minimapUI.hide();
 
         this._combatLogCursor = 0;
         this.combatSystem.onUpdate = () => {
@@ -976,8 +1165,12 @@ export class Game {
 
     _onCombatEnd(result) {
         if (result === 'victory') {
+            // Remove ALL enemies that were part of this combat, alive or dead.
+            // Leaving alive survivors on the map causes immediate re-encounters
+            // on the next movement frame, sometimes leading to instant-victory
+            // combats because the force-spawned extras are in a stale state.
             for (const e of this.combatSystem.enemies) {
-                if (e.health <= 0) this.enemyManager.removeEnemy(e);
+                this.enemyManager.removeEnemy(e);
             }
             if (this.combatSystem.loot) {
                 const loot = this.combatSystem.loot;
@@ -1004,6 +1197,22 @@ export class Game {
 
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         if (this.inventoryUI) this.inventoryUI._inCombat = false;
+
+        // Restore minimap if it was open when combat started.
+        if (this._minimapWasOpen && this.minimapUI && this.dungeonData && this.player) {
+            const CS = CELL_SIZE;
+            this.minimapUI.show(
+                this.dungeonData,
+                this.minimapSystem,
+                {
+                    gx: Math.floor(this.player.container.position.x / CS),
+                    gz: Math.floor(this.player.container.position.z / CS),
+                    yaw: this.player.yaw,
+                },
+                this._buildMinimapEntities(),
+            );
+        }
+        this._minimapWasOpen = false;
 
         if (result === 'defeat') {
             this._clearScene();
@@ -1310,8 +1519,8 @@ export class Game {
 
                 // Bonus item rolls equal to dungeon level
                 const numRolls = dlvl;
-                const reagentId = dlvl <= REAGENT_TIER_COMMON_MAX   ? 'reagent_common'
-                                : dlvl <= REAGENT_TIER_UNCOMMON_MAX  ? 'reagent_uncommon'
+                const reagentId = dlvl < REAGENT_TIER_UNCOMMON_MIN ? 'reagent_common'
+                                : dlvl < REAGENT_TIER_RARE_MIN      ? 'reagent_uncommon'
                                 :                                      'reagent_rare';
                 for (let r = 0; r < numRolls; r++) {
                     const roll = Math.random();
@@ -1433,6 +1642,371 @@ export class Game {
         }
     }
 
+    // ────────────────────────────────────────────
+    // Magical Fountains
+    // ────────────────────────────────────────────
+
+    _checkFountains() {
+        if (!this.dungeonData || !this.player || !this.dungeonData.fountains) return;
+        if (this._fountainModal && this._fountainModal.style.display === 'flex') return;
+
+        const pos = this.player.container.position;
+        for (const f of this.dungeonData.fountains) {
+            if (f.used) continue;
+            const cx = (f.x + 0.5) * CELL_SIZE;
+            const cz = (f.z + 0.5) * CELL_SIZE;
+            const dx = pos.x - cx, dz = pos.z - cz;
+            if (dx * dx + dz * dz <= FOUNTAIN_PROXIMITY * FOUNTAIN_PROXIMITY) {
+                this._showFountainModal(f);
+                return;
+            }
+        }
+    }
+
+    _showFountainModal(fountain) {
+        this._pendingFountain = fountain;
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+
+        // Build the modal lazily on first use.
+        if (!this._fountainModal) {
+            const overlay = document.createElement('div');
+            overlay.id = 'fountain-modal';
+            Object.assign(overlay.style, {
+                display: 'none',
+                position: 'fixed',
+                inset: '0',
+                background: 'rgba(0,0,0,0.75)',
+                zIndex: '1100',
+                alignItems: 'center',
+                justifyContent: 'center',
+            });
+            const box = document.createElement('div');
+            Object.assign(box.style, {
+                background: '#0a1a2e',
+                border: '2px solid #22ddff',
+                borderRadius: '10px',
+                padding: '24px 32px',
+                maxWidth: '420px',
+                color: '#ddf',
+                fontFamily: 'monospace',
+                boxShadow: '0 0 30px rgba(34,221,255,0.35)',
+                textAlign: 'center',
+            });
+            const title = document.createElement('div');
+            title.textContent = '\u{1F6B0} Magical Fountain';
+            Object.assign(title.style, { fontSize: '18px', fontWeight: 'bold', color: '#22ddff', marginBottom: '12px' });
+            const body = document.createElement('p');
+            body.textContent = 'A shimmering fountain of magical water stands before you. The water glows with an unknown enchantment. Do you drink?';
+            Object.assign(body.style, { fontSize: '13px', marginBottom: '20px', lineHeight: '1.6' });
+            const btnRow = document.createElement('div');
+            Object.assign(btnRow.style, { display: 'flex', gap: '12px', justifyContent: 'center' });
+            const drinkBtn = document.createElement('button');
+            drinkBtn.textContent = '\u{1F6B0} Drink';
+            drinkBtn.className = 'menu-btn';
+            drinkBtn.addEventListener('click', () => this._confirmFountain());
+            const leaveBtn = document.createElement('button');
+            leaveBtn.textContent = 'Leave';
+            leaveBtn.className = 'menu-btn back-btn';
+            leaveBtn.addEventListener('click', () => this._hideFountainModal());
+            btnRow.append(drinkBtn, leaveBtn);
+            box.append(title, body, btnRow);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            this._fountainModal = overlay;
+        }
+        this._fountainModal.style.display = 'flex';
+    }
+
+    _hideFountainModal() {
+        if (this._fountainModal) this._fountainModal.style.display = 'none';
+        this._pendingFountain = null;
+        this._fountainCooldown = 2.0; // prevent re-trigger for 2 seconds
+    }
+
+    _confirmFountain() {
+        const f = this._pendingFountain;
+        if (!f) { this._hideFountainModal(); return; }
+
+        f.used = true;
+        if (this._fountainModal) this._fountainModal.style.display = 'none';
+        this._pendingFountain = null;
+        this._fountainCooldown = 2.0;
+
+        // Remove the 3-D object from the scene.
+        if (this.dungeonRenderer) this.dungeonRenderer.removeFountain(f.x, f.z);
+
+        const dLvl = this.gameState.dungeonLevel || 1;
+        const party = this.gameState.party || [];
+        const alive = party.filter(m => !m.isSummoned && m.health > 0);
+
+        // Roll one of 11 effects (a – k), passing fountain position for effect k.
+        const roll = Math.floor(Math.random() * 11); // 0–10
+        this._applyFountainEffect(roll, dLvl, alive, party, f);
+
+        if (this.partyHUD) this.partyHUD.update(party, this.gameState.inventory);
+        this._saveNow();
+    }
+
+    _applyFountainEffect(roll, dLvl, alive, party, fountain) {
+        const now = Date.now();
+        const dur = FOUNTAIN_BUFF_DURATION_MS;
+
+        switch (roll) {
+            // ── a: Acid — party damage + poison DoT ──────────────────────────
+            case 0: {
+                let msgs = ['\u{1F9EA} The water burns with acid!'];
+                for (const m of alive) {
+                    // 1d6 × DL damage
+                    let dmg = 0;
+                    for (let i = 0; i < dLvl; i++) dmg += 1 + Math.floor(Math.random() * 6);
+                    m.health = Math.max(0, m.health - dmg);
+                    msgs.push(`${m.name} takes ${dmg} acid damage!`);
+                    if (m.health > 0) {
+                        // Poison DoT: uses existing poison system (~every 10s exploration, 1–2×DL per tick)
+                        const perTick = Math.max(1, Math.floor(dLvl * (1 + Math.random())));
+                        m.addEffect({ type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+                        msgs.push(`${m.name} is poisoned! (${perTick}/tick)`);
+                    }
+                }
+                this._log('\u{1F9EA} ' + msgs.slice(1).join(' · '));
+                this._showFountainResult('\u{1F9EA} Acid Fountain!', msgs.join('<br>'));
+                break;
+            }
+            // ── b: +2 melee damage ───────────────────────────────────────────
+            case 1: {
+                const exAt = now + dur;
+                for (const m of alive) {
+                    m.addEffect({ type: 'fountain_melee', damageBonus: 2, expiresAt: exAt });
+                }
+                const msg = '⚔️ The water invigorates your arms! (+2 melee damage, 10 min)';
+                this._log(msg);
+                this._showFountainResult('⚔️ Fountain of Might', msg);
+                break;
+            }
+            // ── c: +2 ranged damage ──────────────────────────────────────────
+            case 2: {
+                const exAt = now + dur;
+                for (const m of alive) {
+                    m.addEffect({ type: 'fountain_ranged', damageBonus: 2, expiresAt: exAt });
+                }
+                const msg = '\u{1F3F9} Your aim sharpens with supernatural focus! (+2 ranged damage, 10 min)';
+                this._log(msg);
+                this._showFountainResult('\u{1F3F9} Fountain of Precision', msg);
+                break;
+            }
+            // ── d: +2 magic damage ───────────────────────────────────────────
+            case 3: {
+                const exAt = now + dur;
+                for (const m of alive) {
+                    m.addEffect({ type: 'fountain_magic', damageBonus: 2, expiresAt: exAt });
+                }
+                const msg = '✨ Arcane power surges through you! (+2 magic damage, 10 min)';
+                this._log(msg);
+                this._showFountainResult('✨ Fountain of Arcana', msg);
+                break;
+            }
+            // ── e: +3 defense ────────────────────────────────────────────────
+            case 4: {
+                const exAt = now + dur;
+                for (const m of alive) {
+                    m.addEffect({ type: 'fountain_defense', defenseBonus: 3, expiresAt: exAt });
+                }
+                const msg = '\u{1F6E1}️ Your skin hardens like stone! (+3 defense, 10 min)';
+                this._log(msg);
+                this._showFountainResult('\u{1F6E1}️ Fountain of Stone', msg);
+                break;
+            }
+            // ── f: +3 × DL max HP ────────────────────────────────────────────
+            case 5: {
+                const exAt = now + dur;
+                const bonus = 3 * dLvl;
+                let msgs = [`❤️ Vitality surges through the party! (+${bonus} max HP, 10 min)`];
+                for (const m of alive) {
+                    m.maxHealth += bonus;
+                    m.health = Math.min(m.health + bonus, m.maxHealth);
+                    m.addEffect({ type: 'fountain_hp', poolBonus: bonus, expiresAt: exAt });
+                }
+                this._log(msgs[0]);
+                this._showFountainResult('❤️ Fountain of Life', msgs[0]);
+                break;
+            }
+            // ── g: +3 × DL max mana ──────────────────────────────────────────
+            case 6: {
+                const exAt = now + dur;
+                const bonus = 3 * dLvl;
+                const msg = `\u{1F4A7} Mana wells up within you! (+${bonus} max mana, 10 min)`;
+                for (const m of alive) {
+                    m.maxMana += bonus;
+                    m.mana = Math.min(m.mana + bonus, m.maxMana);
+                    m.addEffect({ type: 'fountain_mp', poolBonus: bonus, expiresAt: exAt });
+                }
+                this._log(msg);
+                this._showFountainResult('\u{1F4A7} Fountain of Mana', msg);
+                break;
+            }
+            // ── h: +3 × DL max stamina ───────────────────────────────────────
+            case 7: {
+                const exAt = now + dur;
+                const bonus = 3 * dLvl;
+                const msg = `\u{1F4AA} Your endurance reaches new heights! (+${bonus} max stamina, 10 min)`;
+                for (const m of alive) {
+                    m.maxStamina += bonus;
+                    m.stamina = Math.min(m.stamina + bonus, m.maxStamina);
+                    m.addEffect({ type: 'fountain_st', poolBonus: bonus, expiresAt: exAt });
+                }
+                this._log(msg);
+                this._showFountainResult('\u{1F4AA} Fountain of Endurance', msg);
+                break;
+            }
+            // ── i: +20% damage, defense, and max HP for summoned minions ────
+            case 8: {
+                const exAt = now + dur;
+                // Store effect on living non-summon party members so CombatSystem
+                // can detect it at hit-time for the damage and defense bonuses.
+                for (const m of alive) {
+                    m.addEffect({ type: 'fountain_summon', summonBonus: 0.2, expiresAt: exAt });
+                }
+                // Also boost current summons' max HP and current HP by 20%.
+                const summons = party.filter(m => m.isSummoned && m.health > 0);
+                for (const s of summons) {
+                    const hpBonus = Math.floor(s.maxHealth * 0.2);
+                    if (hpBonus > 0) {
+                        s.maxHealth += hpBonus;
+                        s.health = Math.min(s.health + hpBonus, s.maxHealth);
+                        // Track the bonus so it can be partially reverted if needed.
+                        s.fountainHpBonus = (s.fountainHpBonus || 0) + hpBonus;
+                    }
+                }
+                const summonCount = summons.length;
+                const baseMsg = '\u{1F47E} Your summoned minions grow mighty! (+20% damage, defense & HP, 10 min)';
+                const fullMsg = summonCount > 0
+                    ? `${baseMsg}<br><i>${summonCount} active summon${summonCount > 1 ? 's' : ''} also gained max HP.</i>`
+                    : baseMsg;
+                this._log(baseMsg);
+                this._showFountainResult('\u{1F47E} Fountain of Summoning', fullMsg);
+                break;
+            }
+            // ── j: Gold + 33% trinket chance ─────────────────────────────────
+            case 9: {
+                const gold = 500 * dLvl;
+                this.gameState.inventory.gold += gold;
+                let msg = `\u{1F48E} The fountain overflows with treasure! +${gold} gold!`;
+                if (Math.random() < 0.33 && TRINKET_IDS.length > 0) {
+                    const tid = TRINKET_IDS[Math.floor(Math.random() * TRINKET_IDS.length)];
+                    this.gameState.inventory.addItem(tid, 1);
+                    const tDef = getItemDef(tid);
+                    msg += `<br>\u{1F48D} A trinket appears: <b>${tDef ? tDef.name : tid}</b>!`;
+                }
+                this._log(msg.replace(/<[^>]+>/g, ''));
+                this._showFountainResult('\u{1F48E} Fountain of Fortune', msg);
+                break;
+            }
+            // ── k: Spawn a nearby monster and immediately fight it ───────────
+            case 10: {
+                // Spawn near the fountain (or player if position unavailable).
+                const spawnX = fountain ? (fountain.x + 0.5) * CELL_SIZE
+                             : (this.player ? this.player.container.position.x : 0);
+                const spawnZ = fountain ? (fountain.z + 0.5) * CELL_SIZE
+                             : (this.player ? this.player.container.position.z : 0);
+                let spawned = [];
+                if (this.enemyManager) {
+                    spawned = this.enemyManager.forceSpawnNear(spawnX, spawnZ, 1);
+                }
+                const msg = '\u{1F47A} Something stirs in the water! A creature emerges!';
+                this._log(msg);
+                // Trigger combat when the player dismisses the result panel.
+                const triggerEnemy = spawned[0] || null;
+                this._showFountainResult('\u{1F47A} Cursed Fountain!', msg, () => {
+                    if (triggerEnemy && triggerEnemy.health > 0) {
+                        this._startCombat(triggerEnemy);
+                    }
+                });
+                break;
+            }
+            default: break;
+        }
+    }
+
+    /** Show a brief result overlay (reuses the trap dialog pattern).
+     * @param {string} title
+     * @param {string} bodyHtml
+     * @param {(() => void) | null} [onContinue] Optional callback fired after the modal closes.
+     */
+    _showFountainResult(title, bodyHtml, onContinue = null) {
+        // Build a simple one-button modal that closes on Continue.
+        // Re-use fountain modal element rather than creating another.
+        if (!this._fountainModal) return;
+        const box = this._fountainModal.querySelector('div');
+        if (!box) return;
+
+        // Replace box content with result view.
+        box.innerHTML = `
+            <div style="font-size:18px;font-weight:bold;color:#22ddff;margin-bottom:12px;">${title}</div>
+            <p style="font-size:13px;margin-bottom:20px;line-height:1.7;text-align:left;">${bodyHtml}</p>
+            <div style="text-align:center;">
+                <button id="fountain-continue-btn" class="menu-btn">Continue</button>
+            </div>`;
+        this._fountainModal.style.display = 'flex';
+        const btn = document.getElementById('fountain-continue-btn');
+        if (btn) btn.addEventListener('click', () => {
+            this._fountainModal.style.display = 'none';
+            this._restoreDefaultFountainUI();
+            if (onContinue) onContinue();
+        });
+    }
+
+    /** Restore the default "Drink / Leave" UI inside the fountain modal. */
+    _restoreDefaultFountainUI() {
+        if (!this._fountainModal) return;
+        const box = this._fountainModal.querySelector('div');
+        if (!box) return;
+        box.innerHTML = `
+            <div style="font-size:18px;font-weight:bold;color:#22ddff;margin-bottom:12px;">\u{1F6B0} Magical Fountain</div>
+            <p style="font-size:13px;margin-bottom:20px;line-height:1.6;">A shimmering fountain of magical water stands before you. The water glows with an unknown enchantment. Do you drink?</p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button class="menu-btn" id="fountain-drink-btn">\u{1F6B0} Drink</button>
+                <button class="menu-btn back-btn" id="fountain-leave-btn">Leave</button>
+            </div>`;
+        document.getElementById('fountain-drink-btn')?.addEventListener('click', () => this._confirmFountain());
+        document.getElementById('fountain-leave-btn')?.addEventListener('click', () => this._hideFountainModal());
+    }
+
+    /**
+     * Bard song ongoing mana drain — called once per in-game minute.
+     * Each bard with active songs loses BARD_SONG_MANA_PER_MIN mana.
+     * If the bard runs out of mana all songs are automatically deactivated.
+     */
+    _drainBardSongMana() {
+        if (!this.gameState || !this.gameState.party) return;
+        let hudDirty = false;
+
+        for (const m of this.gameState.party) {
+            if (m.classId !== 'bard' || m.health <= 0) continue;
+            if (!Array.isArray(m.activeSongs) || m.activeSongs.length === 0) continue;
+
+            m.mana = Math.max(0, m.mana - BARD_SONG_MANA_PER_MIN);
+            if (m.mana === 0) {
+                // Deactivate all songs — bard is out of mana
+                m.activeSongs = [];
+                m.activeEffects = (m.activeEffects || []).filter(e => !(e && e.source === 'bard_song'));
+                for (const other of this.gameState.party) {
+                    if (other === m) continue;
+                    other.activeEffects = (other.activeEffects || []).filter(e => !(e && e.source === 'bard_song'));
+                }
+                this._log(`\u{1F3B5} ${m.name}'s bard song fades — out of mana!`);
+                if (this.partyHUD) this.partyHUD.showToast(`${m.name}'s song ends — no mana!`);
+            } else {
+                this._log(`\u{1F3B5} ${m.name}'s song costs ${BARD_SONG_MANA_PER_MIN} MP (${m.mana}/${m.maxMana} remaining).`);
+            }
+            hudDirty = true;
+        }
+
+        if (hudDirty && this.partyHUD) {
+            this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+        }
+    }
+
     /**
      * Food / hunger tick — called every exploration frame.
      * Each party member's foodTimer advances by dt seconds. When it reaches
@@ -1478,6 +2052,10 @@ export class Game {
                     this._log(`\u{1F35E} ${m.name} eats and recovers from ${prev}.`);
                     if (this.partyHUD) this.partyHUD.showToast(`${m.name} is no longer ${prev}.`);
                     hudDirty = true;
+                } else {
+                    // Normal eating — brief log + on-screen notice
+                    this._log(`\u{1F35E} ${m.name} eats some food.`);
+                    if (this.partyHUD) this.partyHUD.showToast(`${m.name} eats food.`);
                 }
             } else {
                 // No food available — advance hunger state.
@@ -1563,12 +2141,49 @@ export class Game {
     }
 
     // ────────────────────────────────────────────
+    // Minimap entity helper
+    // ────────────────────────────────────────────
+
+    /**
+     * Build the entity overlay data for MinimapUI.
+     * - Tinkerer: shown as purple dot once encountered, while it exists on the map.
+     * - Tracked enemies: ranger Track ability reveals all enemies as blue dots on
+     *   explored cells. Currently rangers at level 3+ automatically track.
+     */
+    _buildMinimapEntities() {
+        const enemies = this.enemyManager ? this.enemyManager.getEnemies() : [];
+
+        // Tinkerer position (only after first encounter)
+        let tinkerer = null;
+        if (this.gameState && this.gameState.tinkererEncountered) {
+            const tinkererEnemy = enemies.find(e => e.type === 'tinkerer' && e.health > 0);
+            if (tinkererEnemy) {
+                tinkerer = { gx: tinkererEnemy.gridX, gz: tinkererEnemy.gridZ };
+            }
+        }
+
+        // Tracked enemies — ranger at level 3+ reveals all live enemies
+        const hasTracker = (this.gameState.party || []).some(
+            m => m.classId === 'ranger' && m.health > 0 && m.level >= 3,
+        );
+        const trackedEnemies = hasTracker
+            ? enemies
+                .filter(e => !e.friendly && e.health > 0)
+                .map(e => ({ gx: e.gridX, gz: e.gridZ }))
+            : [];
+
+        return { tinkerer, trackedEnemies };
+    }
+
+    // ────────────────────────────────────────────
     // Shop (Tinkerer)
     // ────────────────────────────────────────────
 
     _openShop() {
         document.exitPointerLock();
         soundManager.playMonsterSound('tinkerer');
+        // Mark that the tinkerer has been encountered so the minimap tracks it.
+        if (this.gameState) this.gameState.tinkererEncountered = true;
         this.shopUI.show();
     }
 
@@ -1588,8 +2203,24 @@ export class Game {
         inv.removeItem('food');
         soundManager.playRest();
 
+        const restMessages = [];
         for (const m of this.gameState.party) {
             if (m.health <= 0) continue;
+
+            // Golems do not heal on rest — they are constructs, not living creatures.
+            // Exception: flesh golems have built-in regeneration handled by their own regen.
+            if (m.isSummoned && m.summonStats && m.summonStats.tierId) {
+                if (m.summonStats.tierId === 'flesh' && m.summonStats.regenPercent > 0) {
+                    // Flesh golem partial regen on rest
+                    const regenAmt = Math.max(1, Math.floor(m.maxHealth * m.summonStats.regenPercent));
+                    const before = m.health;
+                    m.health = Math.min(m.maxHealth, m.health + regenAmt);
+                    if (m.health > before) restMessages.push(`${m.name} knits flesh and recovers ${m.health - before} HP.`);
+                }
+                // All other golems: skip rest healing entirely
+                continue;
+            }
+
             m.health  = Math.min(m.maxHealth,  m.health  + Math.ceil(m.maxHealth  * REST_RECOVERY_PERCENT));
             m.stamina = Math.min(m.maxStamina, m.stamina + Math.ceil(m.maxStamina * REST_RECOVERY_PERCENT));
             m.mana    = Math.min(m.maxMana,    m.mana    + Math.ceil(m.maxMana    * REST_RECOVERY_PERCENT));
@@ -1597,6 +2228,8 @@ export class Game {
 
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         this.partyHUD.showToast('The party rests and recovers.');
+        this._log('\u{1F35E} The party eats and rests, recovering health, stamina, and mana.');
+        for (const msg of restMessages) this._log(msg);
         this._saveNow();
     }
 
@@ -1608,6 +2241,7 @@ export class Game {
         if (!this._recruitClass || !this._recruitSpecies) return;
         this._recruitClass.innerHTML = '';
         for (const id of CLASS_IDS) {
+            if (id === 'summoned') continue;
             const c = CLASSES[id];
             const opt = document.createElement('option');
             opt.value = id;
@@ -1715,7 +2349,7 @@ export class Game {
 
         this.gameState.party.push(newMember);
         // New recruits default to the back row, except front-line classes.
-        const FRONT_ROW_CLASSES = new Set(['warrior', 'monk', 'paladin']);
+        const FRONT_ROW_CLASSES = new Set(['warrior', 'monk', 'paladin', 'barbarian']);
         if (!FRONT_ROW_CLASSES.has(newMember.classId)) newMember.row = 'back';
         soundManager.playRecruit();
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);

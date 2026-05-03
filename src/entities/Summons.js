@@ -43,38 +43,68 @@ const UNDEAD_COMMON_ABILITIES = [
 ];
 
 export const UNDEAD_TIERS = [
-    { id: 'skeleton',     name: 'Skeleton',     icon: '\u{1F480}',          portraitClass: 'warrior', portraitSpecies: 'human',
-        speciesLabel: 'Undead \u2022 Skeleton',
+    { id: 'skeleton',     name: 'Skeleton',     icon: '\u{1F480}',          portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Skeleton',
         kind: 'undead',
         abilities: ['Tier 1 baseline undead.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'zombie',       name: 'Zombie',       icon: '\u{1F9DF}',          portraitClass: 'warrior', portraitSpecies: 'human',
-        speciesLabel: 'Undead \u2022 Zombie',
+    { id: 'zombie',       name: 'Zombie',       icon: '\u{1F9DF}',          portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Zombie',
         kind: 'undead',
         abilities: ['Tier 2: +50% HP, +2 dmg, +1 defense.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'ghoul',        name: 'Ghoul',        icon: '\u{1F9DF}\u200D\u2640\uFE0F', portraitClass: 'rogue', portraitSpecies: 'human',
-        speciesLabel: 'Undead \u2022 Ghoul',
+    { id: 'ghoul',        name: 'Ghoul',        icon: '\u{1F9DF}\u200D\u2640\uFE0F', portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Ghoul',
         kind: 'undead',
-        abilities: ['Tier 3: +125% HP, +4 dmg, +2 defense.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'spectre',      name: 'Spectre',      icon: '\u{1F47B}',          portraitClass: 'mage',    portraitSpecies: 'elf',
-        speciesLabel: 'Undead \u2022 Spectre',
+        abilities: ['Tier 3: +125% HP, +4 dmg, +2 defense.', '40% chance to paralyze target for 1 round on melee (undead & incorporeal are immune).', ...UNDEAD_COMMON_ABILITIES] },
+    { id: 'spectre',      name: 'Spectre',      icon: '\u{1F47B}',          portraitClass: 'summoned', portraitSpecies: 'elf',
+        speciesLabel: 'Spectre',
         kind: 'undead',
-        abilities: ['Tier 4: +240% HP, +6 dmg, +3 defense.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'mummy',        name: 'Mummy',        icon: '\u{1F9DF}\u200D\u2642\uFE0F', portraitClass: 'warrior', portraitSpecies: 'human',
-        speciesLabel: 'Undead \u2022 Mummy',
+        incorporeal: true,   // immune to web, entangle, paralysis, constrict, stun; attacks ignore target armor
+        abilities: [
+            'Tier 4: +240% HP, +6 dmg, +3 defense.',
+            'Incorporeal: attacks ignore ALL enemy armor and defense.',
+            'Incorporeal: immune to web, entangle, paralysis, constrict, and physical stun.',
+            ...UNDEAD_COMMON_ABILITIES,
+        ] },
+    { id: 'mummy',        name: 'Mummy',        icon: '\u{1F9DF}\u200D\u2642\uFE0F', portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Mummy',
         kind: 'undead',
-        abilities: ['Tier 5: +406% HP, +8 dmg, +4 defense.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'ghost',        name: 'Ghost',        icon: '\u{1F47B}',          portraitClass: 'mage',    portraitSpecies: 'human',
-        speciesLabel: 'Undead \u2022 Ghost',
+        abilities: [
+            'Tier 5: +406% HP, +8 dmg, +4 defense.',
+            'Mummy Rot: each hit afflicts a permanent DoT (half attack damage/round until target dies). Does not affect undead or incorporeal.',
+            '33% chance to stun target on melee (undead & incorporeal immune).',
+            ...UNDEAD_COMMON_ABILITIES,
+        ] },
+    { id: 'ghost',        name: 'Ghost',        icon: '\u{1F47B}',          portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Ghost',
         kind: 'undead',
-        abilities: ['Tier 6: +659% HP, +10 dmg, +5 defense.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'vampire',      name: 'Vampire',      icon: '\u{1F9DB}',          portraitClass: 'rogue',   portraitSpecies: 'human',
-        speciesLabel: 'Undead \u2022 Vampire',
+        incorporeal: true,   // immune to web, entangle, paralysis, constrict, stun; attacks ignore target armor
+        abilities: [
+            'Tier 6: +659% HP, +10 dmg, +5 defense.',
+            'Incorporeal: attacks ignore ALL enemy armor and defense.',
+            'Incorporeal: immune to web, entangle, paralysis, constrict, and physical stun.',
+            'Fear: each attack may fear up to [necroLevel] enemies \u2014 50% resist, -3 atk/-3 def for the rest of combat. Undead are immune.',
+            ...UNDEAD_COMMON_ABILITIES,
+        ] },
+    { id: 'vampire',      name: 'Vampire',      icon: '\u{1F9DB}',          portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Vampire',
         kind: 'undead',
-        abilities: ['Tier 7: +1038% HP, +12 dmg, +6 defense.', ...UNDEAD_COMMON_ABILITIES] },
-    { id: 'death_knight', name: 'Death Knight', icon: '\u{2620}\uFE0F',     portraitClass: 'warrior', portraitSpecies: 'dwarf',
-        speciesLabel: 'Undead \u2022 Death Knight',
+        abilities: [
+            'Tier 7: +1038% HP, +12 dmg, +6 defense.',
+            'Life Drain: heals the vampire for every point of damage dealt.',
+            'Gaseous Form: when reduced to 0 HP, becomes immune to damage, cannot attack, regenerates 10% max HP/turn. Exits gaseous form at 30%+ HP.',
+            ...UNDEAD_COMMON_ABILITIES,
+        ] },
+    { id: 'death_knight', name: 'Death Knight', icon: '\u{2620}\uFE0F',     portraitClass: 'summoned', portraitSpecies: 'dwarf',
+        speciesLabel: 'Death Knight',
         kind: 'undead',
-        abilities: ['Tier 8+: +1607% HP, +14 dmg, +7 defense (scales further with Necromancer level).', ...UNDEAD_COMMON_ABILITIES] },
+        abilities: [
+            'Tier 8+: +1607% HP, +14 dmg, +7 defense (scales further with Necromancer level).',
+            '25% chance to block any incoming melee attack.',
+            'Stun chance: (33 + necroLevel)% on melee hit (undead & incorporeal immune).',
+            '5% max HP regeneration at the start of each turn.',
+            'Instakill non-boss enemies: (2 + necroLevel)% chance.',
+            ...UNDEAD_COMMON_ABILITIES,
+        ] },
 ];
 
 /**
@@ -103,13 +133,16 @@ const UNDEAD_BASE = {
 /**
  * Roll stats for an undead tier. tierIndex 0 = skeleton, 1 = zombie, …
  * Per-tier scaling: HP ×1.5 compounding, +2 min/max damage, +1 defense.
- * Past death_knight (tierIndex 7), continues scaling with the same formula.
+ * Additionally, the necromancer's level directly adds +1 to both melee
+ * damage (min & max) and defense on top of the tier base.
  *
  * @param {number} tierIndex
+ * @param {number} [necroLevel=1]
  */
-export function rollUndeadStats(tierIndex) {
-    const t = Math.max(0, tierIndex);
-    const hpMult = Math.pow(1.5, t);
+export function rollUndeadStats(tierIndex, necroLevel = 1) {
+    const t  = Math.max(0, tierIndex);
+    const nl = Math.max(1, necroLevel | 0);
+    const hpMult  = Math.pow(1.5, t);
     const dmgBoost = t * 2;
     const defBoost = t;
 
@@ -121,9 +154,9 @@ export function rollUndeadStats(tierIndex) {
         maxHealth:  hp,
         maxStamina: st,
         maxMana:    0,
-        meleeMin:   UNDEAD_BASE.meleeMin + dmgBoost,
-        meleeMax:   UNDEAD_BASE.meleeMax + dmgBoost,
-        defense:    UNDEAD_BASE.defense + defBoost,
+        meleeMin:   UNDEAD_BASE.meleeMin + dmgBoost + nl,
+        meleeMax:   UNDEAD_BASE.meleeMax + dmgBoost + nl,
+        defense:    UNDEAD_BASE.defense  + defBoost + nl,
     };
 }
 
@@ -136,15 +169,15 @@ export const BEAST_TYPES = {
         id: 'wolf',
         name: 'Wolf',
         icon: '\u{1F43A}',
-        portraitClass: 'rogue', portraitSpecies: 'human',
+        portraitClass: 'summoned', portraitSpecies: 'human',
         attackType: 'melee',
-        speciesLabel: 'Beast \u2022 Wolf',
+        speciesLabel: 'Wolf',
         kind: 'beast',
-        description: 'Swift melee striker. Bite inflicts Bleed (+50% bonus damage per round) for 3 rounds.',
+        description: 'Swift melee striker. Bite inflicts Bleed (100% of hit damage per round) for 3 rounds. +7 HP and +1 defense per summoner level.',
         abilities: [
             'Single-target bite attack.',
-            'Applies Bleed: +50% of initial hit as bonus damage each round for 3 rounds.',
-            'Medium HP, faster initiative.',
+            'Applies Bleed: 100% of initial hit as bonus damage each round for 3 rounds.',
+            'Medium HP, faster initiative. +7 HP and +1 defense per summoner level.',
             'Can be healed by potions and Cleric heal.',
         ],
     },
@@ -152,14 +185,14 @@ export const BEAST_TYPES = {
         id: 'bear',
         name: 'Bear',
         icon: '\u{1F43B}',
-        portraitClass: 'warrior', portraitSpecies: 'human',
+        portraitClass: 'summoned', portraitSpecies: 'human',
         attackType: 'melee',
-        speciesLabel: 'Beast \u2022 Bear',
+        speciesLabel: 'Bear',
         kind: 'beast',
-        description: 'High HP, strong melee, stun chance matches ranger crit.',
+        description: 'High HP, strong melee, stun chance matches ranger crit. +2 defense per summoner level.',
         abilities: [
             'Single-target melee attack.',
-            'High HP tank.',
+            'High HP tank. +2 defense per summoner level.',
             'Stun chance equal to summoner\u2019s ranged crit.',
             'Can be healed by potions and Cleric heal.',
         ],
@@ -168,15 +201,15 @@ export const BEAST_TYPES = {
         id: 'eagle',
         name: 'Eagle',
         icon: '\u{1F985}',
-        portraitClass: 'ranger', portraitSpecies: 'elf',
+        portraitClass: 'summoned', portraitSpecies: 'elf',
         attackType: 'ranged',
-        speciesLabel: 'Beast \u2022 Eagle',
+        speciesLabel: 'Eagle',
         kind: 'beast',
-        description: 'Ranged striker, lower HP, crit chance matches ranger crit.',
+        description: 'Ranged striker, lower HP, crit chance matches ranger crit. +5 HP per summoner level.',
         abilities: [
             'Single-target ranged attack.',
-            'Lower HP, higher damage.',
-            'Crit chance equal to summoner\u2019s ranged crit (2\u00D7 damage on crit).',
+            'Lower HP, higher damage. +5 HP per summoner level.',
+            'Crit chance equal to summoner\u2019s ranged crit (4\u00D7 damage on crit).',
             'Can be healed by potions and Cleric heal.',
         ],
     },
@@ -184,16 +217,34 @@ export const BEAST_TYPES = {
         id: 'pixie',
         name: 'Pixie',
         icon: '\u{1F9DA}',
-        portraitClass: 'mage', portraitSpecies: 'gnome',
+        portraitClass: 'summoned', portraitSpecies: 'gnome',
         attackType: 'magic',
         speciesLabel: 'Pixie',
         kind: 'beast',
-        description: 'Low HP, weak AoE magic, dodge chance matches ranger crit.',
+        description: 'Low HP, weak AoE magic, dodge chance matches ranger crit. Takes half damage from AoE magic. +2 HP per summoner level.',
         abilities: [
             'AoE faerie-dust magic (hits all enemies).',
-            'Fragile \u2014 lowest HP of all beasts.',
+            'Fragile \u2014 lowest HP of all beasts. +2 HP per summoner level.',
+            'Fey Nature: takes half damage from AoE magic attacks.',
             'Dodge chance equal to summoner\u2019s ranged crit.',
             'Can be healed by potions and Cleric heal.',
+        ],
+    },
+    treant: {
+        id: 'treant',
+        name: 'Treant',
+        icon: '\u{1F333}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        attackType: 'melee',
+        speciesLabel: 'Treant',
+        kind: 'beast',
+        druidOnly: true,
+        description: 'Ancient tree spirit. Heavy front-row melee, 33% chance to hold (stun) per hit. Scales with druid level.',
+        abilities: [
+            'Front-row melee: branch slam deals druid-level-scaled damage.',
+            '33% chance per hit to Hold target for 1 round (undead and incorporeal are immune).',
+            'High HP, slow initiative. Can be healed by potions and Cleric heal.',
+            'Druid only. Unlocks at level 5.',
         ],
     },
 };
@@ -206,6 +257,24 @@ export const BEAST_TYPES = {
  * @param {{isSummoned?:boolean, summonType?:string}} member
  * @returns {null|object}
  */
+/** Preset for the Druid L20 Faerie Queen summon. */
+export const FAERIE_QUEEN_PRESET = {
+    id:           'faerie_queen',
+    name:         'Faerie Queen',
+    icon:         '\u{1F9DA}‍♀️',  // 🧚‍♀️ woman fairy
+    portraitClass: 'summoned',
+    portraitSpecies: 'elf',
+    speciesLabel:  'Faerie Queen',
+    kind:          'fae',
+    abilities: [
+        'Back row. 2× druid max HP, 30+druidLevel defense.',
+        'Wrath of Nature: magic/AoE attack hitting ⌊druid-level/4⌋ targets per turn.',
+        'Each hit applies Fae Poison DoT and a 33%+ chance to Hold for 2 rounds.',
+        '50% resistance to magic and AoE damage.',
+        'Can be healed by Cleric or potions.',
+    ],
+};
+
 export function getSummonPreset(member) {
     if (!member || !member.isSummoned || !member.summonType) return null;
     if (BEAST_TYPES[member.summonType]) return BEAST_TYPES[member.summonType];
@@ -213,6 +282,7 @@ export function getSummonPreset(member) {
     if (tier) return tier;
     const golem = GOLEM_PRESETS[member.summonType];
     if (golem) return golem;
+    if (member.summonType === 'faerie_queen') return FAERIE_QUEEN_PRESET;
     return null;
 }
 
@@ -235,9 +305,9 @@ export const GOLEM_PRESETS = (() => {
             id: t.id,
             name: t.name,
             icon: t.icon,
-            portraitClass: 'warrior',
+            portraitClass: 'summoned',
             portraitSpecies: 'dwarf',
-            speciesLabel: `Golem \u2022 ${t.name}`,
+            speciesLabel: `${t.name}`,
             kind: 'golem',
             persistent: true,
             reagentTier: t.reagentTier,
@@ -265,9 +335,9 @@ export function getArtificerUnlockedGolems(level) {
 /**
  * Roll stats for a golem at a given artificer level. Artificer level (AL)
  * adds flat scaling:
- *   HP  = baseHp + hpPerAL × AL
- *   Def = baseDef + AL
- *   Damage = [meleeMin + AL, meleeMax + AL]
+ *   HP      = baseHp + hpPerAL × AL
+ *   Defense = 2 × AL
+ *   Damage  = [2 + floor(AL × 1.5),  12 + floor(AL × 1.5)]
  *
  * @param {string} tierId
  * @param {number} artificerLevel
@@ -276,21 +346,28 @@ export function rollGolemStats(tierId, artificerLevel = 1) {
     const tier = GOLEM_TIERS_CONST.find(t => t.id === tierId) || GOLEM_TIERS_CONST[0];
     const AL = Math.max(1, artificerLevel | 0);
     const hp = tier.baseHp + tier.hpPerAL * AL;
+    const meleeBonus = Math.floor(AL * 1.5);
     return {
-        maxHealth:  hp,
-        maxStamina: 0,
-        maxMana:    0,
-        meleeMin:   tier.meleeMin + AL,
-        meleeMax:   tier.meleeMax + AL,
-        defense:    tier.baseDef + AL,
-        tierId:     tier.id,
-        regenPercent:   tier.regenPercent || 0,
-        reflectChance:  tier.reflectChance || 0,
-        reflectFraction:tier.reflectFraction || 0,
-        slamEvery:      tier.slamEvery || 0,
-        slamStunChance: tier.slamStunChance || 0,
-        cleaveTargets:  tier.cleaveTargets || 0,
-        immune:         Array.isArray(tier.immune) ? tier.immune.slice() : [],
+        maxHealth:       hp,
+        maxStamina:      0,
+        maxMana:         0,
+        meleeMin:        2  + meleeBonus,
+        meleeMax:        12 + meleeBonus,
+        defense:         AL * 2,
+        tierId:          tier.id,
+        artificerLevel:  AL,           // stored so AI can scale abilities (forceAoe targets, bolts, etc.)
+        regenPercent:    tier.regenPercent    || 0,
+        reflectChance:   tier.reflectChance   || 0,
+        reflectFraction: tier.reflectFraction || 0,
+        slamEvery:       tier.slamEvery       || 0,
+        slamStunChance:  tier.slamStunChance  || 0,
+        cleaveTargets:   tier.cleaveTargets   || 0,
+        drainOnKill:     tier.drainOnKill     || 0,
+        forceAoe:        tier.forceAoe        || false,
+        adamantineBolts: tier.adamantineBolts || false,
+        halfDmgSpecial:  tier.halfDmgSpecial  || false,
+        divineSoul:      tier.divineSoul      || false,
+        immune:          Array.isArray(tier.immune) ? tier.immune.slice() : [],
     };
 }
 
@@ -305,39 +382,49 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
     switch (beastId) {
         case 'wolf':
             return {
-                maxHealth:  roll(16, 24) + lvBoost * 5,
+                maxHealth:  roll(16, 24) + lvBoost * 7,   // +7 HP/level (was +5)
                 maxStamina: roll(18, 26),
                 maxMana:    0,
-                meleeMin:   3 + lvBoost *2,
-                meleeMax:   8 + lvBoost *2,
-                defense:    0,
+                meleeMin:   3 + lvBoost * 2,
+                meleeMax:   8 + lvBoost * 2,
+                defense:    lvBoost,                       // +1 defense/level (was 0)
             };
         case 'bear':
             return {
                 maxHealth:  roll(24, 32) + lvBoost * 10,
                 maxStamina: roll(20, 28),
                 maxMana:    0,
-                meleeMin:   3 + lvBoost *2,
-                meleeMax:   10 + lvBoost *2,
-                defense:    1,
+                meleeMin:   3 + lvBoost * 2,
+                meleeMax:   10 + lvBoost * 2,
+                defense:    1 + lvBoost * 2,               // +2 defense/level (was flat 1)
             };
         case 'eagle':
             return {
-                maxHealth:  roll(12, 18) + lvBoost * 2,
+                maxHealth:  roll(12, 18) + lvBoost * 5,   // +5 HP/level (was +2)
                 maxStamina: roll(20, 28),
                 maxMana:    0,
-                rangedMin:  3 + lvBoost *2,
-                rangedMax:  8 + lvBoost *2,
+                rangedMin:  3 + lvBoost * 2,
+                rangedMax:  8 + lvBoost * 2,
                 defense:    0,
             };
         case 'pixie':
             return {
-                maxHealth:  roll(8, 14) + lvBoost,
+                maxHealth:  roll(8, 14) + lvBoost * 2,    // +2 HP/level (was +1)
                 maxStamina: 0,
                 maxMana:    roll(15, 22),
-                magicMin:   1 + lvBoost *2,
-                magicMax:   5 + lvBoost *2,
+                magicMin:   1 + lvBoost * 2,
+                magicMax:   5 + lvBoost * 2,
                 defense:    0,
+            };
+        case 'treant':
+            // Treant damage scales entirely with druid level; high HP, low init.
+            return {
+                maxHealth:  roll(30, 45) + lvBoost * 12,
+                maxStamina: roll(20, 28),
+                maxMana:    0,
+                meleeMin:   rangerLevel + 2,
+                meleeMax:   rangerLevel * 2 + 4,
+                defense:    Math.floor(rangerLevel / 2),
             };
         default:
             return rollBeastStats('bear', rangerLevel);

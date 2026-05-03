@@ -39,18 +39,10 @@ export class EnemyManager {
             }
         }
 
-        // Phase 11: filter the spawn pool by dungeon level. Types whose
-        // `maxLevel` is below this dungeon level are excluded here so every
-        // spawn site (_trySpawn, forceSpawnNear) can pick uniformly.
-        this._spawnableTypes = ENEMY_TYPE_KEYS.filter(k => {
-            const def = ENEMY_TYPES[k] || {};
-            if (typeof def.maxLevel === 'number' && this.dungeonLevel > def.maxLevel) return false;
-            if (typeof def.minLevel === 'number' && this.dungeonLevel < def.minLevel) return false;
-            return true;
-        });
-        // Safety net — if nothing passed, fall back to the full roster so
-        // we never try to sample from an empty array.
-        if (this._spawnableTypes.length === 0) this._spawnableTypes = ENEMY_TYPE_KEYS;
+        this._spawnableTypes = ENEMY_TYPE_KEYS;
+
+        // Boss tracking — one boss per dungeon level.
+        this._bossSpawned = false;
     }
 
     /** Restore enemies from serialised save data. */
@@ -144,6 +136,67 @@ export class EnemyManager {
 
             const type = this._spawnableTypes[Math.floor(Math.random() * this._spawnableTypes.length)];
             const enemy = new Enemy({ type, gridX: cell.x, gridZ: cell.z, level: this.dungeonLevel });
+
+            // Apply type-level stat multipliers (e.g. earth_elemental has double HP & defense).
+            const spawnTypeDef = ENEMY_TYPES[type] || {};
+            if (spawnTypeDef.hpMult && spawnTypeDef.hpMult !== 1) {
+                enemy.health    = Math.round(enemy.health    * spawnTypeDef.hpMult);
+                enemy.maxHealth = Math.round(enemy.maxHealth * spawnTypeDef.hpMult);
+            }
+            if (spawnTypeDef.defenseMult && spawnTypeDef.defenseMult !== 1) {
+                enemy.defense = Math.round((enemy.defense || 0) * spawnTypeDef.defenseMult);
+            }
+
+            // Boss spawn: one per dungeon level. A boss is a supercharged version
+            // of a normal monster with much better loot (handled in CombatSystem).
+            // There is a 10% chance the boss becomes a MEGA BOSS with even more power.
+            if (!this._bossSpawned && this.dungeonLevel >= 1) {
+                this._bossSpawned = true;
+                enemy.isBoss = true;
+                const dlvl = this.dungeonLevel;
+
+                // Shared title generation
+                const bDef = ENEMY_TYPES[type] || {};
+                const bTags = Array.isArray(bDef.tags) ? bDef.tags : [];
+                const bName = bDef.name || type;
+                const BOSS_TITLES = {
+                    undead:    ['Ancient', 'Dread', 'Wailing', 'Cursed', 'Spectral'],
+                    demon:     ['Infernal', 'Abyssal', 'Hellborn', 'Dread'],
+                    humanoid:  ['Warchief', 'Overlord', 'Champion', 'Warlord'],
+                    beast:     ['Dire', 'Elder', 'Ancient', 'Great'],
+                    construct: ['Masterwork', 'Ancient', 'Runed'],
+                    aberration:['Elder', 'Void-touched', 'Abominable'],
+                    monster:   ['Greater', 'Elder', 'Ancient'],
+                    default:   ['Dread', 'Elder', 'Greater', 'Ancient'],
+                };
+                let titlePool = BOSS_TITLES.default;
+                for (const tag of bTags) {
+                    if (BOSS_TITLES[tag]) { titlePool = BOSS_TITLES[tag]; break; }
+                }
+                const bTitle = titlePool[Math.floor(Math.random() * titlePool.length)];
+
+                if (Math.random() < 0.10) {
+                    // ── MEGA BOSS (10% chance) ─────────────────────────────────
+                    // 10× HP, defense = base + DL×2, melee/ranged +DL×4, magic +DL×3.
+                    enemy.isMegaBoss   = true;
+                    enemy.health       = Math.round(enemy.health    * 10);
+                    enemy.maxHealth    = Math.round(enemy.maxHealth  * 10);
+                    enemy.defense      = (enemy.defense || 0) + dlvl * 2;
+                    enemy.bossAtkBonus = dlvl * 2;
+                    enemy.bossDL       = dlvl;
+                    enemy.name = `\u{1F480} Mega ${bTitle} ${bName}`;
+                } else {
+                    // ── Normal boss ────────────────────────────────────────────
+                    // 5× HP, defense = base + DL, melee/ranged +DL×3, magic +DL×2.
+                    enemy.health       = Math.round(enemy.health    * 5);
+                    enemy.maxHealth    = Math.round(enemy.maxHealth  * 5);
+                    enemy.defense      = (enemy.defense || 0) + dlvl;
+                    enemy.bossAtkBonus = dlvl;
+                    enemy.bossDL       = dlvl;
+                    enemy.name = `\u{1F451} ${bTitle} ${bName}`;
+                }
+            }
+
             enemy.createSprite(this.scene);
             this.enemies.push(enemy);
             return true;

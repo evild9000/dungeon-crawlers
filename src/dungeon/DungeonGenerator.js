@@ -30,6 +30,7 @@ import {
     DUNGEON_ROOM_MIN,
     DUNGEON_ROOM_MAX,
     TORCH_SPACING_CELLS,
+    FOUNTAIN_SPAWN_CHANCE,
 } from '../utils/constants.js';
 
 // ──────────────────────────────────────────
@@ -308,12 +309,59 @@ export function getTrapPositions(dungeonLevel, portalDown, portalUp, playerStart
     return traps;
 }
 
+/**
+ * Roll for magical fountain spawns on this dungeon level.
+ * We attempt `min(dungeonLevel, 5)` rolls, each with FOUNTAIN_SPAWN_CHANCE.
+ * Returns an array of `{ x, z, used:false }` objects on random walkable cells.
+ */
+export function getFountainPositions(dungeonLevel, portalDown, portalUp, playerStart) {
+    const { map } = _getLayout(dungeonLevel);
+    const rows = map.length, cols = map[0].length;
+    const start = playerStart || PLAYER_START;
+
+    // Distinct RNG seed so fountains don't collide with traps or torches.
+    const rng = _lcg(((dungeonLevel * 2654435761) ^ 0x5A3C9E7F) | 0);
+
+    // Build eligible cell list: walkable, not near player start, not portal cells.
+    const eligible = [];
+    for (let z = 0; z < rows; z++) {
+        for (let x = 0; x < cols; x++) {
+            if (map[z][x] !== 0) continue;
+            if (Math.abs(x - start.x) + Math.abs(z - start.z) <= 2) continue;
+            if (portalDown && portalDown.x === x && portalDown.z === z) continue;
+            if (portalUp   && portalUp.x   === x && portalUp.z   === z) continue;
+            eligible.push({ x, z });
+        }
+    }
+    if (eligible.length === 0) return [];
+
+    const rolls = Math.min(dungeonLevel, 5);
+    const fountains = [];
+    const used = new Set();
+
+    for (let i = 0; i < rolls; i++) {
+        if (rng() >= FOUNTAIN_SPAWN_CHANCE) continue; // failed roll
+        // Pick a random eligible cell not already occupied by another fountain.
+        for (let tries = 0; tries < 30; tries++) {
+            const pick = eligible[Math.floor(rng() * eligible.length)];
+            const key = `${pick.x},${pick.z}`;
+            if (!used.has(key)) {
+                used.add(key);
+                fountains.push({ x: pick.x, z: pick.z, used: false });
+                break;
+            }
+        }
+    }
+    return fountains;
+}
+
 export function getDungeonData(dungeonLevel = 1) {
     const { map, rooms } = _getLayout(dungeonLevel);
     const playerStart = { x: rooms[0].cx, z: rooms[0].cz };
     const portals = getPortalPositions(dungeonLevel);
     const torchPositions = getTorchPositions(dungeonLevel);
     const traps = getTrapPositions(dungeonLevel, portals.down, portals.up, playerStart);
+    const fountains = getFountainPositions(dungeonLevel, portals.down, portals.up, playerStart);
 
     return {
         map,
@@ -325,5 +373,6 @@ export function getDungeonData(dungeonLevel = 1) {
         portalDown: portals.down,
         portalUp: portals.up,
         traps,
+        fountains,
     };
 }

@@ -22,7 +22,7 @@ import { getSummonPreset } from '../entities/Summons.js';
 import {
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
-    POTION_BUFF_DURATION_SEC,
+    POTION_BUFF_DURATION_SEC, calcScrollBonus,
     MELEE_STUN_CHANCE, RANGED_CRIT_CHANCE,
     BACKSTAB_INSTAKILL_CHANCE, MONK_DODGE_CHANCE, MONK_WHIRLWIND_CHANCE,
     CLERIC_HEAL_PERCENT, CLERIC_HEAL_MANA_COST,
@@ -35,11 +35,31 @@ import {
 } from '../utils/constants.js';
 
 /**
- * Apply a potion's effect to a PartyMember. Returns true if the potion
- * actually did something (e.g. healed someone already at full HP returns
- * false so we don't consume the item). Timed elixirs always "work".
+ * Compute scroll buff duration (ms) based on the highest-level artificer in party.
+ * Base: 5 min. Bonus: +1 min per 2 artificer levels.
  */
-function _applyPotion(member, itemId) {
+function _scrollDurationMs(party) {
+    const level = (party || []).reduce((max, m) => {
+        if (!m.isSummoned && m.classId === 'artificer' && m.health > 0) return Math.max(max, m.level || 1);
+        return max;
+    }, 0);
+    return (5 + Math.floor(level / 2)) * 60 * 1000;
+}
+
+/** Highest living Artificer level in the party (0 if none). */
+function _artificerLevel(party) {
+    return (party || []).reduce((max, m) => {
+        if (!m.isSummoned && m.classId === 'artificer' && m.health > 0) return Math.max(max, m.level || 1);
+        return max;
+    }, 0);
+}
+
+/**
+ * Apply a potion/scroll effect. Returns true if something was applied.
+ * Scrolls (elixir_warding / elixir_wrath) affect ALL living non-summoned
+ * party members — pass the full party array as the third argument.
+ */
+function _applyPotion(member, itemId, party) {
     if (!member || member.health <= 0) return false;
     switch (itemId) {
         case 'minor_healing_potion': {
@@ -60,19 +80,21 @@ function _applyPotion(member, itemId) {
             return true;
         }
         case 'elixir_warding': {
-            member.addEffect({
-                type: 'elixir_warding',
-                defenseBonus: POTION_WARD_DEF_BONUS,
-                expiresAt: Date.now() + POTION_BUFF_DURATION_SEC * 1000,
-            });
+            const durMs = _scrollDurationMs(party);
+            const bonus  = calcScrollBonus(_artificerLevel(party));
+            const targets = party ? party.filter(m => !m.isSummoned && m.health > 0) : [member];
+            for (const t of targets) {
+                t.addEffect({ type: 'elixir_warding', defenseBonus: bonus, expiresAt: Date.now() + durMs });
+            }
             return true;
         }
         case 'elixir_wrath': {
-            member.addEffect({
-                type: 'elixir_wrath',
-                damageBonus: POTION_WRATH_DMG_BONUS,
-                expiresAt: Date.now() + POTION_BUFF_DURATION_SEC * 1000,
-            });
+            const durMs = _scrollDurationMs(party);
+            const bonus  = calcScrollBonus(_artificerLevel(party));
+            const targets = party ? party.filter(m => !m.isSummoned && m.health > 0) : [member];
+            for (const t of targets) {
+                t.addEffect({ type: 'elixir_wrath', damageBonus: bonus, expiresAt: Date.now() + durMs });
+            }
             return true;
         }
     }
@@ -102,6 +124,31 @@ export class InventoryUI {
             .addEventListener('click', () => this.hidePersonal());
 
         this._activeMemberId = null;
+
+        // Arrow-key navigation between party members while bag is open
+        this._bagKeyHandler = (e) => {
+            if (!this.isPersonalOpen) return;
+            if (e.key === 'ArrowLeft')  this._navigatePersonal(-1);
+            if (e.key === 'ArrowRight') this._navigatePersonal(1);
+        };
+        window.addEventListener('keydown', this._bagKeyHandler);
+    }
+
+    /**
+     * Cycle the personal inventory to the prev/next non-summoned party member.
+     * @param {number} dir  -1 = previous, +1 = next
+     */
+    _navigatePersonal(dir) {
+        const state = this._getState();
+        if (!state) return;
+        // Only show non-summoned members in the bag modal
+        const eligible = state.party.filter(m => !m.isSummoned);
+        if (eligible.length < 2) return;
+        const idx = eligible.findIndex(m => m.id === this._activeMemberId);
+        if (idx === -1) return;
+        const next = (idx + dir + eligible.length) % eligible.length;
+        this._activeMemberId = eligible[next].id;
+        this._renderPersonal();
     }
 
     // ────────────────────────────────────────────
@@ -122,6 +169,53 @@ export class InventoryUI {
         return this.groupOverlay.style.display === 'flex';
     }
 
+    /**
+     * Sort the items within a group bucket for display.
+     *
+     * Weapons  — by subtype (ranged → magic → melee), then power low→high.
+     * Armor    — by blocking value low→high (shields, which have no blocking, go last).
+     * Trinkets — by trinketKind (cloak → neck/amulet → ring → belt), then bonusValue low→high.
+     * Others   — unchanged (natural inventory order).
+     */
+    _sortGroupItems(key, items) {
+        const clone = [...items];
+        if (key === 'weapon') {
+            const sub = { ranged: 0, magic: 1, melee: 2 };
+            clone.sort((a, b) => {
+                const sd = (sub[a.def?.subtype] ?? 9) - (sub[b.def?.subtype] ?? 9);
+                return sd !== 0 ? sd : (a.def?.power ?? 0) - (b.def?.power ?? 0);
+            });
+        } else if (key === 'armor') {
+            // blocking undefined = shield → sort last
+            clone.sort((a, b) => (a.def?.blocking ?? 999) - (b.def?.blocking ?? 999));
+        } else if (key === 'melee' || key === 'ranged' || key === 'magic' || key === 'defense') {
+            const kind = { cloak: 0, neck: 1, ring: 2, belt: 3 };
+            clone.sort((a, b) => {
+                const kd = (kind[a.def?.trinketKind] ?? 9) - (kind[b.def?.trinketKind] ?? 9);
+                return kd !== 0 ? kd : (a.def?.bonusValue ?? 0) - (b.def?.bonusValue ?? 0);
+            });
+        }
+        return clone;
+    }
+
+    /**
+     * Classify an item into one of 9 display groups for the bag view.
+     * Dual-aspect trinkets go into their secondary (non-defense) category.
+     */
+    _getBagGroup(itemId, def) {
+        if (!def) return 'consumable';
+        if (def.reagentTier || itemId === 'magical_reagent') return 'reagent';
+        if (itemId === 'torch' || itemId === 'lantern' || itemId === 'lantern_oil') return 'light';
+        if (def.category === 'weapon') return 'weapon';
+        if (def.category === 'armor' || def.category === 'shield') return 'armor';
+        if (def.category === 'trinket') {
+            // Dual-aspect: sort by the non-defense secondary bonus
+            if (def.dualAspect && def.bonusType2) return def.bonusType2; // 'melee'|'ranged'|'magic'
+            return def.bonusType; // 'defense'|'melee'|'ranged'|'magic'
+        }
+        return 'consumable'; // food, potions, elixirs, scrolls, etc.
+    }
+
     _renderGroup() {
         const state = this._getState();
         if (!state) return;
@@ -136,16 +230,53 @@ export class InventoryUI {
         goldRow.innerHTML = `<span class="inv-gold-icon">&#x1F4B0;</span> <span class="inv-gold-amount">${inv.gold} Gold</span>`;
         this.groupContent.appendChild(goldRow);
 
-        // Items
         const summary = inv.getItemSummary();
         if (summary.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'inv-empty';
             empty.textContent = 'No items in group inventory.';
             this.groupContent.appendChild(empty);
-        } else {
-            for (const { itemId, quantity } of summary) {
-                const def = getItemDef(itemId);
+            return;
+        }
+
+        // Group definitions — order determines display order in the bag.
+        const GROUP_META = [
+            { key: 'reagent',    label: '🧪 Reagents'         },
+            { key: 'light',      label: '🔦 Light Sources'    },
+            { key: 'weapon',     label: '⚔️ Weapons'           },
+            { key: 'armor',      label: '🛡️ Armor & Shields'   },
+            { key: 'consumable', label: '🧴 Consumables'       },
+            { key: 'magic',      label: '🔮 Magic Trinkets'    },
+            { key: 'ranged',     label: '🏹 Ranged Trinkets'   },
+            { key: 'melee',      label: '🗡️ Melee Trinkets'    },
+            { key: 'defense',    label: '🛡️ Defense Trinkets'  },
+        ];
+
+        // Bucket items by group key
+        const buckets = {};
+        for (const g of GROUP_META) buckets[g.key] = [];
+        for (const entry of summary) {
+            const def = getItemDef(entry.itemId);
+            const key = this._getBagGroup(entry.itemId, def);
+            if (!buckets[key]) buckets[key] = [];
+            buckets[key].push({ ...entry, def });
+        }
+
+        const eligible = party.filter(m => !m.isSummoned);
+
+        // Render each non-empty group with a subheading
+        for (const { key, label } of GROUP_META) {
+            const raw = buckets[key];
+            if (!raw || raw.length === 0) continue;
+            const items = this._sortGroupItems(key, raw);
+
+            // Subheading
+            const heading = document.createElement('div');
+            heading.className = 'inv-group-heading';
+            heading.textContent = label;
+            this.groupContent.appendChild(heading);
+
+            for (const { itemId, quantity, def } of items) {
                 if (!def) continue;
 
                 const row = document.createElement('div');
@@ -161,8 +292,6 @@ export class InventoryUI {
                 info.title = this._getItemTooltip(def);
                 row.appendChild(info);
 
-                // Transfer button (any item, to any non-summoned party member)
-                const eligible = party.filter(m => !m.isSummoned);
                 if (eligible.length > 0) {
                     const transferBtn = document.createElement('button');
                     transferBtn.className = 'inv-transfer-btn';
@@ -181,6 +310,28 @@ export class InventoryUI {
                             this._showRevivePicker(itemId, row, /*fromGroup*/ true);
                         });
                         row.appendChild(useBtn);
+                    }
+                    // Read button for party-wide scrolls from group bag
+                    if (itemId === 'elixir_warding' || itemId === 'elixir_wrath') {
+                        const readBtn = document.createElement('button');
+                        readBtn.className = 'inv-transfer-btn';
+                        readBtn.textContent = 'Read (party)';
+                        const scrollAL = _artificerLevel(party);
+                        const scrollBonusVal = calcScrollBonus(scrollAL);
+                        const scrollDurMin = 5 + Math.floor(scrollAL / 2);
+                        const scrollBonusKind = itemId === 'elixir_warding' ? 'defense' : 'all damage';
+                        readBtn.title = `Grants all living party members +${scrollBonusVal} ${scrollBonusKind} for ${scrollDurMin} min.\n(Bonus = +2 base +1 per 5 AL; AL ${scrollAL} → +${scrollBonusVal})`;
+                        readBtn.addEventListener('click', () => {
+                            const anyone = party.find(m => !m.isSummoned && m.health > 0);
+                            if (!anyone) return;
+                            const applied = _applyPotion(anyone, itemId, party);
+                            if (applied && state.inventory.removeItem(itemId)) {
+                                soundManager.playPotion();
+                                this._onChanged();
+                                this._renderGroup();
+                            }
+                        });
+                        row.appendChild(readBtn);
                     }
                 }
 
@@ -304,7 +455,15 @@ export class InventoryUI {
 
         const nameEl = document.createElement('div');
         nameEl.className = 'pinv-name';
-        nameEl.textContent = `${member.name}  L${member.level}`;
+        // Show which character this is out of eligible (non-summoned) members
+        const stateNow = this._getState();
+        const eligibleMembers = stateNow ? stateNow.party.filter(m => !m.isSummoned) : [];
+        const memberIdx = eligibleMembers.findIndex(m => m.id === this._activeMemberId);
+        const navHint = eligibleMembers.length > 1
+            ? ` (${memberIdx + 1}/${eligibleMembers.length}  ← →)`
+            : '';
+        nameEl.textContent = `${member.name}  L${member.level}${navHint}`;
+        nameEl.title = eligibleMembers.length > 1 ? 'Use ← → arrow keys to cycle between party members' : '';
         idBlock.appendChild(nameEl);
 
         const cls = member.classDef;
@@ -465,8 +624,16 @@ export class InventoryUI {
                         const useBtn = document.createElement('button');
                         useBtn.className = 'pinv-action-btn pinv-use-btn';
                         useBtn.textContent = 'Use';
+                        // Scrolls: show dynamic bonus in tooltip
+                        if (entry.itemId === 'elixir_warding' || entry.itemId === 'elixir_wrath') {
+                            const sAL = _artificerLevel(state.party);
+                            const sBonusVal = calcScrollBonus(sAL);
+                            const sDurMin = 5 + Math.floor(sAL / 2);
+                            const sBonusKind = entry.itemId === 'elixir_warding' ? 'defense' : 'all damage';
+                            useBtn.title = `Grants all living party members +${sBonusVal} ${sBonusKind} for ${sDurMin} min.\n(+2 base +1 per 5 AL; AL ${sAL} → +${sBonusVal})`;
+                        }
                         useBtn.addEventListener('click', () => {
-                            const applied = _applyPotion(member, entry.itemId);
+                            const applied = _applyPotion(member, entry.itemId, state.party);
                             if (applied && member.removeItem(entry.itemId)) {
                                 soundManager.playPotion();
                                 this._onChanged();
@@ -504,6 +671,55 @@ export class InventoryUI {
         }
 
         this.personalContent.appendChild(itemSection);
+
+        // ── Party order reposition (non-summoned only) ───────────────────────
+        if (!member.isSummoned && eligibleMembers.length > 1) {
+            const reorderSection = document.createElement('div');
+            reorderSection.className = 'pinv-section';
+            reorderSection.innerHTML = '<div class="pinv-section-title">\u{1F500} Party Order</div>';
+
+            const reorderRow = document.createElement('div');
+            reorderRow.className = 'pinv-item-row';
+
+            const label = document.createElement('span');
+            label.className = 'pinv-item-info';
+            label.textContent = 'Swap position with:';
+            reorderRow.appendChild(label);
+
+            const swapSel = document.createElement('select');
+            swapSel.className = 'pinv-swap-select';
+            const others = eligibleMembers.filter(m => m.id !== member.id);
+            for (const other of others) {
+                const opt = document.createElement('option');
+                opt.value = other.id;
+                opt.textContent = other.name;
+                swapSel.appendChild(opt);
+            }
+            reorderRow.appendChild(swapSel);
+
+            const swapBtn = document.createElement('button');
+            swapBtn.className = 'pinv-action-btn';
+            swapBtn.textContent = 'Swap';
+            swapBtn.title = 'Swap this character\'s position in the party order (affects HUD slot display).';
+            swapBtn.addEventListener('click', () => {
+                const targetId = swapSel.value;
+                const stateRef = this._getState();
+                if (!stateRef) return;
+                const idxA = stateRef.party.findIndex(m => m.id === member.id);
+                const idxB = stateRef.party.findIndex(m => m.id === targetId);
+                if (idxA !== -1 && idxB !== -1 && idxA !== idxB) {
+                    const tmp = stateRef.party[idxA];
+                    stateRef.party[idxA] = stateRef.party[idxB];
+                    stateRef.party[idxB] = tmp;
+                    this._onChanged();
+                    this._renderPersonal();
+                }
+            });
+            reorderRow.appendChild(swapBtn);
+
+            reorderSection.appendChild(reorderRow);
+            this.personalContent.appendChild(reorderSection);
+        }
     }
 
     // ────────────────────────────────────────────
@@ -660,11 +876,15 @@ export class InventoryUI {
             perk.push(`Life drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance, +${cur} HP`);
             perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance per enemy hit by magic (AoE rolls independently)\n  Base drain: ${base} HP, current: ${cur} HP (heals self and own undead)\n  (+${cls.drainPerLevel} HP/level)`);
         }
-        // Ranger favored enemy — show instakill pct if one is selected
-        if (member.classId === 'ranger' && member.favoredEnemy) {
-            const ikPct = Math.round(member.getFavoredEnemyInstakillChance() * 100);
-            perk.push(`Favored [${member.favoredEnemy}]: ${ikPct}% instakill`);
-            perkDetails.push(`Ranger Favored Enemy (${member.favoredEnemy}): ignores defense, ${ikPct}% instakill chance\n  (1% per 3 levels; currently L${member.level})`);
+        // Ranger favored enemy — show all selected tags + instakill pct
+        if (member.classId === 'ranger') {
+            const allFav = member.getAllFavoredEnemies();
+            if (allFav.length > 0) {
+                const ikPct  = Math.round(member.getFavoredEnemyInstakillChance() * 100);
+                const tagStr = allFav.join(', ');
+                perk.push(`Favored [${tagStr}]: ${ikPct}% instakill`);
+                perkDetails.push(`Ranger Favored Enemies (${tagStr}): ignores defense, ${ikPct}% instakill chance\n  (1% per 3 levels; currently L${member.level})\n  Extra slots unlocked at L20, L25, L30…`);
+            }
         }
 
         if (perk.length > 0) {
@@ -759,50 +979,115 @@ export class InventoryUI {
         section.className = 'pinv-section pinv-favored-enemy';
         section.innerHTML = '<div class="pinv-section-title">🎯 Favored Enemy</div>';
 
+        const inCombat = !!(this._inCombat);
+        const extraSlots = member.getExtraFavoredEnemySlots();   // 0 below L20
+        const instakillPct = Math.round(member.getFavoredEnemyInstakillChance() * 100);
+        const allFav = member.getAllFavoredEnemies();
+
         const help = document.createElement('div');
         help.className = 'pinv-row-help';
-        const instakillPct = Math.round(member.getFavoredEnemyInstakillChance() * 100);
-        help.textContent = member.favoredEnemy
-            ? `Selected: ${member.favoredEnemy}. Ignores defense and has ${instakillPct}% instakill chance (1% per 3 levels) vs. this type. Change any time outside combat.`
-            : 'Choose a monster category to specialize against. Rangers ignore defense and gain a 1% per 3 levels instakill chance vs. their favored type.';
+        if (allFav.length > 0) {
+            help.textContent = `Selected: ${allFav.join(', ')}. Ignores defense and has ${instakillPct}% instakill chance (1% per 3 levels) vs. these types.${extraSlots > 0 ? ` ${extraSlots} extra slot${extraSlots > 1 ? 's' : ''} unlocked.` : ''} Change any time outside combat.`;
+        } else {
+            help.textContent = `Choose a monster category to specialize against. Rangers ignore defense and gain a 1% per 3 levels instakill chance vs. their favored type.${extraSlots > 0 ? ` L20+ bonus: you have ${extraSlots} extra favored enemy slot${extraSlots > 1 ? 's' : ''}.` : ''}`;
+        }
         section.appendChild(help);
 
         const FAVORED_TAGS = [
-            { id: 'vermin',   label: '🐛 Vermin',   desc: 'Slimes, spiders, rats, bats, wasps, worms…' },
-            { id: 'beast',    label: '🐾 Beasts',   desc: 'Spiders, bats, rats, drakes, basilisks, cave crawlers…' },
-            { id: 'undead',   label: '💀 Undead',   desc: 'Skeletons, zombies, ghosts, wraiths, bone gnashers…' },
-            { id: 'humanoid', label: '👺 Humanoids', desc: 'Goblins, orcs, trolls, kobolds, stone hags…' },
-            { id: 'demon',    label: '😈 Demons',   desc: 'Imps, flame imps, dust devils…' },
-            { id: 'cultist',  label: '🕯️ Cultists', desc: 'Cultists — fanatical spellcasters with AoE magic.' },
-            { id: 'monster',  label: '👾 Monsters',  desc: 'Drakes, basilisks, mimics, fungi, shriekers…' },
+            { id: 'vermin',      label: '🐛 Vermin',      desc: 'Slimes, spiders, rats, bats, wasps, worms…' },
+            { id: 'beast',       label: '🐾 Beasts',      desc: 'Spiders, bats, rats, basilisks, cave crawlers, yetis…' },
+            { id: 'undead',      label: '💀 Undead',      desc: 'Skeletons, zombies, ghosts, wraiths, bone gnashers…' },
+            { id: 'humanoid',    label: '👺 Humanoids',   desc: 'Goblins, orcs, trolls, kobolds, giants, stone hags…' },
+            { id: 'demon',       label: '😈 Demons',      desc: 'Imps, flame imps, efreeti, dust devils…' },
+            { id: 'monster',     label: '👾 Monsters',    desc: 'Mimics, fungi, shriekers, hydras, nagas…' },
+            { id: 'dragon',      label: '🐉 Dragons',     desc: 'Drakes, red, black, blue, green, and white dragons…' },
+            { id: 'elemental',   label: '🌀 Elementals',  desc: 'Fire, air, water, and earth elementals…' },
+            { id: 'construct',   label: '🪆 Constructs',  desc: 'Gargoyles, golems, mechanical creatures…' },
+            { id: 'aberration',  label: '🧠 Aberrations', desc: 'Beholders, mind flayers, tentacle horrors…' },
         ];
 
-        const btnWrap = document.createElement('div');
-        btnWrap.className = 'pinv-row-btn-wrap';
+        // ── Slot builder helper ─────────────────────────────────────────────
+        const buildSlot = (slotIndex) => {
+            // slotIndex 0 = primary (favoredEnemy), 1+ = extraFavoredEnemies[slotIndex-1]
+            const isPrimary = slotIndex === 0;
+            const currentTag = isPrimary
+                ? member.favoredEnemy
+                : (member.extraFavoredEnemies[slotIndex - 1] || null);
+            const slotLabel = document.createElement('div');
+            slotLabel.className = 'pinv-row-help';
+            slotLabel.style.fontWeight = 'bold';
+            slotLabel.style.marginTop = slotIndex > 0 ? '6px' : '0';
+            slotLabel.textContent = isPrimary
+                ? `Primary Favored Enemy: ${currentTag || '(none)'}`
+                : `Extra Slot ${slotIndex}: ${currentTag || '(none)'}`;
+            section.appendChild(slotLabel);
 
-        // Disable buttons if in combat (check via a flag the caller can set)
-        const inCombat = !!(this._inCombat);
+            const btnWrap = document.createElement('div');
+            btnWrap.className = 'pinv-row-btn-wrap';
+            btnWrap.style.flexWrap = 'wrap';
+            btnWrap.style.maxWidth = '340px';
 
-        for (const tag of FAVORED_TAGS) {
-            const btn = document.createElement('button');
-            btn.className = 'pinv-row-btn';
-            if (member.favoredEnemy === tag.id) btn.classList.add('pinv-row-btn-active');
-            btn.textContent = tag.label;
-            btn.title = tag.desc + (inCombat ? '\n(Cannot change during combat)' : '');
-            if (inCombat) {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-            } else {
-                btn.addEventListener('click', () => {
-                    member.favoredEnemy = (member.favoredEnemy === tag.id) ? null : tag.id;
-                    this._onChanged();
-                    this._renderPersonal();
-                });
+            for (const tag of FAVORED_TAGS) {
+                // A tag can only be in one slot at a time — disable if used in another slot
+                const usedElsewhere = isPrimary
+                    ? (member.extraFavoredEnemies || []).includes(tag.id)
+                    : (member.favoredEnemy === tag.id ||
+                       (member.extraFavoredEnemies || []).some((t, i) => i !== slotIndex - 1 && t === tag.id));
+
+                const btn = document.createElement('button');
+                btn.className = 'pinv-row-btn';
+                if (currentTag === tag.id) btn.classList.add('pinv-row-btn-active');
+                btn.textContent = tag.label;
+                btn.title = tag.desc
+                    + (usedElsewhere ? '\n(Already selected in another slot)' : '')
+                    + (inCombat ? '\n(Cannot change during combat)' : '');
+
+                if (inCombat || usedElsewhere) {
+                    btn.disabled = true;
+                    if (usedElsewhere) btn.style.opacity = '0.35';
+                    else btn.style.opacity = '0.5';
+                } else {
+                    btn.addEventListener('click', () => {
+                        if (isPrimary) {
+                            member.favoredEnemy = (member.favoredEnemy === tag.id) ? null : tag.id;
+                        } else {
+                            if (!Array.isArray(member.extraFavoredEnemies)) member.extraFavoredEnemies = [];
+                            const i = slotIndex - 1;
+                            // Expand array if needed
+                            while (member.extraFavoredEnemies.length < i) member.extraFavoredEnemies.push(null);
+                            member.extraFavoredEnemies[i] = (member.extraFavoredEnemies[i] === tag.id) ? null : tag.id;
+                            // Trim trailing nulls
+                            while (member.extraFavoredEnemies.length > 0 &&
+                                   !member.extraFavoredEnemies[member.extraFavoredEnemies.length - 1]) {
+                                member.extraFavoredEnemies.pop();
+                            }
+                        }
+                        this._onChanged();
+                        this._renderPersonal();
+                    });
+                }
+                btnWrap.appendChild(btn);
             }
-            btnWrap.appendChild(btn);
+            section.appendChild(btnWrap);
+        };
+
+        // Always show primary slot
+        buildSlot(0);
+
+        // Show extra slots for L20+ rangers
+        for (let s = 1; s <= extraSlots; s++) {
+            buildSlot(s);
         }
 
-        section.appendChild(btnWrap);
+        if (extraSlots === 0 && member.level >= 15) {
+            const nextUnlock = document.createElement('div');
+            nextUnlock.className = 'pinv-row-help';
+            nextUnlock.style.marginTop = '4px';
+            nextUnlock.style.color = '#aaa';
+            nextUnlock.textContent = `Reach level 20 to unlock an extra favored enemy slot (+1 more every 5 levels).`;
+            section.appendChild(nextUnlock);
+        }
+
         return section;
     }
 
@@ -822,7 +1107,8 @@ export class InventoryUI {
             nameEl.className = 'pinv-equipped-name';
             const icon = def && def.icon ? def.icon + ' ' : '';
             nameEl.textContent = `${icon}${def ? def.name : itemId}`;
-            if (def) nameEl.title = this._getItemTooltip(def);
+            const enchant = member.equipmentEnchants && member.equipmentEnchants[slot];
+            if (def) nameEl.title = this._getItemTooltip(def, enchant);
             row.appendChild(nameEl);
 
             const unequipBtn = document.createElement('button');
@@ -844,18 +1130,46 @@ export class InventoryUI {
         return row;
     }
 
-    /** Generate detailed tooltip text for an item. */
-    _getItemTooltip(def) {
+    /** Generate detailed tooltip text for an item.
+     * @param {object} def - Item definition
+     * @param {object|null} enchant - Optional enchant info { level, rider, spiked, aoeWard }
+     */
+    _getItemTooltip(def, enchant) {
         if (!def) return '';
         const lines = [def.name];
         if (def.category === ITEM_CATEGORY.WEAPON) {
             const subtypeName = def.subtype ? def.subtype.charAt(0).toUpperCase() + def.subtype.slice(1) : '';
             lines.push(`${subtypeName} weapon`);
             lines.push(`+${def.power} ${subtypeName.toLowerCase()} damage`);
+            if (enchant && enchant.level > 0) {
+                lines.push(`✨ Enchanted +${enchant.level} (bonus damage)`);
+            }
+            if (enchant && enchant.rider) {
+                const riderIcons = { fire: '🔥', acid: '🟢', poison: '🐍', lightning: '⚡', ice: '❄️' };
+                const riderDescs = {
+                    fire:      'Fire rider: deals bonus fire damage and may Burn target.',
+                    acid:      'Acid rider: deals bonus acid damage and may reduce target defense.',
+                    poison:    'Poison rider: applies venom DoT (damage over time) and reduces enemy damage output.',
+                    lightning: 'Lightning rider: deals bonus lightning damage and may Shock target (-dmg).',
+                    ice:       'Ice rider: deals bonus ice damage and may Chill target (-defense).',
+                };
+                const icon = riderIcons[enchant.rider] || '';
+                const desc = riderDescs[enchant.rider] || `${enchant.rider} rider`;
+                lines.push(`${icon} ${desc}`);
+            }
         } else if (def.category === ITEM_CATEGORY.ARMOR) {
             const type = def.armorType ? def.armorType.charAt(0).toUpperCase() + def.armorType.slice(1) : '';
             if (type) lines.push(`${type} armor`);
             lines.push(`Blocks ${def.blocking} incoming damage`);
+            if (enchant && enchant.level > 0) {
+                lines.push(`✨ Enchanted +${enchant.level} (bonus defense)`);
+            }
+            if (enchant && enchant.spiked) {
+                lines.push('🗡️ Spiked: reflects damage back to melee attackers.');
+            }
+            if (enchant && enchant.aoeWard) {
+                lines.push('🛡️ AoE Ward: reduces incoming AoE magic damage.');
+            }
         } else if (def.category === ITEM_CATEGORY.SHIELD) {
             lines.push('25% chance to completely block an attack');
             lines.push('Cannot be used while wielding a ranged weapon.');
@@ -863,8 +1177,12 @@ export class InventoryUI {
         } else if (def.category === ITEM_CATEGORY.TRINKET) {
             const kind  = def.trinketKind ? def.trinketKind.charAt(0).toUpperCase() + def.trinketKind.slice(1) : '';
             const bonus = def.bonusType   ? def.bonusType.charAt(0).toUpperCase()   + def.bonusType.slice(1)   : '';
-            if (kind)  lines.push(`${kind} trinket (tier ${def.tier || 1})`);
+            if (kind)  lines.push(`${kind} trinket (tier ${def.tier || 1})` + (def.dualAspect ? ' — Dual Aspect' : ''));
             if (bonus) lines.push(`+${def.bonusValue || 0} ${bonus}`);
+            if (def.bonusType2) {
+                const bonus2 = def.bonusType2.charAt(0).toUpperCase() + def.bonusType2.slice(1);
+                lines.push(`+${def.bonusValue2 || 0} ${bonus2}`);
+            }
             lines.push('Equips to: ' + (def.trinketSlots || []).join(' or '));
         } else if (def.category === ITEM_CATEGORY.CONSUMABLE) {
             lines.push(def.description);

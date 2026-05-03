@@ -10,17 +10,19 @@
  * static snapshot each time it's opened.
  */
 
-const CELL_PX    = 12;   // pixels per dungeon cell
-const MARGIN_PX  = 16;
-const MAP_BG     = '#0a0805';
-const FOG_FILL   = '#040302';
-const WALL_FILL  = '#3a2e22';
-const FLOOR_FILL = '#6b5a3d';
-const EDGE_STROKE= '#2a2218';
-const PORTAL_DN  = '#ff3322';
-const PORTAL_UP  = '#33ff66';
-const PLAYER_FL  = '#ffff00';
-const PLAYER_STK = '#000';
+const CELL_PX      = 12;   // pixels per dungeon cell
+const MARGIN_PX    = 16;
+const MAP_BG       = '#0a0805';
+const FOG_FILL     = '#040302';
+const WALL_FILL    = '#3a2e22';
+const FLOOR_FILL   = '#6b5a3d';
+const EDGE_STROKE  = '#2a2218';
+const PORTAL_DN    = '#ff3322';
+const PORTAL_UP    = '#33ff66';
+const PLAYER_FL    = '#ffff00';
+const PLAYER_STK   = '#000';
+const TINKERER_FL  = '#cc66ff';  // purple dot — wandering tinkerer
+const ENEMY_FL     = '#00ccff';  // bright blue — ranger-tracked monsters
 
 export class MinimapUI {
     constructor() {
@@ -28,12 +30,13 @@ export class MinimapUI {
         this._dungeonData = null;
         this._mmSystem = null;
         this._playerInfo = null; // { gx, gz, yaw }
+        this._entities = null;   // { tinkerer: {gx,gz}|null, trackedEnemies: [{gx,gz}] }
 
         // --- Root panel — fixed to bottom-right, never blocks movement ---
         this.root = document.createElement('div');
         Object.assign(this.root.style, {
             position: 'fixed',
-            bottom: '20px',
+            bottom: '260px',
             right: '20px',
             display: 'none',
             flexDirection: 'column',
@@ -114,6 +117,8 @@ export class MinimapUI {
             <span><span style="display:inline-block;width:8px;height:8px;background:${PORTAL_UP};vertical-align:middle;"></span> Up</span>
             <span><span style="display:inline-block;width:8px;height:8px;background:${FLOOR_FILL};vertical-align:middle;"></span> Floor</span>
             <span><span style="display:inline-block;width:8px;height:8px;background:${WALL_FILL};vertical-align:middle;"></span> Wall</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TINKERER_FL};vertical-align:middle;"></span> Tinkerer</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ENEMY_FL};vertical-align:middle;"></span> Tracked</span>
         `;
         this.root.appendChild(legend);
 
@@ -125,11 +130,13 @@ export class MinimapUI {
      * @param {object} dungeonData - { map, rows, cols, portalDown, portalUp, dungeonLevel }
      * @param {import('../systems/MinimapSystem.js').MinimapSystem} mmSystem
      * @param {{gx:number, gz:number, yaw:number}} playerInfo
+     * @param {{tinkerer:{gx:number,gz:number}|null, trackedEnemies:{gx:number,gz:number}[]}|null} [entities]
      */
-    show(dungeonData, mmSystem, playerInfo) {
+    show(dungeonData, mmSystem, playerInfo, entities = null) {
         this._dungeonData = dungeonData;
         this._mmSystem = mmSystem;
         this._playerInfo = playerInfo;
+        this._entities = entities;
         this.isOpen = true;
         this.root.style.display = 'flex';
         this.refresh();
@@ -141,11 +148,14 @@ export class MinimapUI {
     }
 
     /**
-     * Update the player position and redraw. Called every frame while open.
+     * Update the player position and entity positions, then redraw.
+     * Called every frame while open.
      * @param {{gx:number, gz:number, yaw:number}} playerInfo
+     * @param {{tinkerer:{gx:number,gz:number}|null, trackedEnemies:{gx:number,gz:number}[]}|null} [entities]
      */
-    updatePlayer(playerInfo) {
+    updatePlayer(playerInfo, entities = null) {
         this._playerInfo = playerInfo;
+        if (entities !== null) this._entities = entities;
         if (this.isOpen) this.refresh();
     }
 
@@ -233,6 +243,36 @@ export class MinimapUI {
         ctx.strokeStyle = PLAYER_STK;
         ctx.stroke();
         ctx.restore();
+
+        // Entity overlays — drawn on top of everything, only on explored cells.
+        if (this._entities) {
+            // Tinkerer: purple dot (shown once encountered)
+            if (this._entities.tinkerer) {
+                const { gx, gz } = this._entities.tinkerer;
+                if (mm && mm.isExplored(lvl, gx, gz)) {
+                    ctx.fillStyle = TINKERER_FL;
+                    ctx.beginPath();
+                    ctx.arc(gx * CELL_PX + CELL_PX / 2, gz * CELL_PX + CELL_PX / 2, CELL_PX * 0.32, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+            }
+
+            // Ranger-tracked enemies: bright blue dots (only on explored cells)
+            const tracked = Array.isArray(this._entities.trackedEnemies) ? this._entities.trackedEnemies : [];
+            for (const e of tracked) {
+                if (!mm || !mm.isExplored(lvl, e.gx, e.gz)) continue;
+                ctx.fillStyle = ENEMY_FL;
+                ctx.beginPath();
+                ctx.arc(e.gx * CELL_PX + CELL_PX / 2, e.gz * CELL_PX + CELL_PX / 2, CELL_PX * 0.28, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+            }
+        }
 
         // Clamp the canvas so the panel stays compact in the corner
         const maxW = 240;

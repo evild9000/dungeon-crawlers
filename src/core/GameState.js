@@ -27,6 +27,8 @@ export class GameState {
         this.activeLight = null;            // { type:'torch'|'lantern'|'light', remaining:sec } — party light
         this.explored = null;               // serialized MinimapSystem grids (object keyed by dungeonLevel)
         this.discoveredMonsters = new Set(); // monster type keys encountered in combat
+        this.tinkererEncountered = false;    // whether the wandering tinkerer has been met
+        this.bardMusicEnabled = true;        // whether the bard song loop plays (persisted toggle)
     }
 
     toSaveData() {
@@ -45,6 +47,8 @@ export class GameState {
             activeLight: this.activeLight ? { ...this.activeLight } : null,
             explored: this.explored || null,
             discoveredMonsters: [...this.discoveredMonsters],
+            tinkererEncountered: this.tinkererEncountered || false,
+            bardMusicEnabled: this.bardMusicEnabled !== false,
         };
         // Only include id when updating an existing save;
         // omitting it lets IndexedDB auto-generate the key.
@@ -75,6 +79,8 @@ export class GameState {
             : null;
         s.explored = (data.explored && typeof data.explored === 'object') ? data.explored : null;
         s.discoveredMonsters = new Set(Array.isArray(data.discoveredMonsters) ? data.discoveredMonsters : []);
+        s.tinkererEncountered = data.tinkererEncountered || false;
+        s.bardMusicEnabled = data.bardMusicEnabled !== false; // default true for old saves
         return s;
     }
 

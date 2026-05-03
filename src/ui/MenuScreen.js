@@ -53,6 +53,7 @@ export class MenuScreen {
     _populateSelects() {
         this.classSelect.innerHTML = '';
         for (const id of CLASS_IDS) {
+            if (id === 'summoned') continue;
             const c = CLASSES[id];
             const opt = document.createElement('option');
             opt.value = id;

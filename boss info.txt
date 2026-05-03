@@ -1,0 +1,81 @@
+Boss & Mega-Boss Mechanics
+Spawning
+One boss guaranteed per dungeon level — the first monster spawned on a level is flagged as boss. _bossSpawned prevents a second boss on the same floor.
+Mega-Boss chance: 10% — rolled when the boss spawns. Normal boss otherwise.
+Stats at Spawn
+Stat	Normal Boss	Mega-Boss
+HP	Base HP × 5	Base HP × 10
+Defense	Base defense + dungeon level	Flat dungeon level × 2 (replaces base)
+Attack bonus (bossAtkBonus)	+dungeon level to all damage rolls	+dungeon level × 2 to all damage rolls
+Name prefix	👑 [Title] MonsterName	💀 Mega [Title] MonsterName
+The bossAtkBonus is added into a shared _getEnemyDamageMod(enemy) function that also accumulates active-effect bonuses — it feeds every attack that enemy makes.
+
+Base HP/defense before these multipliers come from the monster's ENEMY_TYPES definition, scaled by dungeon level (the same formula as regular monsters of that type).
+
+Boss Titles are picked from a tag-matched pool:
+
+Monster Tag	Title Pool
+undead	Ancient, Dread, Wailing, Cursed, Spectral
+demon	Infernal, Abyssal, Hellborn, Dread
+humanoid	Warchief, Overlord, Champion, Warlord
+beast	Dire, Elder, Ancient, Great
+construct	Masterwork, Ancient, Runed
+aberration	Elder, Void-touched, Abominable
+monster	Greater, Elder, Ancient
+(default)	Dread, Elder, Greater, Ancient
+Actions Per Round
+Enemy Type	Actions/Round
+Normal enemy	1
+Boss	2
+Mega-Boss	3
+Each action is a full independent attack turn. This makes bosses dramatically more dangerous even before considering their inflated stats.
+
+Stun Mechanics — Two Separate Systems
+There are two independent stun checks in the code:
+
+1. Player-inflicted stuns (_tryStunEnemy) — called by melee, magic, weapon riders (lightning/ice), Quivering Palm, Faerie Queen hold, Bard Dissonant Chord, all summon abilities, etc.
+
+Boss: 100% immune (always blocked, no random roll)
+Mega-Boss: 100% immune (always blocked)
+Message: "[Name] is immune to stun!"
+2. In-turn stun resist (_executeOneEnemyTurn) — applied when the enemy's turn arrives and it happens to be stunned (can happen via very specific non-_tryStunEnemy paths):
+
+Boss: 50% chance to shrug it off ("resists the stun with sheer force!")
+Mega-Boss: 80% chance to shrug it off ("resists the stun with terrifying might!")
+In practice the first system means bosses should never become stunned from player actions, but the second system acts as a secondary safety net.
+
+Immunity to Player Abilities
+Ability	Effect on Bosses/Mega-Bosses
+Rogue Backstab instakill	Fully immune — deals normal (non-instakill) damage instead
+Paladin Smite purge (instakill)	Immune to instant death — instead takes ×4 smite damage
+Paladin AoE Smite purge	Same ×4 damage redirect (at 1/3 the base smite damage)
+Bard Charm Monster	Fully immune — cannot be charmed at all
+Any player-inflicted stun	Fully immune (see above)
+All stun-adjacent effects (Faerie Queen hold, lightning/ice riders, QP)	Immune via _tryStunEnemy gate
+Loot on Death
+Category	Normal Enemy	Boss	Mega-Boss
+Gold multiplier	×1	×5	×10
+Loot roll passes	1	5	5
+Trinket rolls	1 at base chance	1 at 3× chance	5 rolls at base chance
+Guaranteed rare reagents	0	1–2	1–2
+Guaranteed Epic reagents (DL 15+)	0	1	2
+Guaranteed Legendary (DL 20+)	0	1	2
+Guaranteed Mythic (DL 25+)	0	1	2
+Guaranteed Divine (DL 30+)	0	1	2
+"5 loot roll passes" means every loot table (food, potions, weapons, armor, shields, reagents, torches) is independently rolled 5 times — so a boss can drop 5 weapons or 5 potions.
+
+XP on Death
+Enemy Type	XP formula
+Normal	XP_PER_MONSTER_LEVEL (10) × enemy level × 1
+Boss	10 × enemy level × 1 (no XP multiplier — same as normal)
+Mega-Boss	10 × enemy level × **4**
+Bosses give normal XP. Only Mega-Bosses grant a 4× XP bonus.
+
+Damage Formula Summary
+A boss on dungeon level 10 attacking:
+
+Rolls its base monster damage (from ENEMY_TYPES, scaled by its enemy level)
+Adds bossAtkBonus (+10 for a boss, +20 for a mega-boss at DL10)
+Adds any active-effect damage modifiers (e.g. bard inspire)
+That total hits a party member, reduced by their defense, then armor blocks apply
+Because mega-boss defense is DL×2 flat (replacing base defense rather than adding to it), a mega-boss at DL 1 actually has less defense than a normal boss (2 vs. base + 1) — but from DL 5+ the flat formula overtakes typical base defenses and quickly becomes extreme at deeper levels.

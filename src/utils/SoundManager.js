@@ -679,30 +679,85 @@ class SoundManager {
      * Start a looping ambient sound for the given out-of-combat bard song.
      * Only one loop plays at a time — calling this while another is active
      * will stop the previous one first.
-     *   songId: 'haste' | 'battle' | 'healing'
+     *   songId: 'haste' | 'battle' | 'healing' | 'combined'
+     *
+     * Custom MP3 support: drop "audio/bard_song.mp3" next to index.html and
+     * the game will use it instead of the procedural synthesiser.
      */
     playBardSongLoop(songId) {
         this.stopBardSongLoop();
         if (this.muted) return;
         this.ensureContext();
 
-        const ctx = this.ctx;
-        const master = this.masterGain;
+        this._songLoopActive = true;
+        this._songOscs = [];
 
-        // Gain node so we can fade in and also stop cleanly.
-        const loopGain = ctx.createGain();
+        // ── Custom MP3 path: audio/bard_song.mp3 (relative to index.html)
+        // The Audio element fires 'canplaythrough' on success or 'error' on missing file.
+        let usedCustom = false;
+        const customAudio = new Audio('audio/bard_song.mp3');
+        customAudio.loop = true;
+        customAudio.volume = 0.25;
+
+        customAudio.addEventListener('canplaythrough', () => {
+            if (!this._songLoopActive || usedCustom) return;
+            usedCustom = true;
+            clearTimeout(this._songFallbackTimer);
+            customAudio.play().catch(() => {
+                // Autoplay blocked — fall back to procedural
+                if (this._songLoopActive) this._runProceduralBardSong(songId);
+            });
+            this._customBardAudio = customAudio;
+        }, { once: true });
+
+        customAudio.addEventListener('error', () => {
+            if (!this._songLoopActive || usedCustom) return;
+            clearTimeout(this._songFallbackTimer);
+            this._runProceduralBardSong(songId);
+        }, { once: true });
+
+        // Fallback timer: if the audio element neither loads nor errors in 800 ms
+        // (e.g. the file doesn't exist locally and there is no network),
+        // start the procedural synth immediately.
+        this._songFallbackTimer = setTimeout(() => {
+            if (!this._songLoopActive || usedCustom) return;
+            this._runProceduralBardSong(songId);
+        }, 800);
+
+        customAudio.load();
+
+        // Dummy gain so stopBardSongLoop() always has a node to fade.
+        const loopGain = this.ctx.createGain();
+        loopGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+        loopGain.connect(this.masterGain);
+        this._songLoopGain = loopGain;
+    }
+
+    /**
+     * Run the procedural synthesiser bard song loop.  Called either immediately
+     * (if audio/bard_song.mp3 is absent) or as a fallback after a short timeout.
+     */
+    _runProceduralBardSong(songId) {
+        const ctx = this.ctx;
+
+        // Re-use the gain node that was already created (or make a new one).
+        if (!this._songLoopGain) {
+            this._songLoopGain = ctx.createGain();
+            this._songLoopGain.connect(this.masterGain);
+        }
+        const loopGain = this._songLoopGain;
+        loopGain.gain.cancelScheduledValues(ctx.currentTime);
         loopGain.gain.setValueAtTime(0.0, ctx.currentTime);
         loopGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.4);
-        loopGain.connect(master);
 
-        const oscs = [];
+        // 'combined' maps to a flowing fantasy melody that blends all three themes.
+        const effectiveSong = (songId === 'combined') ? '_combined' : songId;
 
-        if (songId === 'haste') {
-            // Fast upbeat arpeggio: triangle wave, cycling through 5 notes.
+        if (effectiveSong === 'haste') {
+            // Fast upbeat arpeggio: triangle wave, cycling through 6 notes.
             const notes = [523, 659, 784, 988, 784, 659]; // C5 E5 G5 B5 G5 E5
             let step = 0;
-            const bpm = 360; // fast
-            const stepSec = 60 / bpm;
+            const stepSec = 60 / 360;
             const schedule = () => {
                 if (!this._songLoopActive) return;
                 const osc = ctx.createOscillator();
@@ -719,13 +774,11 @@ class SoundManager {
                 this._songOscs.push(osc);
                 this._songTimer = setTimeout(schedule, stepSec * 1000 - 10);
             };
-            this._songLoopActive = true;
-            this._songOscs = oscs;
             this._songTimer = setTimeout(schedule, 0);
 
-        } else if (songId === 'battle') {
+        } else if (effectiveSong === 'battle') {
             // Heroic power fifths: two triangle oscillators a fifth apart, slow pulse.
-            const pairs = [[196, 294], [220, 330], [247, 370], [220, 330]]; // G3/D4 pattern
+            const pairs = [[196, 294], [220, 330], [247, 370], [220, 330]];
             let step = 0;
             const stepSec = 0.6;
             const schedule = () => {
@@ -747,11 +800,9 @@ class SoundManager {
                 });
                 this._songTimer = setTimeout(schedule, stepSec * 1000 - 10);
             };
-            this._songLoopActive = true;
-            this._songOscs = oscs;
             this._songTimer = setTimeout(schedule, 0);
 
-        } else if (songId === 'healing') {
+        } else if (effectiveSong === 'healing') {
             // Gentle sine lullaby: slow descending phrase.
             const notes = [523, 494, 440, 392, 440, 494]; // C5 B4 A4 G4 A4 B4
             let step = 0;
@@ -772,18 +823,68 @@ class SoundManager {
                 this._songOscs.push(osc);
                 this._songTimer = setTimeout(schedule, stepSec * 1000 - 10);
             };
-            this._songLoopActive = true;
-            this._songOscs = oscs;
             this._songTimer = setTimeout(schedule, 0);
-        }
 
-        this._songLoopGain = loopGain;
+        } else {
+            // 'combined' — sweeping fantasy melody: bass drone + arpeggiated melody.
+            // Phrase: G3 sustain, melody cycles C5→E5→G5→A5→G5→E5→C5→B4.
+            const melody = [523, 659, 784, 880, 784, 659, 523, 494];
+            const bass   = [196, 196, 220, 196]; // G3 hold, step up for A3, back
+            let mStep = 0, bStep = 0;
+            const mStepSec = 0.55;
+            const bStepSec = mStepSec * 2; // bass moves half as fast
+
+            const schedMelody = () => {
+                if (!this._songLoopActive) return;
+                const osc = ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.value = melody[mStep % melody.length];
+                mStep++;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + mStepSec * 0.88);
+                osc.connect(g);
+                g.connect(loopGain);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + mStepSec);
+                this._songOscs.push(osc);
+                this._songTimer = setTimeout(schedMelody, mStepSec * 1000 - 10);
+            };
+            const schedBass = () => {
+                if (!this._songLoopActive) return;
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = bass[bStep % bass.length];
+                bStep++;
+                const g = ctx.createGain();
+                g.gain.setValueAtTime(0.6, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + bStepSec * 0.9);
+                osc.connect(g);
+                g.connect(loopGain);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + bStepSec);
+                this._songOscs.push(osc);
+                this._bassTimer = setTimeout(schedBass, bStepSec * 1000 - 10);
+            };
+            this._songTimer = setTimeout(schedMelody, 0);
+            this._bassTimer = setTimeout(schedBass, 0);
+        }
     }
 
     /** Stop the currently-playing bard song loop (if any). */
     stopBardSongLoop() {
         this._songLoopActive = false;
+        if (this._songFallbackTimer) { clearTimeout(this._songFallbackTimer); this._songFallbackTimer = null; }
         if (this._songTimer) { clearTimeout(this._songTimer); this._songTimer = null; }
+        if (this._bassTimer)  { clearTimeout(this._bassTimer);  this._bassTimer  = null; }
+        // Stop custom MP3 audio element if active
+        if (this._customBardAudio) {
+            try {
+                this._customBardAudio.pause();
+                this._customBardAudio.currentTime = 0;
+            } catch (_) {}
+            this._customBardAudio = null;
+        }
         if (this._songLoopGain) {
             try {
                 const g = this._songLoopGain;

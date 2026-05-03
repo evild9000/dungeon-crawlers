@@ -3,28 +3,102 @@ import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 
 // Tag display info: key -> { label, color }
 const TAG_INFO = {
-    undead:    { label: '🧟 Undead',     color: '#8a9a6a' },
-    demon:     { label: '😈 Demon',      color: '#c04040' },
-    beast:     { label: '🐺 Beast',      color: '#a07040' },
-    aberration:{ label: '🧠 Aberration', color: '#8060c0' },
-    venomous:  { label: '🐍 Venomous',   color: '#60a040' },
-    fireborn:  { label: '🔥 Fireborn',   color: '#d06020' },
-    construct: { label: '🪆 Construct',  color: '#7090b0' },
-    humanoid:  { label: '🧍 Humanoid',   color: '#709090' },
-    monster:   { label: '👾 Monster',    color: '#907070' },
-    vermin:    { label: '🐛 Vermin',     color: '#708050' },
-    cultist:   { label: '🕯️ Cultist',    color: '#804080' },
+    undead:       { label: '🧟 Undead',       color: '#8a9a6a' },
+    incorporeal:  { label: '👻 Incorporeal',  color: '#aabbcc' },
+    demon:        { label: '😈 Demon',        color: '#c04040' },
+    beast:        { label: '🐺 Beast',        color: '#a07040' },
+    aberration:   { label: '🧠 Aberration',   color: '#8060c0' },
+    venomous:     { label: '🐍 Venomous',     color: '#60a040' },
+    construct:    { label: '🪆 Construct',    color: '#7090b0' },
+    elemental:    { label: '🌀 Elemental',    color: '#60a0c0' },
+    humanoid:     { label: '🧍 Humanoid',     color: '#709090' },
+    monster:      { label: '👾 Monster',      color: '#907070' },
+    vermin:       { label: '🐛 Vermin',       color: '#708050' },
+    dragon:       { label: '🐉 Dragon',       color: '#c06020' },
 };
 
 function buildAbilityList(def) {
     const lines = [];
-    if (def.poisonChance)     lines.push(`Venom bite: ${Math.round(def.poisonChance * 100)}% chance to poison on hit`);
-    if (def.webChance)        lines.push(`Web: ${Math.round(def.webChance * 100)}% chance to immobilize`);
-    if (def.stunChance)       lines.push(`Stunning blow: ${Math.round(def.stunChance * 100)}% chance to stun`);
-    if (def.regenPercent)     lines.push(`Regeneration: heals ${Math.round(def.regenPercent * 100)}% max HP each round`);
-    if (def.aoeMagic)         lines.push('AoE spell: can hit the entire party (including back row)');
-    if (def.aoePoisonChance)  lines.push(`AoE poison: ${Math.round(def.aoePoisonChance * 100)}% per target`);
-    if (def.aoeStunChance)    lines.push(`AoE stun: ${Math.round(def.aoeStunChance * 100)}% per target`);
+    const tags = def.tags || [];
+
+    // Passive tag-based traits
+    if (tags.includes('incorporeal')) {
+        lines.push('Incorporeal: immune to Druid Entangle \u2014 physical vines pass harmlessly through this creature');
+        lines.push('Incorporeal: cannot be paralyzed by Ghoul touch or held by Treant');
+        lines.push('Incorporeal: immune to Rogue Backstab Bleed \u2014 has no blood to shed');
+    }
+    if (tags.includes('undead')) {
+        lines.push('Undead: immune to Ghoul paralysis and poison effects');
+        lines.push('Undead: immune to Bard Charm Monster — cannot be mind-controlled');
+    }
+    if (tags.includes('elemental')) {
+        lines.push('Elemental: immune to Bard Charm Monster — pure elemental energy resists mind magic');
+    }
+    if (tags.includes('construct')) {
+        lines.push('Construct: immune to Bard Charm Monster — no mind to enchant');
+    }
+    // Immunity from the immune[] array on the type definition.
+    // Elemental types (fire, cold, lightning, acid, poison) get "damage and DoT" wording.
+    // Non-elemental types (stun, poison-as-status) get plain wording.
+    if (Array.isArray(def.immune) && def.immune.length > 0) {
+        const immuneIcons  = { fire: '🔥', cold: '❄️', lightning: '⚡', acid: '🟢', poison: '☠️', stun: '💫' };
+        const elementalSet = new Set(['fire', 'cold', 'lightning', 'acid', 'poison']);
+        const elementals   = def.immune.filter(t => elementalSet.has(t));
+        const statusTypes  = def.immune.filter(t => !elementalSet.has(t));
+        if (elementals.length > 0) {
+            const labels = elementals.map(t => `${immuneIcons[t] || '🛡️'} ${t}`).join(', ');
+            lines.push(`Elemental Immunity: immune to ${labels} damage and DoT effects`);
+        }
+        if (statusTypes.length > 0) {
+            const labels = statusTypes.map(t => `${immuneIcons[t] || '🛡️'} ${t}`).join(', ');
+            lines.push(`Status Immunity: immune to ${labels} effects`);
+        }
+    }
+    if (def.hpMult && def.hpMult > 1) {
+        lines.push(`Reinforced: spawns with ${def.hpMult}× normal HP`);
+    }
+    if (def.defenseMult && def.defenseMult > 1) {
+        lines.push(`Fortified: spawns with ${def.defenseMult}× normal defense`);
+    }
+
+    // Active combat abilities
+    // If a ranged monster also poisons, label it "venom arrow" instead of "venom bite"
+    if (def.poisonChance) {
+        const label = def.rangedAny ? 'Venom arrow' : 'Venom bite';
+        lines.push(`${label}: ${Math.round(def.poisonChance * 100)}% chance to poison on hit (damage over time)`);
+    }
+    if (def.webChance)        lines.push(`Web: ${Math.round(def.webChance * 100)}% chance to immobilize target for 1 round`);
+    if (def.paralyzingBite)   lines.push(`Paralyzing touch: every melee hit paralyzes the target for ${def.paralyzingBite} rounds`);
+    if (def.constrict)        lines.push(`Constrict: 35% chance to coil around the target, pinning it for ${def.constrict} rounds`);
+    if (def.stunChance)       lines.push(`Stunning blow: ${Math.round(def.stunChance * 100)}% chance to stun on melee hit`);
+    if (def.attackDebuff)     lines.push(`Icy chill: freezing melee strikes reduce the target\u2019s attack power by ${def.attackDebuff} for 2 rounds`);
+    if (def.regenPercent)     lines.push(`Regeneration: heals ${Math.round(def.regenPercent * 100)}% max HP at the start of each round`);
+    if (def.aoeMagic)         lines.push('AoE spell: magic attack hits ALL party members (including back row)');
+    if (def.aoeFire)          lines.push('Inferno breath: fire AoE attack — hits all party members, may apply burn');
+    if (def.aoePoisonChance)  lines.push(`AoE venom cloud: ${Math.round(def.aoePoisonChance * 100)}% chance per party member to poison`);
+    if (def.aoeStunChance)    lines.push(`AoE concussion: ${Math.round(def.aoeStunChance * 100)}% chance per target to stun`);
+    if (def.earthquakeChance) lines.push(`Earthquake: ${Math.round(def.earthquakeChance * 100)}% chance per melee turn to slam the ground — AoE melee hit to ALL party members${def.stunChance ? ` (${Math.round(def.stunChance * 100)}% stun on single-target hits)` : ''}`);
+    if (def.aoeDrowning)      lines.push('Surging torrent: AoE magic attack hits ALL party members — survivors suffer drowning damage over 3 rounds and −2 defense for 3 rounds');
+    if (def.lifeDrain)        lines.push(`Life drain: steals ${Math.round(def.lifeDrain * 100)}% of damage dealt as HP for itself`);
+    if (def.phaseStrike)      lines.push('Phase strike: ignores all armor and defense bonuses on hit');
+    if (def.rangedAny)        lines.push('Ranged attack: can strike back-row party members from a distance');
+
+    // Phase 13 new monster abilities
+    if (def.isBeholderAI)    lines.push('Eye Beams: fires 6 random eye beams per turn — magic blast AoE, death ray, stun ray, anti-magic debuff, petrify, or slow ray');
+    if (def.isDragonAI)      lines.push('Dragon Combat: 50% chance — AoE breath weapon with elemental DoT; 50% — 2 claw attacks + 1 bite attack');
+    if (def.halfMagicDamage) lines.push('Magic Resistance: takes only half damage from magical attacks');
+    if (def.isEttinAI)       lines.push('Twin Heads: attacks twice per turn (one per head)');
+    if (def.isFireGiantAI)   lines.push('Fire Giant: +10 melee bonus, attacks twice, fire DoT on hits (50% damage/round)');
+    if (def.isIceGiantAI)    lines.push('Ice Giant: +10 melee bonus, attacks twice, ice DoT on hits (50% damage/round)');
+    if (def.isStoneGiantAI)  lines.push('Stone Giant: +10 ranged bonus, throws boulders twice, stunning blows');
+    if (def.isStormGiantAI)  lines.push('Storm Giant: +10 magic bonus, lightning bolt strikes 3 random back-row members with possible stun');
+    if (def.isMedusaAI)      lines.push('Poison Arrows: looses 3 poison arrows per turn that can hit back row; 50% chance each round to petrify a target (stun 3 rounds + +200 defense)');
+    if (def.isHydraAI)       lines.push('Multi-Head: attacks with each head every round (6 base + 1 per 5 dungeon levels); regenerates 15% HP per round');
+    if (def.isManticoreAI)   lines.push('Spike Volley: 5 ranged attacks per turn (+3 bonus), can hit back row; poison tail DoT equal to damage dealt');
+    if (def.isEvilPriestAI)  lines.push('Dark Ministry: 50% chance to mass-heal all non-undead enemies for 15% HP; 50% chance to unleash AoE magic blast');
+    if (def.isWerewolfAI)    lines.push('Lycanthropy: regenerates 25% max HP per round; defense bonus (+50%)');
+    if (def.isYetiAI)        lines.push('Feral Fury: attacks twice with fists each turn, can stun, applies ice DoT on hits');
+
     return lines;
 }
 
@@ -202,8 +276,8 @@ export class LoreBook {
             ? abilities.map(a => `<li style="margin-bottom:4px;">${a}</li>`).join('')
             : '<li style="color:#806050;">No special abilities</li>';
 
-        // Level range
-        const maxLvl = def.maxLevel ? `Levels 1–${def.maxLevel}` : 'All dungeon levels';
+        // All monsters spawn on all dungeon levels
+        const maxLvl = 'Spawns on all dungeon levels';
 
         // Sprite
         const spriteCanvas = generateEnemySprite(key, 42);

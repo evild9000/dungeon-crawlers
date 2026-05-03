@@ -36,6 +36,13 @@ import {
     MAX_LEVEL, XP_LEVEL_BASE,
     MONK_DODGE_CHANCE, MONK_DODGE_MAX,
     FOOD_HUNGRY_PENALTY, FOOD_DYING_HP_PER_MIN,
+    WARRIOR_DEFEND_MODE_UNLOCK_LEVEL,
+    WARRIOR_DEFEND_BLOCK_BONUS_PER_3LV,
+    WARRIOR_STUN_RESIST_BASE,
+    WARRIOR_STUN_RESIST_PER_2_LEVELS,
+    RANGER_EXTRA_FAVORED_UNLOCK_LEVEL,
+    RANGER_EXTRA_FAVORED_BASE_LEVEL,
+    RANGER_EXTRA_FAVORED_PER_5_LV,
 } from '../utils/constants.js';
 
 function generateId() {
@@ -63,14 +70,16 @@ export class PartyMember {
     constructor({
         id, name,
         health, maxHealth, stamina, maxStamina, mana, maxMana,
-        portraitSeed, inventory, equipment, equipmentEnchants,
+        portraitSeed, inventory, equipment, equipmentEnchants, trinketEnchants,
         classId, speciesId,
         isSummoned, summonType, summonerId, canBeHealed, summonStats,
         isPersistent,
         level, xp, row,
         activeSongs,
         favoredEnemy,
+        extraFavoredEnemies,
         hungerState, foodTimer,
+        savedEffects,
     }) {
         this.id = id || generateId();
         this.name = name;
@@ -115,21 +124,40 @@ export class PartyMember {
             ? { ...DEFAULT_SLOTS, ...equipment }
             : { ...DEFAULT_SLOTS };
 
-        // Transient combat state (not serialized; cleared when combat ends)
+        // Transient combat state. Scroll buffs (expiresAt) are re-populated
+        // from savedEffects on load so they survive saves.
         this.activeEffects = [];  // e.g. [{ type:'poison', rounds:3, damage:4 }, { type:'song', bonus:2 }]
+        if (Array.isArray(savedEffects)) {
+            const now = Date.now();
+            for (const e of savedEffects) {
+                if (e && typeof e.expiresAt === 'number' && e.expiresAt > now) {
+                    this.activeEffects.push({ ...e });
+                }
+            }
+        }
         this.stunned = false;
         this.webbedRounds = 0;   // Phase 11 — web lockdown counter (rounds left)
         this.usedBardSong = false;  // "once per combat" tracker
+        this.isRaging = false;   // Barbarian: active rage flag
+        this.usedRage = false;   // Barbarian: once-per-combat rage tracker
+        this.fireAuraActive = false; // Paladin: Fire Aura toggle
+        this.isDefendMode = false;  // Warrior L20: Defend Mode toggle (persists turn-to-turn)
 
         // Persistent bard out-of-combat songs (serialized). Array of song IDs:
         //   'haste' | 'battle' | 'healing'
         // Effects are re-applied to all party members via Game._reapplySongEffects().
         this.activeSongs = Array.isArray(activeSongs) ? [...activeSongs] : [];
 
-        // Ranger favored enemy tag — one of: 'vermin', 'undead', 'humanoid', 'monster'
+        // Ranger favored enemy tag — one of: 'vermin', 'beast', 'undead', 'humanoid',
+        // 'demon', 'monster', 'dragon', 'elemental', 'construct', 'aberration'.
         // Rangers ignore defense of enemies with this tag and gain an instakill
         // chance scaling with level. null = none selected yet.
         this.favoredEnemy = favoredEnemy || null;
+
+        // Ranger L20+: additional favored enemy slots (one per 5 levels above L15).
+        // Stored as an array of tag strings (same pool as favoredEnemy).
+        // Backward-compatible: legacy saves that omit this field default to [].
+        this.extraFavoredEnemies = Array.isArray(extraFavoredEnemies) ? [...extraFavoredEnemies] : [];
 
         // ── Food / Hunger ──
         // hungerState: null (fed) | 'hungry' | 'starving' | 'dying'
@@ -155,13 +183,23 @@ export class PartyMember {
         // Per-member equipment enchantments. Keyed by equipment slot
         // ('weapon', 'offhand', 'armor'). Enchants persist on the slot; unequipping
         // removes the enchant (crafting cost is a commitment).
-        //   equipmentEnchants.weapon  = { level:1..3, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
-        //   equipmentEnchants.offhand = { level:1..3, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
-        //   equipmentEnchants.armor   = { level:1..3 }
+        //   equipmentEnchants.weapon  = { level:1..7, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
+        //   equipmentEnchants.offhand = { level:1..7, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
+        //   equipmentEnchants.armor   = { level:1..7, spiked:bool, aoeWard:bool }
+        //   Both spiked and aoeWard can be true simultaneously (purchased independently).
         const DEFAULT_ENCHANTS = { weapon: null, offhand: null, armor: null };
         this.equipmentEnchants = equipmentEnchants
             ? { ...DEFAULT_ENCHANTS, ...equipmentEnchants }
             : { ...DEFAULT_ENCHANTS };
+
+        // Per-trinket-slot enchant levels (Artificer L20+ trinket upgrade crafting).
+        // Each key is a trinket slot ('cloak','neck','ring1','ring2','belt').
+        // Value = { level: 1..7 } — adds +level to the equipped trinket's bonusValue
+        // (and bonusValue2 if the trinket has a dual aspect).
+        const DEFAULT_TRINKET_ENCHANTS = { cloak: null, neck: null, ring1: null, ring2: null, belt: null };
+        this.trinketEnchants = trinketEnchants
+            ? { ...DEFAULT_TRINKET_ENCHANTS, ...trinketEnchants }
+            : { ...DEFAULT_TRINKET_ENCHANTS };
 
         // Regen accumulators (fractions of a point)
         this._regenHpAcc = 0;
@@ -193,7 +231,11 @@ export class PartyMember {
             if (!id) continue;
             const def = TRINKETS[id] || getItemDef(id);
             if (!def) continue;
-            if (def.bonusType === bonusType) total += (def.bonusValue || 0);
+            // Enchant bonus: trinketEnchants[slot].level adds to both aspects.
+            const enchLvl = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].level) || 0;
+            if (def.bonusType  === bonusType) total += (def.bonusValue  || 0) + (enchLvl > 0 ? enchLvl : 0);
+            // Dual-aspect trinkets carry a second bonus (DL10+ drops).
+            if (def.bonusType2 === bonusType) total += (def.bonusValue2 || 0) + (enchLvl > 0 ? enchLvl : 0);
         }
         return total;
     }
@@ -286,16 +328,43 @@ export class PartyMember {
      * Only rangers have this; returns 0 for all other classes.
      */
     getFavoredEnemyInstakillChance() {
-        if (this.classId !== 'ranger' || !this.favoredEnemy) return 0;
+        if (this.classId !== 'ranger' || !this.getAllFavoredEnemies().length) return 0;
         return Math.floor(this.level / 3) * 0.01;
     }
 
     /**
-     * Extra melee swings per turn (warriors only). +1 swing at every multiple
-     * of 5 levels: L5→+1, L10→+2, L15→+3, L20→+4.
+     * All favored enemy tags for this ranger: primary + any extra slots.
+     * Returns an array of tag strings (empty for non-rangers or if none chosen).
+     */
+    getAllFavoredEnemies() {
+        if (this.classId !== 'ranger') return [];
+        const all = [];
+        if (this.favoredEnemy) all.push(this.favoredEnemy);
+        for (const tag of (this.extraFavoredEnemies || [])) {
+            if (tag && !all.includes(tag)) all.push(tag);
+        }
+        return all;
+    }
+
+    /**
+     * How many extra favored enemy slots this ranger currently has.
+     * 0 below L20; +1 per 5 levels above L15 (1 at L20, 2 at L25, …).
+     */
+    getExtraFavoredEnemySlots() {
+        if (this.classId !== 'ranger') return 0;
+        if (this.level < RANGER_EXTRA_FAVORED_UNLOCK_LEVEL) return 0;
+        return Math.floor((this.level - RANGER_EXTRA_FAVORED_BASE_LEVEL) / RANGER_EXTRA_FAVORED_PER_5_LV);
+    }
+
+    /**
+     * Extra melee swings per turn.
+     * Warriors:  +1 swing every 5 levels (L5→+1, L10→+2, L15→+3, L20→+4).
+     * Paladins:  +1 swing every 7 levels (L7→+1, L14→+2, L21→+3).
      */
     getExtraMeleeAttacks() {
-        return this.classId === 'warrior' ? Math.floor(this.level / 5) : 0;
+        if (this.classId === 'warrior') return Math.floor(this.level / 5);
+        if (this.classId === 'paladin') return Math.floor(this.level / 7);
+        return 0;
     }
 
     /**
@@ -626,6 +695,51 @@ export class PartyMember {
         return def.blockChance || 0;
     }
 
+    /**
+     * Warrior L20 Defend Mode: bonus added to shield block while in defend mode.
+     * +1% per 3 warrior levels.
+     */
+    getDefendModeShieldBonus() {
+        if (this.classId !== 'warrior') return 0;
+        if (this.level < WARRIOR_DEFEND_MODE_UNLOCK_LEVEL) return 0;
+        if (!this.isDefendMode) return 0;
+        return Math.floor(this.level / 3) * WARRIOR_DEFEND_BLOCK_BONUS_PER_3LV;
+    }
+
+    /**
+     * Total shield block chance including Defend Mode bonus.
+     * Used for both self-blocking and intercept rolls.
+     */
+    getAugmentedShieldBlock() {
+        return this.getShieldBlockChance() + this.getDefendModeShieldBonus();
+    }
+
+    /**
+     * Warrior L20 Stun Resistance: chance to ignore a stun effect.
+     * Base 20% + 1% per 2 warrior levels (30% at L20).
+     */
+    getStunResistChance() {
+        if (this.classId !== 'warrior') return 0;
+        if (this.level < WARRIOR_DEFEND_MODE_UNLOCK_LEVEL) return 0;
+        return WARRIOR_STUN_RESIST_BASE + Math.floor(this.level / 2) * WARRIOR_STUN_RESIST_PER_2_LEVELS;
+    }
+
+    /**
+     * Whether this warrior can currently intercept attacks targeting party members.
+     * Requires: warrior class, L20+, defend mode ON, shield equipped, alive,
+     * not stunned, not held/webbed/petrified/paralyzed.
+     */
+    canIntercept() {
+        if (this.classId !== 'warrior') return false;
+        if (this.level < WARRIOR_DEFEND_MODE_UNLOCK_LEVEL) return false;
+        if (!this.isDefendMode) return false;
+        if (!this.equipment.shield) return false;
+        if (this.health <= 0) return false;
+        if (this.stunned) return false;
+        if (this.webbedRounds > 0) return false;  // covers web, paralysis, constrict, petrify
+        return true;
+    }
+
     hasShield() {
         return !!this.equipment.shield;
     }
@@ -673,12 +787,28 @@ export class PartyMember {
      */
     expireEffects() {
         const now = Date.now();
+        const expired = [];
         this.activeEffects = this.activeEffects.filter(e => {
             if (!e) return false;
-            if (typeof e.expiresAt === 'number' && e.expiresAt <= now) return false;
-            if ('rounds' in e && e.rounds <= 0) return false;
+            if (typeof e.expiresAt === 'number' && e.expiresAt <= now) { expired.push(e); return false; }
+            if ('rounds' in e && e.rounds <= 0) { expired.push(e); return false; }
             return true;
         });
+        // Handle pool-bonus expiry: reduce maxHealth/maxMana/maxStamina and clamp current values.
+        for (const e of expired) {
+            if (e.type === 'fountain_hp' && e.poolBonus > 0) {
+                this.maxHealth = Math.max(1, this.maxHealth - e.poolBonus);
+                if (this.health > this.maxHealth) this.health = this.maxHealth;
+            }
+            if (e.type === 'fountain_mp' && e.poolBonus > 0) {
+                this.maxMana = Math.max(0, this.maxMana - e.poolBonus);
+                if (this.mana > this.maxMana) this.mana = this.maxMana;
+            }
+            if (e.type === 'fountain_st' && e.poolBonus > 0) {
+                this.maxStamina = Math.max(0, this.maxStamina - e.poolBonus);
+                if (this.stamina > this.maxStamina) this.stamina = this.maxStamina;
+            }
+        }
     }
 
     /**
@@ -702,6 +832,10 @@ export class PartyMember {
         this.stunned = false;
         this.webbedRounds = 0;
         this.usedBardSong = false;
+        this.isRaging = false;
+        this.usedRage = false;
+        this.fireAuraActive = false;
+        this.isDefendMode = false;
     }
 
     // ──────────────────────────────────────────
@@ -778,13 +912,33 @@ export class PartyMember {
             equipment: this._serializeEquipment(),
             activeSongs: [...(this.activeSongs || [])],
             favoredEnemy: this.favoredEnemy || null,
+            extraFavoredEnemies: [...(this.extraFavoredEnemies || [])],
             hungerState: this.hungerState || null,
             foodTimer:   this.foodTimer   || 0,
+            // Persist wall-clock-based active buffs (scroll of warding/wrath) so
+            // they survive saves. Only effects with a future expiresAt are kept.
+            savedEffects: (this.activeEffects || [])
+                .filter(e => e && typeof e.expiresAt === 'number' && e.expiresAt > Date.now())
+                .map(e => ({ ...e })),
             equipmentEnchants: {
-                weapon: this.equipmentEnchants && this.equipmentEnchants.weapon
-                    ? { ...this.equipmentEnchants.weapon } : null,
-                armor:  this.equipmentEnchants && this.equipmentEnchants.armor
-                    ? { ...this.equipmentEnchants.armor } : null,
+                weapon:  this.equipmentEnchants && this.equipmentEnchants.weapon
+                    ? { ...this.equipmentEnchants.weapon }  : null,
+                offhand: this.equipmentEnchants && this.equipmentEnchants.offhand
+                    ? { ...this.equipmentEnchants.offhand } : null,
+                armor:   this.equipmentEnchants && this.equipmentEnchants.armor
+                    ? { ...this.equipmentEnchants.armor }   : null,
+            },
+            trinketEnchants: {
+                cloak: this.trinketEnchants && this.trinketEnchants.cloak
+                    ? { ...this.trinketEnchants.cloak } : null,
+                neck:  this.trinketEnchants && this.trinketEnchants.neck
+                    ? { ...this.trinketEnchants.neck }  : null,
+                ring1: this.trinketEnchants && this.trinketEnchants.ring1
+                    ? { ...this.trinketEnchants.ring1 } : null,
+                ring2: this.trinketEnchants && this.trinketEnchants.ring2
+                    ? { ...this.trinketEnchants.ring2 } : null,
+                belt:  this.trinketEnchants && this.trinketEnchants.belt
+                    ? { ...this.trinketEnchants.belt }  : null,
             },
         };
         // Persist summon fields so PERSISTENT summons (golems) survive save/load.

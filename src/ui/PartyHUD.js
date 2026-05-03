@@ -92,10 +92,16 @@ export class PartyHUD {
             let card = this.cards.get(member.id);
             if (!card) {
                 card = this._createCard(member);
-                this.container.appendChild(card);
                 this.cards.set(member.id, card);
             }
             this._updateBars(card, member);
+        }
+
+        // Re-append every card in current party order so the DOM reflects any
+        // position swaps. appendChild moves an already-attached node cheaply.
+        for (const member of party) {
+            const card = this.cards.get(member.id);
+            if (card) this.container.appendChild(card);
         }
     }
 
@@ -225,14 +231,52 @@ export class PartyHUD {
         const card = document.createElement('div');
         card.className = 'party-card';
 
-        const cls    = member.classDef;
-        const sp     = member.speciesDef;
-        const summon = getSummonPreset(member);
+        const cls       = member.classDef;
+        const sp        = member.speciesDef;
+        const summon    = getSummonPreset(member);
+        const isMithril = member.summonType === 'mithril';
 
-        // Card-wide tooltip — for summons this replaces the class/species
-        // summary with the creature's type and its list of abilities.
+        // ── Mithril Golem — distinctive metallic card styling ──────────────
+        if (isMithril) {
+            card.style.cssText += [
+                'background:linear-gradient(160deg,#111820 0%,#1a2535 50%,#0f1820 100%)',
+                'border:2px solid #7ab0d8',
+                'box-shadow:0 0 14px rgba(100,180,255,0.30),inset 0 0 10px rgba(100,180,255,0.07)',
+                'position:relative',
+                'overflow:hidden',
+                'animation:mithril-pulse 3s ease-in-out infinite',
+            ].join(';');
+
+            // Sweeping shine stripe
+            const shine = document.createElement('div');
+            shine.style.cssText = [
+                'position:absolute', 'top:0', 'left:-60%', 'width:40%', 'height:100%',
+                'background:linear-gradient(90deg,transparent,rgba(180,220,255,0.07),transparent)',
+                'pointer-events:none', 'animation:mithril-shine 4s ease-in-out infinite',
+            ].join(';');
+            card.appendChild(shine);
+
+            // Inject keyframes once into the document head
+            if (!document.getElementById('mithril-card-styles')) {
+                const style = document.createElement('style');
+                style.id = 'mithril-card-styles';
+                style.textContent = `
+                    @keyframes mithril-shine {
+                        0%   { left: -60%; }
+                        40%  { left: 120%; }
+                        100% { left: 120%; }
+                    }
+                    @keyframes mithril-pulse {
+                        0%,100% { box-shadow:0 0 14px rgba(100,180,255,0.30),inset 0 0 10px rgba(100,180,255,0.07); }
+                        50%     { box-shadow:0 0 24px rgba(100,180,255,0.55),inset 0 0 14px rgba(100,180,255,0.13); }
+                    }`;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Card-wide tooltip
         if (summon) {
-            const abilityLines = (summon.abilities || []).map(a => `\u2022 ${a}`).join('\n');
+            const abilityLines = (summon.abilities || []).map(a => `• ${a}`).join('\n');
             card.title =
                 `${summon.icon} ${member.name}\n` +
                 `${summon.speciesLabel || summon.name}\n` +
@@ -241,26 +285,30 @@ export class PartyHUD {
             card.title = `${member.name}\n${cls.icon} ${cls.name} — ${cls.description}\n${sp.icon} ${sp.name} — ${sp.description}`;
         }
 
-        // Portrait (with class icon overlay)
+        // Portrait
         const portraitWrap = document.createElement('div');
         portraitWrap.className = 'party-portrait-wrap';
+        if (isMithril) portraitWrap.style.cssText = 'border-radius:4px;box-shadow:0 0 8px rgba(100,180,255,0.4);';
 
         const img = document.createElement('img');
         img.className = 'party-portrait';
         img.src = summon
             ? this._getSummonPortraitURL(summon)
             : this._getPortraitURL(member.portraitSeed, member.speciesId);
+        if (isMithril) img.style.filter = 'hue-rotate(195deg) saturate(0.55) brightness(1.25)';
         portraitWrap.appendChild(img);
 
-        // Badge: for summons we show the creature icon itself; for players
-        // we show their class icon.
+        // Badge
         const badgeIcon = summon ? summon.icon : (cls ? cls.icon : null);
         if (badgeIcon) {
             const badge = document.createElement('span');
             badge.className = 'party-class-badge';
             badge.textContent = badgeIcon;
+            if (isMithril) {
+                badge.style.cssText = 'background:linear-gradient(135deg,#2a5c88,#0f2a44);border:1px solid #7ab0d8;color:#c8e8ff;text-shadow:0 0 6px rgba(100,180,255,0.8);';
+            }
             if (summon) {
-                const abilityLines = (summon.abilities || []).map(a => `\u2022 ${a}`).join('\n');
+                const abilityLines = (summon.abilities || []).map(a => `• ${a}`).join('\n');
                 badge.title =
                     `${summon.speciesLabel || summon.name}` +
                     (abilityLines ? `\n\nAbilities:\n${abilityLines}` : '');
@@ -276,19 +324,34 @@ export class PartyHUD {
         const name = document.createElement('div');
         name.className = 'party-name';
         name.textContent = member.name;
+        if (isMithril) {
+            name.style.cssText = 'color:#c8e8ff;font-weight:bold;text-shadow:0 0 8px rgba(100,180,255,0.6);letter-spacing:1px;';
+        }
         card.appendChild(name);
 
+        // Mithril tier label (removed — icon change is sufficient)
+
         // Class / species row — summons show their creature-type label
-        // instead of the player's class+species icon pair.
         if (summon) {
             const csRow = document.createElement('div');
             csRow.className = 'party-cs-row';
             csRow.textContent = `${summon.icon} ${summon.speciesLabel || summon.name}`;
-            const abilityLines = (summon.abilities || []).map(a => `\u2022 ${a}`).join('\n');
+            if (isMithril) csRow.style.color = '#8bbdd8';
+            const abilityLines = (summon.abilities || []).map(a => `• ${a}`).join('\n');
             csRow.title = abilityLines
                 ? `${summon.speciesLabel || summon.name}\n\nAbilities:\n${abilityLines}`
                 : (summon.speciesLabel || summon.name);
             card.appendChild(csRow);
+
+            // Numeric combat stats row for summons (melee range + defense)
+            const statsRow = document.createElement('div');
+            statsRow.className = 'party-cs-row';
+            statsRow.style.fontSize = '10px';
+            statsRow.style.color = isMithril ? 'rgba(150,210,255,0.90)' : 'rgba(200,200,180,0.85)';
+            statsRow.style.letterSpacing = '0px';
+            // These will be filled in by _updateBars (which has access to member)
+            statsRow.dataset.summonStats = 'yes';
+            card.appendChild(statsRow);
         } else if (cls && sp) {
             const csRow = document.createElement('div');
             csRow.className = 'party-cs-row';
@@ -320,6 +383,12 @@ export class PartyHUD {
         card.appendChild(eqRow);
 
         // Personal inventory button
+        // Status effects row (filled each update by _updateBars)
+        const partyStatusRow = document.createElement('div');
+        partyStatusRow.className = 'party-status-row';
+        partyStatusRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;justify-content:center;padding:1px 0;min-height:0;';
+        card.appendChild(partyStatusRow);
+
         const bagBtn = document.createElement('button');
         bagBtn.className = 'party-bag-btn';
         bagBtn.textContent = '\u{1F392}';
@@ -339,6 +408,11 @@ export class PartyHUD {
         fills[1].style.width = `${Math.max(0, (member.stamina / Math.max(1, member.maxStamina)) * 100)}%`;
         fills[2].style.width = `${Math.max(0, (member.mana / Math.max(1, member.maxMana)) * 100)}%`;
 
+        // Mithril Golem — chrome HP bar instead of default red
+        if (member.summonType === 'mithril' && fills[0]) {
+            fills[0].style.background = 'linear-gradient(90deg,#2a5c88,#5aacdc,#9dd4f4)';
+        }
+
         // Phase 12 — XP bar (purple) for non-summon party members. Summons
         // don't have an XP bar so fills[3] may be undefined.
         if (fills[3] && typeof member.xpProgressThisLevel === 'function') {
@@ -353,7 +427,9 @@ export class PartyHUD {
         const portraitWrap = card.querySelector('.party-portrait-wrap');
         if (portraitWrap) {
             let poisonBadge = portraitWrap.querySelector('.party-poison-badge');
-            const isPoisoned = Array.isArray(member.activeEffects)
+            // Golems (and other summons immune to poison) never show the poison badge.
+            const isPoisoned = !member.isSummoned
+                && Array.isArray(member.activeEffects)
                 && member.activeEffects.some(e => e && e.type === 'poison');
             if (isPoisoned) {
                 if (!poisonBadge) {
@@ -431,6 +507,188 @@ export class PartyHUD {
             }
         }
 
+        // Mass Regen badge — shown when the member has an active combat_regen effect.
+        if (portraitWrap) {
+            let regenBadge = portraitWrap.querySelector('.party-regen-badge');
+            const regenFx = Array.isArray(member.activeEffects)
+                && member.activeEffects.find(e => e && e.type === 'combat_regen' && e.rounds > 0);
+            if (regenFx) {
+                if (!regenBadge) {
+                    regenBadge = document.createElement('span');
+                    regenBadge.className = 'party-regen-badge';
+                    regenBadge.style.position = 'absolute';
+                    regenBadge.style.top = '-4px';
+                    regenBadge.style.right = '-4px';
+                    regenBadge.style.width = '22px';
+                    regenBadge.style.height = '22px';
+                    regenBadge.style.display = 'flex';
+                    regenBadge.style.alignItems = 'center';
+                    regenBadge.style.justifyContent = 'center';
+                    regenBadge.style.fontSize = '14px';
+                    regenBadge.style.background = 'radial-gradient(circle,#66ffaa 20%,#007040 100%)';
+                    regenBadge.style.border = '2px solid #004020';
+                    regenBadge.style.borderRadius = '50%';
+                    regenBadge.style.boxShadow = '0 0 6px rgba(60,255,140,0.8)';
+                    regenBadge.style.pointerEvents = 'auto';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(regenBadge);
+                }
+                regenBadge.textContent = '♥'; // ♥
+                regenBadge.title = `Mass Regen: +${Math.round((regenFx.healPct||0)*100)}% max HP/round — ${regenFx.rounds} rds left`;
+            } else if (regenBadge) {
+                regenBadge.remove();
+            }
+        }
+
+        // Mirror Image badge — shown when the mage has active mirror images.
+        if (portraitWrap) {
+            let miBadge = portraitWrap.querySelector('.party-mirror-badge');
+            const miCount = member.mirrorImages || 0;
+            if (miCount > 0) {
+                if (!miBadge) {
+                    miBadge = document.createElement('span');
+                    miBadge.className = 'party-mirror-badge';
+                    miBadge.style.position = 'absolute';
+                    miBadge.style.top = '10px';
+                    miBadge.style.right = '-4px';
+                    miBadge.style.background = 'rgba(60,80,200,0.92)';
+                    miBadge.style.border = '1px solid #88aaff';
+                    miBadge.style.borderRadius = '6px';
+                    miBadge.style.color = '#cce';
+                    miBadge.style.fontSize = '10px';
+                    miBadge.style.padding = '1px 3px';
+                    miBadge.style.pointerEvents = 'none';
+                    portraitWrap.appendChild(miBadge);
+                }
+                miBadge.textContent = '\u{1FA9E}' + miCount;
+                miBadge.title = `Mirror Image: ${miCount} image(s) active — each absorbs one hit.`;
+            } else if (miBadge) {
+                miBadge.remove();
+            }
+        }
+
+        // Lich Form / Phial badge — shown when the necromancer has Lich Form active or is in phial.
+        if (portraitWrap) {
+            let lichBadge = portraitWrap.querySelector('.party-lich-badge');
+            const isLich  = !!member.isLichForm;
+            const isPhial = !!member.lichPhial;
+            if (isLich || isPhial) {
+                if (!lichBadge) {
+                    lichBadge = document.createElement('span');
+                    lichBadge.className = 'party-lich-badge';
+                    lichBadge.style.position = 'absolute';
+                    lichBadge.style.top = '10px';
+                    lichBadge.style.left = '-4px';
+                    lichBadge.style.borderRadius = '6px';
+                    lichBadge.style.fontSize = '10px';
+                    lichBadge.style.padding = '1px 3px';
+                    lichBadge.style.pointerEvents = 'none';
+                    portraitWrap.appendChild(lichBadge);
+                }
+                if (isPhial) {
+                    lichBadge.style.background = 'rgba(0,160,100,0.92)';
+                    lichBadge.style.border = '1px solid #44ffaa';
+                    lichBadge.style.color = '#afffdd';
+                    lichBadge.textContent = '\u{1F9F4}' + (member.lichPhialCountdown || 3);
+                    lichBadge.title = `Phylactery: soul contained — reviving in ${member.lichPhialCountdown || 3} round(s).`;
+                } else {
+                    lichBadge.style.background = 'rgba(100,20,160,0.92)';
+                    lichBadge.style.border = '1px solid #aa44ff';
+                    lichBadge.style.color = '#ddaaff';
+                    lichBadge.textContent = '\u{1F9B4}LICH';
+                    lichBadge.title = 'Lich Form active: poison & stun immune, partial magic resist, Phylactery on death.';
+                }
+            } else if (lichBadge) {
+                lichBadge.remove();
+            }
+        }
+
+        // Fae Token badge — shown for druids who have accumulated fae tokens.
+        if (portraitWrap) {
+            let faeBadge = portraitWrap.querySelector('.party-fae-badge');
+            const faeTokens = member.faeTokens || 0;
+            if (faeTokens > 0) {
+                if (!faeBadge) {
+                    faeBadge = document.createElement('span');
+                    faeBadge.className = 'party-fae-badge';
+                    faeBadge.style.position = 'absolute';
+                    faeBadge.style.bottom = '10px';
+                    faeBadge.style.right = '-4px';
+                    faeBadge.style.background = 'rgba(160,110,0,0.92)';
+                    faeBadge.style.border = '1px solid #ffdd44';
+                    faeBadge.style.borderRadius = '6px';
+                    faeBadge.style.color = '#ffe88a';
+                    faeBadge.style.fontSize = '10px';
+                    faeBadge.style.padding = '1px 3px';
+                    faeBadge.style.pointerEvents = 'none';
+                    portraitWrap.appendChild(faeBadge);
+                }
+                faeBadge.textContent = '✨' + faeTokens;
+                faeBadge.title = `Fae Tokens: ${faeTokens}/3 — Commune again to summon the Faerie Queen!`;
+            } else if (faeBadge) {
+                faeBadge.remove();
+            }
+        }
+
+        // Temp HP badge — shown for barbarians with active Blood Rage temp HP.
+        if (portraitWrap) {
+            let tmpBadge = portraitWrap.querySelector('.party-temphp-badge');
+            const tempHp = member.tempHp || 0;
+            if (tempHp > 0) {
+                if (!tmpBadge) {
+                    tmpBadge = document.createElement('span');
+                    tmpBadge.className = 'party-temphp-badge';
+                    tmpBadge.style.position = 'absolute';
+                    tmpBadge.style.bottom = '10px';
+                    tmpBadge.style.left = '-4px';
+                    tmpBadge.style.background = 'rgba(160,30,30,0.92)';
+                    tmpBadge.style.border = '1px solid #ff6644';
+                    tmpBadge.style.borderRadius = '6px';
+                    tmpBadge.style.color = '#ffbbaa';
+                    tmpBadge.style.fontSize = '10px';
+                    tmpBadge.style.padding = '1px 3px';
+                    tmpBadge.style.pointerEvents = 'none';
+                    portraitWrap.appendChild(tmpBadge);
+                }
+                tmpBadge.textContent = '\u{1F4AA}' + tempHp;
+                tmpBadge.title = `Blood Rage: ${tempHp} temp HP — absorbs damage before health. Cleared when stamina exhausted.`;
+            } else if (tmpBadge) {
+                tmpBadge.remove();
+            }
+        }
+
+        // Summon combat-stats row (damage range + defense, adapts to attack type)
+        const statsRow = card.querySelector('[data-summon-stats]');
+        if (statsRow && member.isSummoned) {
+            const ss = member.summonStats || {};
+            const def = ss.defense ?? 0;
+            let dmgLabel, dmgIcon, dmgTitle;
+            if (ss.meleeMin != null || ss.meleeMax != null) {
+                dmgIcon  = '⚔️';
+                dmgLabel = `${ss.meleeMin ?? '?'}–${ss.meleeMax ?? '?'}`;
+                dmgTitle = `Melee damage: ${ss.meleeMin ?? '?'}–${ss.meleeMax ?? '?'}`;
+            } else if (ss.rangedMin != null || ss.rangedMax != null) {
+                dmgIcon  = '\u{1F3F9}';
+                dmgLabel = `${ss.rangedMin ?? '?'}–${ss.rangedMax ?? '?'}`;
+                dmgTitle = `Ranged damage: ${ss.rangedMin ?? '?'}–${ss.rangedMax ?? '?'}`;
+            } else if (ss.magicMin != null || ss.magicMax != null) {
+                dmgIcon  = '✨';
+                dmgLabel = `${ss.magicMin ?? '?'}–${ss.magicMax ?? '?'}`;
+                dmgTitle = `Magic damage: ${ss.magicMin ?? '?'}–${ss.magicMax ?? '?'}`;
+            } else {
+                dmgIcon  = '⚔️';
+                dmgLabel = '?–?';
+                dmgTitle = 'Damage: unknown';
+            }
+            const parts = [`${dmgIcon} ${dmgLabel}`, `\u{1F6E1}️ ${def}`];
+            // Show regen rate if applicable (flesh golem, stirge-type beasts)
+            const regen = ss.regenPercent;
+            if (regen) parts.push(`\u{1F504} ${Math.round(regen * 100)}%/rd`);
+            statsRow.textContent = parts.join('  ');
+            statsRow.title = `${dmgTitle}\nDefense: ${def}` +
+                (regen ? `\nRegen: ${Math.round(regen * 100)}% HP/round` : '');
+        }
+
         // Row indicator — green outline for front row, orange for back row.
         card.style.outline = member.row === 'front'
             ? '2px solid rgba(80,220,80,0.75)'
@@ -454,6 +712,55 @@ export class PartyHUD {
                         eqRow.appendChild(span);
                     }
                 }
+            }
+        }
+
+        // ── Status effects row ──────────────────────────────────────────────
+        const partyStatusRow = card.querySelector('.party-status-row');
+        if (partyStatusRow) {
+            partyStatusRow.innerHTML = '';
+            const pefx = member.activeEffects || [];
+            const mkPB = (icon, label, bg, tip) => {
+                const b = document.createElement('span');
+                b.style.cssText = 'background:' + bg + ';color:#fff;font-size:9px;padding:1px 3px;border-radius:3px;cursor:default;white-space:nowrap;display:inline-block;';
+                b.textContent = icon + ' ' + label;
+                b.title = tip;
+                partyStatusRow.appendChild(b);
+            };
+            // Stunned
+            if (member.stunned)
+                mkPB('⚡', 'Stunned', 'rgba(220,200,0,0.9)', 'Stunned: cannot act this turn');
+            // Webbed / paralyzed / constricted
+            if (member.webbedRounds > 0)
+                mkPB('🕸️', 'Webbed', 'rgba(120,80,0,0.9)', 'Webbed/Paralyzed/Constricted: ' + member.webbedRounds + ' rds left');
+            // DoTs and debuffs from activeEffects
+            const ppo = pefx.find(x => x && x.type === 'poison');
+            if (ppo) mkPB('☠️', 'Poisoned', 'rgba(80,0,140,0.9)',
+                'Poisoned: ' + (ppo.damage||1) + ' dmg/round — ' + (ppo.rounds||0) + ' rds left');
+            const pbu = pefx.find(x => x && x.type === 'burn' && x.rounds > 0);
+            if (pbu) mkPB('🔥', 'Burning', 'rgba(200,70,0,0.9)',
+                'Burning: ' + (pbu.damage||0) + ' dmg/round — ' + pbu.rounds + ' rds left');
+            const pdr = pefx.find(x => x && x.type === 'drowning' && x.rounds > 0);
+            if (pdr) mkPB('🌊', 'Drowning', 'rgba(0,80,180,0.9)',
+                'Drowning: ' + (pdr.damage||0) + ' dmg/round, -2 def — ' + pdr.rounds + ' rds left');
+            const pic = pefx.find(x => x && x.type === 'ice_chill' && x.rounds > 0);
+            if (pic) mkPB('❄️', 'Ice Chill', 'rgba(100,180,230,0.9)',
+                'Ice Chill: -' + Math.abs(pic.damageBonus||0) + ' dmg dealt — ' + pic.rounds + ' rds left');
+            const pmr = pefx.find(x => x && x.type === 'mummy_rot');
+            if (pmr) mkPB('🟤', 'Rotting', 'rgba(110,55,0,0.9)',
+                'Mummy Rot: ' + (pmr.damage||0) + ' dmg/round (permanent)');
+            const pms = pefx.find(x => x && x.type === 'mage_shield' && x.rounds > 0);
+            if (pms) mkPB('🛡️', 'Shielded', 'rgba(0,80,180,0.85)',
+                'Arcane Shield: +' + (pms.defenseBonus||0) + ' defense — ' + pms.rounds + ' rds left');
+            const ph = pefx.find(x => x && x.source === 'bard_song' && x.type === 'bard_song_haste');
+            const pb = pefx.find(x => x && x.source === 'bard_song' && x.type === 'bard_song_battle');
+            const phl = pefx.find(x => x && x.source === 'bard_song' && x.type === 'bard_song_healing');
+            if (ph || pb || phl) {
+                const parts = [];
+                if (ph) parts.push('+' + (ph.initiativeBonus||0) + ' init');
+                if (pb) parts.push('+' + (pb.damageBonus||0) + ' dmg/def');
+                if (phl) parts.push('+' + (phl.hpPerMin||0) + ' HP/min');
+                mkPB('🎵', 'Song', 'rgba(0,140,100,0.9)', 'Bard Song: ' + parts.join(', '));
             }
         }
     }

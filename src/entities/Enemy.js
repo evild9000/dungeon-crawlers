@@ -33,7 +33,7 @@ function randomStat() {
 }
 
 export class Enemy {
-    constructor({ id, type, gridX, gridZ, seed, health, maxHealth, stamina, maxStamina, mana, maxMana, friendly, level, defense }) {
+    constructor({ id, type, gridX, gridZ, seed, health, maxHealth, stamina, maxStamina, mana, maxMana, friendly, level, defense, isBoss, isMegaBoss, bossAtkBonus, name }) {
         this.id = id || generateId();
         this.type = type;
         this.seed = seed ?? Math.floor(Math.random() * 100000);
@@ -87,6 +87,13 @@ export class Enemy {
 
         // Friendly NPCs don't trigger combat
         this.friendly = friendly || false;
+
+        // Boss flags — set after construction in EnemyManager
+        this.isBoss      = isBoss      || false;
+        this.isMegaBoss  = isMegaBoss  || false;
+        this.bossAtkBonus = bossAtkBonus || 0;
+        // Optional override name (used for boss prefix "👑 …")
+        if (name) this.name = name;
 
         // Stun state (for combat — stunned enemies skip their next turn)
         this.stunned = false;
@@ -280,6 +287,10 @@ export class Enemy {
             friendly: this.friendly,
             level: this.level,
             defense: this.defense,
+            isBoss: this.isBoss || undefined,
+            isMegaBoss: this.isMegaBoss || undefined,
+            bossAtkBonus: this.bossAtkBonus || undefined,
+            name: this.name || undefined,
         };
     }
 }

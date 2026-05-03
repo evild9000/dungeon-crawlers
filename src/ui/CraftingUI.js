@@ -2,14 +2,16 @@
  * CraftingUI — Artificer's workshop (K hotkey).
  *
  * Only opens when an Artificer is present in the party and the party is
- * out of combat. Three tabs:
- *   - Enchant: apply +N damage/defense enchantments to a party member's
- *     equipped weapon or armor, and (at +1 or higher) attach a weapon
- *     rider (fire/acid/poison/lightning/ice).
- *   - Potions: craft Minor / Greater healing potions and Warding / Wrath
- *     elixirs. Finished potions go into the group inventory.
- *   - Golems: forge a persistent artificer summon (Flesh / Clay / Stone /
- *     Iron). Only one golem per artificer at a time; permadeath.
+ * out of combat. Five tabs:
+ *   - Enchant: apply +1..+7 damage/defense to weapon/armor; attach weapon
+ *     riders (fire/acid/poison/lightning/ice) at +1+; add armor quality
+ *     (spikes or AoE reduction) at +4+.
+ *   - Trinkets: upgrade equipped trinket bonusValue (+1 per level, 1..7).
+ *     Requires artificer level 20+. Dual-aspect trinkets cost 2×.
+ *   - Potions & Scrolls: craft Minor / Greater healing potions and
+ *     Warding / Wrath scrolls. Finished items go into the group inventory.
+ *   - Golems: forge a persistent artificer summon. Only one golem per
+ *     artificer at a time; permadeath.
  */
 
 import {
@@ -18,7 +20,7 @@ import {
     POTION_COSTS,
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
-    POTION_BUFF_DURATION_SEC,
+    calcScrollBonus, calcScrollCost,
 } from '../utils/constants.js';
 import { getItemDef, WEAPONS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';
@@ -50,9 +52,11 @@ export class CraftingUI {
         this._combatSystem = systems.combatSystem || null;
         this._log = typeof systems.logger === 'function' ? systems.logger : () => {};
 
-        this._tab = 'enchant';          // 'enchant' | 'potions' | 'golems'
+        this._tab = 'enchant';          // 'enchant' | 'trinkets' | 'potions' | 'golems'
         this._enchantTarget = null;     // selected party member id
+        this._trinketTarget = null;     // selected party member id for trinket upgrade
         this._golemTarget = null;       // selected artificer id for golem tab
+        this._craftArtificer = null;    // selected artificer for enchant/trinkets/potions tabs
 
         this._ensureOverlay();
     }
@@ -124,24 +128,67 @@ export class CraftingUI {
         if (!state) return;
         this.content.innerHTML = '';
 
-        const artificer = this._findArtificer();
-        if (!artificer) { this.hide(); return; }
+        const allArtificers = this._findAllArtificers();
+        const defaultArtificer = this._findArtificer();
+        if (!defaultArtificer) { this.hide(); return; }
+
+        // Resolve the active crafting artificer (enchant / trinkets / potions tabs)
+        if (!this._craftArtificer || !allArtificers.find(m => m.id === this._craftArtificer)) {
+            this._craftArtificer = defaultArtificer.id;
+        }
+        const craftArtificer = allArtificers.find(m => m.id === this._craftArtificer) || defaultArtificer;
 
         // Header
         const header = document.createElement('div');
         header.className = 'craft-header';
+        const inv = state.inventory;
         header.innerHTML =
-            `<span class="craft-title">\u{1F527} ${artificer.name}'s Workshop</span>` +
-            `<span class="craft-gold">\u{1F4B0} ${state.inventory.gold}g` +
-            ` &nbsp; \u2728 C:${state.inventory.getReagentCount('common')}` +
-            ` &nbsp; \u{1F535} U:${state.inventory.getReagentCount('uncommon')}` +
-            ` &nbsp; \u{1F7E3} R:${state.inventory.getReagentCount('rare')}</span>`;
+            `<span class="craft-title">\u{1F527} ${craftArtificer.name}'s Workshop</span>` +
+            `<span class="craft-gold">\u{1F4B0} ${inv.gold}g` +
+            ` &nbsp; \u2728 C:${inv.getReagentCount('common')}` +
+            ` &nbsp; \u{1F535} U:${inv.getReagentCount('uncommon')}` +
+            ` &nbsp; \u{1F7E3} R:${inv.getReagentCount('rare')}` +
+            ` &nbsp; \u{1F536} E:${inv.getReagentCount('epic')}` +
+            ` &nbsp; \u{1F537} L:${inv.getReagentCount('legendary')}` +
+            ` &nbsp; \u{1F31F} M:${inv.getReagentCount('mythic')}` +
+            ` &nbsp; \u2728\u2728 D:${inv.getReagentCount('divine')}</span>`;
         this.content.appendChild(header);
+
+        // Artificer picker \u2014 shown when multiple artificers are present and not on golems tab
+        if (allArtificers.length > 1 && this._tab !== 'golems') {
+            const apRow = document.createElement('div');
+            apRow.className = 'craft-picker';
+            apRow.style.marginBottom = '8px';
+            const apLbl = document.createElement('label');
+            apLbl.className = 'craft-label';
+            apLbl.textContent = '\u{1F527} Crafting Artificer:';
+            apRow.appendChild(apLbl);
+            const apSel = document.createElement('select');
+            apSel.className = 'craft-select';
+            for (const a of allArtificers) {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = `${a.name} (Lv ${a.level})`;
+                if (a.id === this._craftArtificer) opt.selected = true;
+                apSel.appendChild(opt);
+            }
+            apSel.addEventListener('change', () => {
+                this._craftArtificer = apSel.value;
+                this._render();
+            });
+            apRow.appendChild(apSel);
+            this.content.appendChild(apRow);
+        }
 
         // Tabs
         const tabs = document.createElement('div');
         tabs.className = 'craft-tab-bar';
-        for (const [id, label] of [['enchant', 'Enchant'], ['potions', 'Potions'], ['golems', 'Golems']]) {
+        for (const [id, label] of [
+            ['enchant',  'Enchant'],
+            ['trinkets', 'Trinkets'],
+            ['potions',  'Potions & Scrolls'],
+            ['golems',   'Golems'],
+        ]) {
             const btn = document.createElement('button');
             btn.className = `craft-tab ${this._tab === id ? 'active' : ''}`;
             btn.textContent = label;
@@ -163,15 +210,18 @@ export class CraftingUI {
         body.className = 'craft-body';
         this.content.appendChild(body);
 
-        if (this._tab === 'enchant') this._renderEnchant(body, state, artificer);
-        else if (this._tab === 'potions') this._renderPotions(body, state, artificer);
-        else {
+        if (this._tab === 'enchant') {
+            this._renderEnchant(body, state, craftArtificer);
+        } else if (this._tab === 'trinkets') {
+            this._renderTrinkets(body, state, craftArtificer);
+        } else if (this._tab === 'potions') {
+            this._renderPotions(body, state, craftArtificer);
+        } else {
             // For golems, allow choosing which artificer manages the golem.
-            const allArtificers = this._findAllArtificers();
             if (!this._golemTarget || !allArtificers.find(m => m.id === this._golemTarget)) {
-                this._golemTarget = artificer.id;
+                this._golemTarget = defaultArtificer.id;
             }
-            const golemArtificer = allArtificers.find(m => m.id === this._golemTarget) || artificer;
+            const golemArtificer = allArtificers.find(m => m.id === this._golemTarget) || defaultArtificer;
             this._renderGolems(body, state, golemArtificer, allArtificers);
         }
     }
@@ -246,9 +296,9 @@ export class CraftingUI {
         title.textContent = `${itemDef.icon || ''} ${slotLabel}: ${itemDef.name}   +${enchLvl}${riderStr}`;
         panel.appendChild(title);
 
-        // Level-up buttons (enchLvl + 1 is next target, if < 3)
+        // Level-up buttons (enchLvl + 1 is next target, up to +7)
         const costsTable = slot === 'weapon' ? ENCHANT_WEAPON_COSTS : ENCHANT_ARMOR_COSTS;
-        if (enchLvl < 3) {
+        if (enchLvl < 7) {
             const next = enchLvl + 1;
             const cost = costsTable[next];
             const canPay = this._canPay(state, cost);
@@ -262,7 +312,7 @@ export class CraftingUI {
             btn.addEventListener('click', () => {
                 if (!this._canPay(state, cost)) return;
                 this._pay(state, cost);
-                const existing = target.equipmentEnchants[slot] || { level: 0, rider: null };
+                const existing = target.equipmentEnchants[slot] || { level: 0, rider: null, quality: null };
                 target.equipmentEnchants[slot] = { ...existing, level: next };
                 this._log(`\u{1F527} ${artificer.name} enchants ${target.name}'s ${slotLabel} ${itemDef.name} to +${next}.`);
                 this._onChanged();
@@ -272,8 +322,86 @@ export class CraftingUI {
         } else {
             const max = document.createElement('div');
             max.className = 'craft-note';
-            max.textContent = 'Already at +3 — maximum enchantment.';
+            max.textContent = 'Already at +7 — maximum enchantment.';
             panel.appendChild(max);
+        }
+
+        // ── Armor qualities (armor slot only, requires +4 or higher) ──────────
+        // Both Spikes and AoE Ward can be applied independently; each is purchased
+        // separately at the same cost as the current enchant level.
+        if (slot === 'armor' && enchLvl >= 4) {
+            const armorEnch = target.equipmentEnchants[slot] || {};
+            const hasSpiked  = !!armorEnch.spiked;
+            const hasAoeWard = !!armorEnch.aoeWard;
+            const qualityCost = costsTable[enchLvl];
+
+            const qualityHeader = document.createElement('div');
+            qualityHeader.className = 'craft-note';
+            qualityHeader.textContent = '✨ Armor qualities — each purchased independently (both can be active):';
+            panel.appendChild(qualityHeader);
+
+            const qRow = document.createElement('div');
+            qRow.className = 'craft-rider-row';
+
+            // Spikes
+            if (hasSpiked) {
+                const done = document.createElement('div');
+                done.className = 'craft-note';
+                done.textContent = `\u{1F5E1}️ Spikes applied — reflects ${Math.floor(25*(enchLvl-3))}% of incoming melee damage. Upgrade enchant to improve.`;
+                panel.appendChild(done);
+            } else {
+                const spikePct = Math.floor(25 * (enchLvl - 3));
+                const canPay = this._canPay(state, qualityCost);
+                const sb = document.createElement('button');
+                sb.className = `craft-rider-btn ${canPay ? '' : 'craft-btn-disabled'}`;
+                sb.disabled = !canPay;
+                sb.innerHTML = `\u{1F5E1}️ Spikes`;
+                sb.title = `Reflects ${spikePct}% of incoming melee damage back at the attacker. Scales with enchant level.\nCost: ${this._formatCost(qualityCost)}`;
+                sb.addEventListener('click', () => {
+                    if (!this._canPay(state, qualityCost)) return;
+                    this._pay(state, qualityCost);
+                    const ex = target.equipmentEnchants[slot] || { level: enchLvl, rider: null };
+                    target.equipmentEnchants[slot] = { ...ex, spiked: true };
+                    this._log(`\u{1F527} ${artificer.name} studs ${target.name}'s ${itemDef.name} with iron spikes.`);
+                    this._onChanged();
+                    this._render();
+                });
+                qRow.appendChild(sb);
+            }
+
+            // AoE Ward
+            if (hasAoeWard) {
+                const done = document.createElement('div');
+                done.className = 'craft-note';
+                done.textContent = `\u{1F6E1}️ AoE Ward applied — reduces incoming AoE damage by ${Math.floor(10*(enchLvl-3))}%. Upgrade enchant to improve.`;
+                panel.appendChild(done);
+            } else {
+                const aoeReduction = Math.floor(10 * (enchLvl - 3));
+                const canPay = this._canPay(state, qualityCost);
+                const ab = document.createElement('button');
+                ab.className = `craft-rider-btn ${canPay ? '' : 'craft-btn-disabled'}`;
+                ab.disabled = !canPay;
+                ab.innerHTML = `\u{1F6E1}️ AoE Ward`;
+                ab.title = `Reduces all incoming AoE damage by ${aoeReduction}%. Scales with enchant level.\nCost: ${this._formatCost(qualityCost)}`;
+                ab.addEventListener('click', () => {
+                    if (!this._canPay(state, qualityCost)) return;
+                    this._pay(state, qualityCost);
+                    const ex = target.equipmentEnchants[slot] || { level: enchLvl, rider: null };
+                    target.equipmentEnchants[slot] = { ...ex, aoeWard: true };
+                    this._log(`\u{1F527} ${artificer.name} weaves an AoE ward into ${target.name}'s ${itemDef.name}.`);
+                    this._onChanged();
+                    this._render();
+                });
+                qRow.appendChild(ab);
+            }
+
+            if (qRow.children.length > 0) panel.appendChild(qRow);
+
+        } else if (slot === 'armor' && enchLvl > 0 && enchLvl < 4) {
+            const hint = document.createElement('div');
+            hint.className = 'craft-note';
+            hint.textContent = 'Enchant to +4 or higher to unlock armor qualities (Spikes and/or AoE Ward).';
+            panel.appendChild(hint);
         }
 
         // Weapon rider (only for weapon/offhand slot, only if enchanted, only if no rider yet)
@@ -316,18 +444,21 @@ export class CraftingUI {
         return panel;
     }
 
-    // ── Potions tab ─────────────────────────────
+    // ── Potions & Scrolls tab ───────────────────
     _renderPotions(body, state, artificer) {
+        const AL = artificer.level;
+        const scrollDuration = 5 + Math.floor(AL / 2); // minutes
+        const scrollBonus = calcScrollBonus(AL);
         const entries = [
-            { id: 'minor_healing_potion',   name: 'Minor Healing Potion',   icon: '\u{1F9EA}', desc: `Restores ${Math.round(POTION_MINOR_HEAL_PCT*100)}% of max HP.` },
-            { id: 'greater_healing_potion', name: 'Greater Healing Potion', icon: '\u{1F48A}', desc: `Restores ${Math.round(POTION_GREATER_HEAL_PCT*100)}% of max HP.` },
-            { id: 'elixir_warding',         name: 'Elixir of Warding',      icon: '\u{1F6E1}\uFE0F', desc: `+${POTION_WARD_DEF_BONUS} defense for ${Math.round(POTION_BUFF_DURATION_SEC/60)} min.` },
-            { id: 'elixir_wrath',           name: 'Elixir of Wrath',        icon: '\u{1F525}', desc: `+${POTION_WRATH_DMG_BONUS} damage (all types) for ${Math.round(POTION_BUFF_DURATION_SEC/60)} min.` },
+            { id: 'minor_healing_potion',   isScroll: false, name: 'Minor Healing Potion',   icon: '\u{1F9EA}', desc: `Restores ${Math.round(POTION_MINOR_HEAL_PCT*100)}% of max HP to one character.` },
+            { id: 'greater_healing_potion', isScroll: false, name: 'Greater Healing Potion', icon: '\u{1F48A}', desc: `Restores ${Math.round(POTION_GREATER_HEAL_PCT*100)}% of max HP to one character.` },
+            { id: 'elixir_warding',  isScroll: true, name: 'Scroll of Warding', icon: '\u{1F6E1}️', desc: `+${scrollBonus} defense for the ENTIRE party (base +2, +1 per 5 AL). Duration: ${scrollDuration} min.` },
+            { id: 'elixir_wrath',    isScroll: true, name: 'Scroll of Wrath',   icon: '\u{1F525}',        desc: `+${scrollBonus} damage (all types) for the ENTIRE party (base +2, +1 per 5 AL). Duration: ${scrollDuration} min.` },
         ];
         for (const entry of entries) {
             const row = document.createElement('div');
             row.className = 'craft-row';
-            const cost = POTION_COSTS[entry.id];
+            const cost = entry.isScroll ? calcScrollCost(AL) : POTION_COSTS[entry.id];
             const owned = state.inventory.getItemCount(entry.id);
             const info = document.createElement('div');
             info.className = 'craft-row-info';
@@ -338,12 +469,13 @@ export class CraftingUI {
             const canPay = this._canPay(state, cost);
             btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
             btn.disabled = !canPay;
-            btn.textContent = `Brew — ${this._formatCost(cost)}`;
+            btn.textContent = `${entry.isScroll ? 'Scribe' : 'Brew'} — ${this._formatCost(cost)}`;
             btn.addEventListener('click', () => {
                 if (!this._canPay(state, cost)) return;
                 this._pay(state, cost);
                 state.inventory.addItem(entry.id, 1);
-                this._log(`\u{1F9EA} ${artificer.name} brews a ${entry.name}.`);
+                const verb = entry.isScroll ? 'scribes' : 'brews';
+                this._log(`\u{1F4DC} ${artificer.name} ${verb} a ${entry.name}.`);
                 this._onChanged();
                 this._render();
             });
@@ -475,28 +607,40 @@ export class CraftingUI {
     _canPay(state, cost) {
         if (!cost) return false;
         const inv = state.inventory;
-        if ((cost.gold || 0) > 0 && inv.gold < cost.gold) return false;
-        if ((cost.common || 0) > 0 && !inv.hasReagent('common', cost.common)) return false;
-        if ((cost.uncommon || 0) > 0 && !inv.hasReagent('uncommon', cost.uncommon)) return false;
-        if ((cost.rare || 0) > 0 && !inv.hasReagent('rare', cost.rare)) return false;
+        if ((cost.gold      || 0) > 0 && inv.gold < cost.gold) return false;
+        if ((cost.common    || 0) > 0 && !inv.hasReagent('common',    cost.common))    return false;
+        if ((cost.uncommon  || 0) > 0 && !inv.hasReagent('uncommon',  cost.uncommon))  return false;
+        if ((cost.rare      || 0) > 0 && !inv.hasReagent('rare',      cost.rare))      return false;
+        if ((cost.epic      || 0) > 0 && !inv.hasReagent('epic',      cost.epic))      return false;
+        if ((cost.legendary || 0) > 0 && !inv.hasReagent('legendary', cost.legendary)) return false;
+        if ((cost.mythic    || 0) > 0 && !inv.hasReagent('mythic',    cost.mythic))    return false;
+        if ((cost.divine    || 0) > 0 && !inv.hasReagent('divine',    cost.divine))    return false;
         return true;
     }
 
     _pay(state, cost) {
         const inv = state.inventory;
-        if ((cost.gold || 0) > 0) inv.removeGold(cost.gold);
-        if ((cost.common || 0) > 0) inv.removeReagent('common', cost.common);
-        if ((cost.uncommon || 0) > 0) inv.removeReagent('uncommon', cost.uncommon);
-        if ((cost.rare || 0) > 0) inv.removeReagent('rare', cost.rare);
+        if ((cost.gold      || 0) > 0) inv.removeGold(cost.gold);
+        if ((cost.common    || 0) > 0) inv.removeReagent('common',    cost.common);
+        if ((cost.uncommon  || 0) > 0) inv.removeReagent('uncommon',  cost.uncommon);
+        if ((cost.rare      || 0) > 0) inv.removeReagent('rare',      cost.rare);
+        if ((cost.epic      || 0) > 0) inv.removeReagent('epic',      cost.epic);
+        if ((cost.legendary || 0) > 0) inv.removeReagent('legendary', cost.legendary);
+        if ((cost.mythic    || 0) > 0) inv.removeReagent('mythic',    cost.mythic);
+        if ((cost.divine    || 0) > 0) inv.removeReagent('divine',    cost.divine);
     }
 
     _formatCost(cost) {
         if (!cost) return '—';
         const parts = [];
-        if (cost.gold)     parts.push(`${cost.gold}g`);
-        if (cost.common)   parts.push(`${cost.common}\u2728C`);
-        if (cost.uncommon) parts.push(`${cost.uncommon}\u{1F535}U`);
-        if (cost.rare)     parts.push(`${cost.rare}\u{1F7E3}R`);
+        if (cost.gold)      parts.push(`${cost.gold}g`);
+        if (cost.common)    parts.push(`${cost.common}✨C`);
+        if (cost.uncommon)  parts.push(`${cost.uncommon}🔵U`);
+        if (cost.rare)      parts.push(`${cost.rare}🟣R`);
+        if (cost.epic)      parts.push(`${cost.epic}🔶E`);
+        if (cost.legendary) parts.push(`${cost.legendary}🔷L`);
+        if (cost.mythic)    parts.push(`${cost.mythic}🌟M`);
+        if (cost.divine)    parts.push(`${cost.divine}✨✨D`);
         return parts.join(' + ') || 'free';
     }
 
@@ -512,5 +656,104 @@ export class CraftingUI {
         el.className = 'craft-note';
         el.textContent = text;
         return el;
+    }
+
+    // ── Trinket upgrade tab (Artificer L20+) ────────────────────────────────────────
+    _renderTrinkets(body, state, artificer) {
+        if (artificer.level < 20) {
+            body.appendChild(this._note(`Trinket upgrading unlocks at Artificer level 20. (Current: ${artificer.level})`));
+            return;
+        }
+        const candidates = (state.party || []).filter(m => !m.isSummoned);
+        if (candidates.length === 0) {
+            body.appendChild(this._note('No party members to upgrade trinkets for.'));
+            return;
+        }
+        if (!this._trinketTarget || !candidates.find(m => m.id === this._trinketTarget)) {
+            this._trinketTarget = candidates[0].id;
+        }
+
+        const picker = document.createElement('div');
+        picker.className = 'craft-picker';
+        picker.appendChild(this._label('Upgrade target:'));
+        const sel = document.createElement('select');
+        sel.className = 'craft-select';
+        for (const m of candidates) {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = `${m.name} (Lv ${m.level} ${m.classDef ? m.classDef.name : ''})`;
+            if (m.id === this._trinketTarget) opt.selected = true;
+            sel.appendChild(opt);
+        }
+        sel.addEventListener('change', () => { this._trinketTarget = sel.value; this._render(); });
+        picker.appendChild(sel);
+        body.appendChild(picker);
+
+        const target = candidates.find(m => m.id === this._trinketTarget);
+        if (!target) return;
+
+        const trinketSlots = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
+        const slotNames = { cloak: 'Cloak', neck: 'Neck', ring1: 'Ring 1', ring2: 'Ring 2', belt: 'Belt' };
+        let anyTrinket = false;
+
+        for (const slot of trinketSlots) {
+            const itemId = target.equipment && target.equipment[slot];
+            if (!itemId) continue;
+            const def = getItemDef(itemId);
+            if (!def) continue;
+            anyTrinket = true;
+
+            const isDual = !!(def.bonusType2 && def.bonusValue2);
+            const enchObj = target.trinketEnchants && target.trinketEnchants[slot];
+            const enchLvl = (enchObj && enchObj.level) || 0;
+            const costMult = isDual ? 2 : 1;
+
+            const panel = document.createElement('div');
+            panel.className = 'craft-slot-panel';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'craft-slot-title';
+            const bonusDesc  = def.bonusType  ? `+${(def.bonusValue  || 0) + enchLvl} ${def.bonusType}`  : '';
+            const bonus2Desc = isDual         ? ` / +${(def.bonusValue2 || 0) + enchLvl} ${def.bonusType2}` : '';
+            titleEl.textContent = `${def.icon || ''} ${slotNames[slot]}: ${def.name}  ${bonusDesc}${bonus2Desc}  [+${enchLvl} enchant]`;
+            panel.appendChild(titleEl);
+
+            if (enchLvl < 7) {
+                const next = enchLvl + 1;
+                // Cost tier is based on TOTAL bonus (base bonusValue + enchant level + 1).
+                // A +4 trinket going to +5 costs the same as any other +4 -> +5 upgrade.
+                const costTier = Math.min(7, (def.bonusValue || 0) + enchLvl + 1);
+                const base = ENCHANT_WEAPON_COSTS[costTier];
+                const cost = {};
+                for (const [k, v] of Object.entries(base)) {
+                    cost[k] = costMult > 1 ? v * costMult : v;
+                }
+                const canPay = this._canPay(state, cost);
+                const upgradeBtn = document.createElement('button');
+                upgradeBtn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
+                upgradeBtn.disabled = !canPay;
+                upgradeBtn.textContent = `Upgrade to +${next} — ${this._formatCost(cost)}${isDual ? ' (dual ×2)' : ''}`;
+                upgradeBtn.title = isDual
+                    ? 'Upgrades both bonus aspects by +1. Costs twice as much.'
+                    : 'Adds +1 to the trinket bonus value.';
+                upgradeBtn.addEventListener('click', () => {
+                    if (!this._canPay(state, cost)) return;
+                    this._pay(state, cost);
+                    target.trinketEnchants[slot] = { level: next };
+                    this._log(`✨ ${artificer.name} upgrades ${target.name}'s ${def.name} to +${next}.`);
+                    this._onChanged();
+                    this._render();
+                });
+                panel.appendChild(upgradeBtn);
+            } else {
+                panel.appendChild(this._note('Already at +7 — maximum trinket upgrade.'));
+            }
+
+            body.appendChild(panel);
+        }
+
+        if (!anyTrinket) {
+            body.appendChild(this._note(`${target.name} has no trinkets equipped.`));
+        }
     }
 }

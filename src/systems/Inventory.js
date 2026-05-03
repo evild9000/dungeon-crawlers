@@ -81,8 +81,12 @@ export class Inventory {
         if (tier === 'common') {
             return this.getItemCount('reagent_common') + this.getItemCount('magical_reagent');
         }
-        if (tier === 'uncommon') return this.getItemCount('reagent_uncommon');
-        if (tier === 'rare')     return this.getItemCount('reagent_rare');
+        if (tier === 'uncommon')  return this.getItemCount('reagent_uncommon');
+        if (tier === 'rare')      return this.getItemCount('reagent_rare');
+        if (tier === 'epic')      return this.getItemCount('reagent_epic');
+        if (tier === 'legendary') return this.getItemCount('reagent_legendary');
+        if (tier === 'mythic')    return this.getItemCount('reagent_mythic');
+        if (tier === 'divine')    return this.getItemCount('reagent_divine');
         return 0;
     }
 
@@ -98,8 +102,12 @@ export class Inventory {
     removeReagent(tier, quantity = 1) {
         if (quantity <= 0) return true;
         if (!this.hasReagent(tier, quantity)) return false;
-        if (tier === 'uncommon') return this.removeItem('reagent_uncommon', quantity);
-        if (tier === 'rare')     return this.removeItem('reagent_rare', quantity);
+        if (tier === 'uncommon')  return this.removeItem('reagent_uncommon',  quantity);
+        if (tier === 'rare')      return this.removeItem('reagent_rare',      quantity);
+        if (tier === 'epic')      return this.removeItem('reagent_epic',      quantity);
+        if (tier === 'legendary') return this.removeItem('reagent_legendary', quantity);
+        if (tier === 'mythic')    return this.removeItem('reagent_mythic',    quantity);
+        if (tier === 'divine')    return this.removeItem('reagent_divine',    quantity);
         // common: drain legacy first
         let remaining = quantity;
         const legacy = this.getItemCount('magical_reagent');

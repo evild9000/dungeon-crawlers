@@ -26,6 +26,7 @@ export class DungeonRenderer {
         this.group = new THREE.Group();
         this.torchLights = [];   // references kept for flicker animation
         this.portals = [];       // { kind:'down'|'up', grid:{x,z}, mesh, light }
+        this.fountains = [];     // { grid:{x,z}, basin, water, orb, light, basePhase }
     }
 
     /**
@@ -104,7 +105,111 @@ export class DungeonRenderer {
         if (data.portalDown) this._addPortal(data.portalDown.x, data.portalDown.z, 'down');
         if (data.portalUp)   this._addPortal(data.portalUp.x,   data.portalUp.z,   'up');
 
+        // --- Fountains ---
+        if (data.fountains) {
+            for (const f of data.fountains) {
+                if (!f.used) this._addFountain(f.x, f.z);
+            }
+        }
+
         return this.group;
+    }
+
+    /**
+     * Add a glowing magical fountain: stone basin + water column + floating orb.
+     * Teal/blue colour with gentle pulse animation. Proximity-triggered in Game.js.
+     */
+    _addFountain(gx, gz) {
+        const CS = CELL_SIZE;
+        const cx = (gx + 0.5) * CS;
+        const cz = (gz + 0.5) * CS;
+        const color = 0x22ddff; // teal-blue
+
+        // Stone basin (flat wide cylinder)
+        const basinGeo = new THREE.CylinderGeometry(0.65, 0.55, 0.35, 14);
+        const basinMat = new THREE.MeshStandardMaterial({
+            color: 0x889aaa,
+            roughness: 0.75,
+            metalness: 0.2,
+        });
+        const basin = new THREE.Mesh(basinGeo, basinMat);
+        basin.position.set(cx, 0.175, cz);
+        this.group.add(basin);
+
+        // Glowing water column rising from the basin
+        const waterGeo = new THREE.CylinderGeometry(0.22, 0.32, 0.75, 12, 1, true);
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            emissive: color,
+            emissiveIntensity: 1.5,
+            transparent: true,
+            opacity: 0.65,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            roughness: 0.3,
+            metalness: 0.0,
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.position.set(cx, 0.72, cz);
+        this.group.add(water);
+
+        // Floating orb at the top of the column
+        const orbGeo = new THREE.SphereGeometry(0.19, 12, 8);
+        const orbMat = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            emissive: color,
+            emissiveIntensity: 2.8,
+            transparent: true,
+            opacity: 0.9,
+            depthWrite: false,
+            roughness: 0.2,
+            metalness: 0.0,
+        });
+        const orb = new THREE.Mesh(orbGeo, orbMat);
+        orb.position.set(cx, 1.2, cz);
+        this.group.add(orb);
+
+        // Shimmering pool disc at basin level
+        const poolGeo = new THREE.CircleGeometry(0.5, 16);
+        const poolMat = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            emissive: color,
+            emissiveIntensity: 1.0,
+            transparent: true,
+            opacity: 0.55,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        const pool = new THREE.Mesh(poolGeo, poolMat);
+        pool.rotation.x = -Math.PI / 2;
+        pool.position.set(cx, 0.36, cz);
+        this.group.add(pool);
+
+        // Point light
+        const light = new THREE.PointLight(color, 1.3, 7, 2);
+        light.position.set(cx, 1.0, cz);
+        this.group.add(light);
+
+        this.fountains.push({
+            grid: { x: gx, z: gz },
+            basin, water, orb, pool, light,
+            basePhase: Math.random() * Math.PI * 2,
+        });
+    }
+
+    /**
+     * Remove a fountain mesh from the scene (called after the player uses it).
+     */
+    removeFountain(gx, gz) {
+        const idx = this.fountains.findIndex(f => f.grid.x === gx && f.grid.z === gz);
+        if (idx === -1) return;
+        const f = this.fountains[idx];
+        [f.basin, f.water, f.orb, f.pool, f.light].forEach(obj => {
+            this.group.remove(obj);
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) obj.material.dispose();
+        });
+        this.fountains.splice(idx, 1);
     }
 
     /**
@@ -338,6 +443,23 @@ export class DungeonRenderer {
                 p.ring.material.emissiveIntensity = 1.6 + 1.4 * pulse;
             }
             p.light.intensity = 1.0 + 1.0 * pulse;
+        }
+
+        // Fountain pulse — gentle bob + shimmer
+        for (const f of this.fountains) {
+            const t = elapsedTime * 2.8 + f.basePhase;
+            const pulse = 0.5 + 0.5 * Math.sin(t);
+            // Orb bobs up and down
+            f.orb.position.y = 1.1 + 0.12 * Math.sin(elapsedTime * 1.8 + f.basePhase);
+            f.orb.material.emissiveIntensity = 2.2 + 1.2 * pulse;
+            // Water column breathes
+            f.water.material.opacity = 0.45 + 0.3 * pulse;
+            f.water.material.emissiveIntensity = 1.2 + 0.9 * pulse;
+            // Pool shimmer
+            f.pool.material.opacity = 0.35 + 0.25 * pulse;
+            f.pool.rotation.z = elapsedTime * 0.4 + f.basePhase;
+            // Light pulses softly
+            f.light.intensity = 0.9 + 0.7 * pulse;
         }
     }
 }

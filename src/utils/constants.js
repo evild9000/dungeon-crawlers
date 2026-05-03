@@ -38,12 +38,25 @@ export const PLAYER_TORCH_DISTANCE = 22;
 export const WALL_TORCH_INTENSITY = 1.0;
 export const WALL_TORCH_DISTANCE = 14;
 
-// Fog
+// Fog — normal (light active)
 // Phase 10: lifted from near-pure-black (0x050505) to a dim warm tone so
 // distant walls aren't swallowed whole; also pushed FOG_FAR out from 42 → 60.
 export const FOG_COLOR = 0x1a1410;
 export const FOG_NEAR = 4;
 export const FOG_FAR = 60;
+
+// Fog / ambient — no-light mode (torch/lantern/spell burned out or never lit).
+// Visibility collapses to ~1 cell (CELL_SIZE = 4 units).  Ambient drops to a
+// near-zero value so geometry is essentially invisible beyond arm's reach.
+export const FOG_COLOR_DARK    = 0x000000;
+export const FOG_NEAR_DARK     = 0;
+export const FOG_FAR_DARK      = 5;    // just under CELL_SIZE*1.5 — walls touching you are barely visible
+export const AMBIENT_DARK      = 0.015; // ~90% darker than normal ambient
+
+// Magical fountains (spawned per dungeon level)
+export const FOUNTAIN_SPAWN_CHANCE     = 0.25;              // 25% chance per roll (roll once per DL, capped at 5)
+export const FOUNTAIN_PROXIMITY        = 2.5;               // world units (~0.6 cells) to trigger interaction
+export const FOUNTAIN_BUFF_DURATION_MS = 10 * 60 * 1000;   // 10 minutes (all timed fountain buffs)
 
 // Enemy system — quadrupled to suit the 40×40 procedural dungeon.
 export const ENEMY_SPAWN_INTERVAL = 8;     // seconds between spawns (quadrupled rate)
@@ -85,46 +98,199 @@ export const ENEMY_STAT_MAX = 25;
 export const ENEMY_TYPES = {
     // ── Original roster (unbounded dungeon level) ─────────────────────
     skeleton: { name: 'Skeleton', spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['vermin'] },
+    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['vermin'], immune: ['acid'] },
     goblin:   { name: 'Goblin',   spriteW: 1.2, spriteH: 1.4, tags: ['humanoid'] },
     // Phase 11: spider gains webChance on top of its existing poison bite.
     // The two effects roll independently — a single hit can poison, web,
     // both, or neither.
     spider:   { name: 'Spider',   spriteW: 1.8, spriteH: 1.2, poisonChance: 0.35, webChance: 0.25, tags: ['beast', 'vermin'] },
-    wraith:   { name: 'Wraith',   spriteW: 1.4, spriteH: 2.0, tags: ['undead'] },
+    // lifeDrain: melee hits also steal HP from the target and heal the wraith.
+    wraith:   { name: 'Wraith',   spriteW: 1.4, spriteH: 2.0, lifeDrain: 0.25, tags: ['undead', 'incorporeal'] },
     bat:      { name: 'Bat',      spriteW: 1.6, spriteH: 1.0, tags: ['beast', 'vermin'] },
     rat:      { name: 'Giant Rat', spriteW: 1.4, spriteH: 1.0, tags: ['beast', 'vermin'] },
     zombie:   { name: 'Zombie',   spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
     troll:    { name: 'Troll',    spriteW: 1.6, spriteH: 2.0, stunChance: 0.33, regenPercent: 0.15, tags: ['humanoid'] },
-    ghost:    { name: 'Ghost',    spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    drake:    { name: 'Drake',    spriteW: 1.6, spriteH: 1.4, tags: ['beast', 'monster'] },
+    // phaseStrike: ignores all armor and innate defense — only raw HP.
+    ghost:    { name: 'Ghost',    spriteW: 1.4, spriteH: 1.8, phaseStrike: true, tags: ['undead', 'incorporeal'] },
+    // aoeFire: drake breathes fire on the whole party, applying a burn DoT.
+    drake:    { name: 'Drake',    spriteW: 1.6, spriteH: 1.4, aoeFire: true, tags: ['dragon'], immune: ['fire'] },
     mimic:    { name: 'Mimic',    spriteW: 1.4, spriteH: 1.2, tags: ['monster'] },
     orc:      { name: 'Orc',      spriteW: 1.4, spriteH: 1.8, tags: ['humanoid'] },
-    imp:      { name: 'Imp',      spriteW: 1.0, spriteH: 1.2, tags: ['demon'] },
+    // rangedAny: imp uses a ranged attack that can target any row (front or back).
+    imp:      { name: 'Imp',      spriteW: 1.0, spriteH: 1.2, rangedAny: true, tags: ['demon'], immune: ['fire'] },
     basilisk: { name: 'Basilisk', spriteW: 1.8, spriteH: 1.4, poisonChance: 0.30, tags: ['beast', 'monster'] },
-    cultist:  { name: 'Cultist',  spriteW: 1.4, spriteH: 1.9, aoeMagic: true, tags: ['humanoid', 'cultist'] },
+    cultist:  { name: 'Cultist',  spriteW: 1.4, spriteH: 1.9, aoeMagic: true, tags: ['humanoid'] },
 
-    // ── Phase 11: early-dungeon roster (dungeon levels 1-3 only) ──────
-    centipede:    { name: 'Giant Centipede', spriteW: 2.0, spriteH: 0.8, poisonChance: 0.45, maxLevel: 3, tags: ['beast', 'vermin'] },
-    cave_crawler: { name: 'Cave Crawler',    spriteW: 1.4, spriteH: 1.0, stunChance: 0.30, maxLevel: 3, tags: ['beast', 'vermin'] },
-    widow:        { name: 'Black Widow',     spriteW: 1.6, spriteH: 1.4, poisonChance: 0.40, webChance: 0.35, maxLevel: 3, tags: ['beast', 'vermin'] },
-    spore_fungus: { name: 'Spore Fungus',    spriteW: 1.4, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.35, maxLevel: 3, tags: ['monster'] },
-    shrieker:     { name: 'Shrieker',        spriteW: 1.2, spriteH: 1.6, aoeMagic: true, aoeStunChance: 0.20, maxLevel: 3, tags: ['monster'] },
-    kobold:       { name: 'Kobold',          spriteW: 1.0, spriteH: 1.4, maxLevel: 3, tags: ['humanoid'] },
-    kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, maxLevel: 3, tags: ['humanoid'] },
-    cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, maxLevel: 3, tags: ['beast', 'vermin'] },
-    stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, regenPercent: 0.10, maxLevel: 3, tags: ['beast', 'vermin'] },
-    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, maxLevel: 3, tags: ['vermin'] },
-    flame_imp:    { name: 'Flame Imp',       spriteW: 1.0, spriteH: 1.2, aoeMagic: true, maxLevel: 3, tags: ['demon'] },
-    bone_gnasher: { name: 'Bone Gnasher',    spriteW: 1.4, spriteH: 1.4, stunChance: 0.35, maxLevel: 3, tags: ['undead'] },
-    blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, maxLevel: 3, tags: ['beast', 'vermin'] },
-    ice_sprite:   { name: 'Ice Sprite',      spriteW: 1.0, spriteH: 1.2, aoeMagic: true, aoeStunChance: 0.15, maxLevel: 3, tags: ['monster'] },
-    stone_hag:    { name: 'Stone Hag',       spriteW: 1.4, spriteH: 1.8, stunChance: 0.30, regenPercent: 0.08, maxLevel: 3, tags: ['humanoid'] },
-    ghoul_pup:    { name: 'Ghoul Pup',       spriteW: 1.2, spriteH: 1.2, poisonChance: 0.30, stunChance: 0.20, maxLevel: 3, tags: ['undead'] },
-    myconid:      { name: 'Myconid',         spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoePoisonChance: 0.25, maxLevel: 3, tags: ['monster'] },
-    dust_devil:   { name: 'Dust Devil',      spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.10, maxLevel: 3, tags: ['demon'] },
-    vampire_bat:  { name: 'Vampire Bat',     spriteW: 1.6, spriteH: 1.0, regenPercent: 0.12, maxLevel: 3, tags: ['beast', 'vermin'] },
-    tunnel_worm:  { name: 'Tunnel Worm',     spriteW: 1.8, spriteH: 1.0, poisonChance: 0.40, webChance: 0.15, maxLevel: 3, tags: ['beast', 'vermin'] },
+    centipede:    { name: 'Giant Centipede', spriteW: 2.0, spriteH: 0.8, poisonChance: 0.45, tags: ['beast', 'vermin'] },
+    cave_crawler: { name: 'Cave Crawler',    spriteW: 1.4, spriteH: 1.0, stunChance: 0.30, tags: ['beast', 'vermin'] },
+    widow:        { name: 'Black Widow',     spriteW: 1.6, spriteH: 1.4, poisonChance: 0.40, webChance: 0.35, tags: ['beast', 'vermin'] },
+    spore_fungus: { name: 'Spore Fungus',    spriteW: 1.4, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.35, tags: ['monster'] },
+    shrieker:     { name: 'Shrieker',        spriteW: 1.2, spriteH: 1.6, aoeMagic: true, aoeStunChance: 0.20, tags: ['monster'] },
+    kobold:       { name: 'Kobold',          spriteW: 1.0, spriteH: 1.4, tags: ['humanoid'] },
+    kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, tags: ['humanoid'] },
+    cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, tags: ['beast', 'vermin'] },
+    stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, regenPercent: 0.10, tags: ['beast', 'vermin'] },
+    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, tags: ['vermin'], immune: ['acid'] },
+    flame_imp:    { name: 'Flame Imp',       spriteW: 1.0, spriteH: 1.2, aoeMagic: true, tags: ['demon'], immune: ['fire'] },
+    bone_gnasher: { name: 'Bone Gnasher',    spriteW: 1.4, spriteH: 1.4, stunChance: 0.35, tags: ['undead'] },
+    blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, tags: ['beast', 'vermin'] },
+    ice_sprite:   { name: 'Ice Sprite',      spriteW: 1.0, spriteH: 1.2, aoeMagic: true, aoeStunChance: 0.15, tags: ['monster'], immune: ['cold'] },
+    stone_hag:    { name: 'Stone Hag',       spriteW: 1.4, spriteH: 1.8, stunChance: 0.30, regenPercent: 0.08, tags: ['humanoid'] },
+    ghoul_pup:    { name: 'Ghoul Pup',       spriteW: 1.2, spriteH: 1.2, poisonChance: 0.30, stunChance: 0.20, tags: ['undead'] },
+    myconid:      { name: 'Myconid',         spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoePoisonChance: 0.25, tags: ['monster'] },
+    dust_devil:   { name: 'Dust Devil',      spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.10, tags: ['demon'] },
+    vampire_bat:  { name: 'Vampire Bat',     spriteW: 1.6, spriteH: 1.0, regenPercent: 0.12, tags: ['beast', 'vermin'] },
+    tunnel_worm:  { name: 'Tunnel Worm',     spriteW: 1.8, spriteH: 1.0, poisonChance: 0.40, webChance: 0.15, tags: ['beast', 'vermin'] },
+
+    // ── New monsters (unbounded dungeon level) ────────────────────────
+    banshee:         { name: 'Banshee',          spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeStunChance: 0.40, tags: ['undead', 'incorporeal'] },
+    lich:            { name: 'Lich',             spriteW: 1.4, spriteH: 2.0, aoeMagic: true, regenPercent: 0.05, tags: ['undead'] },
+    minotaur:        { name: 'Minotaur',         spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['humanoid', 'beast'] },
+    shadow:          { name: 'Shadow',           spriteW: 1.2, spriteH: 2.0, phaseStrike: true, lifeDrain: 0.30, tags: ['undead', 'incorporeal'] },
+    ogre:            { name: 'Ogre',             spriteW: 2.0, spriteH: 2.2, stunChance: 0.45, tags: ['humanoid'] },
+    dark_elf:        { name: 'Dark Elf',         spriteW: 1.2, spriteH: 1.8, rangedAny: true, poisonChance: 0.30, tags: ['humanoid'] },
+    harpy:           { name: 'Harpy',            spriteW: 1.6, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.25, tags: ['beast', 'monster'] },
+    giant_scorpion:  { name: 'Giant Scorpion',   spriteW: 2.0, spriteH: 1.2, poisonChance: 0.50, tags: ['beast', 'vermin'] },
+    wight:           { name: 'Wight',            spriteW: 1.4, spriteH: 1.8, lifeDrain: 0.35, stunChance: 0.25, tags: ['undead'] },
+    gargoyle:        { name: 'Gargoyle',         spriteW: 1.6, spriteH: 2.0, stunChance: 0.35, regenPercent: 0.05, tags: ['construct', 'monster'] },
+    phase_spider:    { name: 'Phase Spider',     spriteW: 1.8, spriteH: 1.2, phaseStrike: true, poisonChance: 0.40, tags: ['beast', 'vermin'] },
+    tentacle_horror: { name: 'Tentacle Horror',  spriteW: 2.0, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.30, webChance: 0.40, tags: ['aberration'] },
+    ice_troll:       { name: 'Ice Troll',        spriteW: 1.8, spriteH: 2.2, stunChance: 0.30, regenPercent: 0.20, attackDebuff: 2, tags: ['humanoid'], immune: ['cold'] },
+    vampire_spawn:   { name: 'Vampire Spawn',    spriteW: 1.4, spriteH: 1.8, lifeDrain: 0.30, regenPercent: 0.08, tags: ['undead'] },
+    mind_flayer:     { name: 'Mind Flayer',      spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeStunChance: 0.50, tags: ['aberration'] },
+    fire_elemental:  { name: 'Fire Elemental',   spriteW: 1.6, spriteH: 2.0, aoeFire: true, tags: ['construct', 'elemental', 'incorporeal'], immune: ['fire', 'stun', 'poison'] },
+    gnoll:           { name: 'Gnoll',            spriteW: 1.4, spriteH: 1.8, rangedAny: true, poisonChance: 0.20, tags: ['humanoid', 'beast'] },
+    demon_knight:    { name: 'Demon Knight',     spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['demon', 'humanoid'] },
+    naga:            { name: 'Naga',             spriteW: 1.8, spriteH: 1.6, poisonChance: 0.45, constrict: 3, rangedAny: true, tags: ['monster', 'beast'] },
+    gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['monster', 'vermin'], immune: ['acid'] },
+
+    // ── Elemental triad ───────────────────────────────────────────────
+    // earth_elemental: double HP & defense vs a normal high-level mob.
+    //   stunChance:0.30 applies to both single-target melee and the
+    //   earthquakeChance AOE (50% chance to quake instead of single hit).
+    //   hpMult / defenseMult are applied by EnemyManager after spawn.
+    earth_elemental: { name: 'Earth Elemental', spriteW: 1.8, spriteH: 2.2,
+        stunChance: 0.30, earthquakeChance: 0.50,
+        hpMult: 2.0, defenseMult: 2.0,
+        tags: ['construct', 'elemental'], immune: ['stun', 'poison'] },
+    // air_elemental: AoE magic blast with 33% stun chance per target.
+    air_elemental:   { name: 'Air Elemental',   spriteW: 1.6, spriteH: 2.0,
+        aoeMagic: true, aoeStunChance: 0.33,
+        tags: ['construct', 'elemental', 'incorporeal'], immune: ['stun', 'poison'] },
+    // water_elemental: AoE + drowning DoT (half-dmg × 3 rds) + -2 def × 3 rds.
+    water_elemental: { name: 'Water Elemental', spriteW: 1.6, spriteH: 2.0,
+        aoeDrowning: true,
+        tags: ['construct', 'elemental', 'incorporeal'], immune: ['stun', 'poison'] },
+
+    // ── Phase 13: 18 New Monsters ────────────────────────────────────
+    // dungeon_ape: large ape, high HP, melee, can stun.
+    dungeon_ape:  { name: 'Dungeon Ape',  spriteW: 2.0, spriteH: 2.2,
+        stunChance: 0.35, hpMult: 1.5,
+        tags: ['beast'] },
+
+    // hag: old witch, AoE magic caster.
+    hag:          { name: 'Hag',          spriteW: 1.4, spriteH: 1.8,
+        aoeMagic: true,
+        tags: ['humanoid'] },
+
+    // bandit: rogue mercenary, can attack back row.
+    bandit:       { name: 'Bandit',       spriteW: 1.2, spriteH: 1.8,
+        rangedAny: true, poisonChance: 0.20,
+        tags: ['humanoid'] },
+
+    // beholder: aberration, 6 random eye beams per turn with varied effects.
+    // Special AI handles the eye beams; isBeholderAI flags it in _executeOneEnemyTurn.
+    beholder:     { name: 'Beholder',     spriteW: 2.0, spriteH: 1.8,
+        isBeholderAI: true, hpMult: 2.0, defenseMult: 1.5,
+        tags: ['aberration'] },
+
+    // Dragons — 50% AoE breath + DoT, 50% multi-attack (2 claws + bite).
+    // All mega-boss eligible. High HP.
+    red_dragon:   { name: 'Red Dragon',   spriteW: 2.4, spriteH: 2.0,
+        isDragonAI: true, dragonBreathType: 'fire',
+        hpMult: 3.0, defenseMult: 2.0,
+        tags: ['dragon'], immune: ['fire'] },
+    black_dragon: { name: 'Black Dragon', spriteW: 2.4, spriteH: 2.0,
+        isDragonAI: true, dragonBreathType: 'acid',
+        hpMult: 3.0, defenseMult: 2.0,
+        tags: ['dragon'], immune: ['acid'] },
+    blue_dragon:  { name: 'Blue Dragon',  spriteW: 2.4, spriteH: 2.0,
+        isDragonAI: true, dragonBreathType: 'lightning',
+        hpMult: 3.0, defenseMult: 2.0,
+        tags: ['dragon'], immune: ['lightning'] },
+    green_dragon: { name: 'Green Dragon', spriteW: 2.4, spriteH: 2.0,
+        isDragonAI: true, dragonBreathType: 'poison',
+        hpMult: 3.0, defenseMult: 2.0,
+        tags: ['dragon'], immune: ['poison'] },
+    white_dragon: { name: 'White Dragon', spriteW: 2.4, spriteH: 2.0,
+        isDragonAI: true, dragonBreathType: 'cold',
+        hpMult: 3.0, defenseMult: 2.0,
+        tags: ['dragon'], immune: ['cold'] },
+
+    // efreeti: fire genie, half magic damage taken, AoE fire attack.
+    efreeti:      { name: 'Efreeti',      spriteW: 1.8, spriteH: 2.2,
+        aoeFire: true, halfMagicDamage: true,
+        tags: ['demon'], immune: ['fire'] },
+
+    // ettin: two-headed giant, attacks twice, can stun.
+    ettin:        { name: 'Ettin',        spriteW: 2.0, spriteH: 2.4,
+        isEttinAI: true, stunChance: 0.30,
+        tags: ['humanoid'] },
+
+    // fire_giant: melee+10, hits twice, stun, fire DoT.
+    fire_giant:   { name: 'Fire Giant',   spriteW: 2.0, spriteH: 2.4,
+        isFireGiantAI: true, stunChance: 0.25,
+        tags: ['humanoid'], immune: ['fire'] },
+
+    // ice_giant: melee+10, hits twice, stun, ice DoT.
+    ice_giant:    { name: 'Ice Giant',    spriteW: 2.0, spriteH: 2.4,
+        isIceGiantAI: true, stunChance: 0.25,
+        tags: ['humanoid'], immune: ['cold'] },
+
+    // stone_giant: ranged+10, throws boulders twice, stun, extra defense.
+    stone_giant:  { name: 'Stone Giant',  spriteW: 2.0, spriteH: 2.4,
+        isStoneGiantAI: true, stunChance: 0.25, defenseMult: 1.5,
+        tags: ['humanoid'] },
+
+    // storm_giant: magic+10, lightning bolt hits 3 random back row + stun.
+    storm_giant:  { name: 'Storm Giant',  spriteW: 2.0, spriteH: 2.4,
+        isStormGiantAI: true,
+        tags: ['humanoid'], immune: ['lightning'] },
+
+    // giant_frog: poison bite + DoT.
+    giant_frog:   { name: 'Giant Frog',   spriteW: 1.6, spriteH: 1.2,
+        poisonChance: 0.45,
+        tags: ['beast'] },
+
+    // medusa: 3 poison arrows/turn, can hit back row, petrify attempt.
+    medusa:       { name: 'Medusa',       spriteW: 1.6, spriteH: 2.0,
+        isMedusaAI: true,
+        tags: ['humanoid', 'monster'] },
+
+    // hydra: 6+ heads (1 per 5 dungeon levels), each attacks per round, regen 15%/round.
+    hydra:        { name: 'Hydra',        spriteW: 2.4, spriteH: 1.8,
+        isHydraAI: true, regenPercent: 0.15, hpMult: 2.0,
+        tags: ['beast', 'monster'] },
+
+    // manticore: 5 ranged attacks/turn, +3 bonus, can hit back row, poison tail DoT.
+    manticore:    { name: 'Manticore',    spriteW: 2.2, spriteH: 1.8,
+        isManticoreAI: true,
+        tags: ['beast'] },
+
+    // evil_priest: 50/50 mass heal (15% HP to non-undead enemies) or AoE magic.
+    evil_priest:  { name: 'Evil Priest',  spriteW: 1.4, spriteH: 1.9,
+        isEvilPriestAI: true,
+        tags: ['humanoid'] },
+
+    // werewolf: +50% defense bonus, regen 25%/turn.
+    werewolf:     { name: 'Werewolf',     spriteW: 1.8, spriteH: 2.2,
+        isWerewolfAI: true, regenPercent: 0.25, defenseMult: 1.5,
+        tags: ['beast', 'humanoid'] },
+
+    // yeti: two fist attacks/turn, stun, ice DoT.
+    yeti:         { name: 'Yeti',         spriteW: 2.0, spriteH: 2.2,
+        isYetiAI: true, stunChance: 0.30,
+        tags: ['beast'], immune: ['cold'] },
 };
 // Only enemy types (excludes tinkerer for spawning purposes)
 export const ENEMY_TYPE_KEYS = Object.keys(ENEMY_TYPES);
@@ -197,6 +363,11 @@ export const RANGED_CRIT_CHANCE = 0.20;         // 20% chance for double damage
 export const MELEE_STUN_CHANCE = 0.20;          // 20% chance to stun enemy
 export const SHIELD_BLOCK_CHANCE = 0.25;        // 25% chance to block attack entirely
 
+// Monster special powers (wraith, ghost, drake, imp)
+export const WRAITH_DRAIN_FRACTION = 0.25;       // wraith lifeDrain: steals 25% of dealt dmg as HP
+export const DRAKE_FIRE_BURN_ROUNDS = 2;         // drake aoeFire: burn DoT lasts 2 rounds
+export const DRAKE_FIRE_BURN_FRACTION = 0.33;    // drake aoeFire: burn DoT = 33% of hit damage/rd
+
 // ──────────────────────────────────────────
 // Regen (per MINUTE, base for every character)
 // Class + species add bonuses on top of this.
@@ -218,6 +389,15 @@ export const BACKSTAB_INSTAKILL_CHANCE = 0.05; // rogue: 5% chance to drop enemy
 export const CLERIC_HEAL_MANA_COST = 5;
 export const CLERIC_HEAL_PERCENT = 0.25;  // heals 25% of target's max HP
 
+// Turn Undead — cleric level 6+. Costs mana, hits every undead enemy as a
+// 2× magic attack (all undead, ignoring the random-target cap). Also debuffs
+// undead attack and defense by 2 + 1 per 2 cleric levels.
+export const CLERIC_TURN_UNDEAD_MIN_LEVEL  = 6;
+export const CLERIC_TURN_UNDEAD_MANA_COST  = 20;
+export const CLERIC_TURN_UNDEAD_DAMAGE_MULT = 2;      // base ×2; also ×(1+0.02×clericLevel) — see clericTurnUndead()
+export const CLERIC_TURN_UNDEAD_DEBUFF_BASE = 2;      // base atk/def debuff
+export const CLERIC_TURN_UNDEAD_DEBUFF_EVERY = 2;     // +1 debuff per N cleric levels
+
 export const MAGE_SHIELD_MANA_COST    = 6;   // mana cost for mage shield spell
 export const MAGE_SHIELD_BASE_DEF     = 3;   // base defense bonus for all back-row members
 export const MAGE_SHIELD_BASE_ROUNDS  = 3;   // base duration in rounds
@@ -225,6 +405,10 @@ export const MAGE_SHIELD_BONUS_EVERY  = 5;   // +1 def and +1 round per this man
 export const MAGE_SHIELD_MIN_LEVEL    = 3;   // mage must be at least this level
 
 export const NECRO_SUMMON_MANA_COST = 7;
+export const NECRO_UNDEAD_MANA_UPKEEP  = 1;   // mana drained per undead summon per round
+export const NECRO_DARK_HARVEST_HP_FRAC   = 0.10; // fraction of maxHealth lost
+export const NECRO_DARK_HARVEST_ST_FRAC   = 0.10; // fraction of maxStamina lost
+export const NECRO_DARK_HARVEST_MANA_FRAC = 0.10; // fraction of maxMana gained
 export const NECRO_LIFE_DRAIN_CHANCE = 0.25;
 export const NECRO_LIFE_DRAIN_AMOUNT = 2;
 
@@ -256,6 +440,13 @@ export const MAGE_MAGIC_PER_LEVEL = 1;
 
 export const WARRIOR_DEFENSE_PER_LEVEL = 1;   // +1 def per level
 export const WARRIOR_STUN_PER_LEVEL = 0.03;   // +3% melee stun per level
+
+// Warrior L20 special abilities
+export const WARRIOR_DEFEND_MODE_UNLOCK_LEVEL   = 20;
+export const WARRIOR_DEFEND_BLOCK_BONUS_PER_3LV = 0.01; // +1% intercept/block per 3 warrior levels
+export const WARRIOR_INTERCEPT_DAMAGE_MULT      = 0.10; // intercepted damage reduced to 10% post-defense
+export const WARRIOR_STUN_RESIST_BASE           = 0.20; // 20% base stun resistance at L20
+export const WARRIOR_STUN_RESIST_PER_2_LEVELS   = 0.01; // +1% per 2 levels beyond 1 (so 30% at L20)
 export const RANGER_CRIT_PER_LEVEL = 0.03;    // +3% ranged crit per level
 export const MAGE_STUN_PER_LEVEL = 0.01;      // +1% magic stun per level
 export const ROGUE_INSTAKILL_PER_LEVEL = 0.01;// +1% backstab instakill per level beyond 1
@@ -263,6 +454,23 @@ export const MONK_DODGE_PER_LEVEL = 0.01;     // +1% dodge per level beyond 1
 export const MONK_WHIRLWIND_PER_LEVEL = 0.01; // +1% whirlwind per level beyond 1
 export const CLERIC_HEAL_PER_LEVEL = 0.02;    // +2% heal amount per level beyond 1
 export const NECRO_DRAIN_PER_LEVEL = 1;       // +1 drain per level beyond 1
+
+// Barbarian class constants
+export const BARBARIAN_MELEE_PER_LEVEL = 1;   // +1 melee per level beyond 1
+export const BARBARIAN_RAGE_STAMINA_COST = 3; // each rage attack costs 3 ST
+export const BARBARIAN_RAGE_HP_REGEN = 0.05;  // regen 5% max HP per round while raging
+// Extra rage attacks = Math.floor(level / 3)  — baked into barbarianRage() logic
+// Rage damage bonus = +level to base roll    — baked into _rollPlayerMeleeDamage() logic
+
+// ── Barbarian L20 — Blood Rage (temp HP + wound multiplier) ──────────────────
+export const BARBARIAN_BLOOD_RAGE_UNLOCK_LEVEL = 20;
+export const BARBARIAN_TEMP_HP_PER_HIT_FRAC    = 0.01; // 1% of max HP per hit while raging
+export const BARBARIAN_WOUND_THRESH_1          = 0.75; // at 75% HP → ×2 dmg (no tempHp)
+export const BARBARIAN_WOUND_THRESH_2          = 0.50; // at 50% HP → ×4 dmg
+export const BARBARIAN_WOUND_THRESH_3          = 0.25; // at 25% HP → ×6 dmg
+export const BARBARIAN_WOUND_MULT_1            = 2;
+export const BARBARIAN_WOUND_MULT_2            = 4;
+export const BARBARIAN_WOUND_MULT_3            = 6;
 
 // Summons
 export const RANGER_SUMMON_MANA_COST = 7;
@@ -422,8 +630,21 @@ export const LIGHT_SPELL_INTENSITY      = 2.0;
 export const LIGHT_SPELL_MANA_COST      = 10;
 
 // Monster non-equipment drops
-export const LOOT_TORCH_CHANCE    = 0.03; // 3% per slain enemy
-export const LOOT_REAGENT_CHANCE  = 0.05; // 5% per slain enemy
+export const LOOT_TORCH_CHANCE         = 0.03; // 3% per slain enemy
+// Base reagent drop chance per tier, before dungeon-level bonus.
+// Each tier rolls independently when the dungeon level qualifies.
+// +1% per dungeon level added at roll time, capped at 10%.
+export const LOOT_REAGENT_COMMON_BASE    = 0.05; // common drops on all levels
+export const LOOT_REAGENT_UNCOMMON_BASE  = 0.05; // uncommon drops level 4+
+export const LOOT_REAGENT_RARE_BASE      = 0.05; // rare drops level 7+
+export const LOOT_REAGENT_CHANCE_PER_LVL = 0.01; // +1% per dungeon level
+export const LOOT_REAGENT_CHANCE_MAX     = 0.10; // capped at 10%
+// Epic and higher reagents have a flat 1% drop rate (no level bonus) starting at the
+// specified dungeon level. Bosses guarantee 1, mega-bosses guarantee 2 of each.
+export const LOOT_REAGENT_EPIC_BASE      = 0.01; // epic drops level 15+
+export const LOOT_REAGENT_LEGENDARY_BASE = 0.01; // legendary drops level 20+
+export const LOOT_REAGENT_MYTHIC_BASE    = 0.01; // mythic drops level 25+
+export const LOOT_REAGENT_DIVINE_BASE    = 0.01; // divine drops level 30+
 
 // Cleric revive (level 3+)
 export const CLERIC_REVIVE_MANA_COST   = 25;
@@ -439,7 +660,7 @@ export const POISON_EXPLORATION_TICK_SEC = 10; // one "round" every 10 seconds o
 // Food is consumed once per FOOD_CHECK_INTERVAL seconds of exploration time.
 // Missed checks advance: null → 'hungry' → 'starving' → 'dying'.
 // Eating immediately resets to null (fed).
-export const FOOD_CHECK_INTERVAL    = 1800; // 30 minutes of exploration time
+export const FOOD_CHECK_INTERVAL    = 900;  // 15 minutes of exploration time
 export const FOOD_HUNGRY_PENALTY    = 1;    // -1 damage & defense per missed check tier
 export const FOOD_DYING_HP_PER_MIN  = 2;    // HP drained per real minute when 'dying'
 
@@ -448,13 +669,20 @@ export const FOOD_DYING_HP_PER_MIN  = 2;    // HP drained per real minute when '
 // ──────────────────────────────────────────
 
 // Reagent drop tiers — keyed by dungeon level of the slain enemy.
-// L1-3 drops common, L4-6 uncommon, L7+ rare. Bosses drop 1-2 rare on top.
-export const REAGENT_TIER_COMMON_MAX    = 3;   // can drop levels 1-3
-export const REAGENT_TIER_UNCOMMON_MAX  = 6;   // can drop levels 4-6
-export const REAGENT_TIER_RARE_MAX      = 100;   // can drop any level
-// Level 7+ → rare
+// L1-3 drops common, L4-6 uncommon, L7+ rare, L15+ epic, L20+ legendary, L25+ mythic, L30+ divine.
+// Bosses guarantee 1 (mega-bosses 2) of every qualifying tier on top of random drops.
+export const REAGENT_TIER_UNCOMMON_MIN   = 4;   // uncommon starts dropping at level 4
+export const REAGENT_TIER_RARE_MIN       = 7;   // rare starts dropping at level 7
+export const REAGENT_TIER_EPIC_MIN       = 15;  // epic starts dropping at level 15
+export const REAGENT_TIER_LEGENDARY_MIN  = 20;  // legendary starts dropping at level 20
+export const REAGENT_TIER_MYTHIC_MIN     = 25;  // mythic starts dropping at level 25
+export const REAGENT_TIER_DIVINE_MIN     = 30;  // divine starts dropping at level 30
+// Guaranteed boss drops (per qualifying tier)
 export const REAGENT_BOSS_RARE_MIN      = 1;
 export const REAGENT_BOSS_RARE_MAX      = 2;
+// Boss guarantees 1, mega-boss guarantees 2 for epic/legendary/mythic/divine (each)
+export const REAGENT_BOSS_HIGH_TIER_AMOUNT      = 1;
+export const REAGENT_MEGABOSS_HIGH_TIER_AMOUNT  = 2;
 
 // Artificer class scaling
 export const ARTIFICER_RANGED_PER_LEVEL = 1;
@@ -474,23 +702,61 @@ export const PALADIN_SMITE_INSTAKILL_BASE      = 0.01;
 export const PALADIN_SMITE_INSTAKILL_PER_LEVEL = 0.01;
 // Paladin heals at half cleric effectiveness.
 export const PALADIN_HEAL_MANA_COST = 5;
+// Fire Aura: 4 MP/round upkeep; reflects melee dmg back as fire damage.
+export const PALADIN_FIRE_AURA_MANA_PER_ROUND = 4;
 export const PALADIN_HEAL_PERCENT   = CLERIC_HEAL_PERCENT / 2;       // 12.5%
 export const PALADIN_HEAL_PER_LEVEL = CLERIC_HEAL_PER_LEVEL / 2;     // +1% per level
 
+// Paladin L20 special abilities
+export const PALADIN_L20_UNLOCK_LEVEL        = 20;
+export const PALADIN_SMITE_INSTAKILL_CAP     = 0.50; // purge chance hard cap (50%)
+export const PALADIN_SMITE_BOSS_DAMAGE_MULT  = 4;    // on bosses/mega-bosses: x4 damage instead of instant kill
+export const PALADIN_AOE_SMITE_MANA_MULT     = 3;    // 3× normal smite mana
+export const PALADIN_AOE_SMITE_DAMAGE_MULT   = (1 / 3); // 1/3 normal smite damage
+export const PALADIN_AOE_SMITE_INSTAKILL_MULT = (1 / 3); // 1/3 normal purge chance
+
+// Monk L20 special: Quivering Palm
+export const MONK_QUIVERING_PALM_UNLOCK_LEVEL    = 20;
+export const MONK_QUIVERING_PALM_DURATION_BASE   = 2; // 2 rounds at L20
+export const MONK_QUIVERING_PALM_DURATION_PER_10LV = 1; // +1 per 10 levels above 20
+export const MONK_QUIVERING_PALM_STACK_CAP_DIVISOR = 5; // cap = floor(highestMonkLevel/5)
+export const MONK_QUIVERING_PALM_STACK_CAP_MAX   = 10;  // absolute max cap rounds
+
+// Cleric L20 special abilities
+export const CLERIC_MASS_REGEN_UNLOCK_LEVEL      = 20;
+export const CLERIC_MASS_REGEN_BASE_PCT          = 0.10;  // 10% max HP healed per round
+export const CLERIC_MASS_REGEN_PER_3_LEVELS      = 0.01;  // +1% per 3 cleric levels
+export const CLERIC_MASS_REGEN_DURATION_PER_4LV  = 1;     // floor(level/4) rounds total
+export const CLERIC_MASS_REGEN_MANA_COST         = 15;
+export const CLERIC_MASS_REVIVE_UNLOCK_LEVEL     = 20;
+export const CLERIC_MASS_REVIVE_COUNT_DIVISOR    = 7;     // revives floor(level/7) allies
+export const CLERIC_MASS_REVIVE_HEAL_BASE        = 0.33;  // 33% max HP base restore
+export const CLERIC_MASS_REVIVE_HEAL_PER_3LV     = 0.01;  // +1% per 3 cleric levels
+export const CLERIC_MASS_REVIVE_MANA_COST        = 30;
+
 // Crafting — enchantment pricing and ingredient costs.
 // Weapons get flat +N damage; armor gets flat +N defense.
-// Values are indexed by enchant level (1..3).
+// Values are indexed by enchant level (1..7).
+// +4 requires the first epic reagent; +5 legendary; +6 mythic; +7 divine.
 export const ENCHANT_WEAPON_COSTS = [
     null,
-    { gold: 100, common: 3, uncommon: 0, rare: 0 },
-    { gold: 400, common: 2, uncommon: 2, rare: 0 },
-    { gold: 900, common: 1, uncommon: 2, rare: 1 },
+    { gold:   100, common: 3, uncommon:  0, rare:  0, epic: 0, legendary: 0, mythic: 0, divine: 0 },
+    { gold:   400, common: 2, uncommon:  2, rare:  0, epic: 0, legendary: 0, mythic: 0, divine: 0 },
+    { gold:   900, common: 1, uncommon:  2, rare:  1, epic: 0, legendary: 0, mythic: 0, divine: 0 },
+    { gold:  5000, common:10, uncommon:  5, rare:  3, epic: 1, legendary: 0, mythic: 0, divine: 0 },
+    { gold: 10000, common:15, uncommon: 10, rare:  5, epic: 3, legendary: 1, mythic: 0, divine: 0 },
+    { gold: 25000, common:20, uncommon: 15, rare: 10, epic: 5, legendary: 3, mythic: 1, divine: 0 },
+    { gold: 50000, common:25, uncommon: 20, rare: 15, epic:10, legendary: 5, mythic: 3, divine: 1 },
 ];
 export const ENCHANT_ARMOR_COSTS = [
     null,
-    { gold: 100, common: 3, uncommon: 0, rare: 0 },
-    { gold: 400, common: 2, uncommon: 2, rare: 0 },
-    { gold: 900, common: 1, uncommon: 2, rare: 1 },
+    { gold:   100, common: 3, uncommon:  0, rare:  0, epic: 0, legendary: 0, mythic: 0, divine: 0 },
+    { gold:   400, common: 2, uncommon:  2, rare:  0, epic: 0, legendary: 0, mythic: 0, divine: 0 },
+    { gold:   900, common: 1, uncommon:  2, rare:  1, epic: 0, legendary: 0, mythic: 0, divine: 0 },
+    { gold:  5000, common:10, uncommon:  5, rare:  3, epic: 1, legendary: 0, mythic: 0, divine: 0 },
+    { gold: 10000, common:15, uncommon: 10, rare:  5, epic: 3, legendary: 1, mythic: 0, divine: 0 },
+    { gold: 25000, common:20, uncommon: 15, rare: 10, epic: 5, legendary: 3, mythic: 1, divine: 0 },
+    { gold: 50000, common:25, uncommon: 20, rare: 15, epic:10, legendary: 5, mythic: 3, divine: 1 },
 ];
 
 // Weapon "rider" enchantments — added on top of a +N weapon. Each costs 1 uncommon + 1 rare.
@@ -517,11 +783,38 @@ export const POTION_BUFF_DURATION_SEC = 5 * 60;         // exploration-time seco
 export const POTION_BUFF_ROUNDS       = 20;             // combat-round fallback cap
 export const POTION_MINOR_HEAL_PCT    = 0.40;
 export const POTION_GREATER_HEAL_PCT  = 0.75;
-export const POTION_WARD_DEF_BONUS    = 2;
-export const POTION_WRATH_DMG_BONUS   = 2;
+export const POTION_WARD_DEF_BONUS    = 2;   // base value (AL 0); use calcScrollBonus() for scaled value
+export const POTION_WRATH_DMG_BONUS   = 2;   // base value (AL 0); use calcScrollBonus() for scaled value
+
+// Scroll bonus scales with artificer level: +2 base, +1 per 5 AL.
+export const SCROLL_BONUS_BASE    = 2;
+export const SCROLL_BONUS_PER_5AL = 1;
+
+/** Bonus granted by a Warding/Wrath scroll crafted by an artificer of this level. */
+export function calcScrollBonus(AL) {
+    return SCROLL_BONUS_BASE + Math.floor((AL || 0) / 5);
+}
+
+/**
+ * Crafting cost for one Warding or Wrath scroll at a given artificer level.
+ *   Common:   = bonus (2 base + 1 per extra bonus point)
+ *   Uncommon: +1 per +5 total bonus  → floor(bonus / 5)
+ *   Rare:     +1 per +10 total bonus → floor(bonus / 10)
+ */
+export function calcScrollCost(AL) {
+    const bonus = calcScrollBonus(AL);
+    return {
+        gold:     25,
+        common:   bonus,
+        uncommon: Math.floor(bonus / 5),
+        rare:     Math.floor(bonus / 10),
+    };
+}
+
 export const POTION_COSTS = {
     minor_healing_potion:  { gold: 25, common: 2, uncommon: 0, rare: 0 },
     greater_healing_potion:{ gold: 25, common: 1, uncommon: 1, rare: 0 },
+    // Scroll costs are dynamic — use calcScrollCost(AL) in UI. These are AL-0 fallbacks.
     elixir_warding:        { gold: 25, common: 2, uncommon: 0, rare: 0 },
     elixir_wrath:          { gold: 25, common: 2, uncommon: 0, rare: 0 },
 };
@@ -537,7 +830,7 @@ export const GOLEM_TIERS = [
         icon: '\u{1F9DF}',
         unlockLevel: 1,
         reagentTier: 'common',
-        cost: { gold: 0, common: 5, uncommon: 0, rare: 0 },
+        cost: { gold: 100, common: 5, uncommon: 0, rare: 0 },
         baseHp: 40, hpPerAL: 5,
         baseDef: 2,
         meleeMin: 3, meleeMax: 8,
@@ -549,10 +842,10 @@ export const GOLEM_TIERS = [
     {
         id: 'clay',
         name: 'Clay Golem',
-        icon: '\u{1F9F1}',
+        icon: '\u{1F5FF}',
         unlockLevel: 5,
         reagentTier: 'uncommon',
-        cost: { gold: 0, common: 10, uncommon: 3, rare: 0 },
+        cost: { gold: 500, common: 10, uncommon: 3, rare: 0 },
         baseHp: 70, hpPerAL: 5,
         baseDef: 4,
         meleeMin: 5, meleeMax: 12,
@@ -568,7 +861,7 @@ export const GOLEM_TIERS = [
         icon: '\u{1FAA8}',
         unlockLevel: 10,
         reagentTier: 'rare',
-        cost: { gold: 0, common: 15, uncommon: 5, rare: 1 },
+        cost: { gold: 2500, common: 15, uncommon: 5, rare: 1 },
         baseHp: 120, hpPerAL: 5,
         baseDef: 7,
         meleeMin: 6, meleeMax: 14,
@@ -581,10 +874,10 @@ export const GOLEM_TIERS = [
     {
         id: 'iron',
         name: 'Iron Golem',
-        icon: '\u{1F9FE}',
+        icon: '\u{1F916}',
         unlockLevel: 15,
         reagentTier: 'rare',
-        cost: { gold: 0, common: 20, uncommon: 8, rare: 3 },
+        cost: { gold: 12500, common: 20, uncommon: 8, rare: 3 },
         baseHp: 200, hpPerAL: 5,
         baseDef: 10,
         meleeMin: 8, meleeMax: 18,
@@ -592,6 +885,59 @@ export const GOLEM_TIERS = [
         cleaveTargets: 1,
         immune: ['poison', 'stun', 'web'],
         description: 'Forged war-engine. Cleaves one extra enemy each melee. Immune to poison, stun, and web.',
+    },
+    {
+        id: 'mithril',
+        name: 'Mithril Golem',
+        icon: '\u{1F47E}',  // 👾 alien/construct face (distinct from iron golem's 🤖)
+        unlockLevel: 20,
+        reagentTier: 'rare',
+        cost: { gold: 62500, common: 30, uncommon: 15, rare: 8 },
+        baseHp: 320, hpPerAL: 8,
+        baseDef: 14,
+        meleeMin: 14, meleeMax: 28,
+        // Force AoE: each turn blasts floor(artificerLevel / 3) enemies
+        // (minimum 1) with melee-range force damage.
+        forceAoe: true,
+        immune: ['poison', 'stun', 'web'],
+        description: 'Living mithril construct. Each turn unleashes a wave of kinetic force, striking floor(AL/3) enemies at once. Immune to poison, stun, and web.',
+    },
+    {
+        id: 'adamantine',
+        name: 'Adamantine Golem',
+        icon: '\u{1F5FF}',  // reuse stone icon (dark statue look)
+        unlockLevel: 25,
+        reagentTier: 'epic',
+        cost: { gold: 250000, common: 40, uncommon: 25, rare: 15, epic: 5, legendary: 1 },
+        baseHp: 500, hpPerAL: 10,
+        baseDef: 20,
+        meleeMin: 18, meleeMax: 36,
+        // Fires floor(AL/5) armor-piercing bolts per turn, each with
+        // (20 + floor(AL/2))% crit chance for double damage.
+        // Takes half damage from magic, AoE, and ranged attacks.
+        adamantineBolts: true,
+        halfDmgSpecial: true,
+        immune: ['poison', 'stun', 'web'],
+        description: 'Near-indestructible alloy engine. Fires floor(AL/5) armor-piercing bolts per turn, each bypassing armor (each crits at 20%+AL/2%). Takes half damage from magic, AoE, and ranged. Immune to poison, stun, and web.',
+    },
+    {
+        id: 'divine_soul',
+        name: 'Divine Soul Golem',
+        icon: '\u{1F4AB}',  // 💫
+        unlockLevel: 30,
+        reagentTier: 'divine',
+        cost: { gold: 1000000, common: 50, uncommon: 35, rare: 25, epic: 10, legendary: 5, mythic: 3, divine: 1 },
+        baseHp: 800, hpPerAL: 15,
+        baseDef: 28,
+        meleeMin: 25, meleeMax: 50,
+        // AoE divine purge: hits floor(AL/3) enemies per turn.
+        // 33% chance each round to heal living, non-undead, non-golem party members
+        // for 10% of the golem's lost HP.
+        // Takes half damage from magic, AoE, and ranged.
+        divineSoul: true,
+        halfDmgSpecial: true,
+        immune: ['poison', 'stun', 'web'],
+        description: 'A vessel of pure divine will. Each turn strikes floor(AL/3) enemies with divine melee damage, ignoring half their defense, with a 20% chance to stun each target. Each living ally (including summoned beasts) has a 33% independent chance per round to be healed for 10% of the golem\'s lost HP. Takes half damage from magic, AoE, and ranged. Immune to poison, stun, and web.',
     },
 ];
 
@@ -601,7 +947,84 @@ export const ARTIFICER_HEAL_GOLEM_PCT = 0.5;   // uses 1 reagent of tier → 50%
 // Mirrors the existing UNDEAD_TIERS kind='undead' and BEAST_TYPES kind='beast'.
 // Per-enemy tags are applied via the optional `tags` array on each ENEMY_TYPES
 // entry. A monster may carry multiple tags (e.g. imp = ['demon']).
-// Known tags today: 'undead', 'demon', 'beast'.
+// Known tags today: 'undead', 'demon', 'beast', 'humanoid', 'vermin', 'monster', 'construct', 'aberration', 'fireborn', 'incorporeal'.
 export const MONSTER_TAG_UNDEAD = 'undead';
 export const MONSTER_TAG_DEMON  = 'demon';
 export const MONSTER_TAG_BEAST  = 'beast';
+
+export const MONSTER_TAG_INCORPOREAL = 'incorporeal';
+export const GHOUL_PARALYZE_CHANCE   = 0.40;   // necromancer ghoul: 40% to paralyze on hit
+export const TREANT_HOLD_CHANCE      = 0.33;   // treant branch: 33% to hold target 1 round
+
+// ── Boss stun/turn-loss resistance ───────────────────────────────────────────
+// All player-inflicted stuns (melee, magic, summon abilities, weapon riders)
+// are gated through _tryStunEnemy() which rolls these resist chances.
+export const STUN_BOSS_RESIST_CHANCE     = 1.0;   // regular boss: fully immune to player stuns
+export const STUN_MEGABOSS_RESIST_CHANCE = 1.0;   // mega-boss: fully immune to player stuns
+export const BARD_SONG_MANA_PER_MIN  = 5;      // ongoing mana drain while bard song is active
+export const BARD_SONG_ACTIVATION_MANA = 0;    // no upfront activation cost
+
+// ── Bard L20: Charm Monster ───────────────────────────────────────────────
+// Chance = BARD_CHARM_BASE_CHANCE + (1% per 2 bard levels).
+// Duration = floor(bardLevel / BARD_CHARM_DURATION_DIVISOR) rounds.
+// Tags immune to charm: 'undead', 'elemental', 'construct'. Bosses/mega-bosses also immune.
+export const BARD_CHARM_UNLOCK_LEVEL     = 20;
+export const BARD_CHARM_MANA_COST        = 50;
+export const BARD_CHARM_BASE_CHANCE      = 0.50;   // 50% at L1; +1%/2 levels → 60% at L20
+export const BARD_CHARM_CHANCE_PER_2_LV  = 0.005;  // 0.5% per level = 1% per 2 levels
+export const BARD_CHARM_DURATION_DIVISOR = 5;       // floor(bardLevel/5) rounds; L20 → 4 rounds
+export const BARD_CHARM_IMMUNE_TAGS      = ['undead', 'elemental', 'construct'];
+
+// ── Ranger L20: Explosive Arrow ───────────────────────────────────────────
+// Hits ALL alive enemies at half post-defense damage.
+// Half normal crit chance and half normal instakill chance vs favored enemies.
+// Costs RANGED_STAMINA_COST * RANGER_EXPLOSIVE_ARROW_STAMINA_MULT stamina.
+export const RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL  = 20;
+export const RANGER_EXPLOSIVE_ARROW_STAMINA_MULT  = 3;    // 3× normal ranged stamina = 6 ST
+export const RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT   = 0.667; // ~⅔ post-defense damage per target
+export const RANGER_EXPLOSIVE_ARROW_CRIT_MULT     = 0.5;  // half normal crit chance
+export const RANGER_EXPLOSIVE_ARROW_INSTAKILL_MULT = 0.5; // half normal instakill chance
+
+// ── Ranger L20+: Extra Favored Enemy slots ────────────────────────────────
+// At L20 rangers gain 1 extra favored enemy slot; +1 more every 5 levels.
+// floor((level - 15) / 5) extra slots (0 below L20, 1 at L20, 2 at L25, etc.)
+export const RANGER_EXTRA_FAVORED_UNLOCK_LEVEL = 20;
+export const RANGER_EXTRA_FAVORED_BASE_LEVEL   = 15;  // offset so floor((20-15)/5)=1
+export const RANGER_EXTRA_FAVORED_PER_5_LV     = 5;   // gain one slot every 5 levels
+
+// ── Rogue L20: Backstab Bleed ─────────────────────────────────────────────
+// After a backstab at L20+, the target gains a bleed DoT.
+// Bleed damage = floor(dealt * ROGUE_BACKSTAB_BLEED_FRAC) per round.
+// Duration = floor(rogueLevel / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR) rounds.
+// Tags immune to bleed: 'undead', 'construct', 'elemental', 'incorporeal'.
+export const ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL   = 20;
+export const ROGUE_BACKSTAB_BLEED_FRAC           = 0.50;  // 50% of dealt damage per tick
+export const ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR = 5;   // floor(level/5) rounds; L20 → 4
+
+// ── Druid L20 — Commune / Faerie Queen ───────────────────────────────────────
+export const DRUID_COMMUNE_UNLOCK_LEVEL      = 20;
+export const DRUID_COMMUNE_FAE_TOKENS_NEEDED = 3;   // tokens to summon FQ
+export const FAERIE_QUEEN_DEFENSE_BASE       = 30;  // +1 per druid level
+export const FAERIE_QUEEN_HOLD_BASE          = 0.33; // +1% per 3 levels of FQ
+export const FAERIE_QUEEN_HOLD_PER_3LV       = 0.01;
+export const FAERIE_QUEEN_POISON_FRAC_BASE   = 0.50; // fraction of hit damage as poison/round
+export const FAERIE_QUEEN_POISON_FRAC_PER_LV = 0.01; // +1% per FQ level
+export const FAERIE_QUEEN_MAGIC_DMG_RESIST   = 0.50; // 50% less from magic/AoE
+export const FAERIE_QUEEN_HP_MULT            = 2;    // 2× druid maxHealth
+
+// ── Mage L20 — Mirror Image & AoE Crit ──────────────────────────────────────
+export const MAGE_MIRROR_IMAGE_UNLOCK_LEVEL  = 20;
+export const MAGE_MIRROR_IMAGE_MANA_COST     = 35;
+export const MAGE_MIRROR_IMAGE_COUNT_DIVISOR = 7;    // floor(level/7) images
+export const MAGE_AOE_CRIT_CHANCE_PER_2LV    = 0.01; // 1% per 2 mage levels
+export const MAGE_AOE_CRIT_DAMAGE_BASE       = 2.0;  // ×2 base (+100%)
+export const MAGE_AOE_CRIT_DAMAGE_PER_LV     = 0.01; // +1% per mage level
+
+// ── Necromancer L20 — Lich Form ──────────────────────────────────────────────
+export const NECRO_LICH_FORM_UNLOCK_LEVEL    = 20;
+export const NECRO_LICH_FORM_MANA_PER_ROUND  = 15;   // mana upkeep per round in lich form
+export const NECRO_LICH_REVIVE_HP_BASE       = 0.50; // 50% HP on phial revive
+export const NECRO_LICH_REVIVE_HP_PER_2LV    = 0.01; // +1% per 2 levels over 20
+export const NECRO_LICH_REVIVE_ROUNDS        = 3;    // rounds in phial before revival
+export const NECRO_LICH_MAGIC_RESIST_BASE    = 0.50; // 50% magic/AoE resistance
+export const NECRO_LICH_MAGIC_RESIST_PER_4LV = 0.01; // +1% per 4 levels over 20

@@ -3,12 +3,13 @@
  *
  * Shows two sections if the relevant characters are present and eligible:
  *
- *   🎶 Bard Songs
- *     Haste Song    — party-wide initiative bonus (+1 per 5 bard levels)
- *     Battle Song   — party-wide attack/defense bonus
- *     Healing Song  — party-wide HP regen bonus
- *     Songs persist until manually deactivated or the bard falls.
- *     Max active songs = Math.max(1, Math.floor(bardLevel / 5)).
+ *   🎶 Bard Song (Combined)
+ *     A single rousing melody that grants the whole party:
+ *       • Haste bonus: +1 initiative per 5 bard levels
+ *       • Battle bonus: +scale attack & +scale defense
+ *       • Healing bonus: +scale HP regen/min
+ *     Costs BARD_SONG_MANA_PER_MIN (5 MP/min) as an ongoing drain while active.
+ *     Deactivates automatically when the bard runs out of mana.
  *
  *   ✨ Cleric
  *     Revive — raise a fallen non-summoned party member to 25% HP.
@@ -19,68 +20,46 @@
  */
 
 import {
-    BARD_HASTE_MANA_COST, BARD_BATTLE_MANA_COST, BARD_HEALING_MANA_COST,
     BARD_HASTE_MAX, BARD_BATTLE_MAX,
+    BARD_SONG_MANA_PER_MIN,
     CLERIC_REVIVE_MANA_COST, CLERIC_REVIVE_MIN_LEVEL, CLERIC_REVIVE_HEAL_FRAC,
 } from '../utils/constants.js';
 import { soundManager } from '../utils/SoundManager.js';
 
-// ── Song definitions ──────────────────────────────────────────────────────────
+// ── Single combined song definition ──────────────────────────────────────────
 
-const SONGS = [
-    {
-        id: 'haste',
-        icon: '⚡',
-        name: 'Haste Song',
-        manaCost: BARD_HASTE_MANA_COST,
-        description: (bonus) => `Party +${bonus} initiative (max ${BARD_HASTE_MAX})`,
-        /** Build the effect object pushed onto each party member. */
-        makeEffect: (bonus) => ({
+const COMBINED_SONG = {
+    id: 'combined',
+    icon: '🎶',
+    name: 'Bard Song',
+    /** Returns an array of three effect objects — one per bonus type. */
+    makeEffects: (scale) => [
+        {
             type: 'bard_song_haste',
             source: 'bard_song',
-            initiativeBonus: Math.min(BARD_HASTE_MAX, bonus),
-        }),
-    },
-    {
-        id: 'battle',
-        icon: '⚔️',
-        name: 'Battle Song',
-        manaCost: BARD_BATTLE_MANA_COST,
-        description: (bonus) => `Party +${bonus} attack & +${bonus} defense (max ${BARD_BATTLE_MAX})`,
-        makeEffect: (bonus) => ({
+            initiativeBonus: Math.min(BARD_HASTE_MAX, scale),
+        },
+        {
             type: 'bard_song_battle',
             source: 'bard_song',
-            damageBonus:  Math.min(BARD_BATTLE_MAX, bonus),
-            defenseBonus: Math.min(BARD_BATTLE_MAX, bonus),
-        }),
-    },
-    {
-        id: 'healing',
-        icon: '💚',
-        name: 'Healing Song',
-        manaCost: BARD_HEALING_MANA_COST,
-        description: (bonus) => `Party +${bonus} HP regen/min`,
-        makeEffect: (bonus) => ({
+            damageBonus:  Math.min(BARD_BATTLE_MAX, scale),
+            defenseBonus: Math.min(BARD_BATTLE_MAX, scale),
+        },
+        {
             type: 'bard_song_healing',
             source: 'bard_song',
-            hpPerMin: bonus,
-        }),
-    },
-];
+            hpPerMin: scale,
+        },
+    ],
+    description: (scale) =>
+        `+${Math.min(BARD_HASTE_MAX, scale)} initiative · +${Math.min(BARD_BATTLE_MAX, scale)} atk/def · +${scale} HP regen/min`,
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Scaling value for a bard: Math.max(1, Math.floor(level / 5)) */
 function bardScale(level) {
     return Math.max(1, Math.floor(level / 5));
-}
-
-/** Remove all bard song effects of a specific song type from a party member. */
-function stripSongEffect(member, songId) {
-    const effectType = `bard_song_${songId}`;
-    member.activeEffects = (member.activeEffects || []).filter(
-        e => !(e && e.source === 'bard_song' && e.type === effectType),
-    );
 }
 
 /** Remove ALL bard song effects from every party member. */
@@ -124,9 +103,12 @@ export class PartySpellModal {
     }
 
     /**
-     * Re-apply song effects for all active songs on every bard in the party.
+     * Re-apply song effects for all active bards in the party.
      * Called by Game.js on load and after modal changes so the effect objects
      * match the persisted activeSongs list.
+     *
+     * Handles the combined song ('combined') as well as old-style separate song
+     * IDs ('haste', 'battle', 'healing') for backward save-data compatibility.
      */
     static reapplySongEffects(party) {
         // Strip all existing song effects first.
@@ -136,15 +118,21 @@ export class PartySpellModal {
         for (const m of party) {
             if (m.classId !== 'bard' || !Array.isArray(m.activeSongs) || m.health <= 0) continue;
             const scale = bardScale(m.level);
-            for (const songId of m.activeSongs) {
-                const def = SONGS.find(s => s.id === songId);
-                if (!def) continue;
-                const effect = def.makeEffect(scale);
+
+            // Migrate old separate song IDs to combined
+            const hasCombined = m.activeSongs.includes('combined');
+            const hasLegacy = m.activeSongs.some(id => ['haste', 'battle', 'healing'].includes(id));
+            if (hasLegacy && !hasCombined) {
+                m.activeSongs = ['combined'];
+            }
+
+            if (m.activeSongs.includes('combined')) {
+                const effects = COMBINED_SONG.makeEffects(scale);
                 for (const member of party) {
                     if (member.health <= 0) continue;
-                    // Remove stale copy of this song first, then add fresh one.
-                    stripSongEffect(member, songId);
-                    member.activeEffects.push({ ...effect });
+                    for (const eff of effects) {
+                        member.activeEffects.push({ ...eff });
+                    }
                 }
             }
         }
@@ -276,57 +264,43 @@ export class PartySpellModal {
         Object.assign(secTitle.style, {
             fontSize: '14px', fontWeight: 'bold', color: '#ccf',
             marginBottom: '10px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         });
-        const scale      = bardScale(bard.level);
-        const maxSongs   = Math.max(1, Math.floor(bard.level / 5));
-        const activeCnt  = (bard.activeSongs || []).length;
-
-        secTitle.textContent = `🎶 Bard Songs — ${bard.name}`;
-
-        // Slot indicator
-        const slots = document.createElement('span');
-        slots.style.color = activeCnt >= maxSongs ? '#f88' : '#8f8';
-        slots.style.fontSize = '12px';
-        slots.textContent = `Songs: ${activeCnt}/${maxSongs}`;
-        secTitle.appendChild(slots);
+        secTitle.textContent = `\u{1F3B6} Bard Song \u2014 ${bard.name}`;
         section.appendChild(secTitle);
 
         // Music toggle button
         const toggleRow = document.createElement('div');
         toggleRow.style.marginBottom = '8px';
         const toggleBtn = document.createElement('button');
-        toggleBtn.textContent = this._musicEnabled ? '🔊 Music: ON' : '🔇 Music: OFF';
+        toggleBtn.textContent = this._musicEnabled ? '\u{1F50A} Music: ON' : '\u{1F507} Music: OFF';
         Object.assign(toggleBtn.style, {
             background: '#2a2a4a', border: '1px solid #555', color: '#ccc',
             padding: '3px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px',
         });
         toggleBtn.addEventListener('click', () => {
             this._musicEnabled = !this._musicEnabled;
-            if (this._musicEnabled) {
-                // Re-play whichever song is (last) active
-                const lastSong = (bard.activeSongs || []).at(-1);
-                if (lastSong) soundManager.playBardSongLoop(lastSong);
+            const isActive = (bard.activeSongs || []).includes('combined');
+            if (this._musicEnabled && isActive) {
+                soundManager.playBardSongLoop('combined');
             } else {
                 soundManager.stopBardSongLoop();
             }
-            toggleBtn.textContent = this._musicEnabled ? '🔊 Music: ON' : '🔇 Music: OFF';
+            toggleBtn.textContent = this._musicEnabled ? '\u{1F50A} Music: ON' : '\u{1F507} Music: OFF';
+            // Notify Game.js so it can persist the setting.
+            this._onChanged(this._party);
         });
         toggleRow.appendChild(toggleBtn);
         section.appendChild(toggleRow);
 
-        // Song buttons
-        for (const songDef of SONGS) {
-            section.appendChild(this._buildSongButton(bard, songDef, scale, maxSongs));
-        }
+        // Single combined song toggle
+        section.appendChild(this._buildCombinedSongButton(bard));
 
         return section;
     }
 
-    _buildSongButton(bard, songDef, scale, maxSongs) {
-        const isActive   = (bard.activeSongs || []).includes(songDef.id);
-        const activeCnt  = (bard.activeSongs || []).length;
-        const canActivate = !isActive && activeCnt < maxSongs && bard.mana >= songDef.manaCost;
+    _buildCombinedSongButton(bard) {
+        const scale = bardScale(bard.level);
+        const isActive = (bard.activeSongs || []).includes('combined');
 
         const row = document.createElement('div');
         Object.assign(row.style, {
@@ -335,13 +309,12 @@ export class PartySpellModal {
         });
 
         const btn = document.createElement('button');
-        const effectDesc = songDef.description(scale);
-        btn.textContent = `${songDef.icon} ${songDef.name}`;
+        btn.textContent = `${COMBINED_SONG.icon} ${COMBINED_SONG.name}`;
         Object.assign(btn.style, {
             flex: '1',
             padding: '6px 10px',
             borderRadius: '5px',
-            cursor: isActive || canActivate ? 'pointer' : 'not-allowed',
+            cursor: 'pointer',
             border: isActive ? '2px solid #7f7' : '1px solid #555',
             background: isActive ? '#1a3a1a' : '#2a2a4a',
             color: isActive ? '#9f9' : '#ccc',
@@ -351,21 +324,28 @@ export class PartySpellModal {
         });
 
         const info = document.createElement('span');
-        info.style.cssText = 'font-size:11px;color:#999;flex-shrink:0;';
+        info.style.cssText = 'font-size:11px;flex-shrink:0;';
         if (isActive) {
-            info.textContent = `Active · ${effectDesc}`;
+            info.textContent = `Active \u2014 ${BARD_SONG_MANA_PER_MIN} MP/min`;
             info.style.color = '#9f9';
         } else {
-            info.textContent = `${songDef.manaCost} MP · ${effectDesc}`;
+            info.textContent = `Free to start \u2014 ${BARD_SONG_MANA_PER_MIN} MP/min`;
+            info.style.color = '#999';
         }
 
-        btn.disabled = !isActive && !canActivate;
+        btn.title = [
+            'Bard Song: a rousing melody that inspires the whole party.',
+            COMBINED_SONG.description(scale),
+            `Ongoing cost: ${BARD_SONG_MANA_PER_MIN} MP per in-game minute.`,
+            'Deactivates automatically when the bard runs out of mana.',
+            `Bonuses scale with bard level (currently scale: ${scale}).`,
+        ].join('\n');
 
         btn.addEventListener('click', () => {
             if (isActive) {
-                this._deactivateSong(bard, songDef.id);
-            } else if (canActivate) {
-                this._activateSong(bard, songDef, scale);
+                this._deactivateSong(bard, 'combined');
+            } else {
+                this._activateSong(bard, scale);
             }
         });
 
@@ -373,21 +353,26 @@ export class PartySpellModal {
         return row;
     }
 
-    _activateSong(bard, songDef, scale) {
+    _activateSong(bard, scale) {
         if (!Array.isArray(bard.activeSongs)) bard.activeSongs = [];
-        bard.activeSongs.push(songDef.id);
-        bard.mana -= songDef.manaCost;
-
-        // Apply the effect to all alive party members.
-        const effect = songDef.makeEffect(scale);
-        for (const m of this._party) {
-            if (m.health <= 0) continue;
-            stripSongEffect(m, songDef.id); // remove stale copy first
-            m.activeEffects.push({ ...effect });
+        // Remove any legacy songs first
+        bard.activeSongs = bard.activeSongs.filter(id => id === 'combined');
+        if (!bard.activeSongs.includes('combined')) {
+            bard.activeSongs.push('combined');
         }
 
-        // Play loop sound for this song (overrides previous).
-        if (this._musicEnabled) soundManager.playBardSongLoop(songDef.id);
+        // Strip all previous song effects, then apply combined effects.
+        stripAllSongEffects(this._party);
+        const effects = COMBINED_SONG.makeEffects(scale);
+        for (const m of this._party) {
+            if (m.health <= 0) continue;
+            for (const eff of effects) {
+                m.activeEffects.push({ ...eff });
+            }
+        }
+
+        // Play loop sound.
+        if (this._musicEnabled) soundManager.playBardSongLoop('combined');
 
         this._onChanged(this._party);
         this._render();
@@ -396,18 +381,10 @@ export class PartySpellModal {
     _deactivateSong(bard, songId) {
         bard.activeSongs = (bard.activeSongs || []).filter(s => s !== songId);
 
-        // Remove this song's effect from all party members.
-        for (const m of this._party) {
-            stripSongEffect(m, songId);
-        }
+        // Remove all song effects from all party members.
+        stripAllSongEffects(this._party);
 
-        // If any other songs are still active, play the last one; otherwise stop.
-        const remaining = (bard.activeSongs || []);
-        if (this._musicEnabled && remaining.length > 0) {
-            soundManager.playBardSongLoop(remaining.at(-1));
-        } else {
-            soundManager.stopBardSongLoop();
-        }
+        soundManager.stopBardSongLoop();
 
         this._onChanged(this._party);
         this._render();

@@ -5,5 +5,8 @@
   "description": "Dungeon Crawlers — A Procedural Adventure",
   "scripts": {
     "start": "npx serve -l 3000 --no-clipboard"
+  },
+  "devDependencies": {
+    "acorn": "^8.16.0"
   }
 }

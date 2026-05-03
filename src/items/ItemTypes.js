@@ -147,6 +147,46 @@ export const CONSUMABLES = {
         reagentTier: 'rare',
     },
 
+    // Tier 4–7 reagents — drop at dungeon level 15 / 20 / 25 / 30 (1% per monster,
+    // guaranteed 1 per boss and 2 per mega boss at the appropriate depth).
+    // Required for +4/+5/+6/+7 enchantments, advanced golems, and trinket upgrades.
+    reagent_epic: {
+        id: 'reagent_epic',
+        name: 'Epic Reagent',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A fragment of elder-dragon bone or planar crystal. Drops from dungeon level 15+ monsters. Required for +4 enchantments and adamantine golems.',
+        icon: '\u{1F536}', // 🔶
+        stackable: true,
+        reagentTier: 'epic',
+    },
+    reagent_legendary: {
+        id: 'reagent_legendary',
+        name: 'Legendary Reagent',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Condensed stardust or archon feather. Drops from dungeon level 20+ monsters. Required for +5 enchantments and the mightiest golem tiers.',
+        icon: '\u{1F537}', // 🔷
+        stackable: true,
+        reagentTier: 'legendary',
+    },
+    reagent_mythic: {
+        id: 'reagent_mythic',
+        name: 'Mythic Reagent',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A shard of the primordial void or godsteel splinter. Drops from dungeon level 25+ monsters. Required for +6 enchantments.',
+        icon: '\u{1F31F}', // 🌟
+        stackable: true,
+        reagentTier: 'mythic',
+    },
+    reagent_divine: {
+        id: 'reagent_divine',
+        name: 'Divine Reagent',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A crystallised divine spark or tear of an angel. Drops only from dungeon level 30+ monsters. Required for +7 enchantments and the divine soul golem.',
+        icon: '\u{2728}', // ✨ (distinct from common by context)
+        stackable: true,
+        reagentTier: 'divine',
+    },
+
     // Phase 12 — potions (craftable at an artificer's workbench).
     minor_healing_potion: {
         id: 'minor_healing_potion',
@@ -168,18 +208,18 @@ export const CONSUMABLES = {
     },
     elixir_warding: {
         id: 'elixir_warding',
-        name: 'Elixir of Warding',
+        name: 'Scroll of Warding',
         category: ITEM_CATEGORY.CONSUMABLE,
-        description: 'Drink: +2 defense for 5 minutes of exploration (or 20 combat rounds).',
-        icon: '\u{1F6E1}\uFE0F', // 🛡️
+        description: 'Read aloud: grants the entire party bonus defense (+2 base, +1 per 5 artificer levels). Duration: 5 min + 1 min per 2 artificer levels.',
+        icon: '\u{1F6E1}️', // 🛡️
         stackable: true,
         potionKind: 'buff_warding',
     },
     elixir_wrath: {
         id: 'elixir_wrath',
-        name: 'Elixir of Wrath',
+        name: 'Scroll of Wrath',
         category: ITEM_CATEGORY.CONSUMABLE,
-        description: 'Drink: +2 to melee, ranged, and magic damage for 5 minutes of exploration (or 20 combat rounds).',
+        description: 'Read aloud: grants the entire party bonus damage to all attack types (+2 base, +1 per 5 artificer levels). Duration: 5 min + 1 min per 2 artificer levels.',
         icon: '\u{1F525}', // 🔥
         stackable: true,
         potionKind: 'buff_wrath',
@@ -287,7 +327,7 @@ const TRINKET_KIND_META = {
 /** All generated trinket definitions: TRINKETS[id] = def */
 export const TRINKETS = {};
 
-// Programmatically build 4 × 4 × 4 = 64 trinket entries from the name table.
+// Programmatically build 4 × 4 × 4 = 64 single-aspect trinket entries.
 (function buildTrinkets() {
     const kinds   = ['cloak', 'neck', 'ring', 'belt'];
     const bonuses = ['defense', 'melee', 'ranged', 'magic'];
@@ -303,13 +343,52 @@ export const TRINKETS = {};
                     id,
                     name: (deco ? deco + ' ' : '') + name,
                     category: ITEM_CATEGORY.TRINKET,
-                    trinketKind: kind,                 // cloak|neck|ring|belt
+                    trinketKind: kind,
                     trinketSlots: TRINKET_KIND_META[kind].slots,
                     bonusType:  bonus,
                     bonusValue: tier,
                     tier,
                     description: `${tierAdj} trinket. +${tier} ${bonusLabel} bonus.`,
                     icon: TRINKET_KIND_META[kind].icon,
+                };
+            }
+        }
+    }
+})();
+
+// ── Dual-aspect trinkets (DL10+ loot only) ──────────────────────────────────
+// Each has +tier Defense AND +tier <secondary> (melee / ranged / magic).
+// 4 kinds × 3 secondaries × 4 tiers = 48 entries, all flagged dualAspect:true.
+// IDs follow the pattern: dual_<kind>_<secondary>_t<tier>
+(function buildDualTrinkets() {
+    const kinds       = ['cloak', 'neck', 'ring', 'belt'];
+    const secondaries = ['melee', 'ranged', 'magic'];
+    // Epithets give dual-aspect items a distinct flavour while still using the
+    // defense name as the base (keeps them recognizable by slot).
+    const epithet = { melee: 'of Blades', ranged: 'of Arrows', magic: 'of Sorcery' };
+    for (const kind of kinds) {
+        for (const secondary of secondaries) {
+            for (let tier = 1; tier <= 4; tier++) {
+                const baseName = TRINKET_NAMES[kind]['defense'][tier - 1];
+                const deco     = TIER_ICONS[tier];
+                const name     = (deco ? deco + ' ' : '') + baseName + ' ' + epithet[secondary];
+                const id       = `dual_${kind}_${secondary}_t${tier}`;
+                const secLabel = secondary.charAt(0).toUpperCase() + secondary.slice(1);
+                const tierAdj  = TIER_ADJ[tier];
+                TRINKETS[id] = {
+                    id,
+                    name,
+                    category:     ITEM_CATEGORY.TRINKET,
+                    trinketKind:  kind,
+                    trinketSlots: TRINKET_KIND_META[kind].slots,
+                    bonusType:    'defense',
+                    bonusValue:   tier,
+                    bonusType2:   secondary,
+                    bonusValue2:  tier,
+                    tier,
+                    dualAspect:   true,
+                    description:  `${tierAdj} dual-aspect trinket. +${tier} Defense, +${tier} ${secLabel}. (DL10+ loot only)`,
+                    icon:         TRINKET_KIND_META[kind].icon,
                 };
             }
         }
@@ -369,8 +448,35 @@ export function randomShieldDrop() {
 /**
  * Pick a random trinket drop — weighted toward lower tiers so legendary
  * items stay rare. Returns an itemId from TRINKETS.
+ *
+ * At DL10+, rolls first for a dual-aspect (Defense + one other bonus):
+ *   25% base chance at DL10, +1% per level above 10, capped at 100% at DL85.
+ * The tier roll (55/30/12/3%) is the same for both single- and dual-aspect.
+ *
+ * @param {number} [dungeonLevel=1]
  */
-export function randomTrinketDrop() {
+export function randomTrinketDrop(dungeonLevel = 1) {
+    // ── Dual-aspect check (DL10+ only) ──
+    if (dungeonLevel >= 10) {
+        const dualChance = Math.min(1.0, 0.25 + (dungeonLevel - 10) * 0.01);
+        if (Math.random() < dualChance) {
+            const roll = Math.random();
+            let tier;
+            if (roll < 0.55)      tier = 1;
+            else if (roll < 0.85) tier = 2;
+            else if (roll < 0.97) tier = 3;
+            else                  tier = 4;
+
+            const kinds       = ['cloak', 'neck', 'ring', 'belt'];
+            const secondaries = ['melee', 'ranged', 'magic'];
+            const kind      = kinds[Math.floor(Math.random() * kinds.length)];
+            const secondary = secondaries[Math.floor(Math.random() * secondaries.length)];
+            const id = `dual_${kind}_${secondary}_t${tier}`;
+            if (TRINKETS[id]) return id;
+        }
+    }
+
+    // ── Single-aspect (original logic) ──
     const roll = Math.random();
     let tier;
     if (roll < 0.55)      tier = 1;
@@ -378,7 +484,7 @@ export function randomTrinketDrop() {
     else if (roll < 0.97) tier = 3;
     else                  tier = 4;
 
-    const candidates = TRINKET_IDS.filter(id => TRINKETS[id].tier === tier);
+    const candidates = TRINKET_IDS.filter(id => TRINKETS[id].tier === tier && !TRINKETS[id].dualAspect);
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
@@ -405,8 +511,15 @@ export function getItemBuyPrice(itemId) {
     if (itemId === 'torch') return 25;
     if (itemId === 'lantern') return 100;
     if (itemId === 'lantern_oil') return 30;
-    // magical_reagent / tiered reagents — not sold; only drop from monsters.
-    // Potions are CRAFTED by artificers, not bought; sell-value only.
+    // Tiered reagents — purchasable at the Wandering Tinkerer.
+    if (itemId === 'reagent_common')    return 500;
+    if (itemId === 'reagent_uncommon')  return 2000;
+    if (itemId === 'reagent_rare')      return 5000;
+    if (itemId === 'reagent_epic')      return 20000;
+    if (itemId === 'reagent_legendary') return 75000;
+    if (itemId === 'reagent_mythic')    return 250000;
+    if (itemId === 'reagent_divine')    return 1000000;
+    // magical_reagent (legacy) not sold; potions crafted by artificers only.
     return 0;
 }
 
@@ -422,6 +535,10 @@ export function getItemSellPrice(itemId) {
     if (itemId === 'reagent_common')        return 10;
     if (itemId === 'reagent_uncommon')      return 25;
     if (itemId === 'reagent_rare')          return 75;
+    if (itemId === 'reagent_epic')          return 200;
+    if (itemId === 'reagent_legendary')     return 750;
+    if (itemId === 'reagent_mythic')        return 2500;
+    if (itemId === 'reagent_divine')        return 10000;
     if (itemId === 'magical_reagent')       return 10;
     if (itemId === 'minor_healing_potion')  return 25;
     if (itemId === 'greater_healing_potion')return 75;

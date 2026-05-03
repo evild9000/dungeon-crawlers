@@ -33,6 +33,7 @@ import {
     PALADIN_MELEE_PER_LEVEL, PALADIN_DEFENSE_PER_LEVEL,
     PALADIN_SMITE_INSTAKILL_PER_LEVEL,
     PALADIN_HEAL_PER_LEVEL,
+    BARBARIAN_MELEE_PER_LEVEL,
 } from '../utils/constants.js';
 
 export const CLASSES = {
@@ -50,7 +51,7 @@ export const CLASSES = {
         defensePerLevel: WARRIOR_DEFENSE_PER_LEVEL,
         stunPerLevel: WARRIOR_STUN_PER_LEVEL,
         special: null,
-        description: 'Front-line tank. +50% HP, +50% ST, no mana. +1 melee, +1 HP/ST regen. Any armor + shield. Per level: +1 melee, +1 defense, +3% melee stun chance. +1 extra melee swing every 5 levels (L5, L10, L15…) — each swing pays stamina independently.',
+        description: 'Front-line tank. +50% HP, +50% ST, no mana. +1 melee, +1 HP/ST regen. Any armor + shield. Per level: +1 melee, +1 defense, +3% melee stun chance. +1 extra melee swing every 5 levels (L5, L10, L15…) — each swing pays stamina independently. L20: Stun Resistance (30% at L20, +1% per 2 levels); Defend Mode — toggle to add +1%/3 levels to shield block, intercept ally attacks at augmented block chance (10% damage pass-through), attacks disabled while active.',
     },
     ranger: {
         id: 'ranger',
@@ -65,7 +66,7 @@ export const CLASSES = {
         rangedPerLevel: RANGER_RANGED_PER_LEVEL,
         critPerLevel: RANGER_CRIT_PER_LEVEL,
         special: 'ranger_summon',
-        description: 'Skilled bowman. +25% HP/ST, -50% mana. +1 ranged, +1 HP/ST regen. Cloth/leather/chain armor (no plate). Shields OK — but equipping a ranged weapon auto-unequips a shield. Per level: +1 ranged, +3% ranged crit. +1 extra ranged shot every 5 levels (L5, L10, L15…) — each shot pays stamina and rolls its own crit. Summon Woodland Beast (7 MP): bear, eagle, or pixie.',
+        description: 'Skilled bowman. +25% HP/ST, -50% mana. +1 ranged, +1 HP/ST regen. Cloth/leather/chain armor (no plate). Shields OK — but equipping a ranged weapon auto-unequips a shield. Per level: +1 ranged, +3% ranged crit. +1 extra ranged shot every 5 levels (L5, L10, L15…) — each shot pays stamina and rolls its own crit. Summon Woodland Beast (7 MP): bear, eagle, or pixie. Choose a Favored Enemy: ignore its defense and gain 1%/3 levels instakill chance. L20: Explosive Arrow (6 ST) — one arrow detonates among ALL enemies for half post-defense damage each, half crit chance, half instakill vs favored. L20+: unlock extra Favored Enemy slots every 5 levels (+1 at L20, +2 at L25, etc.).',
     },
     mage: {
         id: 'mage',
@@ -96,7 +97,7 @@ export const CLASSES = {
         instakillPerLevel: ROGUE_INSTAKILL_PER_LEVEL,
         backstabDamagePerLevel: BACKSTAB_DAMAGE_PER_LEVEL,
         special: 'backstab',
-        description: 'Stealthy striker. +100% ST, no mana. +1 melee, +2 ST regen. Cloth or leather armor. Backstab: 3× stamina for 2× damage + 10% damage per rogue level + 5% instakill (+1%/level). Can melee from back row. Rogues also spot and disarm traps. Per level: +1 melee, +1% backstab instakill, +10% backstab damage.',
+        description: 'Stealthy striker. +100% ST, no mana. +1 melee, +2 ST regen. Cloth or leather armor. Backstab: 3× stamina for 2× damage + 10% damage per rogue level + 5% instakill (+1%/level). Can melee from back row. Rogues also spot and disarm traps. Per level: +1 melee, +1% backstab instakill, +10% backstab damage. L20: Backstab Bleed — every backstab passively applies a bleed DoT for 50% of damage dealt per round, lasting floor(level/5) rounds (4 at L20). Immune: undead, constructs, elementals, incorporeal creatures.',
     },
     monk: {
         id: 'monk',
@@ -113,7 +114,7 @@ export const CLASSES = {
         dodgePerLevel: MONK_DODGE_PER_LEVEL,
         whirlwindPerLevel: MONK_WHIRLWIND_PER_LEVEL,
         special: 'monk',
-        description: 'Martial artist. Balanced stats (no bonuses/penalties). +1 melee, +1 ST/MP regen. Cloth armor only; cannot use shields. Melee costs both ST & MP; 50% whirlwind hits each other foe; 33% dodge (2 ST + 2 MP). Per level: +1 melee, +1% whirlwind, +1% dodge.',
+        description: 'Martial artist. Balanced stats (no bonuses/penalties). +1 melee, +1 ST/MP regen. Cloth armor only; cannot use shields. Melee costs both ST & MP; 50% whirlwind hits each other foe; 33% dodge (2 ST + 2 MP). Per level: +1 melee, +1% whirlwind, +1% dodge. L20: Quivering Palm — strike for 2× melee damage and plant a doubling internal DoT (starts at base roll, doubles each round, bypasses defense) lasting 2+ rounds.',
     },
     cleric: {
         id: 'cleric',
@@ -127,13 +128,13 @@ export const CLASSES = {
         canUseShield: true,
         healPercentPerLevel: CLERIC_HEAL_PER_LEVEL,
         special: 'heal',
-        description: 'Holy healer. +25% HP, -50% ST, +25% mana. Any armor + shield. Heal: 5 MP to restore 25% of target max HP (+2% per level).',
+        description: 'Holy healer. +25% HP, -50% ST, +25% mana. Any armor + shield. Heal: 5 MP to restore 25% of target max HP (+2% per level). L20: Mass Regen (15 MP) — HoT on all living allies healing ~10%+/round for 5+ rounds. L20: Mass Revive (30 MP) — revives floor(level/7) fallen allies at 33%+ HP.',
     },
     necromancer: {
         id: 'necromancer',
         name: 'Necromancer',
         icon: '\u{1F480}',
-        hpMod: -0.5, stMod: -0.5, mpMod: 1.0,
+        hpMod: -0.25, stMod: -0.5, mpMod: 0.75,
         regenHp: 0, regenSt: 0, regenMp: 0,
         meleeBonus: 0, rangedBonus: 0, magicBonus: 0,
         defenseBonus: 0,
@@ -141,7 +142,7 @@ export const CLASSES = {
         canUseShield: false, // Rule 8
         drainPerLevel: NECRO_DRAIN_PER_LEVEL,
         special: 'summon',
-        description: 'Dark caster. -50% HP/ST, +100% mana. Cloth armor only; cannot use shields. Summon undead (7 MP, combat only) — L1 Skeleton, then Zombie / Ghoul / Spectre / Mummy / Ghost / Vampire / Death Knight unlocked at odd levels. Life drain (25% per enemy hit by magic) heals self AND own undead; +1 per level.',
+        description: 'Dark caster. -25% HP, -50% ST, +75% mana. Cloth armor only; cannot use shields. Summon undead (7 MP, combat only) — L1 Skeleton, then Zombie / Ghoul / Spectre / Mummy / Ghost / Vampire / Death Knight unlocked at odd levels. Life drain (25% per enemy hit by magic) heals self AND own undead; +1 per level.',
     },
     bard: {
         // Phase 8 rule 14 — support caster with a party-wide song buff.
@@ -156,7 +157,7 @@ export const CLASSES = {
         canUseShield: true,
         magicPerLevel: 1, // +1 magic damage per level beyond 1
         special: 'bard_song',
-        description: 'Inspiring minstrel. -20% ST, +20% mana. Cloth/leather/chain armor (no plate). Can use shields. Sing a song (7 MP, once per combat): party-wide +2 defense and +2 melee/ranged/magic damage. Bonus rises by +1 at levels 3, 5, 7… Per level: +1 magic damage.',
+        description: 'Inspiring minstrel. -20% ST, +20% mana. Cloth/leather/chain armor (no plate). Can use shields. Sing a song (7 MP, once per combat): party-wide +2 defense and +2 melee/ranged/magic damage. Bonus rises by +1 at levels 3, 5, 7… Per level: +1 magic damage. L20: Charm Monster (50 MP) — attempt to charm a single enemy to fight for the party (50% base + 1% per 2 bard levels, max 95%; 4 rounds at L20). Undead, elementals, and constructs are immune; bosses and mega-bosses always resist. Charmed monsters fight on your side and can be healed (except undead/constructs).',
     },
     artificer: {
         // Phase 12 — tinkerer / golem-smith. Secondary ranged striker that
@@ -173,7 +174,7 @@ export const CLASSES = {
         canUseShield: false,
         rangedPerLevel: ARTIFICER_RANGED_PER_LEVEL,
         special: 'artificer',
-        description: 'Inventor & golem-smith. +50% ST, -50% mana. +1 ranged, +2 ST regen. Cloth/leather only; no shields. Scatter Shot: ranged hit spreads to 2 splash targets at half damage (+1 splash every 5 levels), each with its own crit. Press [K] to craft: enchant weapons/armor, brew healing/elixir potions, and build permanent golems. Per level: +1 ranged.',
+        description: 'Inventor & golem-smith. +50% ST, -50% mana. +1 ranged, +2 ST regen. Cloth/leather only; no shields. Scatter Shot: ranged hit spreads to 2 splash targets at (50%+level)% damage, capped at 100% (+1 splash every 5 levels), each with its own crit. Press [K] to craft: enchant weapons/armor, brew healing potions, scribe party-wide Scrolls of Warding/Wrath, and build permanent golems. Per level: +1 ranged.',
     },
     paladin: {
         // Phase 12 — front-line holy warrior with minor heals and a smite.
@@ -191,7 +192,7 @@ export const CLASSES = {
         healPercentPerLevel: PALADIN_HEAL_PER_LEVEL,     // half of cleric per-level
         instakillPerLevel: PALADIN_SMITE_INSTAKILL_PER_LEVEL, // reused for Smite
         special: 'paladin',
-        description: 'Holy warrior. +20% HP, -20% mana. +1 melee, +1 HP regen. Any armor + shield. Heal: 5 MP restores 12.5% of target max HP (+1%/level — half cleric strength). Smite (5 MP): armor-ignoring melee doing double damage (+10%/level over 1) and a 1%/level chance to instakill Undead or Demon foes. Per level: +1 melee, +1 defense.',
+        description: 'Holy warrior. +20% HP, -20% mana. +1 melee, +1 HP regen. Any armor + shield. Heal: 5 MP restores 12.5% of target max HP (+1%/level — half cleric strength). Smite (5 MP): armor-ignoring melee doing double damage (+10%/level over 1) and a 1%/level chance to instakill Undead or Demon foes. Per level: +1 melee, +1 defense. Extra attack every 7 levels (L7→+1, L14→+2, L21→+3). L20: Revive (25 MP) — revive a fallen ally at 25% HP. L20: AoE Smite (15 MP) — holy nova hits ALL undead/demons at half damage and half purge chance.',
     },
     druid: {
         // Phase 8 rule 15 — nature caster with entangle + beast summon.
@@ -207,6 +208,35 @@ export const CLASSES = {
         magicPerLevel: 1, // +1 magic damage per level beyond 1
         special: 'druid',
         description: 'Nature caster. -15% HP/ST, +30% mana. Cloth/leather armor only (no chain or plate). Entangle (8 MP): vines target all enemies, each with 50% chance to suffer -2 defense and -2 damage (scales +1 at levels 3, 5, 7…). Also summons a Woodland Beast like the ranger (7 MP). Per level: +1 magic damage.',
+    },
+    barbarian: {
+        id: 'barbarian',
+        name: 'Barbarian',
+        icon: '\u{1FA93}', // 🪓
+        hpMod: 0.60, stMod: 0.40, mpMod: -1.0,
+        regenHp: 1, regenSt: 2, regenMp: 0,
+        meleeBonus: 2, rangedBonus: 0, magicBonus: 0,
+        defenseBonus: 0,
+        armorAllowed: ['cloth', 'leather'],
+        canUseShield: false,
+        meleePerLevel: BARBARIAN_MELEE_PER_LEVEL,
+        special: 'rage',
+        description: 'Berserker. +60% HP, +40% ST, no mana. +2 melee, +1 HP/+2 ST regen. Cloth or leather only; no shields. Rage (once per combat, free action): halves all incoming damage, grants stun immunity, regens 5% max HP per round, adds +1 melee per barbarian level, and grants 1 extra attack per 3 levels (each costs 3 ST). Per level: +1 melee.',
+    },
+    summoned: {
+        // Pseudo-class used by all summoned creatures (undead, beasts, golems).
+        // Zero stat modifiers so summons are driven entirely by their summonStats.
+        id: 'summoned',
+        name: 'Summoned',
+        icon: '\u2728',
+        hpMod: 0, stMod: 0, mpMod: 0,
+        regenHp: 0, regenSt: 0, regenMp: 0,
+        meleeBonus: 0, rangedBonus: 0, magicBonus: 0,
+        defenseBonus: 0,
+        armorAllowed: [],
+        canUseShield: false,
+        special: null,
+        description: 'A summoned creature bound to its master\u2019s will.',
     },
 };
 
