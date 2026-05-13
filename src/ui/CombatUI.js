@@ -25,12 +25,14 @@ import {
     PALADIN_SMITE_INSTAKILL_BASE, PALADIN_SMITE_INSTAKILL_PER_LEVEL,
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
     PALADIN_FIRE_AURA_MANA_PER_ROUND,
+    PALADIN_DRAGONSLAYER_UNLOCK_LEVEL, PALADIN_DRAGONSLAYER_MANA_PER_ROUND,
     ARTIFICER_HEAL_GOLEM_PCT,
     BARBARIAN_RAGE_STAMINA_COST,
     GOLEM_TIERS,
     WARRIOR_DEFEND_MODE_UNLOCK_LEVEL,
     MONK_QUIVERING_PALM_UNLOCK_LEVEL,
     MONK_QUIVERING_PALM_DURATION_BASE, MONK_QUIVERING_PALM_DURATION_PER_10LV,
+    MONK_QUIVERING_PALM_STAMINA_MULT, MONK_QUIVERING_PALM_MANA_MULT,
     PALADIN_L20_UNLOCK_LEVEL,
     PALADIN_AOE_SMITE_MANA_MULT, PALADIN_AOE_SMITE_INSTAKILL_MULT,
     CLERIC_MASS_REGEN_UNLOCK_LEVEL, CLERIC_MASS_REGEN_MANA_COST,
@@ -39,17 +41,30 @@ import {
     CLERIC_MASS_REVIVE_UNLOCK_LEVEL, CLERIC_MASS_REVIVE_MANA_COST,
     CLERIC_MASS_REVIVE_HEAL_BASE, CLERIC_MASS_REVIVE_HEAL_PER_3LV,
     CLERIC_MASS_REVIVE_COUNT_DIVISOR,
+    CLERIC_CLEANSE_UNLOCK_LEVEL, CLERIC_CLEANSE_MANA_PER_STATE,
     BARD_CHARM_UNLOCK_LEVEL, BARD_CHARM_MANA_COST,
     BARD_CHARM_BASE_CHANCE, BARD_CHARM_CHANCE_PER_2_LV,
     BARD_CHARM_DURATION_DIVISOR, BARD_CHARM_IMMUNE_TAGS,
+    BARD_RALLYING_MELODY_UNLOCK_LEVEL, BARD_RALLYING_MELODY_MANA_COST,
+    BARD_RALLYING_MELODY_RESTORE_FRACTION,
     RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL, RANGER_EXPLOSIVE_ARROW_STAMINA_MULT,
     RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT,
     ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL, ROGUE_BACKSTAB_BLEED_FRAC,
     ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR,
+    ROGUE_TRAP_UNLOCK_LEVEL, ROGUE_TRAP_DOT_FRACTION, ROGUE_TRAP_DOT_ROUNDS,
+    ROGUE_EVASION_STAMINA_COST,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_ROUNDS,
     DRUID_COMMUNE_UNLOCK_LEVEL, DRUID_COMMUNE_FAE_TOKENS_NEEDED,
+    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST,
+    NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
+    RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
+    RANGER_TOTEM_DURATION_DIVISOR, RANGER_BEAR_TOTEM_DEFENSE_DIVISOR,
+    RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL, RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL,
+    MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
+    MONK_AVATAR_HP_REGEN, MONK_AVATAR_CLEANSE_BASE, MONK_AVATAR_CLEANSE_PER_LEVEL,
+    MONK_AVATAR_DOT_DURATION_DIVISOR,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -137,59 +152,72 @@ export class CombatUI {
         if (this.charmedCardsEl) this.charmedCardsEl.innerHTML = '';
 
         for (const enemy of this.combat.enemies) {
-            const card = document.createElement('div');
-            card.className = 'combat-enemy-card';
-            card.dataset.enemyId = enemy.id;
+            this.enemyCards.appendChild(this._createEnemyCard(enemy));
+        }
+    }
 
-            // Mega bosses get a gold/crimson border; normal bosses get purple.
-            if (enemy.isMegaBoss) {
-                card.style.border = '2px solid #ff4444';
-                card.style.boxShadow = '0 0 12px 4px rgba(255,68,68,0.7), 0 0 6px 2px rgba(255,200,0,0.5)';
-            } else if (enemy.isBoss) {
-                card.style.border = '2px solid #9b59b6';
-                card.style.boxShadow = '0 0 8px 2px rgba(155,89,182,0.6)';
-            }
+    _createEnemyCard(enemy) {
+        const card = document.createElement('div');
+        card.className = 'combat-enemy-card';
+        card.dataset.enemyId = enemy.id;
 
-            const canvas = generateEnemySprite(enemy.type, enemy.seed);
-            const img = document.createElement('img');
-            img.className = 'combat-enemy-sprite';
-            img.src = canvas.toDataURL();
-            card.appendChild(img);
+        // Mega bosses get a gold/crimson border; normal bosses get purple.
+        if (enemy.isMegaBoss) {
+            card.style.border = '2px solid #ff4444';
+            card.style.boxShadow = '0 0 12px 4px rgba(255,68,68,0.7), 0 0 6px 2px rgba(255,200,0,0.5)';
+        } else if (enemy.isBoss) {
+            card.style.border = '2px solid #9b59b6';
+            card.style.boxShadow = '0 0 8px 2px rgba(155,89,182,0.6)';
+        }
 
-            const name = document.createElement('div');
-            name.className = 'combat-enemy-name';
-            const base = (ENEMY_TYPES[enemy.type] || { name: 'Enemy' }).name;
-            // If enemy has a custom name override (boss title set by EnemyManager) use it,
-            // otherwise use the standard base+level format.
-            if (enemy.name) {
-                name.textContent = enemy.name;
-                name.style.color = enemy.isMegaBoss ? '#ff8888' : '#c39bd3';
-                if (enemy.isMegaBoss) name.style.fontWeight = 'bold';
-            } else {
-                name.textContent = enemy.level > 1 ? `${base} L${enemy.level}` : base;
-            }
-            if (enemy.defense) {
-                name.title = `Defense ${enemy.defense} (reduces incoming damage)`;
-            }
-            card.appendChild(name);
+        const canvas = generateEnemySprite(enemy.type, enemy.seed);
+        const img = document.createElement('img');
+        img.className = 'combat-enemy-sprite';
+        img.src = canvas.toDataURL();
+        card.appendChild(img);
 
-            card.appendChild(this._bar('combat-bar-health'));
-            card.appendChild(this._bar('combat-bar-stamina'));
-            card.appendChild(this._bar('combat-bar-mana'));
+        const name = document.createElement('div');
+        name.className = 'combat-enemy-name';
+        const base = (ENEMY_TYPES[enemy.type] || { name: 'Enemy' }).name;
+        // If enemy has a custom name override (boss title set by EnemyManager) use it,
+        // otherwise use the standard base+level format.
+        if (enemy.name) {
+            name.textContent = enemy.name;
+            name.style.color = enemy.isMegaBoss ? '#ff8888' : '#c39bd3';
+            if (enemy.isMegaBoss) name.style.fontWeight = 'bold';
+        } else {
+            name.textContent = enemy.level > 1 ? `${base} L${enemy.level}` : base;
+        }
+        if (enemy.defense) {
+            name.title = `Defense ${enemy.defense} (reduces incoming damage)`;
+        }
+        card.appendChild(name);
 
-            const statusRow = document.createElement('div');
-            statusRow.className = 'combat-status-row';
-            statusRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;justify-content:center;padding:2px 0;min-height:4px;';
-            card.appendChild(statusRow);
+        card.appendChild(this._bar('combat-bar-health'));
+        card.appendChild(this._bar('combat-bar-stamina'));
+        card.appendChild(this._bar('combat-bar-mana'));
 
-            card.addEventListener('click', () => {
-                if (!this._selectingTarget || enemy.health <= 0) return;
-                this._selectingTarget = false;
-                this._clearTargetable();
-                if (this._targetCallback) this._targetCallback(enemy);
-            });
+        const statusRow = document.createElement('div');
+        statusRow.className = 'combat-status-row';
+        statusRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;justify-content:center;padding:2px 0;min-height:4px;';
+        card.appendChild(statusRow);
 
-            this.enemyCards.appendChild(card);
+        card.addEventListener('click', () => {
+            if (!this._selectingTarget || enemy.health <= 0) return;
+            this._selectingTarget = false;
+            this._clearTargetable();
+            if (this._targetCallback) this._targetCallback(enemy);
+        });
+
+        return card;
+    }
+
+    _ensureEnemyCards() {
+        for (const enemy of this.combat.enemies) {
+            const selector = `[data-enemy-id="${enemy.id}"]`;
+            const existing = this.enemyCards.querySelector(selector)
+                || (this.charmedCardsEl && this.charmedCardsEl.querySelector(selector));
+            if (!existing) this.enemyCards.appendChild(this._createEnemyCard(enemy));
         }
     }
 
@@ -203,16 +231,36 @@ export class CombatUI {
     }
 
     _updateEnemyCards() {
+        this._ensureEnemyCards();
         for (const enemy of this.combat.enemies) {
-            const card = this.enemyCards.querySelector(
-                `[data-enemy-id="${enemy.id}"]`,
-            );
+            const selector = `[data-enemy-id="${enemy.id}"]`;
+            const card = this.enemyCards.querySelector(selector)
+                || (this.charmedCardsEl && this.charmedCardsEl.querySelector(selector));
             if (!card) continue;
 
             const fills = card.querySelectorAll('.combat-stat-fill');
             fills[0].style.width = `${Math.max(0, (enemy.health / enemy.maxHealth) * 100)}%`;
             fills[1].style.width = `${Math.max(0, (enemy.stamina / enemy.maxStamina) * 100)}%`;
             fills[2].style.width = `${enemy.maxMana > 0 ? Math.max(0, (enemy.mana / enemy.maxMana) * 100) : 0}%`;
+
+            // Update per-bar tooltips with live values.
+            const hpPct   = Math.round((enemy.health  / enemy.maxHealth)  * 100);
+            const stPct   = Math.round((enemy.stamina / enemy.maxStamina) * 100);
+            const mpPct   = enemy.maxMana > 0 ? Math.round((enemy.mana / enemy.maxMana) * 100) : 0;
+            const defLine = enemy.defense ? `DEF  ${enemy.defense}\n` : '';
+            const charmLine = enemy.charmedRounds > 0
+                ? `CHARMED  ${enemy.charmedRounds} round(s) remaining\n`
+                : '';
+            const tip = `${enemy.health}/${enemy.maxHealth} HP (${hpPct}%)\n`
+                      + `${enemy.stamina}/${enemy.maxStamina} ST (${stPct}%)\n`
+                      + `${enemy.mana}/${enemy.maxMana} MP (${mpPct}%)\n`
+                      + defLine
+                      + charmLine;
+            fills[0].parentElement.title = `${enemy.health}/${enemy.maxHealth} HP (${hpPct}%)`;
+            fills[1].parentElement.title = `${enemy.stamina}/${enemy.maxStamina} ST (${stPct}%)`;
+            fills[2].parentElement.title = `${enemy.mana}/${enemy.maxMana} MP (${mpPct}%)`;
+            // Also set it on the whole card so any part of the card shows full info.
+            card.title = tip.trimEnd();
 
             card.classList.toggle('defeated', enemy.health <= 0);
 
@@ -232,46 +280,103 @@ export class CombatUI {
                 const ent = efx.find(x => x && x.type === 'entangle' && x.rounds > 0);
                 if (ent) mkB('🌿', 'Entangled', 'rgba(30,130,30,0.9)',
                     'Entangled: -' + (ent.defenseBonus||0) + ' def, -' + (ent.damageBonus||0) + ' dmg — ' + ent.rounds + ' rds left');
-                const bl = efx.find(x => x && x.type === 'bleed' && x.rounds > 0);
-                if (bl) mkB('🟥', 'Bleeding', 'rgba(160,0,0,0.9)',
-                    'Bleeding: ' + (bl.damage||0) + ' dmg/round — ' + bl.rounds + ' rds left');
-                const bu = efx.find(x => x && x.type === 'burn' && x.rounds > 0);
-                if (bu) mkB('🔥', 'Burning', 'rgba(200,70,0,0.9)',
-                    'Burning: ' + (bu.damage||0) + ' dmg/round — ' + bu.rounds + ' rds left');
-                const ac = efx.find(x => x && x.type === 'acid_dot' && (x.rounds > 0 || x.permanent));
-                if (ac) mkB('🟢', 'Acid', 'rgba(60,160,0,0.9)',
-                    'Acid: ' + (ac.damage||0) + ' dmg/round, -' + (ac.defenseBonus||0) + ' def — ' + (ac.permanent ? 'permanent' : ac.rounds + ' rds left'));
-                const po = efx.find(x => x && x.type === 'poison_weapon' && (x.rounds > 0 || x.permanent));
-                if (po) mkB('🐍', 'Poisoned', 'rgba(100,0,170,0.9)',
-                    'Venom: ' + (po.damage||0) + ' dmg/round, -' + Math.abs(po.damageBonus||0) + ' dmg dealt — ' + (po.permanent ? 'permanent' : po.rounds + ' rds left'));
-                const sh = efx.find(x => x && x.type === 'shocked' && x.rounds > 0);
-                if (sh) mkB('⚡', 'Shocked', 'rgba(40,80,220,0.9)',
-                    'Shocked (lightning): -' + Math.abs(sh.damageBonus||0) + ' dmg — ' + sh.rounds + ' rds left');
-                const ch = efx.find(x => x && x.type === 'chilled' && x.rounds > 0);
-                if (ch) mkB('❄️', 'Chilled', 'rgba(80,150,220,0.9)',
-                    'Chilled (ice): -' + Math.abs(ch.defenseBonus||0) + ' def — ' + ch.rounds + ' rds left');
+                // ── Render all DoT-type effects using a comprehensive map ──
+                const DOT_MAP = {
+                    bleed: {
+                        icon: '🟥', label: 'Bleeding', bg: 'rgba(160,0,0,0.9)',
+                        tip: (fx) => 'Bleeding: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    burn: {
+                        icon: '🔥', label: 'Burning', bg: 'rgba(200,70,0,0.9)',
+                        tip: (fx) => 'Burning: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    acid_dot: {
+                        icon: '🟢', label: 'Acid', bg: 'rgba(60,160,0,0.9)',
+                        tip: (fx) => 'Acid: ' + (fx.damage||0) + ' dmg/round, -' + (fx.defenseBonus||0) + ' def — ' + (fx.permanent ? 'permanent' : fx.rounds + ' rds left')
+                    },
+                    poison: {
+                        icon: '🐢', label: 'Poison', bg: 'rgba(100,140,0,0.9)',
+                        tip: (fx) => 'Poison: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    poison_weapon: {
+                        icon: '🐍', label: 'Poisoned', bg: 'rgba(100,0,170,0.9)',
+                        tip: (fx) => 'Venom: ' + (fx.damage||0) + ' dmg/round, -' + Math.abs(fx.damageBonus||0) + ' dmg dealt — ' + (fx.permanent ? 'permanent' : fx.rounds + ' rds left')
+                    },
+                    shocked: {
+                        icon: '⚡', label: 'Shocked', bg: 'rgba(40,80,220,0.9)',
+                        tip: (fx) => 'Shocked (lightning): -' + Math.abs(fx.damageBonus||0) + ' dmg — ' + fx.rounds + ' rds left'
+                    },
+                    chilled: {
+                        icon: '❄️', label: 'Chilled', bg: 'rgba(80,150,220,0.9)',
+                        tip: (fx) => 'Chilled (ice): -' + Math.abs(fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
+                    },
+                    ice_chill: {
+                        icon: '❄️', label: 'Ice Chill', bg: 'rgba(100,200,240,0.9)',
+                        tip: (fx) => 'Ice Chill: -' + Math.abs(fx.damageBonus||0) + ' dmg dealt — ' + fx.rounds + ' rds left'
+                    },
+                    fae_poison: {
+                        icon: '\u{1F9DA}', label: 'Fae Poison', bg: 'rgba(0,160,100,0.9)',
+                        tip: (fx) => 'Fae Poison: ' + (fx.damage||0) + ' magic DoT/round — ' + fx.rounds + ' rds left'
+                    },
+                    ranger_totem_bleed: {
+                        icon: '🐺', label: 'Totem Bleed', bg: 'rgba(140,0,0,0.9)',
+                        tip: (fx) => 'Wolf Totem Bleed: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    ranger_totem_poison: {
+                        icon: '🧚', label: 'Totem Poison', bg: 'rgba(70,120,0,0.9)',
+                        tip: (fx) => 'Pixie Totem Poison: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    rogue_trap_dot: {
+                        icon: '🪤', label: 'Trap Wound', bg: 'rgba(150,100,30,0.9)',
+                        tip: (fx) => 'Trap Wound: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    mummy_rot: {
+                        icon: '🟤', label: 'Rotting', bg: 'rgba(110,55,0,0.9)',
+                        tip: (fx) => 'Mummy Rot: ' + (fx.damage||0) + ' dmg/round (permanent)'
+                    }
+                };
+
+                for (const fx of efx) {
+                    if (!fx || !fx.type) continue;
+                    if (DOT_MAP[fx.type]) {
+                        const isActive = fx.rounds > 0 || fx.permanent;
+                        if (isActive) {
+                            const info = DOT_MAP[fx.type];
+                            mkB(info.icon, info.label, info.bg, info.tip(fx));
+                        }
+                    } else if (/^avatar_/.test(fx.type) && fx.rounds > 0) {
+                        mkB('🧘', 'Avatar', 'rgba(40,120,160,0.9)',
+                            'Avatar element: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left');
+                    }
+                }
+
+                // ── Non-DoT status effects ──
                 const fr = efx.find(x => x && x.type === 'ghost_fear');
                 if (fr) mkB('😨', 'Feared', 'rgba(80,0,100,0.9)',
                     'Ghost Fear: -3 attack, -3 defense (lasts entire combat)');
-                const ro = efx.find(x => x && x.type === 'mummy_rot');
-                if (ro) mkB('🟤', 'Rotting', 'rgba(110,55,0,0.9)',
-                    'Mummy Rot: ' + (ro.damage||0) + ' dmg/round (permanent)');
-                const ic = efx.find(x => x && x.type === 'ice_chill' && x.rounds > 0);
-                if (ic) mkB('❄️', 'Ice Chill', 'rgba(100,200,240,0.9)',
-                    'Ice Chill: -' + Math.abs(ic.damageBonus||0) + ' dmg dealt — ' + ic.rounds + ' rds left');
                 const tu = efx.find(x => x && x.type === 'turned' && x.rounds > 0);
                 if (tu) mkB('✝️', 'Turned', 'rgba(200,180,0,0.9)',
                     'Turned Undead: -' + Math.abs(tu.defenseBonus||0) + ' def, -' + Math.abs(tu.damageBonus||0) + ' atk — ' + tu.rounds + ' rds left');
                 const di = efx.find(x => x && x.type === 'bard_disrupt' && x.rounds > 0);
                 if (di) mkB('🎵', 'Disrupted', 'rgba(140,0,140,0.9)',
                     'Disrupted: -' + Math.abs(di.damageBonus||0) + ' atk, -' + Math.abs(di.defenseBonus||0) + ' def — ' + di.rounds + ' rds left');
-                const qp = efx.find(x => x && x.type === 'quivering_palm' && x.rounds > 0);
-                if (qp) mkB('✋', 'Quivering', 'rgba(140,30,100,0.9)',
-                    'Quivering Palm: ' + (qp.damage||0) + ' internal dmg/round (doubles each tick) — ' + qp.rounds + ' rds left');
-                // Fae poison badge
-                const fp = efx.find(x => x && x.type === 'fae_poison' && x.rounds > 0);
-                if (fp) mkB('\u{1F9DA}', 'Fae Poison', 'rgba(0,160,100,0.9)',
-                    'Fae Poison: ' + (fp.damage||0) + ' magic DoT/round — ' + fp.rounds + ' rds left');
+
+                // ── Render Quivering Palm (supports multiple per source monk) ──
+                const qpEffects = efx
+                    .filter(x => x && x.type === 'quivering_palm' && x.rounds > 0)
+                    .sort((a, b) => {
+                        const aName = (a.sourceName || '').toLowerCase();
+                        const bName = (b.sourceName || '').toLowerCase();
+                        if (aName < bName) return -1;
+                        if (aName > bName) return 1;
+                        return (b.rounds || 0) - (a.rounds || 0);
+                    });
+                for (const qp of qpEffects) {
+                    const source = qp.sourceName || 'Unknown Monk';
+                    mkB('✋', `QP:${source}`, 'rgba(140,30,100,0.9)',
+                        `Quivering Palm (${source}): ${(qp.damage || 0)} internal dmg/round — Level ${(qp.doublings || 0)}/10 doublings — ${qp.rounds} rds left`);
+                }
+
                 // Fae hold badge
                 const fh = efx.find(x => x && x.type === 'fae_hold' && x.rounds > 0);
                 if (fh) mkB('\u{1F9DA}', 'Held ' + fh.rounds + 'rd', 'rgba(60,200,60,0.9)',
@@ -341,15 +446,19 @@ export class CombatUI {
     }
 
     _fillLogEl(containerEl, messages) {
+        const wasNearBottom =
+            (containerEl.scrollHeight - containerEl.scrollTop - containerEl.clientHeight) < 24;
         containerEl.innerHTML = '';
-        for (const msg of messages.slice(-60)) {
+        for (const msg of messages) {
             const p = document.createElement('p');
             p.textContent = msg;
             const cls = this._logClass(msg);
             if (cls) p.classList.add(cls);
             containerEl.appendChild(p);
         }
-        containerEl.scrollTop = containerEl.scrollHeight;
+        if (wasNearBottom) {
+            containerEl.scrollTop = containerEl.scrollHeight;
+        }
     }
 
     _updateLog() {
@@ -512,6 +621,7 @@ export class CombatUI {
         ];
         if (gBonus > 0) magicTip.push(`Damage bonus (class/species/level): +${gBonus}`);
         if (magicStunPct > 0) magicTip.push(`Mage: ${magicStunPct.toFixed(0)}% chance to stun foes with magic.`);
+        if (m.classId === 'mage') magicTip.push(`Mage: ignores ${Math.min(100, m.level || 1)}% enemy defense on magic/AoE hits (level%).`);
         if (m.classId === 'necromancer') {
             const drainAmt = NECRO_LIFE_DRAIN_AMOUNT + m.getDrainBonus();
             magicTip.push(`Necromancer: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% to drain ${drainAmt} HP (self + own undead).`);
@@ -582,10 +692,29 @@ export class CombatUI {
                 `Deals ${BACKSTAB_DAMAGE_MULT}\u00D7 melee damage, then +${bonusPct}% (10% per rogue level).`,
                 `${instakill.toFixed(0)}% chance for an INSTANT KILL (not vs. Bosses or Mega Bosses).`,
                 'Rogues can also spot and disarm dungeon traps while exploring.',
+                m.level >= ROGUE_TRAP_UNLOCK_LEVEL
+                    ? `L${ROGUE_TRAP_UNLOCK_LEVEL}: successful disarms recover Captured Traps; magic/AoE evasion chance ${m.level}% for ${ROGUE_EVASION_STAMINA_COST} stamina.`
+                    : `L${ROGUE_TRAP_UNLOCK_LEVEL}: recover traps and evade magic/AoE attacks.`,
                 m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL
                     ? `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}+: Backstab Bleed — applies ${Math.round(ROGUE_BACKSTAB_BLEED_FRAC*100)}% bleed DoT for ${Math.floor(m.level/ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR)} rounds (immune: undead, construct, elemental, incorporeal).`
                     : `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}: Backstab Bleed unlocks — every backstab will apply a stacking bleed DoT.`,
             ].join('\n');
+
+            if (m.level >= ROGUE_TRAP_UNLOCK_LEVEL) {
+                const trapCount = (m.inventory || []).reduce((sum, item) =>
+                    sum + (item && item.itemId === 'captured_trap' ? item.quantity || 0 : 0), 0);
+                const canTrap = trapCount > 0 && this.combat.aliveHostileEnemies.length > 0;
+                const trapBtn = this._addBtn(`🪤 Spring Trap (${trapCount})`, canTrap, () => this.combat.rogueSetTrap());
+                trapBtn.classList.add('combat-special-btn');
+                trapBtn.title = [
+                    `Rogue L${ROGUE_TRAP_UNLOCK_LEVEL}: Spring Captured Trap.`,
+                    'Consumes one Captured Trap from this rogue.',
+                    'Hits ALL hostile monsters for melee-type damage equal to twice a normal rogue melee roll.',
+                    `Applies a trap wound DoT for ${Math.round(ROGUE_TRAP_DOT_FRACTION * 100)}% of initial damage per round for ${ROGUE_TRAP_DOT_ROUNDS} rounds; newer trap wounds overwrite older ones.`,
+                    'Incorporeal enemies are immune.',
+                    trapCount <= 0 ? 'No Captured Traps in this rogue inventory.' : '',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         if (m.classId === 'barbarian') {
@@ -633,6 +762,7 @@ export class CombatUI {
                 `Costs ${CLERIC_HEAL_MANA_COST} mana.`,
                 `Restores ${healPct.toFixed(0)}% of target's max HP.`,
                 'Heals ranger summons and charmed monsters (non-undead/construct/elemental types); cannot heal undead (those use necromancer life drain).',
+                m.level >= CLERIC_CLEANSE_UNLOCK_LEVEL ? `L25 passive: ${Math.round(m.getClericCleanseChance() * 100)}% chance to purge harmful states; ${CLERIC_CLEANSE_MANA_PER_STATE} MP per state removed.` : '',
                 !can ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
 
@@ -676,6 +806,7 @@ export class CombatUI {
                 'Cleric special: Mass Heal (unlocks at level 4).',
                 `Costs ${CLERIC_HEAL_MANA_COST} mana.`,
                 `Heals all living party members for ${massPct}% of their max HP.`,
+                m.level >= CLERIC_CLEANSE_UNLOCK_LEVEL ? `L25 passive: ${Math.round(m.getClericCleanseChance() * 100)}% chance to purge harmful states across healed allies; ${CLERIC_CLEANSE_MANA_PER_STATE} MP per state removed.` : '',
                 !massUnlocked ? 'Requires cleric level 4.' : '',
                 massUnlocked && !canMass ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
@@ -802,6 +933,7 @@ export class CombatUI {
             if (lichPhial)  lichBtn.style.boxShadow = '0 0 8px #44ffaa, 0 0 16px #00cc6666';
             lichBtn.title = [
                 `Necromancer L${NECRO_LICH_FORM_UNLOCK_LEVEL}: Lich Form (toggle).`,
+                'Turning ON is a free action; turning OFF uses the necromancer\'s turn.',
                 `Costs ${NECRO_LICH_FORM_MANA_PER_ROUND} MP per round to maintain. Toggle OFF to stop the drain.`,
                 'While active: gains immunity to poison and stun; partial magic/AoE resistance.',
                 'When mana reaches 0 while Lich Form is active: stamina converts to mana automatically.',
@@ -811,6 +943,62 @@ export class CombatUI {
                 lichPhial ? `Soul is in the Phylactery — reviving in ${m.lichPhialCountdown || NECRO_LICH_REVIVE_ROUNDS} round(s).` : '',
                 lichUnlocked && !lichActive && !lichCan ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
+
+            if (m.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
+                const demiCan = lichActive && !lichPhial && m.mana >= NECRO_DEMI_LICH_MANA_COST;
+                const demiBtn = this._addBtn(`💀 Demi-Lich (-${NECRO_DEMI_LICH_MANA_COST} MP)`, demiCan, () => this.combat.summonDemiLich());
+                demiBtn.classList.add('combat-special-btn');
+                demiBtn.title = [
+                    `Necromancer L${NECRO_DEMI_LICH_UNLOCK_LEVEL}: Summon Demi-Lich.`,
+                    'Requires active Lich Form.',
+                    'Back-row undead caster; HP equals the necromancer\'s current HP.',
+                    'Defense = 10 + necromancer level × 2.',
+                    'Magic/AoE hits floor(level / 5) targets and ignores enemy defense.',
+                    'Half damage from magic/AoE; immune to stun, web, holds, and poison.',
+                    !lichActive ? 'Turn on Lich Form first.' : '',
+                    m.mana < NECRO_DEMI_LICH_MANA_COST ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+            }
+        }
+
+        if (m.classId === 'ranger' && m.level >= RANGER_TOTEM_UNLOCK_LEVEL) {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '6px';
+            row.style.alignItems = 'center';
+            row.style.flexWrap = 'wrap';
+            const sel = document.createElement('select');
+            sel.className = 'combat-action-btn combat-special-btn';
+            sel.style.minWidth = '140px';
+            const options = [
+                ['wolf', '🐺 Wolf'],
+                ['bear', '🐻 Bear'],
+                ['eagle', '🦅 Eagle'],
+                ['pixie', '🧚 Pixie'],
+            ];
+            for (const [id, label] of options) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = label;
+                if ((m.rangerTotem || 'wolf') === id) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            const btn = document.createElement('button');
+            btn.className = 'combat-action-btn combat-special-btn';
+            btn.textContent = m.rangerTotem ? `Totem: ${m.rangerTotem}` : `Activate Totem (-${RANGER_TOTEM_MANA_PER_ROUND} MP/rd)`;
+            btn.disabled = m.mana < RANGER_TOTEM_MANA_PER_ROUND && !m.rangerTotem;
+            btn.title = [
+                `Ranger L${RANGER_TOTEM_UNLOCK_LEVEL}: Animal Totem (free action).`,
+                `Costs ${RANGER_TOTEM_MANA_PER_ROUND} MP per round while active; may change each round.`,
+                `Wolf: ranged/explosive hits apply bleed for floor(level/${RANGER_TOTEM_DURATION_DIVISOR}) rounds.`,
+                `Bear: ranged hits have 25% stun chance and grant +floor(level/${RANGER_BEAR_TOTEM_DEFENSE_DIVISOR}) defense.`,
+                `Eagle: ranged/explosive damage +${Math.round((m.level || 1) * RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL * 100)}%; ${Math.round((m.level || 1) * RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL * 100)}% chance to deflect ranged attacks.`,
+                `Pixie: ranged/explosive hits poison; ranger takes 50% less magic/AoE damage before defense.`,
+            ].join('\n');
+            btn.addEventListener('click', () => this.combat.rangerSetTotem(sel.value));
+            row.appendChild(sel);
+            row.appendChild(btn);
+            this.actionsEl.appendChild(row);
         }
 
         if (m.classId === 'ranger' || m.classId === 'druid') {
@@ -833,7 +1021,7 @@ export class CombatUI {
                 '  ▶ L10+: Pixie Princess — dodge chance doubled, +1 AoE hit.',
                 m.classId === 'ranger'
                     ? 'Stun/crit/dodge chances scale with your ranged crit chance.'
-                    : 'Druids also unlock Treant at level 5 (see separate button below).',
+                    : `Druids also unlock Treant at level 5 and Shambling Mound at level ${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL}.`,
                 lvl10Unlocked ? '★ Level 10+ upgrades ACTIVE.' : `Level ${m.level}/10 — upgrades unlock at level 10.`,
                 'Beasts CAN be healed by clerics. Acts immediately on summon.',
                 !can ? 'Not enough mana.' : '',
@@ -858,7 +1046,7 @@ export class CombatUI {
                 `Each enemy takes ${Math.round(RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT * 100)}% of normal post-defense ranged damage.`,
                 'Half normal crit chance per target.',
                 allFavored.length > 0
-                    ? `Half normal instakill chance vs favored enemies: ${allFavored.join(', ')}.`
+                    ? `Half normal instakill chance vs favored enemies: ${allFavored.join(', ')}. Bosses/mega-bosses are immune to instant death; triggered procs deal x4 ranged damage instead.`
                     : `No favored enemies set — choose them in the character screen (K).`,
             ].filter(Boolean).join('\n');
         }
@@ -909,6 +1097,21 @@ export class CombatUI {
             ].filter(Boolean).join('\n');
         }
 
+        if (m.classId === 'bard' && m.level >= BARD_RALLYING_MELODY_UNLOCK_LEVEL) {
+            const canRally = m.mana >= BARD_RALLYING_MELODY_MANA_COST;
+            const restorePct = Math.round(BARD_RALLYING_MELODY_RESTORE_FRACTION * 100);
+            const rallyLabel = `🎶 Rallying Melody (-${BARD_RALLYING_MELODY_MANA_COST} MP)`;
+            const rallyBtn = this._addBtn(rallyLabel, canRally, () => this.combat.bardRallyingMelody());
+            rallyBtn.classList.add('combat-special-btn');
+            rallyBtn.title = [
+                `Bard L${BARD_RALLYING_MELODY_UNLOCK_LEVEL}: Rallying Melody.`,
+                `Costs ${BARD_RALLYING_MELODY_MANA_COST} mana.`,
+                `Restores ${restorePct}% of max HP, mana, and stamina to living party members.`,
+                'Does NOT affect golems or summoned undead.',
+                !canRally ? 'Not enough mana.' : '',
+            ].filter(Boolean).join('\n');
+        }
+
         // Druid: Entangle
         if (m.classId === 'druid') {
             const can = m.mana >= DRUID_ENTANGLE_MANA_COST;
@@ -946,6 +1149,26 @@ export class CombatUI {
                 treantUnlocked && !canTreant ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
 
+            const moundUnlocked = m.level >= DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL;
+            const canMound = moundUnlocked && m.mana >= DRUID_SHAMBLING_MOUND_MANA_COST;
+            const moundLabel = moundUnlocked
+                ? `🪴 Summon Shambling Mound (-${DRUID_SHAMBLING_MOUND_MANA_COST} MP)`
+                : `🪴 Summon Shambling Mound (L${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL})`;
+            const moundBtn = this._addBtn(moundLabel, canMound, () => this.combat.summonBeast('shambling_mound'));
+            moundBtn.classList.add('combat-special-btn');
+            moundBtn.title = [
+                `Druid L${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL}: Summon Shambling Mound.`,
+                `Costs ${DRUID_SHAMBLING_MOUND_MANA_COST} mana.`,
+                'Front-row plant guardian. HP = 4× druid max HP. Defense = 20 + druid level.',
+                'Slam damage = base melee + 2× druid level with a 45% stun chance.',
+                'Regenerates 20% max HP at the start of its turn. If full after regen, the original mound spawns a Mini Shambler (not on the summon round).',
+                'Mini Shamblers grow over 3 turns: 67%, 84%, then 100% of full mound HP/defense.',
+                'Only the original mound can spawn minis; grown minis cannot bud new minis.',
+                'After warrior intercepts, each mound can intercept hits aimed at its druid at 50% + druid level/3 percent.',
+                !moundUnlocked ? `Requires druid level ${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL}.` : '',
+                moundUnlocked && !canMound ? 'Not enough mana.' : '',
+            ].filter(Boolean).join('\n');
+
             // ── Commune (L20) — summon Faerie Queen at 3 fae tokens
             const communeUnlocked = m.level >= DRUID_COMMUNE_UNLOCK_LEVEL;
             const tokens          = m.faeTokens || 0;
@@ -973,12 +1196,30 @@ export class CombatUI {
 
         // Paladin: Smite + Lay On Hands
         if (m.classId === 'paladin') {
-            // ── Smite (targets an enemy — only undead/demon targets are valid)
-            const smiteFilter = (e) => {
-                const def = ENEMY_TYPES[e.type] || {};
-                const tags = Array.isArray(def.tags) ? def.tags : [];
-                return tags.includes('undead') || tags.includes('demon');
-            };
+            if (m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL) {
+                const dragonslayerActive = !!m.dragonslayerActive;
+                const dragonslayerCan = dragonslayerActive || m.mana >= PALADIN_DRAGONSLAYER_MANA_PER_ROUND;
+                const dragonslayerLabel = dragonslayerActive
+                    ? `🐉 Dragonslayer: ON (-${PALADIN_DRAGONSLAYER_MANA_PER_ROUND} MP/round)`
+                    : `🐉 Dragonslayer: OFF (-${PALADIN_DRAGONSLAYER_MANA_PER_ROUND} MP/round)`;
+                const dragonslayerBtn = this._addBtn(dragonslayerLabel, dragonslayerCan, () => {
+                    this.combat.paladinDragonslayerToggle();
+                });
+                dragonslayerBtn.classList.add('combat-special-btn');
+                if (dragonslayerActive) dragonslayerBtn.style.boxShadow = '0 0 8px #ffd166, 0 0 16px #b06a0066';
+                const auraReduction = Math.floor(m.level / 2);
+                dragonslayerBtn.title = [
+                    `Paladin L${PALADIN_DRAGONSLAYER_UNLOCK_LEVEL}: Dragonslayer (toggle).`,
+                    `Costs ${PALADIN_DRAGONSLAYER_MANA_PER_ROUND} MP per round.`,
+                    'Smite and AoE Smite can target dragons while active.',
+                    `If shielded, dragon magic/AoE damage is reduced by ${auraReduction} for the whole party before defenses.`,
+                    dragonslayerActive ? 'Currently ACTIVE.' : 'Currently inactive.',
+                    !dragonslayerCan ? 'Not enough mana to invoke.' : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // ── Smite (targets an enemy — undead/demons, plus dragons while Dragonslayer is active)
+            const smiteFilter = (e) => this.combat.canPaladinSmiteTarget(m, e);
             const hasSmiteTarget = this.combat.aliveEnemies.some(smiteFilter);
             const smiteCan = m.mana >= PALADIN_SMITE_MANA_COST && canMelee && hasSmiteTarget;
             let smiteLabel = `\u2728 Smite (-${PALADIN_SMITE_MANA_COST} MP)`;
@@ -988,7 +1229,9 @@ export class CombatUI {
                 soundManager.playMelee();
                 this._pickTarget(e => this.combat.paladinSmite(e), {
                     filter: smiteFilter,
-                    prompt: 'Smite which unholy foe?',
+                    prompt: m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
+                        ? 'Smite which marked foe?'
+                        : 'Smite which unholy foe?',
                 });
             });
             smiteBtn.classList.add('combat-special-btn');
@@ -996,12 +1239,14 @@ export class CombatUI {
             const perLvlKill = PALADIN_SMITE_INSTAKILL_PER_LEVEL * 100;
             const curKill = Math.min(100, PALADIN_SMITE_INSTAKILL_BASE * 100 + PALADIN_SMITE_INSTAKILL_PER_LEVEL * 100 * m.level);
             smiteBtn.title = [
-                'Paladin special: Smite (undead and demons only).',
+                'Paladin special: Smite.',
                 `Costs ${PALADIN_SMITE_MANA_COST} mana. Front-row only.`,
                 `Deals +${2 * m.level} holy bonus damage and has a ${curKill.toFixed(0)}% chance to instantly purge the target (${baseKill}% base +${perLvlKill}%/level).`,
-                'Cannot be used against mortal foes — only undead and demons can be Smited.',
+                m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
+                    ? 'Dragonslayer is active: dragons are valid Smite targets too.'
+                    : 'Targets undead and demons; dragons are added while Dragonslayer is active.',
                 !canMelee ? 'Cannot Smite from back row.' : '',
-                !hasSmiteTarget ? 'No undead or demon enemies in this fight.' : '',
+                !hasSmiteTarget ? 'No valid Smite targets in this fight.' : '',
                 m.mana < PALADIN_SMITE_MANA_COST ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
 
@@ -1068,11 +1313,7 @@ export class CombatUI {
 
                 // ── Paladin L20: AoE Smite (hits all undead/demons at half damage & purge)
                 const aoeCost = PALADIN_SMITE_MANA_COST * PALADIN_AOE_SMITE_MANA_MULT;
-                const aoeSmiteFilter = (e) => {
-                    const def = ENEMY_TYPES[e.type] || {};
-                    const tags = Array.isArray(def.tags) ? def.tags : [];
-                    return tags.includes('undead') || tags.includes('demon');
-                };
+                const aoeSmiteFilter = (e) => this.combat.canPaladinSmiteTarget(m, e);
                 const hasAoeSmiteTarget = this.combat.aliveEnemies.some(aoeSmiteFilter);
                 const canAoeSmite = m.mana >= aoeCost && canMelee && hasAoeSmiteTarget;
                 let aoeSmiteLabel = `✨ AoE Smite (-${aoeCost} MP)`;
@@ -1094,12 +1335,14 @@ export class CombatUI {
                 aoeSmiteBtn.title = [
                     'Paladin L20 special: AoE Smite.',
                     `Costs ${aoeCost} mana. Front-row only.`,
-                    'Calls down holy light on ALL undead and demon enemies simultaneously.',
+                    'Calls down holy light on every valid Smite target simultaneously.',
                     `Deals half of normal Smite damage to each target.`,
                     `${halfPurge}% chance to instantly purge each target (half of single-target ${fullPurge}%).`,
-                    'Cannot be used against mortal foes — only undead and demons.',
+                    m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
+                        ? 'Dragonslayer is active: dragons are included too.'
+                        : 'Targets undead and demons; dragons are added while Dragonslayer is active.',
                     !canMelee ? 'Cannot AoE Smite from back row.' : '',
-                    !hasAoeSmiteTarget ? 'No undead or demon enemies in this fight.' : '',
+                    !hasAoeSmiteTarget ? 'No valid AoE Smite targets in this fight.' : '',
                     canMelee && hasAoeSmiteTarget && !canAoeSmite ? 'Not enough mana.' : '',
                 ].filter(Boolean).join('\n');
             }
@@ -1146,12 +1389,47 @@ export class CombatUI {
             ].filter(Boolean).join('\n');
         }
 
+        if (isMonk && m.level >= MONK_AVATAR_UNLOCK_LEVEL) {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.gap = '6px';
+            row.style.alignItems = 'center';
+            row.style.flexWrap = 'wrap';
+            const sel = document.createElement('select');
+            sel.className = 'combat-action-btn combat-special-btn';
+            for (const [id, label] of [['fire', '🔥 Fire'], ['lightning', '⚡ Air'], ['acid', '🟢 Earth'], ['ice', '❄️ Water']]) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = label;
+                if ((m.avatarElement || 'fire') === id) opt.selected = true;
+                sel.appendChild(opt);
+            }
+            sel.addEventListener('change', () => this.combat.monkSetAvatarElement(sel.value));
+            const avBtn = document.createElement('button');
+            avBtn.className = 'combat-action-btn combat-special-btn';
+            avBtn.textContent = m.avatarActive ? `Avatar: ON (-${MONK_AVATAR_MANA_PER_ROUND} MP/rd)` : `Avatar: OFF`;
+            avBtn.disabled = !m.avatarActive && m.mana < MONK_AVATAR_MANA_PER_ROUND;
+            avBtn.addEventListener('click', () => this.combat.monkToggleAvatar());
+            avBtn.title = [
+                `Monk L${MONK_AVATAR_UNLOCK_LEVEL}: Avatar (free toggle on).`,
+                `${MONK_AVATAR_MANA_PER_ROUND} MP per round; regenerates ${Math.round(MONK_AVATAR_HP_REGEN * 100)}% max HP per round.`,
+                `At turn start, each harmful state has ${Math.round((MONK_AVATAR_CLEANSE_BASE + (m.level || 1) * MONK_AVATAR_CLEANSE_PER_LEVEL) * 100)}% chance to be shrugged off.`,
+                `Landed attacks add an elemental DoT for floor(level/${MONK_AVATAR_DOT_DURATION_DIVISOR}) rounds. Quivering Palm does not apply this DoT.`,
+                'Element can be changed for free each round.',
+            ].join('\n');
+            row.appendChild(sel);
+            row.appendChild(avBtn);
+            this.actionsEl.appendChild(row);
+        }
+
         // ── Monk L20: Quivering Palm
         if (isMonk && m.level >= MONK_QUIVERING_PALM_UNLOCK_LEVEL) {
-            const qpStMiss = m.stamina < MELEE_STAMINA_COST;
-            const qpMpMiss = m.mana    < MONK_MELEE_MANA_COST;
+            const qpStCost = MELEE_STAMINA_COST * MONK_QUIVERING_PALM_STAMINA_MULT;
+            const qpMpCost = MONK_MELEE_MANA_COST * MONK_QUIVERING_PALM_MANA_MULT;
+            const qpStMiss = m.stamina < qpStCost;
+            const qpMpMiss = m.mana    < qpMpCost;
             const qpCan    = canMelee && !qpStMiss && !qpMpMiss;
-            let qpLabel = `✋ Quivering Palm (-${MELEE_STAMINA_COST} ST / -${MONK_MELEE_MANA_COST} MP)`;
+            let qpLabel = `✋ Quivering Palm (-${qpStCost} ST / -${qpMpCost} MP)`;
             if (!canMelee) qpLabel += ' [BACK ROW]';
             const qpDuration = MONK_QUIVERING_PALM_DURATION_BASE
                 + Math.floor(Math.max(0, m.level - MONK_QUIVERING_PALM_UNLOCK_LEVEL) / 10)
@@ -1165,7 +1443,7 @@ export class CombatUI {
             qpBtn.classList.add('combat-special-btn');
             qpBtn.title = [
                 `Monk L20 special: Quivering Palm.`,
-                `Costs ${MELEE_STAMINA_COST} stamina and ${MONK_MELEE_MANA_COST} mana. Front-row only.`,
+                `Costs ${qpStCost} stamina and ${qpMpCost} mana. Front-row only.`,
                 `Strikes for 2× normal melee damage, then applies an internal disruption DoT.`,
                 `DoT starts at the base melee roll and DOUBLES each round — bypasses all armor and defense.`,
                 `Duration: ${qpDuration} rounds at this level. Stacking adds 1 round (capped).`,
@@ -1191,9 +1469,10 @@ export class CombatUI {
             dmBtn.title = [
                 'Warrior L20 special: Defend Mode (toggle).',
                 `When ON: adds +${blockBonus}% to shield block chance (total ${totalBlock}%).`,
-                'Attacks on fellow party members are checked against your augmented block chance — on a success, the raw hit is reduced by YOUR own armor and defense, then you take 10% of that remainder (min 1). The original target is unharmed.',
+                'Attacks on fellow party members are checked against your augmented block chance — on a success, the raw hit is reduced by YOUR own armor and defense, then you take 20% of that remainder (min 1). The original target is unharmed.',
                 'Intercept applies to melee, ranged, and magic/AoE attacks alike.',
                 'Cannot intercept while stunned, held, petrified, or dead.',
+                m.level >= 25 ? `L25 passive: successful intercepts have a ${Math.round(m.getRetaliationChance() * 100)}% chance to retaliate for 75% melee damage.` : 'L25 passive: successful intercepts can trigger a retaliatory strike.',
                 'Toggling costs your action for the turn. Use End Turn to pass without toggling.',
                 `⚡ Stun Resistance (L20 passive): ${stunResist}% chance to ignore stun effects.`,
                 defendModeOn ? 'Currently ACTIVE — attacks disabled.' : 'Currently INACTIVE.',
@@ -1244,6 +1523,9 @@ export class CombatUI {
             if (id === 'treant') {
                 if (!m || m.classId !== 'druid' || m.level < 5) continue;
             }
+            if (id === 'shambling_mound') {
+                if (!m || m.classId !== 'druid' || m.level < DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL) continue;
+            }
             // Wolf, bear, eagle, pixie available to ranger and druid
             const btn = document.createElement('button');
             btn.className = 'combat-action-btn combat-special-btn';
@@ -1288,6 +1570,7 @@ export class CombatUI {
     // ────────────────────────────────────────────
 
     _pickTarget(callback, { filter, prompt, allowCharmed = false } = {}) {
+        this._ensureEnemyCards();
         const alive = this.combat.aliveEnemies;
         // By default, exclude charmed enemies from attack targeting
         const base  = allowCharmed ? alive : alive.filter(e => !(e.charmedRounds > 0));
@@ -1363,7 +1646,9 @@ export class CombatUI {
             const pct = Math.round((pm.health / pm.maxHealth) * 100);
             // For charmed enemies, use their monster icon; for party members use class icon
             const icon = pm.classDef ? pm.classDef.icon : '\ud83c\udfb5';
-            btn.textContent = `${icon} ${pm.name}  (${pm.health}/${pm.maxHealth} HP \u2014 ${pct}%)`;
+            // Enemy objects may not have .name set \u2014 fall back to ENEMY_TYPES display name or type key
+            const displayName = pm.name || (pm.type && ENEMY_TYPES[pm.type] && ENEMY_TYPES[pm.type].name) || pm.type || 'Monster';
+            btn.textContent = `${icon} ${displayName}  (${pm.health}/${pm.maxHealth} HP \u2014 ${pct}%)`;
             // Highlight critically wounded targets (< 25% HP) in red
             if (pm.maxHealth > 0 && pm.health / pm.maxHealth < 0.25) {
                 btn.style.color = '#ff4444';
