@@ -27,6 +27,7 @@ export class DungeonRenderer {
         this.torchLights = [];   // references kept for flicker animation
         this.portals = [];       // { kind:'down'|'up', grid:{x,z}, mesh, light }
         this.fountains = [];     // { grid:{x,z}, basin, water, orb, light, basePhase }
+        this.chests = [];        // { grid:{x,z}, base,lid,lock,rune,light,basePhase }
     }
 
     /**
@@ -109,6 +110,13 @@ export class DungeonRenderer {
         if (data.fountains) {
             for (const f of data.fountains) {
                 if (!f.used) this._addFountain(f.x, f.z);
+            }
+        }
+
+        // --- Magical chests ---
+        if (data.chests) {
+            for (const c of data.chests) {
+                if (!c.used) this._addChest(c.x, c.z);
             }
         }
 
@@ -210,6 +218,88 @@ export class DungeonRenderer {
             if (obj.material) obj.material.dispose();
         });
         this.fountains.splice(idx, 1);
+    }
+
+    /**
+     * Add a magical chest prop with a subtle arcane glow.
+     */
+    _addChest(gx, gz) {
+        const CS = CELL_SIZE;
+        const cx = (gx + 0.5) * CS;
+        const cz = (gz + 0.5) * CS;
+        const glow = 0xffb347;
+
+        const baseGeo = new THREE.BoxGeometry(0.95, 0.5, 0.7);
+        const baseMat = new THREE.MeshStandardMaterial({
+            color: 0x5b3218,
+            roughness: 0.75,
+            metalness: 0.08,
+        });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.set(cx, 0.25, cz);
+        this.group.add(base);
+
+        const lidGeo = new THREE.BoxGeometry(0.98, 0.22, 0.74);
+        const lidMat = new THREE.MeshStandardMaterial({
+            color: 0x734325,
+            roughness: 0.7,
+            metalness: 0.12,
+        });
+        const lid = new THREE.Mesh(lidGeo, lidMat);
+        lid.position.set(cx, 0.62, cz);
+        this.group.add(lid);
+
+        const lockGeo = new THREE.BoxGeometry(0.14, 0.16, 0.05);
+        const lockMat = new THREE.MeshStandardMaterial({
+            color: 0xcda349,
+            roughness: 0.3,
+            metalness: 0.8,
+            emissive: 0x332200,
+            emissiveIntensity: 0.5,
+        });
+        const lock = new THREE.Mesh(lockGeo, lockMat);
+        lock.position.set(cx, 0.52, cz + 0.375);
+        this.group.add(lock);
+
+        const runeGeo = new THREE.TorusGeometry(0.22, 0.03, 8, 18);
+        const runeMat = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            emissive: glow,
+            emissiveIntensity: 1.5,
+            transparent: true,
+            opacity: 0.75,
+            depthWrite: false,
+        });
+        const rune = new THREE.Mesh(runeGeo, runeMat);
+        rune.rotation.x = -Math.PI / 2;
+        rune.position.set(cx, 0.03, cz);
+        this.group.add(rune);
+
+        const light = new THREE.PointLight(glow, 0.7, 5.5, 2);
+        light.position.set(cx, 0.9, cz);
+        this.group.add(light);
+
+        this.chests.push({
+            grid: { x: gx, z: gz },
+            base,
+            lid,
+            lock,
+            rune,
+            light,
+            basePhase: Math.random() * Math.PI * 2,
+        });
+    }
+
+    removeChest(gx, gz) {
+        const idx = this.chests.findIndex(c => c.grid.x === gx && c.grid.z === gz);
+        if (idx === -1) return;
+        const c = this.chests[idx];
+        [c.base, c.lid, c.lock, c.rune, c.light].forEach(obj => {
+            this.group.remove(obj);
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) obj.material.dispose();
+        });
+        this.chests.splice(idx, 1);
     }
 
     /**
@@ -460,6 +550,17 @@ export class DungeonRenderer {
             f.pool.rotation.z = elapsedTime * 0.4 + f.basePhase;
             // Light pulses softly
             f.light.intensity = 0.9 + 0.7 * pulse;
+        }
+
+        // Magical chest pulse — lock glint + rune spin
+        for (const c of this.chests) {
+            const t = elapsedTime * 2.1 + c.basePhase;
+            const pulse = 0.5 + 0.5 * Math.sin(t);
+            c.rune.rotation.z = elapsedTime * 0.5 + c.basePhase;
+            c.rune.material.opacity = 0.45 + 0.35 * pulse;
+            c.rune.material.emissiveIntensity = 1.1 + 0.9 * pulse;
+            c.lock.material.emissiveIntensity = 0.35 + 0.5 * pulse;
+            c.light.intensity = 0.45 + 0.55 * pulse;
         }
     }
 }

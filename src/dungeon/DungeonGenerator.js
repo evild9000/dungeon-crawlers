@@ -31,6 +31,7 @@ import {
     DUNGEON_ROOM_MAX,
     TORCH_SPACING_CELLS,
     FOUNTAIN_SPAWN_CHANCE,
+    CHEST_SPAWN_CHANCE,
 } from '../utils/constants.js';
 
 // ──────────────────────────────────────────
@@ -355,6 +356,60 @@ export function getFountainPositions(dungeonLevel, portalDown, portalUp, playerS
     return fountains;
 }
 
+/**
+ * Roll for magical chest spawns on this dungeon level.
+ * Uses the same roll cadence as fountains: `min(dungeonLevel, 5)` attempts,
+ * each with CHEST_SPAWN_CHANCE.
+ *
+ * Returns an array of chest records:
+ *   { x, z, used:false, state:null }
+ *
+ * `state` is populated lazily by Game.js when the chest is first interacted
+ * with so progress can be resumed if the player leaves mid-sequence.
+ */
+export function getChestPositions(dungeonLevel, portalDown, portalUp, playerStart, occupied = []) {
+    const { map } = _getLayout(dungeonLevel);
+    const rows = map.length, cols = map[0].length;
+    const start = playerStart || PLAYER_START;
+
+    // Distinct RNG seed from traps/fountains so chest placements are stable.
+    const rng = _lcg(((dungeonLevel * 1103515245) ^ 0x3B1C2D4E) | 0);
+
+    const occupiedSet = new Set((occupied || []).map(p => `${p.x},${p.z}`));
+
+    const eligible = [];
+    for (let z = 0; z < rows; z++) {
+        for (let x = 0; x < cols; x++) {
+            if (map[z][x] !== 0) continue;
+            if (Math.abs(x - start.x) + Math.abs(z - start.z) <= 2) continue;
+            if (portalDown && portalDown.x === x && portalDown.z === z) continue;
+            if (portalUp && portalUp.x === x && portalUp.z === z) continue;
+            if (occupiedSet.has(`${x},${z}`)) continue;
+            eligible.push({ x, z });
+        }
+    }
+    if (eligible.length === 0) return [];
+
+    const rolls = Math.min(dungeonLevel, 5);
+    const chests = [];
+    const used = new Set();
+
+    for (let i = 0; i < rolls; i++) {
+        if (rng() >= CHEST_SPAWN_CHANCE) continue;
+        for (let tries = 0; tries < 30; tries++) {
+            const pick = eligible[Math.floor(rng() * eligible.length)];
+            const key = `${pick.x},${pick.z}`;
+            if (!used.has(key)) {
+                used.add(key);
+                chests.push({ x: pick.x, z: pick.z, used: false, state: null });
+                break;
+            }
+        }
+    }
+
+    return chests;
+}
+
 export function getDungeonData(dungeonLevel = 1) {
     const { map, rooms } = _getLayout(dungeonLevel);
     const playerStart = { x: rooms[0].cx, z: rooms[0].cz };
@@ -362,6 +417,7 @@ export function getDungeonData(dungeonLevel = 1) {
     const torchPositions = getTorchPositions(dungeonLevel);
     const traps = getTrapPositions(dungeonLevel, portals.down, portals.up, playerStart);
     const fountains = getFountainPositions(dungeonLevel, portals.down, portals.up, playerStart);
+    const chests = getChestPositions(dungeonLevel, portals.down, portals.up, playerStart, fountains);
 
     return {
         map,
@@ -374,5 +430,6 @@ export function getDungeonData(dungeonLevel = 1) {
         portalUp: portals.up,
         traps,
         fountains,
+        chests,
     };
 }

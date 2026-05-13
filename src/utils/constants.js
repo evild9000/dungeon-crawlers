@@ -58,6 +58,11 @@ export const FOUNTAIN_SPAWN_CHANCE     = 0.25;              // 25% chance per ro
 export const FOUNTAIN_PROXIMITY        = 2.5;               // world units (~0.6 cells) to trigger interaction
 export const FOUNTAIN_BUFF_DURATION_MS = 10 * 60 * 1000;   // 10 minutes (all timed fountain buffs)
 
+// Magical chests (spawned per dungeon level)
+// Uses the same roll cadence as fountains: min(dungeonLevel, 5) rolls.
+export const CHEST_SPAWN_CHANCE = 0.25;
+export const CHEST_PROXIMITY = FOUNTAIN_PROXIMITY;
+
 // Enemy system — quadrupled to suit the 40×40 procedural dungeon.
 export const ENEMY_SPAWN_INTERVAL = 8;     // seconds between spawns (quadrupled rate)
 export const ENEMY_MOVE_INTERVAL = 15;     // seconds between moves
@@ -302,10 +307,12 @@ export const TINKERER_TYPE = { name: 'Tinkerer', spriteW: 1.4, spriteH: 1.8 };
 export const MELEE_STAMINA_COST = 3;
 export const MELEE_DAMAGE_MIN = 2;
 export const MELEE_DAMAGE_MAX = 12;
+export const MELEE_DAMAGE_BONUS_MULT = 1.20;  // 20% constant bonus to all melee damage
 export const RANGED_STAMINA_COST = 2;
 // Phase 8 rule 11: +1 to both min and max.
 export const RANGED_DAMAGE_MIN = 2;
 export const RANGED_DAMAGE_MAX = 9;
+export const RANGED_DAMAGE_BONUS_MULT = 1.10;  // 10% constant bonus to all ranged damage
 export const MAGIC_MANA_COST = 3;
 export const MAGIC_DAMAGE_MIN = 1;
 export const MAGIC_DAMAGE_MAX = 8;
@@ -444,15 +451,22 @@ export const WARRIOR_STUN_PER_LEVEL = 0.03;   // +3% melee stun per level
 // Warrior L20 special abilities
 export const WARRIOR_DEFEND_MODE_UNLOCK_LEVEL   = 20;
 export const WARRIOR_DEFEND_BLOCK_BONUS_PER_3LV = 0.01; // +1% intercept/block per 3 warrior levels
-export const WARRIOR_INTERCEPT_DAMAGE_MULT      = 0.10; // intercepted damage reduced to 10% post-defense
+export const WARRIOR_INTERCEPT_DAMAGE_MULT      = 0.20; // intercepted damage reduced to 20% post-defense
 export const WARRIOR_STUN_RESIST_BASE           = 0.20; // 20% base stun resistance at L20
 export const WARRIOR_STUN_RESIST_PER_2_LEVELS   = 0.01; // +1% per 2 levels beyond 1 (so 30% at L20)
+export const WARRIOR_RETALIATION_UNLOCK_LEVEL   = 25;
+export const WARRIOR_RETALIATION_BASE_CHANCE    = 0.25; // 25% base on successful intercept
+export const WARRIOR_RETALIATION_PER_LEVEL      = 0.005; // +0.5% per level (= level / 2 %)
+export const WARRIOR_RETALIATION_DAMAGE_MULT    = 0.75; // 75% of a normal melee strike
 export const RANGER_CRIT_PER_LEVEL = 0.03;    // +3% ranged crit per level
 export const MAGE_STUN_PER_LEVEL = 0.01;      // +1% magic stun per level
 export const ROGUE_INSTAKILL_PER_LEVEL = 0.01;// +1% backstab instakill per level beyond 1
 export const MONK_DODGE_PER_LEVEL = 0.01;     // +1% dodge per level beyond 1
 export const MONK_WHIRLWIND_PER_LEVEL = 0.01; // +1% whirlwind per level beyond 1
 export const CLERIC_HEAL_PER_LEVEL = 0.02;    // +2% heal amount per level beyond 1
+export const CLERIC_CLEANSE_UNLOCK_LEVEL       = 25;
+export const CLERIC_CLEANSE_CHANCE_PER_LEVEL   = 0.02; // cleric level × 2%
+export const CLERIC_CLEANSE_MANA_PER_STATE     = 3;
 export const NECRO_DRAIN_PER_LEVEL = 1;       // +1 drain per level beyond 1
 
 // Barbarian class constants
@@ -471,6 +485,43 @@ export const BARBARIAN_WOUND_THRESH_3          = 0.25; // at 25% HP → ×6 dmg
 export const BARBARIAN_WOUND_MULT_1            = 2;
 export const BARBARIAN_WOUND_MULT_2            = 4;
 export const BARBARIAN_WOUND_MULT_3            = 6;
+
+// ── Barbarian L25 — Battle Encouragement ───────────────────────────────────
+export const BARBARIAN_ENCOURAGE_UNLOCK_LEVEL = 25;
+export const BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND = 0.03;
+export const BARBARIAN_ENCOURAGE_MAX_ROUNDS = 20;
+export const BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT = 0.60;
+
+// ── Ranger L25 — Animal Totems ─────────────────────────────────────────────
+export const RANGER_TOTEM_UNLOCK_LEVEL = 25;
+export const RANGER_TOTEM_MANA_PER_ROUND = 5;
+export const RANGER_TOTEM_DURATION_DIVISOR = 8;
+export const RANGER_WOLF_TOTEM_BLEED_FRACTION = 0.50;
+export const RANGER_BEAR_TOTEM_STUN_CHANCE = 0.25;
+export const RANGER_BEAR_TOTEM_DEFENSE_DIVISOR = 3;
+export const RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL = 0.005; // level / 2 percent
+export const RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL = 0.005; // level / 2 percent
+export const RANGER_EAGLE_TOTEM_REFLECT_FRACTION = 0.50;
+export const RANGER_PIXIE_TOTEM_POISON_FRACTION = 0.33;
+export const RANGER_PIXIE_TOTEM_MAGIC_RESIST = 0.50;
+
+// ── Monk L25 — Avatar ─────────────────────────────────────────────────────
+export const MONK_AVATAR_UNLOCK_LEVEL = 25;
+export const MONK_AVATAR_MANA_PER_ROUND = 10;
+export const MONK_AVATAR_HP_REGEN = 0.10;
+export const MONK_AVATAR_CLEANSE_BASE = 0.16;
+export const MONK_AVATAR_CLEANSE_PER_LEVEL = 0.005; // level / 2 percent
+export const MONK_AVATAR_DOT_FRACTION = 0.50;
+export const MONK_AVATAR_DOT_DURATION_DIVISOR = 8;
+
+// ── Necromancer L25 — Demi-Lich ────────────────────────────────────────────
+export const NECRO_DEMI_LICH_UNLOCK_LEVEL = 25;
+export const NECRO_DEMI_LICH_MANA_COST = 20;
+export const NECRO_DEMI_LICH_DEFENSE_BASE = 10;
+export const NECRO_DEMI_LICH_DEFENSE_PER_LEVEL = 2;
+export const NECRO_DEMI_LICH_TARGET_DIVISOR = 5;
+export const NECRO_DEMI_LICH_DAMAGE_PER_LEVEL = 2;
+export const NECRO_DEMI_LICH_MAGIC_RESIST = 0.50;
 
 // Summons
 export const RANGER_SUMMON_MANA_COST = 7;
@@ -714,6 +765,9 @@ export const PALADIN_SMITE_BOSS_DAMAGE_MULT  = 4;    // on bosses/mega-bosses: x
 export const PALADIN_AOE_SMITE_MANA_MULT     = 3;    // 3× normal smite mana
 export const PALADIN_AOE_SMITE_DAMAGE_MULT   = (1 / 3); // 1/3 normal smite damage
 export const PALADIN_AOE_SMITE_INSTAKILL_MULT = (1 / 3); // 1/3 normal purge chance
+export const PALADIN_DRAGONSLAYER_UNLOCK_LEVEL = 25;
+export const PALADIN_DRAGONSLAYER_MANA_PER_ROUND = 15;
+export const PALADIN_DRAGON_AURA_REDUCTION_DIVISOR = 2; // floor(level / 2)
 
 // Monk L20 special: Quivering Palm
 export const MONK_QUIVERING_PALM_UNLOCK_LEVEL    = 20;
@@ -721,6 +775,8 @@ export const MONK_QUIVERING_PALM_DURATION_BASE   = 2; // 2 rounds at L20
 export const MONK_QUIVERING_PALM_DURATION_PER_10LV = 1; // +1 per 10 levels above 20
 export const MONK_QUIVERING_PALM_STACK_CAP_DIVISOR = 5; // cap = floor(highestMonkLevel/5)
 export const MONK_QUIVERING_PALM_STACK_CAP_MAX   = 10;  // absolute max cap rounds
+export const MONK_QUIVERING_PALM_STAMINA_MULT    = 2;   // costs 2x normal melee stamina
+export const MONK_QUIVERING_PALM_MANA_MULT       = 2;   // costs 2x normal monk melee mana
 
 // Cleric L20 special abilities
 export const CLERIC_MASS_REGEN_UNLOCK_LEVEL      = 20;
@@ -932,16 +988,38 @@ export const GOLEM_TIERS = [
         meleeMin: 25, meleeMax: 50,
         // AoE divine purge: hits floor(AL/3) enemies per turn.
         // 33% chance each round to heal living, non-undead, non-golem party members
-        // for 10% of the golem's lost HP.
+        // for 10% of that ally's lost HP.
         // Takes half damage from magic, AoE, and ranged.
         divineSoul: true,
         halfDmgSpecial: true,
         immune: ['poison', 'stun', 'web'],
-        description: 'A vessel of pure divine will. Each turn strikes floor(AL/3) enemies with divine melee damage, ignoring half their defense, with a 20% chance to stun each target. Each living ally (including summoned beasts) has a 33% independent chance per round to be healed for 10% of the golem\'s lost HP. Takes half damage from magic, AoE, and ranged. Immune to poison, stun, and web.',
+        description: 'A vessel of pure divine will. Each turn strikes floor(AL/3) enemies with divine melee damage, ignoring half their defense, with a 20% chance to stun each target. Each living ally (including summoned beasts) has a 33% independent chance per round to be healed for 10% of that ally\'s lost HP. Takes half damage from magic, AoE, and ranged. Immune to poison, stun, and web.',
     },
 ];
 
 export const ARTIFICER_HEAL_GOLEM_PCT = 0.5;   // uses 1 reagent of tier → 50% max HP
+export const ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL = 25;
+export const TRINKET_AUGMENT_MIN_LEVEL = 4;
+export const TRINKET_AUGMENT_MAX_LEVEL = 7;
+export const TRINKET_AUGMENT_POOL_PCT_BY_LEVEL = {
+    4: 0.05,
+    5: 0.10,
+    6: 0.15,
+    7: 0.20,
+};
+export const TRINKET_AUGMENT_REGEN_BY_LEVEL = {
+    4: 2,
+    5: 4,
+    6: 6,
+    7: 8,
+};
+export const ARTIFICER_GOLEM_ATTACHMENT_UNLOCK_LEVEL = 25;
+export const GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT = 0.50;
+export const GOLEM_ATTACHMENT_MAX_LIMBS = 2;
+export const GOLEM_ATTACHMENT_SHIELD_DEFENSE = 10;
+export const GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE = 0.25;
+export const GOLEM_ATTACHMENT_MAX_TRINKETS = 5;
+export const GOLEM_ATTACHMENT_TRINKET_HP_MULT = 0.20;
 
 // Enemy tag categories — used by paladin Smite, crafted rider flavour, etc.
 // Mirrors the existing UNDEAD_TIERS kind='undead' and BEAST_TYPES kind='beast'.
@@ -974,6 +1052,9 @@ export const BARD_CHARM_BASE_CHANCE      = 0.50;   // 50% at L1; +1%/2 levels �
 export const BARD_CHARM_CHANCE_PER_2_LV  = 0.005;  // 0.5% per level = 1% per 2 levels
 export const BARD_CHARM_DURATION_DIVISOR = 5;       // floor(bardLevel/5) rounds; L20 → 4 rounds
 export const BARD_CHARM_IMMUNE_TAGS      = ['undead', 'elemental', 'construct'];
+export const BARD_RALLYING_MELODY_UNLOCK_LEVEL = 25;
+export const BARD_RALLYING_MELODY_MANA_COST = 40;
+export const BARD_RALLYING_MELODY_RESTORE_FRACTION = 0.10;
 
 // ── Ranger L20: Explosive Arrow ───────────────────────────────────────────
 // Hits ALL alive enemies at half post-defense damage.
@@ -982,7 +1063,7 @@ export const BARD_CHARM_IMMUNE_TAGS      = ['undead', 'elemental', 'construct'];
 export const RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL  = 20;
 export const RANGER_EXPLOSIVE_ARROW_STAMINA_MULT  = 3;    // 3× normal ranged stamina = 6 ST
 export const RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT   = 0.667; // ~⅔ post-defense damage per target
-export const RANGER_EXPLOSIVE_ARROW_CRIT_MULT     = 0.5;  // half normal crit chance
+export const RANGER_EXPLOSIVE_ARROW_CRIT_MULT     = 0.667; // ~⅔ normal crit chance (≈66%)
 export const RANGER_EXPLOSIVE_ARROW_INSTAKILL_MULT = 0.5; // half normal instakill chance
 
 // ── Ranger L20+: Extra Favored Enemy slots ────────────────────────────────
@@ -1019,6 +1100,21 @@ export const MAGE_MIRROR_IMAGE_COUNT_DIVISOR = 7;    // floor(level/7) images
 export const MAGE_AOE_CRIT_CHANCE_PER_2LV    = 0.01; // 1% per 2 mage levels
 export const MAGE_AOE_CRIT_DAMAGE_BASE       = 2.0;  // ×2 base (+100%)
 export const MAGE_AOE_CRIT_DAMAGE_PER_LV     = 0.01; // +1% per mage level
+export const MAGE_FAMILIAR_UNLOCK_LEVEL      = 25;
+export const MAGE_FAMILIAR_MAX_LEVEL         = 20;
+export const MAGE_FAMILIAR_GOLD_PER_LEVEL    = 10000;
+export const MAGE_FAMILIAR_MAGIC_PER_LEVEL   = 0.10; // +10% magic / AoE damage per familiar level
+export const MAGE_FAMILIAR_DEFENSE_PER_LEVEL = 1;
+
+// Druid L25: Shambling Mound summon
+export const DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL = 25;
+export const DRUID_SHAMBLING_MOUND_MANA_COST    = 100;
+
+// Rogue L25: field trap tools + anti-magic evasion
+export const ROGUE_TRAP_UNLOCK_LEVEL        = 25;
+export const ROGUE_TRAP_DOT_FRACTION        = 0.50;
+export const ROGUE_TRAP_DOT_ROUNDS          = 3;
+export const ROGUE_EVASION_STAMINA_COST     = 2;
 
 // ── Necromancer L20 — Lich Form ──────────────────────────────────────────────
 export const NECRO_LICH_FORM_UNLOCK_LEVEL    = 20;

@@ -24,6 +24,7 @@ import {
     TRAP_TREASURE_CHANCE, TRAP_TREASURE_MIN, TRAP_TREASURE_MAX,
     TRAP_TYPES,
     POISON_DURATION_ROUNDS, POISON_DAMAGE_FRACTION,
+    ROGUE_TRAP_UNLOCK_LEVEL,
     BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD,
     ENABLE_SHADOWS,
     XP_LEVEL_BASE,
@@ -44,6 +45,7 @@ import { CombatUI } from '../ui/CombatUI.js';
 import { InventoryUI } from '../ui/InventoryUI.js';
 import { ShopUI } from '../ui/ShopUI.js';
 import { CraftingUI } from '../ui/CraftingUI.js';
+import { FamiliarUI } from '../ui/FamiliarUI.js';
 import { soundManager } from '../utils/SoundManager.js';
 import { CLASSES, CLASS_IDS } from '../entities/Classes.js';
 import { SPECIES, SPECIES_IDS } from '../entities/Species.js';
@@ -52,7 +54,7 @@ import { LightPickerUI } from '../ui/LightPickerUI.js';
 import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
-import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS } from '../utils/constants.js';
+import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS, CHEST_PROXIMITY } from '../utils/constants.js';
 import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { LoreBook } from '../ui/LoreBook.js';
@@ -117,6 +119,14 @@ export class Game {
             () => this._onInventoryChanged(),
             { combatSystem: this.combatSystem, logger: (msg) => this._log(msg) },
         );
+        this.familiarUI = new FamiliarUI(
+            () => this.gameState,
+            () => {
+                this._onInventoryChanged();
+                this._saveNow();
+            },
+            { logger: (msg) => this._log(msg) },
+        );
 
         // --- App state ---
         this.state = STATE.MENU;
@@ -146,6 +156,7 @@ export class Game {
         this._foodTickAccum   = {}; // per-member food timer accumulation (seconds)
         this._bardSongTimer   = 0;  // accumulates seconds for bard song mana drain
         this._fountainCooldown = 0; // prevents re-triggering fountain immediately after dismiss
+        this._chestCooldown = 0;
 
         // --- Minimap / fog-of-war (Phase 11) ---
         this.minimapSystem = new MinimapSystem();
@@ -216,14 +227,19 @@ export class Game {
         this.gameUI       = document.getElementById('game-ui');
         this.pauseOverlay = document.getElementById('pause-overlay');
         this.crosshair    = document.getElementById('crosshair');
+        this.pauseLoadPanel = document.getElementById('pause-load-panel');
+        this.pauseSaveSlotsList = document.getElementById('pause-save-slots-list');
 
         // --- Pause overlay interactions ---
         this.pauseOverlay.addEventListener('click', (e) => {
             if (this.state !== STATE.PLAYING) return;
-            if (e.target.id === 'btn-save-exit' || e.target.id === 'btn-save-now') return;
+            if (e.target.closest('button') || e.target.closest('#pause-load-panel')) return;
             // Don't grab pointer lock if an overlay is visible
             if (this._anyOverlayOpen()) return;
-            this.renderer.domElement.requestPointerLock();
+            const lockPromise = this.renderer.domElement.requestPointerLock();
+            if (lockPromise && typeof lockPromise.catch === 'function') {
+                lockPromise.catch(() => {});
+            }
         });
         document.getElementById('btn-save-exit').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -237,6 +253,21 @@ export class Game {
                 if (this.state !== STATE.PLAYING) return;
                 await this._saveNow();
                 if (this.partyHUD) this.partyHUD.showToast('Game saved.');
+            });
+        }
+        const loadPauseBtn = document.getElementById('btn-load-pause');
+        if (loadPauseBtn) {
+            loadPauseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.state !== STATE.PLAYING) return;
+                this._showPauseLoadPicker();
+            });
+        }
+        const loadPauseCancelBtn = document.getElementById('btn-pause-load-cancel');
+        if (loadPauseCancelBtn) {
+            loadPauseCancelBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._hidePauseLoadPicker();
             });
         }
 
@@ -273,6 +304,10 @@ export class Game {
         // --- Fountain modal (built dynamically — no HTML element needed) ---
         this._fountainModal = null;   // created on first use
         this._pendingFountain = null; // the dungeonData.fountains[] entry being offered
+
+        // --- Magical chest modal (built dynamically) ---
+        this._chestModal = null;
+        this._pendingChest = null;
 
         // --- Bag picker modal (Phase 8 follow-up) ---
         this._bagpickModal  = document.getElementById('bagpick-modal');
@@ -332,6 +367,7 @@ export class Game {
     _anyOverlayOpen() {
         return this.shopUI.isOpen
             || (this.craftingUI && this.craftingUI.isOpen)
+            || (this.familiarUI && this.familiarUI.isOpen)
             || this.inventoryUI.isGroupOpen
             || this.inventoryUI.isPersonalOpen
             || (this._helpOverlay && this._helpOverlay.style.display === 'flex')
@@ -340,7 +376,9 @@ export class Game {
             || (this._portalModal && this._portalModal.style.display === 'flex')
             || (this._trapModal && this._trapModal.style.display === 'flex')
             || (this._fountainModal && this._fountainModal.style.display === 'flex')
+            || (this._chestModal && this._chestModal.style.display === 'flex')
             || (this._bagpickModal && this._bagpickModal.style.display === 'flex')
+            || (this.pauseLoadPanel && this.pauseLoadPanel.style.display === 'block')
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
             || (this.partySpellModal && this.partySpellModal.isOpen)
             || (this.loreBook && this.loreBook.isOpen);
@@ -396,6 +434,7 @@ export class Game {
             if (e.key === 'Escape') {
                 if (this.shopUI.isOpen) this.shopUI.hide();
                 else if (this.craftingUI && this.craftingUI.isOpen) this.craftingUI.hide();
+                else if (this.familiarUI && this.familiarUI.isOpen) this.familiarUI.hide();
                 else if (this.inventoryUI.isPersonalOpen) this.inventoryUI.hidePersonal();
                 else if (this.inventoryUI.isGroupOpen) this.inventoryUI.hideGroup();
                 else if (this._recruitModal && this._recruitModal.style.display === 'flex') this._hideRecruitModal();
@@ -404,6 +443,7 @@ export class Game {
                 else if (this._portalModal && this._portalModal.style.display === 'flex') this._hidePortalModal();
                 else if (this._trapModal && this._trapModal.style.display === 'flex') this._skipTrap();
                 else if (this._fountainModal && this._fountainModal.style.display === 'flex') this._hideFountainModal();
+                else if (this._chestModal && this._chestModal.style.display === 'flex') this._hideChestModal();
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
@@ -419,6 +459,7 @@ export class Game {
             case 'b': e.preventDefault(); this._onOpenBagPicker(); break;
             case 't': e.preventDefault(); this._onOpenLightPicker(); break;
             case 'k': e.preventDefault(); this._onOpenCrafting(); break;
+            case 'f': e.preventDefault(); this._onOpenFamiliar(); break;
             case 'v': e.preventDefault(); this._onOpenPartySpells(); break;
             case 'x': e.preventDefault(); this._onOpenLoreBook(); break;
         }
@@ -431,6 +472,15 @@ export class Game {
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
         this.craftingUI.show();
+    }
+
+    _onOpenFamiliar() {
+        if (!this.familiarUI || !this.gameState) return;
+        if (this.state !== STATE.PLAYING) return;
+        this.pauseOverlay.style.display = 'none';
+        this.familiarUI.show();
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
     }
 
     _onToggleMinimap() {
@@ -731,7 +781,61 @@ export class Game {
         const data = await this.saveManager.load(saveId);
         if (!data) return;
         this.gameState = GameState.fromSaveData(data);
+        this._hidePauseLoadPicker();
         this._enterGame(false);
+    }
+
+    async _showPauseLoadPicker() {
+        if (!this.pauseLoadPanel || !this.pauseSaveSlotsList) return;
+        this.pauseLoadPanel.style.display = 'block';
+        this.pauseSaveSlotsList.innerHTML = '';
+
+        const saves = await this.saveManager.listSaves();
+        if (saves.length === 0) {
+            const msg = document.createElement('p');
+            msg.className = 'no-saves';
+            msg.textContent = 'No saved games found.';
+            this.pauseSaveSlotsList.appendChild(msg);
+            return;
+        }
+
+        for (const save of saves) {
+            const slot = document.createElement('div');
+            slot.className = 'save-slot';
+
+            const info = document.createElement('div');
+            info.className = 'save-slot-info';
+
+            const name = document.createElement('div');
+            name.className = 'save-slot-name';
+            name.textContent = save.name;
+
+            const details = document.createElement('div');
+            details.className = 'save-slot-details';
+            const n = save.party ? save.party.length : 0;
+            const date = new Date(save.updatedAt).toLocaleString();
+            details.textContent = `${n} member${n !== 1 ? 's' : ''} · ${date}`;
+
+            info.appendChild(name);
+            info.appendChild(details);
+            slot.appendChild(info);
+
+            const loadBtn = document.createElement('button');
+            loadBtn.className = 'save-slot-btn load-btn';
+            loadBtn.textContent = 'Load';
+            loadBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await this._onLoadGame(save.id);
+            });
+            slot.appendChild(loadBtn);
+
+            this.pauseSaveSlotsList.appendChild(slot);
+        }
+    }
+
+    _hidePauseLoadPicker() {
+        if (this.pauseLoadPanel) this.pauseLoadPanel.style.display = 'none';
+        if (this.pauseSaveSlotsList) this.pauseSaveSlotsList.innerHTML = '';
     }
 
     _enterGame(isNew) {
@@ -761,6 +865,9 @@ export class Game {
         this.autoSaveTimer = 0;
         this._combatCooldown = 0;
 
+        if (this._onPointerLockChange) {
+            document.removeEventListener('pointerlockchange', this._onPointerLockChange);
+        }
         this._onPointerLockChange = () => {
             if (this.state !== STATE.PLAYING) return;
             const locked = document.pointerLockElement === this.renderer.domElement;
@@ -783,6 +890,7 @@ export class Game {
         this.state = STATE.MENU;
         this.gameUI.style.display = 'none';
         this.pauseOverlay.style.display = 'none';
+        this._hidePauseLoadPicker();
         this.crosshair.style.display = 'none';
         this.inventoryUI.hideGroup();
         this.inventoryUI.hidePersonal();
@@ -868,6 +976,7 @@ export class Game {
             onPersonalInventory: (id) => this._onPersonalInventory(id),
             onOpenLightPicker: () => this._onOpenLightPicker(),
             onOpenCrafting: () => this._onOpenCrafting(),
+            onOpenFamiliar: () => this._onOpenFamiliar(),
         });
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         this.partyHUD.show();
@@ -968,6 +1077,7 @@ export class Game {
 
             if (this._portalCooldown > 0) this._portalCooldown -= dt;
             if (this._fountainCooldown > 0) this._fountainCooldown -= dt;
+            if (this._chestCooldown > 0) this._chestCooldown -= dt;
 
             if (this._combatCooldown > 0) {
                 this._combatCooldown -= dt;
@@ -986,6 +1096,9 @@ export class Game {
 
             // Fountain proximity check
             if (this._fountainCooldown <= 0) this._checkFountains();
+
+            // Magical chest proximity check
+            if (this._chestCooldown <= 0) this._checkChests();
 
             const playerGX = Math.floor(this.player.container.position.x / CELL_SIZE);
             const playerGZ = Math.floor(this.player.container.position.z / CELL_SIZE);
@@ -1178,6 +1291,14 @@ export class Game {
                 for (const item of loot.items) {
                     this.gameState.inventory.addItem(item.itemId, item.quantity);
                 }
+            }
+        } else if (result === 'fled') {
+            // Remove only the enemies that DIED during combat. Their sprites
+            // would otherwise remain on the map as non-collidable ghost enemies
+            // that wander around but can never be re-engaged. Living survivors
+            // stay on the map and will re-engage normally once the cooldown ends.
+            for (const e of this.combatSystem.enemies) {
+                if (e.health <= 0) this.enemyManager.removeEnemy(e);
             }
         }
 
@@ -1508,6 +1629,13 @@ export class Game {
 
             let gold = 0;
             const trapItems = [];
+            if (rogue.level >= ROGUE_TRAP_UNLOCK_LEVEL && typeof rogue.addItem === 'function') {
+                rogue.addItem('captured_trap', 1);
+                const trapItemDef = getItemDef('captured_trap');
+                trapItems.push(trapItemDef ? trapItemDef.name : 'Captured Trap');
+                this._log(`🪤 ${rogue.name} recovers the trap mechanism for later use.`);
+                if (this.partyHUD) this.partyHUD.showToast('+Captured Trap');
+            }
             if (Math.random() < TRAP_TREASURE_CHANCE) {
                 const dlvl = this.gameState.dungeonLevel || 1;
                 const low  = TRAP_TREASURE_MIN * dlvl * 2;
@@ -1972,6 +2100,454 @@ export class Game {
         document.getElementById('fountain-leave-btn')?.addEventListener('click', () => this._hideFountainModal());
     }
 
+    // ────────────────────────────────────────────
+    // Magical Chests
+    // ────────────────────────────────────────────
+
+    _checkChests() {
+        if (!this.dungeonData || !this.player || !this.dungeonData.chests) return;
+        if (this._chestModal && this._chestModal.style.display === 'flex') return;
+
+        const pos = this.player.container.position;
+        for (const c of this.dungeonData.chests) {
+            if (c.used) continue;
+            const cx = (c.x + 0.5) * CELL_SIZE;
+            const cz = (c.z + 0.5) * CELL_SIZE;
+            const dx = pos.x - cx;
+            const dz = pos.z - cz;
+            if (dx * dx + dz * dz <= CHEST_PROXIMITY * CHEST_PROXIMITY) {
+                this._showChestModal(c);
+                return;
+            }
+        }
+    }
+
+    _ensureChestState(chest) {
+        if (!chest.state) {
+            const dLvl = this.gameState.dungeonLevel || 1;
+            const maxTrapChecks = Math.max(0, Math.floor(dLvl / 8));
+            const trapChance = Math.min(1, (dLvl * 2) / 100);
+            const traps = [];
+            for (let i = 0; i < maxTrapChecks; i++) {
+                if (Math.random() < trapChance) {
+                    const def = TRAP_TYPES[Math.floor(Math.random() * TRAP_TYPES.length)] || TRAP_TYPES[0];
+                    traps.push({
+                        id: `${Date.now()}_${i}_${Math.floor(Math.random() * 100000)}`,
+                        type: def ? def.id : 'generic',
+                        resolved: false,
+                        disarmed: false,
+                        suffered: false,
+                    });
+                }
+            }
+            const secret = Array.from({ length: 5 }, () => String(1 + Math.floor(Math.random() * 9))).join('');
+            chest.state = {
+                traps,
+                lock: {
+                    secret,
+                    attemptsLeft: 10,
+                    solved: false,
+                    failed: false,
+                    history: [],
+                },
+            };
+        }
+        return chest.state;
+    }
+
+    _showChestModal(chest) {
+        this._pendingChest = chest;
+        this._ensureChestState(chest);
+
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+
+        if (!this._chestModal) {
+            const overlay = document.createElement('div');
+            overlay.id = 'chest-modal';
+            Object.assign(overlay.style, {
+                display: 'none',
+                position: 'fixed',
+                inset: '0',
+                background: 'rgba(0,0,0,0.8)',
+                zIndex: '1110',
+                alignItems: 'center',
+                justifyContent: 'center',
+            });
+            const box = document.createElement('div');
+            box.id = 'chest-modal-box';
+            Object.assign(box.style, {
+                background: '#1f1308',
+                border: '2px solid #ffb347',
+                borderRadius: '10px',
+                padding: '20px 24px',
+                width: 'min(620px, 92vw)',
+                color: '#f9e7c4',
+                fontFamily: 'monospace',
+                boxShadow: '0 0 30px rgba(255,179,71,0.35)',
+            });
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            this._chestModal = overlay;
+        }
+
+        this._renderChestModal();
+        this._chestModal.style.display = 'flex';
+    }
+
+    _hideChestModal() {
+        if (this._chestModal) this._chestModal.style.display = 'none';
+        this._pendingChest = null;
+        this._chestCooldown = 2.0;
+        this._saveNow();
+    }
+
+    _nextUnresolvedChestTrap(state) {
+        return (state.traps || []).find(t => !t.resolved) || null;
+    }
+
+    _renderChestModal() {
+        if (!this._chestModal || !this._pendingChest) return;
+        const state = this._ensureChestState(this._pendingChest);
+        const box = this._chestModal.querySelector('#chest-modal-box');
+        if (!box) return;
+
+        const pendingTrap = this._nextUnresolvedChestTrap(state);
+        if (pendingTrap) {
+            const def = this._trapDef(pendingTrap);
+            const rogues = (this.gameState.party || []).filter(m => !m.isSummoned && m.classId === 'rogue' && m.health > 0);
+
+            let body = `<div style="font-size:18px;font-weight:bold;color:#ffcf7d;margin-bottom:10px;">🪄 Sealed Arcane Chest</div>`;
+            body += `<div style="margin-bottom:10px;"><b>${def.icon} ${def.name}</b> detected on the chest lockwork.</div>`;
+            body += `<div style="margin-bottom:12px;color:#e6d6b2;">${def.hint || 'Runes hum with danger.'}</div>`;
+
+            if (rogues.length > 0) {
+                body += '<div style="margin-bottom:10px;">Choose a rogue to disarm this trap:</div>';
+                body += '<div id="chest-btn-row" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>';
+                body += '<div style="font-size:12px;color:#d8c9aa;">Failure hurts only the selected rogue, like normal trap disarm.</div>';
+                body += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
+                    '<button id="chest-leave-btn" class="menu-btn back-btn">Leave for now</button>' +
+                    '</div>';
+                box.innerHTML = body;
+
+                const row = box.querySelector('#chest-btn-row');
+                for (const r of rogues) {
+                    const chance = TRAP_DISARM_BASE + TRAP_DISARM_PER_LEVEL * Math.max(0, r.level - 1);
+                    const btn = document.createElement('button');
+                    btn.className = 'menu-btn';
+                    btn.textContent = `${r.name} disarms (${Math.round(chance * 100)}%)`;
+                    btn.addEventListener('click', () => this._resolveChestTrapWithRogue(this._pendingChest, pendingTrap, r));
+                    row.appendChild(btn);
+                }
+            } else {
+                body += '<div style="margin-bottom:10px;color:#ffc9a0;">No living rogue is available to disarm this chest trap.</div>';
+                body += '<div style="margin-bottom:10px;">You can force your way through the trap, or leave and return later.</div>';
+                body += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
+                    '<button id="chest-endure-btn" class="menu-btn">Trigger Trap</button>' +
+                    '<button id="chest-leave-btn" class="menu-btn back-btn">Leave for now</button>' +
+                    '</div>';
+                box.innerHTML = body;
+                box.querySelector('#chest-endure-btn')?.addEventListener('click', () => this._sufferChestTrap(this._pendingChest, pendingTrap));
+            }
+            box.querySelector('#chest-leave-btn')?.addEventListener('click', () => this._hideChestModal());
+            return;
+        }
+
+        const lock = state.lock;
+        if (lock.failed) {
+            this._resolveChestFailure(this._pendingChest, true);
+            return;
+        }
+        if (lock.solved) {
+            this._resolveChestSuccess(this._pendingChest, true);
+            return;
+        }
+
+        const historyHtml = (lock.history || []).map(h => {
+            const marks = h.marks.map(m => {
+                if (m === 'g') return '<span style="color:#51e06f;font-weight:bold;">X</span>';
+                if (m === 'y') return '<span style="color:#f0c94b;font-weight:bold;">X</span>';
+                return '<span style="color:#ff6262;font-weight:bold;">X</span>';
+            }).join(' ');
+            return `<div style="padding:5px 0;border-top:1px solid rgba(255,179,71,0.2);"><b>${h.guess}</b> → ${marks}</div>`;
+        }).join('');
+
+        box.innerHTML = `
+            <div style="font-size:18px;font-weight:bold;color:#ffcf7d;margin-bottom:10px;">🔐 Arcane Lock Puzzle</div>
+            <div style="font-size:13px;line-height:1.6;margin-bottom:10px;">
+                Enter a 5-digit code (digits 1-9). You have <b>${lock.attemptsLeft}</b> guesses left.<br>
+                Feedback uses colored X markers only: green = correct digit and slot, yellow = correct digit wrong slot, red = digit not present.
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+                <input id="chest-code-input" type="text" maxlength="5" placeholder="12345"
+                    style="flex:1;background:#130c07;border:1px solid #8f6a3f;color:#f5e4c8;padding:8px;border-radius:6px;font-family:monospace;">
+                <button id="chest-guess-btn" class="menu-btn">Submit Guess</button>
+                <button id="chest-leave-btn" class="menu-btn back-btn">Leave</button>
+            </div>
+            <div style="max-height:220px;overflow:auto;background:rgba(0,0,0,0.22);padding:8px;border-radius:6px;">
+                ${historyHtml || '<i>No guesses yet.</i>'}
+            </div>`;
+
+        const input = box.querySelector('#chest-code-input');
+        const submit = () => {
+            const val = (input && input.value ? input.value : '').trim();
+            this._submitChestGuess(this._pendingChest, val);
+        };
+        box.querySelector('#chest-guess-btn')?.addEventListener('click', submit);
+        box.querySelector('#chest-leave-btn')?.addEventListener('click', () => this._hideChestModal());
+        input?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submit();
+        });
+        input?.focus();
+    }
+
+    _resolveChestTrapWithRogue(chest, trap, rogue) {
+        if (!chest || !trap || !rogue) return;
+        const def = this._trapDef(trap);
+        const chance = TRAP_DISARM_BASE + TRAP_DISARM_PER_LEVEL * Math.max(0, rogue.level - 1);
+
+        if (Math.random() < chance) {
+            trap.resolved = true;
+            trap.disarmed = true;
+            this._log(`🧰 ${rogue.name} disarms a ${def.name} on the magical chest.`);
+            if (rogue.level >= ROGUE_TRAP_UNLOCK_LEVEL && typeof rogue.addItem === 'function') {
+                rogue.addItem('captured_trap', 1);
+                const defItem = getItemDef('captured_trap');
+                this._log(`🪤 ${rogue.name} recovers ${defItem ? defItem.name : 'Captured Trap'}.`);
+                if (this.partyHUD) this.partyHUD.showToast('+Captured Trap');
+            }
+        } else {
+            let dmg = 0;
+            const dlvl = this.gameState.dungeonLevel || 1;
+            for (let i = 0; i < TRAP_DICE_COUNT; i++) dmg += 1 + Math.floor(Math.random() * TRAP_DICE_SIDES);
+            dmg *= dlvl;
+
+            rogue.health = Math.max(0, rogue.health - dmg);
+            trap.resolved = true;
+            trap.suffered = true;
+            this._log(`💥 ${rogue.name} fails to disarm the chest ${def.name} and takes ${dmg} damage.`);
+
+            if (def.kind === 'poison' && rogue.health > 0) {
+                const perTick = Math.max(1, Math.floor(dmg * POISON_DAMAGE_FRACTION));
+                rogue.addEffect({ type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+                this._log(`🟢 ${rogue.name} is poisoned! (${perTick}/rd for ${POISON_DURATION_ROUNDS} rds)`);
+            }
+            if (rogue.health <= 0) this._log(`⚰️ ${rogue.name} has fallen while disarming a chest trap.`);
+        }
+
+        if (this.partyHUD) this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+        this._saveNow();
+
+        if (this._isPartyWiped()) {
+            this._showChestResult('💀 Party Wipe', 'The chest trap has slain your entire party.', () => this._onPartyWipe());
+            return;
+        }
+        this._renderChestModal();
+    }
+
+    _sufferChestTrap(chest, trap) {
+        if (!chest || !trap) return;
+        const def = this._trapDef(trap);
+        const dlvl = this.gameState.dungeonLevel || 1;
+        let dmg = 0;
+        for (let i = 0; i < TRAP_DICE_COUNT; i++) dmg += 1 + Math.floor(Math.random() * TRAP_DICE_SIDES);
+        dmg *= dlvl;
+
+        const fallen = [];
+        for (const m of this.gameState.party) {
+            if (m.isSummoned || m.health <= 0) continue;
+            m.health = Math.max(0, m.health - dmg);
+            if (def.kind === 'poison' && m.health > 0) {
+                const perTick = Math.max(1, Math.floor(dmg * POISON_DAMAGE_FRACTION));
+                m.addEffect({ type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+            }
+            if (m.health <= 0) fallen.push(m.name);
+        }
+
+        trap.resolved = true;
+        trap.suffered = true;
+        this._log(`💥 The chest ${def.name} triggers! Each party member takes ${dmg} damage.`);
+        if (fallen.length > 0) this._log(`⚰️ Fallen: ${fallen.join(', ')}`);
+
+        if (this.partyHUD) this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+        this._saveNow();
+
+        if (this._isPartyWiped()) {
+            this._showChestResult('💀 Party Wipe', 'The chest trap has slain your entire party.', () => this._onPartyWipe());
+            return;
+        }
+        this._renderChestModal();
+    }
+
+    _rateChestGuess(secret, guess) {
+        let green = 0;
+        const sRem = [];
+        const gRem = [];
+        for (let i = 0; i < 5; i++) {
+            if (secret[i] === guess[i]) {
+                green++;
+            } else {
+                sRem.push(secret[i]);
+                gRem.push(guess[i]);
+            }
+        }
+
+        const counts = {};
+        for (const d of sRem) counts[d] = (counts[d] || 0) + 1;
+        let yellow = 0;
+        for (const d of gRem) {
+            if ((counts[d] || 0) > 0) {
+                yellow++;
+                counts[d]--;
+            }
+        }
+        const red = 5 - green - yellow;
+
+        const marks = [];
+        for (let i = 0; i < green; i++) marks.push('g');
+        for (let i = 0; i < yellow; i++) marks.push('y');
+        for (let i = 0; i < red; i++) marks.push('r');
+        for (let i = marks.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = marks[i];
+            marks[i] = marks[j];
+            marks[j] = tmp;
+        }
+        return { green, yellow, red, marks };
+    }
+
+    _submitChestGuess(chest, guess) {
+        if (!chest || !chest.state || !chest.state.lock) return;
+        const lock = chest.state.lock;
+
+        if (!/^[1-9]{5}$/.test(guess)) {
+            this._showChestResult('🔐 Invalid Guess', 'Enter exactly 5 digits, each from 1 to 9.', () => this._renderChestModal());
+            return;
+        }
+
+        if (lock.attemptsLeft <= 0 || lock.solved || lock.failed) return;
+
+        const result = this._rateChestGuess(lock.secret, guess);
+        lock.attemptsLeft = Math.max(0, lock.attemptsLeft - 1);
+        lock.history.push({ guess, ...result });
+
+        if (result.green === 5) {
+            lock.solved = true;
+            this._saveNow();
+            this._resolveChestSuccess(chest);
+            return;
+        }
+
+        if (lock.attemptsLeft <= 0) {
+            lock.failed = true;
+            this._saveNow();
+            this._resolveChestFailure(chest);
+            return;
+        }
+
+        this._saveNow();
+        this._renderChestModal();
+    }
+
+    _rollChestTreasure() {
+        const dlvl = this.gameState.dungeonLevel || 1;
+        const items = [];
+        let gold = 0;
+
+        if (Math.random() < TRAP_TREASURE_CHANCE) {
+            const low = TRAP_TREASURE_MIN * dlvl * 2;
+            const high = TRAP_TREASURE_MAX * dlvl * 2;
+            const baseGold = low + Math.floor(Math.random() * (high - low + 1));
+            gold = baseGold * 25;
+            this.gameState.inventory.addGold(gold);
+
+            const numRolls = dlvl;
+            const reagentId = dlvl < REAGENT_TIER_UNCOMMON_MIN ? 'reagent_common'
+                : dlvl < REAGENT_TIER_RARE_MIN ? 'reagent_uncommon'
+                    : 'reagent_rare';
+
+            for (let r = 0; r < numRolls; r++) {
+                const roll = Math.random();
+                let itemId = null;
+                if (roll < 0.35) itemId = 'food';
+                else if (roll < 0.55) itemId = reagentId;
+                else if (roll < 0.70) itemId = 'healing_potion';
+                else if (roll < 0.80) itemId = randomWeaponDrop();
+                else if (roll < 0.90) itemId = randomArmorDrop();
+                else itemId = randomShieldDrop();
+                if (itemId) {
+                    this.gameState.inventory.addItem(itemId, 1);
+                    const d = getItemDef(itemId);
+                    items.push(d ? d.name : itemId);
+                }
+            }
+
+            const trinketChance = Math.min(1, 0.66);
+            for (let pass = 0; pass < 3; pass++) {
+                if (Math.random() < trinketChance && TRINKET_IDS.length > 0) {
+                    const tid = TRINKET_IDS[Math.floor(Math.random() * TRINKET_IDS.length)];
+                    this.gameState.inventory.addItem(tid, 1);
+                    const tDef = getItemDef(tid);
+                    items.push(tDef ? tDef.name : tid);
+                }
+            }
+        }
+
+        return { gold, items };
+    }
+
+    _resolveChestSuccess(chest, resumeOnly = false) {
+        if (!chest) return;
+        const lock = chest.state && chest.state.lock;
+        if (!resumeOnly && lock) lock.solved = true;
+
+        const loot = this._rollChestTreasure();
+        chest.used = true;
+        if (this.dungeonRenderer) this.dungeonRenderer.removeChest(chest.x, chest.z);
+
+        if (this.partyHUD) {
+            if (loot.gold > 0) this.partyHUD.showToast(`+${loot.gold} gold`);
+            this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+        }
+        this._saveNow();
+
+        let body = 'The lock clicks open and the chest unfolds in a burst of arcane light.';
+        if (loot.gold > 0 || loot.items.length > 0) {
+            body += '<br><br>';
+            if (loot.gold > 0) body += `💎 <b>${loot.gold} gold</b><br>`;
+            if (loot.items.length > 0) body += `📦 ${loot.items.join(', ')}`;
+        } else {
+            body += '<br><br><i>The chest was real, but empty.</i>';
+        }
+        this._showChestResult('✨ Magical Chest Opened', body, () => this._hideChestModal());
+    }
+
+    _resolveChestFailure(chest, resumeOnly = false) {
+        if (!chest) return;
+        const lock = chest.state && chest.state.lock;
+        if (!resumeOnly && lock) lock.failed = true;
+
+        chest.used = true;
+        if (this.dungeonRenderer) this.dungeonRenderer.removeChest(chest.x, chest.z);
+        this._saveNow();
+
+        this._showChestResult('💨 Lock Failed', 'The final rune sputters out. The magical chest vanishes into dust!', () => this._hideChestModal());
+    }
+
+    _showChestResult(title, bodyHtml, onContinue) {
+        if (!this._chestModal) return;
+        const box = this._chestModal.querySelector('#chest-modal-box');
+        if (!box) return;
+        box.innerHTML = `
+            <div style="font-size:18px;font-weight:bold;color:#ffcf7d;margin-bottom:10px;">${title}</div>
+            <div style="font-size:13px;line-height:1.7;margin-bottom:14px;">${bodyHtml}</div>
+            <div style="text-align:right;"><button id="chest-result-continue" class="menu-btn">Continue</button></div>`;
+        box.querySelector('#chest-result-continue')?.addEventListener('click', () => {
+            if (onContinue) onContinue();
+        });
+        this._chestModal.style.display = 'flex';
+    }
+
     /**
      * Bard song ongoing mana drain — called once per in-game minute.
      * Each bard with active songs loses BARD_SONG_MANA_PER_MIN mana.
@@ -2195,12 +2771,18 @@ export class Game {
         if (this.state !== STATE.PLAYING) return;
         const inv = this.gameState.inventory;
 
-        if (!inv.hasItem('food')) {
-            this.partyHUD.showToast('Not enough food to rest!');
+        // 1 food per living non-golem party member (golems don't eat)
+        const foodCost = Math.max(1, this.gameState.party.filter(m =>
+            m.health > 0 && !(m.isSummoned && m.summonStats && m.summonStats.tierId)
+        ).length);
+
+        if (!inv.hasItem('food', foodCost)) {
+            const have = (inv.items.find(i => i.itemId === 'food') || {}).quantity || 0;
+            this.partyHUD.showToast(`Not enough food to rest! Need ${foodCost}, have ${have}.`);
             return;
         }
 
-        inv.removeItem('food');
+        inv.removeItem('food', foodCost);
         soundManager.playRest();
 
         const restMessages = [];
@@ -2227,8 +2809,8 @@ export class Game {
         }
 
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
-        this.partyHUD.showToast('The party rests and recovers.');
-        this._log('\u{1F35E} The party eats and rests, recovering health, stamina, and mana.');
+        this.partyHUD.showToast(`The party rests and recovers. (${foodCost} food consumed)`);
+        this._log(`\u{1F35E} The party eats and rests — ${foodCost} food consumed. Health, stamina, and mana restored.`);
         for (const msg of restMessages) this._log(msg);
         this._saveNow();
     }
