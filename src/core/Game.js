@@ -2145,7 +2145,7 @@ export class Game {
                 traps,
                 lock: {
                     secret,
-                    attemptsLeft: 10,
+                    attemptsLeft: 12,
                     solved: false,
                     failed: false,
                     history: [],
