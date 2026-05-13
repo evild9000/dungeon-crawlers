@@ -2,21 +2,29 @@
  * CraftingUI — Artificer's workshop (K hotkey).
  *
  * Only opens when an Artificer is present in the party and the party is
- * out of combat. Five tabs:
+ * out of combat. Four tabs:
  *   - Enchant: apply +1..+7 damage/defense to weapon/armor; attach weapon
  *     riders (fire/acid/poison/lightning/ice) at +1+; add armor quality
  *     (spikes or AoE reduction) at +4+.
- *   - Trinkets: upgrade equipped trinket bonusValue (+1 per level, 1..7).
+ *   - Trinkets: upgrade equipped trinket bonusValue (+1 per level, 1..7),
+ *     and at Artificer L25 add separate vitality/regen augments to L4+ trinkets.
  *     Requires artificer level 20+. Dual-aspect trinkets cost 2×.
  *   - Potions & Scrolls: craft Minor / Greater healing potions and
  *     Warding / Wrath scrolls. Finished items go into the group inventory.
- *   - Golems: forge a persistent artificer summon. Only one golem per
- *     artificer at a time; permadeath.
+ *   - Golems: forge a persistent artificer summon, then at L25 install
+ *     golem attachments. Only one golem per artificer at a time; permadeath.
  */
 
 import {
     ENCHANT_WEAPON_COSTS, ENCHANT_ARMOR_COSTS,
     RIDER_TYPES, RIDER_COST,
+    ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL,
+    TRINKET_AUGMENT_MIN_LEVEL, TRINKET_AUGMENT_MAX_LEVEL,
+    TRINKET_AUGMENT_POOL_PCT_BY_LEVEL, TRINKET_AUGMENT_REGEN_BY_LEVEL,
+    ARTIFICER_GOLEM_ATTACHMENT_UNLOCK_LEVEL,
+    GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT, GOLEM_ATTACHMENT_MAX_LIMBS,
+    GOLEM_ATTACHMENT_SHIELD_DEFENSE, GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE,
+    GOLEM_ATTACHMENT_MAX_TRINKETS, GOLEM_ATTACHMENT_TRINKET_HP_MULT,
     POTION_COSTS,
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
@@ -297,7 +305,7 @@ export class CraftingUI {
         panel.appendChild(title);
 
         // Level-up buttons (enchLvl + 1 is next target, up to +7)
-        const costsTable = slot === 'weapon' ? ENCHANT_WEAPON_COSTS : ENCHANT_ARMOR_COSTS;
+        const costsTable = (slot === 'weapon' || slot === 'offhand') ? ENCHANT_WEAPON_COSTS : ENCHANT_ARMOR_COSTS;
         if (enchLvl < 7) {
             const next = enchLvl + 1;
             const cost = costsTable[next];
@@ -306,7 +314,7 @@ export class CraftingUI {
             btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
             btn.disabled = !canPay;
             btn.textContent = `Upgrade to +${next} — ${this._formatCost(cost)}`;
-            btn.title = slot === 'weapon'
+            btn.title = (slot === 'weapon' || slot === 'offhand')
                 ? `Adds +1 damage to the weapon's attack type.`
                 : `Adds +1 armor to this piece.`;
             btn.addEventListener('click', () => {
@@ -405,7 +413,7 @@ export class CraftingUI {
         }
 
         // Weapon rider (only for weapon/offhand slot, only if enchanted, only if no rider yet)
-        if (slot === 'weapon' || isOffhand) {
+        if (slot === 'weapon' || slot === 'offhand') {
             if (enchLvl === 0) {
                 const hint = document.createElement('div');
                 hint.className = 'craft-note';
@@ -558,6 +566,12 @@ export class CraftingUI {
                 body.appendChild(repairRow);
             }
 
+            if (artificer.level >= ARTIFICER_GOLEM_ATTACHMENT_UNLOCK_LEVEL) {
+                this._renderGolemAttachments(body, state, artificer, existingGolem);
+            } else {
+                body.appendChild(this._note(`Golem attachments unlock at Artificer level ${ARTIFICER_GOLEM_ATTACHMENT_UNLOCK_LEVEL}.`));
+            }
+
             const separator = document.createElement('div');
             separator.className = 'craft-sep';
             separator.textContent = '— One golem per artificer at a time —';
@@ -658,6 +672,118 @@ export class CraftingUI {
         return el;
     }
 
+    _attachmentCostForTier(tier) {
+        const cost = {};
+        for (const key of ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'divine']) {
+            const amount = Math.floor(((tier.cost && tier.cost[key]) || 0) / 5);
+            if (amount > 0) cost[key] = amount;
+        }
+        return cost;
+    }
+
+    _recalcGolemAttachmentStats(golem) {
+        if (!golem || !golem.summonStats) return;
+        const stats = golem.summonStats;
+        const attachments = stats.attachments || {};
+        const baseDefense = stats.baseDefense ?? stats.defense ?? 0;
+        const baseMaxHealth = stats.baseMaxHealth ?? golem.maxHealth;
+        const oldMax = golem.maxHealth;
+        stats.baseDefense = baseDefense;
+        stats.baseMaxHealth = baseMaxHealth;
+        stats.defense = baseDefense + (attachments.shield ? GOLEM_ATTACHMENT_SHIELD_DEFENSE : 0);
+        golem.maxHealth = Math.max(1, Math.floor(baseMaxHealth * (1 + (attachments.trinkets || 0) * GOLEM_ATTACHMENT_TRINKET_HP_MULT)));
+        if (golem.maxHealth > oldMax) golem.health += golem.maxHealth - oldMax;
+        golem.health = Math.min(golem.health, golem.maxHealth);
+    }
+
+    _renderGolemAttachments(body, state, artificer, golem) {
+        const stats = golem.summonStats || {};
+        const tier = GOLEM_TIERS.find(t => t.id === stats.tierId);
+        if (!tier) return;
+        if (!stats.attachments) stats.attachments = { limbs: 0, shield: false, trinkets: 0 };
+        const attachments = stats.attachments;
+        const cost = this._attachmentCostForTier(tier);
+
+        const panel = document.createElement('div');
+        panel.className = 'craft-slot-panel';
+        const title = document.createElement('div');
+        title.className = 'craft-slot-title';
+        title.textContent = `⚙️ Golem Attachments — ${golem.name}`;
+        panel.appendChild(title);
+
+        const summary = document.createElement('div');
+        summary.className = 'craft-note';
+        const dmgPct = Math.round((attachments.limbs || 0) * GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT * 100);
+        summary.textContent = `Main hand: ${(attachments.limbs || 0) >= 1 ? 'Extra Limb' : 'empty'} | Off hand: ${(attachments.limbs || 0) >= 2 ? 'Extra Limb' : (attachments.shield ? 'Golem Shield' : 'empty')} | Trinkets: ${attachments.trinkets || 0}/${GOLEM_ATTACHMENT_MAX_TRINKETS}. Current bonuses: +${dmgPct}% damage, +${attachments.shield ? GOLEM_ATTACHMENT_SHIELD_DEFENSE : 0} defense, +${Math.round((attachments.trinkets || 0) * GOLEM_ATTACHMENT_TRINKET_HP_MULT * 100)}% HP.`;
+        panel.appendChild(summary);
+
+        const row = document.createElement('div');
+        row.className = 'craft-rider-row';
+        const addButton = (label, enabled, titleText, onClick) => {
+            const btn = document.createElement('button');
+            btn.className = `craft-rider-btn ${enabled ? '' : 'craft-btn-disabled'}`;
+            btn.disabled = !enabled;
+            btn.textContent = label;
+            btn.title = titleText;
+            btn.addEventListener('click', onClick);
+            row.appendChild(btn);
+        };
+
+        const canPay = this._canPay(state, cost);
+        const costText = this._formatCost(cost);
+        const limbs = attachments.limbs || 0;
+        addButton(
+            `🦾 Extra Limb (${limbs}/${GOLEM_ATTACHMENT_MAX_LIMBS})`,
+            canPay && limbs < GOLEM_ATTACHMENT_MAX_LIMBS && !(limbs === 1 && attachments.shield),
+            `Adds +${Math.round(GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT * 100)}% golem attack damage. First limb fills main hand; second fills off hand.\nCost: ${costText}` + (attachments.shield ? '\nRemove/dismiss the shield by rebuilding the golem if you want a second limb.' : ''),
+            () => {
+                if (!this._canPay(state, cost) || (attachments.limbs || 0) >= GOLEM_ATTACHMENT_MAX_LIMBS) return;
+                if ((attachments.limbs || 0) === 1 && attachments.shield) return;
+                this._pay(state, cost);
+                attachments.limbs = (attachments.limbs || 0) + 1;
+                stats.attachments = attachments;
+                this._log(`🦾 ${artificer.name} fits an extra limb onto ${golem.name}.`);
+                this._onChanged();
+                this._render();
+            },
+        );
+
+        addButton(
+            `🛡️ Golem Shield`,
+            canPay && !attachments.shield && limbs < GOLEM_ATTACHMENT_MAX_LIMBS,
+            `Fills the off hand unless a second limb is installed. Adds +${GOLEM_ATTACHMENT_SHIELD_DEFENSE} defense and ${Math.round(GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE * 100)}% block chance.\nCost: ${costText}`,
+            () => {
+                if (!this._canPay(state, cost) || attachments.shield || (attachments.limbs || 0) >= GOLEM_ATTACHMENT_MAX_LIMBS) return;
+                this._pay(state, cost);
+                attachments.shield = true;
+                stats.attachments = attachments;
+                this._recalcGolemAttachmentStats(golem);
+                this._log(`🛡️ ${artificer.name} mounts a shield onto ${golem.name}.`);
+                this._onChanged();
+                this._render();
+            },
+        );
+
+        addButton(
+            `💎 Golem Trinket (${attachments.trinkets || 0}/${GOLEM_ATTACHMENT_MAX_TRINKETS})`,
+            canPay && (attachments.trinkets || 0) < GOLEM_ATTACHMENT_MAX_TRINKETS,
+            `Installs a golem-only trinket in any open golem trinket socket. Each grants +${Math.round(GOLEM_ATTACHMENT_TRINKET_HP_MULT * 100)}% max HP.\nCost: ${costText}`,
+            () => {
+                if (!this._canPay(state, cost) || (attachments.trinkets || 0) >= GOLEM_ATTACHMENT_MAX_TRINKETS) return;
+                this._pay(state, cost);
+                attachments.trinkets = (attachments.trinkets || 0) + 1;
+                stats.attachments = attachments;
+                this._recalcGolemAttachmentStats(golem);
+                this._log(`💎 ${artificer.name} sockets a golem trinket into ${golem.name}.`);
+                this._onChanged();
+                this._render();
+            },
+        );
+
+        panel.appendChild(row);
+        body.appendChild(panel);
+    }
+
     // ── Trinket upgrade tab (Artificer L20+) ────────────────────────────────────────
     _renderTrinkets(body, state, artificer) {
         if (artificer.level < 20) {
@@ -715,7 +841,14 @@ export class CraftingUI {
             titleEl.className = 'craft-slot-title';
             const bonusDesc  = def.bonusType  ? `+${(def.bonusValue  || 0) + enchLvl} ${def.bonusType}`  : '';
             const bonus2Desc = isDual         ? ` / +${(def.bonusValue2 || 0) + enchLvl} ${def.bonusType2}` : '';
-            titleEl.textContent = `${def.icon || ''} ${slotNames[slot]}: ${def.name}  ${bonusDesc}${bonus2Desc}  [+${enchLvl} enchant]`;
+            const augmentLevel = (enchObj && enchObj.augmentLevel) || 0;
+            const augmentPct = TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augmentLevel] || 0;
+            const regenAugmentLevel = (enchObj && enchObj.regenAugmentLevel) || 0;
+            const regenAugmentBonus = TRINKET_AUGMENT_REGEN_BY_LEVEL[regenAugmentLevel] || 0;
+            const augmentBits = [`+${enchLvl} enchant`];
+            if (augmentLevel) augmentBits.push(`L${augmentLevel} vitality`);
+            if (regenAugmentLevel) augmentBits.push(`L${regenAugmentLevel} regen`);
+            titleEl.textContent = `${def.icon || ''} ${slotNames[slot]}: ${def.name}  ${bonusDesc}${bonus2Desc}  [${augmentBits.join(', ')}]`;
             panel.appendChild(titleEl);
 
             if (enchLvl < 7) {
@@ -732,14 +865,17 @@ export class CraftingUI {
                 const upgradeBtn = document.createElement('button');
                 upgradeBtn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
                 upgradeBtn.disabled = !canPay;
-                upgradeBtn.textContent = `Upgrade to +${next} — ${this._formatCost(cost)}${isDual ? ' (dual ×2)' : ''}`;
+                // Show total effective bonus after upgrade (base bonusValue + new enchant level)
+                const nextTotal = (def.bonusValue || 0) + next;
+                upgradeBtn.textContent = `Upgrade to +${nextTotal} — ${this._formatCost(cost)}${isDual ? ' (dual ×2)' : ''}`;
                 upgradeBtn.title = isDual
                     ? 'Upgrades both bonus aspects by +1. Costs twice as much.'
                     : 'Adds +1 to the trinket bonus value.';
                 upgradeBtn.addEventListener('click', () => {
                     if (!this._canPay(state, cost)) return;
                     this._pay(state, cost);
-                    target.trinketEnchants[slot] = { level: next };
+                    const existing = target.trinketEnchants[slot] || {};
+                    target.trinketEnchants[slot] = { ...existing, level: next };
                     this._log(`✨ ${artificer.name} upgrades ${target.name}'s ${def.name} to +${next}.`);
                     this._onChanged();
                     this._render();
@@ -747,6 +883,85 @@ export class CraftingUI {
                 panel.appendChild(upgradeBtn);
             } else {
                 panel.appendChild(this._note('Already at +7 — maximum trinket upgrade.'));
+            }
+
+            const totalTrinketLevel = (def.bonusValue || 0) + enchLvl;
+            if (artificer.level >= ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL) {
+                if (totalTrinketLevel >= TRINKET_AUGMENT_MIN_LEVEL) {
+                    if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
+                        const nextAugment = augmentLevel > 0 ? augmentLevel + 1 : TRINKET_AUGMENT_MIN_LEVEL;
+                        const base = ENCHANT_WEAPON_COSTS[nextAugment];
+                        const augCost = {};
+                        for (const [k, v] of Object.entries(base)) augCost[k] = costMult > 1 ? v * costMult : v;
+                        const canAug = this._canPay(state, augCost);
+                        const augBtn = document.createElement('button');
+                        augBtn.className = `craft-btn ${canAug ? '' : 'craft-btn-disabled'}`;
+                        augBtn.disabled = !canAug;
+                        augBtn.textContent = augmentLevel
+                            ? `Upgrade Vitality Augment to L${nextAugment} — ${this._formatCost(augCost)}${isDual ? ' (dual ×2)' : ''}`
+                            : `Add Vitality Augment L${nextAugment} — ${this._formatCost(augCost)}${isDual ? ' (dual ×2)' : ''}`;
+                        augBtn.title = [
+                            `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket augment.`,
+                            `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
+                            `Grants +${Math.round((TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[nextAugment] || 0) * 100)}% max health, stamina, and mana while equipped.`,
+                            `Current augment: ${augmentLevel ? `L${augmentLevel} (+${Math.round(augmentPct * 100)}%)` : 'none'}.`,
+                            'Cost is tracked separately from the normal trinket enchant.',
+                        ].join('\n');
+                        augBtn.addEventListener('click', () => {
+                            if (!this._canPay(state, augCost)) return;
+                            this._pay(state, augCost);
+                            const existing = target.trinketEnchants[slot] || {};
+                            target.trinketEnchants[slot] = { ...existing, augmentLevel: nextAugment };
+                            if (typeof target.refreshTrinketPoolBonuses === 'function') {
+                                target.refreshTrinketPoolBonuses(true);
+                            }
+                            this._log(`💠 ${artificer.name} adds a L${nextAugment} vitality augment to ${target.name}'s ${def.name}.`);
+                            this._onChanged();
+                            this._render();
+                        });
+                        panel.appendChild(augBtn);
+                    } else {
+                        panel.appendChild(this._note(`Vitality augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${Math.round(augmentPct * 100)}% HP/ST/MP.`));
+                    }
+
+                    if (regenAugmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
+                        const nextRegenAugment = regenAugmentLevel > 0 ? regenAugmentLevel + 1 : TRINKET_AUGMENT_MIN_LEVEL;
+                        const base = ENCHANT_WEAPON_COSTS[nextRegenAugment];
+                        const regenCost = {};
+                        for (const [k, v] of Object.entries(base)) regenCost[k] = costMult > 1 ? v * costMult : v;
+                        const canRegenAug = this._canPay(state, regenCost);
+                        const regenBtn = document.createElement('button');
+                        regenBtn.className = `craft-btn ${canRegenAug ? '' : 'craft-btn-disabled'}`;
+                        regenBtn.disabled = !canRegenAug;
+                        regenBtn.textContent = regenAugmentLevel
+                            ? `Upgrade Regen Augment to L${nextRegenAugment} — ${this._formatCost(regenCost)}${isDual ? ' (dual ×2)' : ''}`
+                            : `Add Regen Augment L${nextRegenAugment} — ${this._formatCost(regenCost)}${isDual ? ' (dual ×2)' : ''}`;
+                        regenBtn.title = [
+                            `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket regen augment.`,
+                            `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
+                            `Grants +${TRINKET_AUGMENT_REGEN_BY_LEVEL[nextRegenAugment] || 0} HP, stamina, and mana regeneration per minute while equipped.`,
+                            `Current regen augment: ${regenAugmentLevel ? `L${regenAugmentLevel} (+${regenAugmentBonus}/min)` : 'none'}.`,
+                            'Cost is tracked separately from normal trinket enchant and vitality augment.',
+                            'Characters with 0 maximum mana cannot regenerate mana above 0.',
+                        ].join('\n');
+                        regenBtn.addEventListener('click', () => {
+                            if (!this._canPay(state, regenCost)) return;
+                            this._pay(state, regenCost);
+                            const existing = target.trinketEnchants[slot] || {};
+                            target.trinketEnchants[slot] = { ...existing, regenAugmentLevel: nextRegenAugment };
+                            this._log(`🔄 ${artificer.name} adds a L${nextRegenAugment} regen augment to ${target.name}'s ${def.name}.`);
+                            this._onChanged();
+                            this._render();
+                        });
+                        panel.appendChild(regenBtn);
+                    } else {
+                        panel.appendChild(this._note(`Regen augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${regenAugmentBonus}/min HP/ST/MP regen.`));
+                    }
+                } else {
+                    panel.appendChild(this._note(`Vitality and regen augments require an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is currently level ${totalTrinketLevel}.`));
+                }
+            } else {
+                panel.appendChild(this._note(`Vitality and regen augments unlock at Artificer level ${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL}.`));
             }
 
             body.appendChild(panel);
