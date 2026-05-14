@@ -70,7 +70,7 @@ export const UNDEAD_TIERS = [
         kind: 'undead',
         abilities: [
             'Tier 5: +406% HP, +8 dmg, +4 defense.',
-            'Mummy Rot: each hit afflicts a permanent DoT (half attack damage/round until target dies). Does not affect undead or incorporeal.',
+            'Mummy Rot: each hit afflicts a permanent DoT (half attack damage/round until target dies). Also blocks enemy healing/regen (bosses and mega-bosses instead heal/regen at half rate). Does not affect undead or incorporeal.',
             '33% chance to stun target on melee (undead & incorporeal immune).',
             ...UNDEAD_COMMON_ABILITIES,
         ] },
@@ -91,6 +91,7 @@ export const UNDEAD_TIERS = [
         abilities: [
             'Tier 7: +1038% HP, +12 dmg, +6 defense.',
             'Life Drain: heals the vampire for every point of damage dealt.',
+            'Minion Summoning: 33% chance (+1% per 3 necromancer levels) to summon a Wolf or Vampire Bat (50/50) — skips own attack that round.',
             'Gaseous Form: when reduced to 0 HP, becomes immune to damage, cannot attack, regenerates 10% max HP/turn. Exits gaseous form at 30%+ HP.',
             ...UNDEAD_COMMON_ABILITIES,
         ] },
@@ -213,6 +214,24 @@ export const BEAST_TYPES = {
             'Can be healed by potions and Cleric heal.',
         ],
     },
+    vampire_bat: {
+        id: 'vampire_bat',
+        name: 'Vampire Bat',
+        icon: '\u{1F9DB}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        attackType: 'ranged',
+        speciesLabel: 'Vampire Bat',
+        kind: 'beast',
+        description: 'Undead ranged striker from a vampire. Lower HP, life drain heals. No crit. Summoned to back row. +5 HP per vampire summoner level.',
+        abilities: [
+            'Single-target ranged attack.',
+            'Lower HP, higher damage. +5 HP per vampire summoner level.',
+            'Life Drain: heals the vampire bat for every point of damage dealt.',
+            'No crit ability.',
+            'Summoned to back row.',
+            'Can be healed by potions and Cleric heal.',
+        ],
+    },
     pixie: {
         id: 'pixie',
         name: 'Pixie',
@@ -247,6 +266,26 @@ export const BEAST_TYPES = {
             'Druid only. Unlocks at level 5.',
         ],
     },
+    shambling_mound: {
+        id: 'shambling_mound',
+        name: 'Shambling Mound',
+        icon: '\u{1FAB4}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        attackType: 'melee',
+        speciesLabel: 'Shambling Mound',
+        kind: 'beast',
+        druidOnly: true,
+        unlockLevel: 25,
+        description: 'Massive regenerative plant horror. 4× druid max HP, 20+druid level defense, 45% stun on hit, regenerates 20% each turn, and protects its summoner from incoming attacks.',
+        abilities: [
+            'Front-row melee summon. Costs 100 mana.',
+            'Health = 4× druid max HP. Defense = 20 + druid level.',
+            'Single-target slam: base melee + 2× druid level, 45% chance to stun.',
+            'Regenerates 20% of max HP at the start of each turn.',
+            'If already full after regenerating, the original mound spawns a Mini Shambler that grows to full size over 3 turns (cannot spawn on the mound\'s summon round). Grown minis cannot spawn more minis.',
+            'Intercepts hits aimed at its summoner after warrior intercept checks.',
+        ],
+    },
 };
 
 /**
@@ -275,6 +314,23 @@ export const FAERIE_QUEEN_PRESET = {
     ],
 };
 
+export const DEMI_LICH_PRESET = {
+    id:            'demi_lich',
+    name:          'Demi-Lich',
+    icon:          '\u{1F480}',
+    portraitClass: 'summoned',
+    portraitSpecies: 'human',
+    speciesLabel:  'Demi-Lich',
+    kind:          'undead',
+    abilities: [
+        'Back row undead spellcaster. Requires the necromancer to be in Lich Form.',
+        'Magic/AoE attack ignores enemy defense and strikes floor(necromancer level / 5) targets.',
+        'Takes half damage from magic and AoE attacks.',
+        'Immune to stun, web, holds, and poison.',
+        'Fear: same as Ghost, attempting to terrify up to necromancer level enemies after acting.',
+    ],
+};
+
 export function getSummonPreset(member) {
     if (!member || !member.isSummoned || !member.summonType) return null;
     if (BEAST_TYPES[member.summonType]) return BEAST_TYPES[member.summonType];
@@ -283,6 +339,7 @@ export function getSummonPreset(member) {
     const golem = GOLEM_PRESETS[member.summonType];
     if (golem) return golem;
     if (member.summonType === 'faerie_queen') return FAERIE_QUEEN_PRESET;
+    if (member.summonType === 'demi_lich') return DEMI_LICH_PRESET;
     return null;
 }
 
@@ -406,6 +463,15 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
                 rangedMin:  3 + lvBoost * 2,
                 rangedMax:  8 + lvBoost * 2,
                 defense:    0,
+            };        case 'vampire_bat':
+            // Vampire bat uses eagle stats (back row, ranged) but with life drain
+            return {
+                maxHealth:  roll(12, 18) + lvBoost * 5,   // +5 HP/level, same as eagle
+                maxStamina: roll(20, 28),
+                maxMana:    0,
+                rangedMin:  3 + lvBoost * 2,
+                rangedMax:  8 + lvBoost * 2,
+                defense:    0,
             };
         case 'pixie':
             return {
@@ -425,6 +491,15 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
                 meleeMin:   rangerLevel + 2,
                 meleeMax:   rangerLevel * 2 + 4,
                 defense:    Math.floor(rangerLevel / 2),
+            };
+        case 'shambling_mound':
+            return {
+                maxHealth: 1,
+                maxStamina: 0,
+                maxMana: 0,
+                meleeMin: 1,
+                meleeMax: 1,
+                defense: 1,
             };
         default:
             return rollBeastStats('bear', rangerLevel);
