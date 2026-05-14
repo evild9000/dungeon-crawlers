@@ -2459,7 +2459,7 @@ export class Game {
             const low = TRAP_TREASURE_MIN * dlvl * 2;
             const high = TRAP_TREASURE_MAX * dlvl * 2;
             const baseGold = low + Math.floor(Math.random() * (high - low + 1));
-            gold = baseGold * 25;
+            gold = baseGold * 100;
             this.gameState.inventory.addGold(gold);
 
             const numRolls = dlvl;
