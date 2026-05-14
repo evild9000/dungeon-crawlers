@@ -2484,12 +2484,13 @@ export class Game {
         this._renderChestModal();
     }
 
-    _rollChestTreasure() {
+    _rollChestTreasure(isMagical = false) {
         const dlvl = this.gameState.dungeonLevel || 1;
         const items = [];
         let gold = 0;
 
-        if (Math.random() < TRAP_TREASURE_CHANCE) {
+        // Magical chests always contain treasure; regular chests have 50% chance
+        if (isMagical || Math.random() < TRAP_TREASURE_CHANCE) {
             const low = TRAP_TREASURE_MIN * dlvl * 2;
             const high = TRAP_TREASURE_MAX * dlvl * 2;
             const baseGold = low + Math.floor(Math.random() * (high - low + 1));
@@ -2536,7 +2537,7 @@ export class Game {
         const lock = chest.state && chest.state.lock;
         if (!resumeOnly && lock) lock.solved = true;
 
-        const loot = this._rollChestTreasure();
+        const loot = this._rollChestTreasure(true); // Always generate treasure for magical chests
         chest.used = true;
         if (this.dungeonRenderer) this.dungeonRenderer.removeChest(chest.x, chest.z);
 
