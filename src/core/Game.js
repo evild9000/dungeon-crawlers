@@ -2285,7 +2285,7 @@ export class Game {
                 <button id="chest-guess-btn" class="menu-btn">Submit Guess</button>
                 <button id="chest-leave-btn" class="menu-btn back-btn">Leave</button>
             </div>
-            <div style="max-height:220px;overflow:auto;background:rgba(0,0,0,0.22);padding:8px;border-radius:6px;">
+            <div style="max-height:420px;overflow:auto;background:rgba(0,0,0,0.22);padding:8px;border-radius:6px;">
                 ${historyHtml || '<i>No guesses yet.</i>'}
             </div>`;
 
