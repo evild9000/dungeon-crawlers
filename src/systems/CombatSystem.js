@@ -48,6 +48,7 @@ import {
     REAGENT_BOSS_RARE_MIN, REAGENT_BOSS_RARE_MAX,
     REAGENT_BOSS_HIGH_TIER_AMOUNT, REAGENT_MEGABOSS_HIGH_TIER_AMOUNT,
     SCATTER_SPLASH_BASE, SCATTER_SPLASH_EVERY, SCATTER_SPLASH_FRACTION,
+    ARTIFICER_DRONE_UNLOCK_LEVEL, ARTIFICER_DRONE_CHANCE_CAP,
     ARTIFICER_HEAL_GOLEM_PCT,
     PALADIN_SMITE_MANA_COST,
     PALADIN_SMITE_INSTAKILL_BASE, PALADIN_SMITE_INSTAKILL_PER_LEVEL,
@@ -266,6 +267,9 @@ export class CombatSystem {
 
     /** Alive enemies that are NOT currently charmed — used for victory checks. */
     get aliveHostileEnemies() { return this.enemies.filter(e => e.health > 0 && !(e.charmedRounds > 0)); }
+
+    /** True when every real (non-summoned) party member is at 0 HP — even if summoned undead remain. */
+    get allRealMembersDefeated() { return this.party.filter(p => !p.isSummoned).every(p => p.health <= 0); }
 
     _getEnemyTags(enemy) {
         const def = ENEMY_TYPES[enemy?.type] || {};
@@ -974,9 +978,129 @@ export class CombatSystem {
             this._applyWeaponRider(m, t, sDealt);
             this._applyRangerTotemOnHit(m, t, sDealt, 'ranged');
             if (t.health <= 0) this._addLog(`${sName} is defeated!`);
+
+            // L25 Enchanted Drone — checked per splash independently
+            if (m.level >= ARTIFICER_DRONE_UNLOCK_LEVEL) {
+                const dChance = Math.min(ARTIFICER_DRONE_CHANCE_CAP, m.level / 100);
+                if (Math.random() < dChance) this._fireEnchantedDrone(m);
+            }
         }
 
         this._advancePlayerTurn();
+    }
+
+    /**
+     * L25 Enchanted Drone — spawned by each scatter splash with a (level)% chance,
+     * capped at ARTIFICER_DRONE_CHANCE_CAP. Picks one of 7 random effects.
+     * Revive re-rolls to another effect if no party members are fallen.
+     */
+    _fireEnchantedDrone(artificer) {
+        const al  = artificer.level;
+        const ico = '⚙️';
+
+        const fallen = this.party.filter(p => !p.isSummoned && p.health <= 0);
+        // Build effect pool: 0=revive only when someone is fallen
+        const pool = fallen.length > 0 ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6];
+        const roll = pool[Math.floor(Math.random() * pool.length)];
+
+        switch (roll) {
+            case 0: { // Revive a fallen character
+                const t = fallen[Math.floor(Math.random() * fallen.length)];
+                const amt = Math.max(1, Math.ceil(t.maxHealth * CLERIC_REVIVE_HEAL_FRAC));
+                t.health = amt;
+                t.stunned = false;
+                if (Array.isArray(t.activeEffects))
+                    t.activeEffects = t.activeEffects.filter(fx => fx && fx.type !== 'poison');
+                this._addLog(`${ico} Enchanted Drone zips to ${t.name} and revives them! (+${amt} HP)`);
+                break;
+            }
+            case 1: { // Heal 5% of missing HP — golems + living non-undead
+                const healable = this.party.filter(p => {
+                    if (!p || p.health <= 0 || p.health >= p.maxHealth) return false;
+                    if (!p.isSummoned) return true;
+                    if (GOLEM_PRESETS[p.summonType]) return true;
+                    if (UNDEAD_TIERS.some(ut => ut.id === p.summonType) || p.summonType === 'demi_lich') return false;
+                    return true; // beast summons
+                });
+                if (healable.length === 0) {
+                    this._addLog(`${ico} Enchanted Drone fires repair beam — no wounded targets!`);
+                    break;
+                }
+                const t = healable[Math.floor(Math.random() * healable.length)];
+                const heal = Math.max(1, Math.floor((t.maxHealth - t.health) * 0.05));
+                t.health = Math.min(t.maxHealth, t.health + heal);
+                this._addLog(`${ico} Enchanted Drone pulses a repair beam on ${t.name}! (+${heal} HP)`);
+                break;
+            }
+            case 2: { // 2 Mirror Images on a random living party member
+                const living = this.party.filter(p => p && p.health > 0);
+                if (living.length === 0) break;
+                const t = living[Math.floor(Math.random() * living.length)];
+                t.mirrorImages = (t.mirrorImages || 0) + 2;
+                this._addLog(`${ico} Enchanted Drone projects 2 Mirror Images around ${t.name}! (${t.mirrorImages} total)`);
+                break;
+            }
+            case 3: { // AoE magic blast — all enemies
+                const targets = [...this.aliveHostileEnemies];
+                if (targets.length === 0) break;
+                let dmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
+                dmg += artificer.getWeaponBonus('ranged');
+                dmg += artificer.getClassDamageBonus('ranged');
+                dmg = this._applyOutgoingDamageBonuses(artificer, dmg, 'ranged');
+                this._addLog(`${ico} Enchanted Drone detonates — arcane shrapnel shreds the enemy ranks!`);
+                for (const e of targets) {
+                    if (e.health <= 0) continue;
+                    const dealt = this._damageEnemy(e, dmg, false, true);
+                    this._addLog(`  ↪️ ${this._eName(e)} takes ${dealt} magic damage!`);
+                    if (e.health <= 0) this._addLog(`${this._eName(e)} is obliterated!`);
+                }
+                break;
+            }
+            case 4: { // Attempt stun on a random enemy
+                const targets = this.aliveHostileEnemies;
+                if (targets.length === 0) break;
+                const t = targets[Math.floor(Math.random() * targets.length)];
+                if (this._tryStunEnemy(t)) {
+                    this._addLog(`${ico} Enchanted Drone electro-shocks ${this._eName(t)} — STUNNED!`);
+                } else {
+                    this._addLog(`${ico} Enchanted Drone attempts to stun ${this._eName(t)} — resisted!`);
+                }
+                break;
+            }
+            case 5: { // Critical hit ×4 on a random enemy
+                const targets = this.aliveHostileEnemies;
+                if (targets.length === 0) break;
+                const t = targets[Math.floor(Math.random() * targets.length)];
+                let dmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
+                dmg += artificer.getWeaponBonus('ranged');
+                dmg += artificer.getClassDamageBonus('ranged');
+                dmg *= 4;
+                dmg = this._applyOutgoingDamageBonuses(artificer, dmg, 'ranged');
+                const dealt = this._damageEnemy(t, dmg);
+                this._addLog(`${ico} Enchanted Drone CRITICAL STRIKE hits ${this._eName(t)} for ${dealt}! 💥`);
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is obliterated!`);
+                break;
+            }
+            case 6: { // Arcane bindings — reduce target atk & def, incorporeal immune
+                const targets = this.aliveHostileEnemies.filter(e =>
+                    !this._getEnemyTags(e).includes('incorporeal'));
+                if (targets.length === 0) {
+                    this._addLog(`${ico} Enchanted Drone fires bindings — all targets are incorporeal!`);
+                    break;
+                }
+                const t = targets[Math.floor(Math.random() * targets.length)];
+                const penalty = Math.max(1, Math.floor(al / 6));
+                const rounds  = Math.max(1, Math.floor(al / 6));
+                this._refreshEnemyEffect(t, {
+                    type: 'drone_binding',
+                    damageBonus:  -penalty,
+                    defenseBonus: -penalty,
+                    rounds,
+                });
+                this._addLog(`${ico} Enchanted Drone ensnares ${this._eName(t)} in arcane bindings! (-${penalty} atk/-${penalty} def for ${rounds} rds)`);
+                break;
+            }
+        }
     }
 
     magicAttack() {
@@ -2456,8 +2580,8 @@ export class CombatSystem {
      *
      * @param {'wolf'|'vampire_bat'} beastId
      */
-    summonBeastFromVampire(beastId) {
-        const vampire = this.currentMember;
+    summonBeastFromVampire(beastId, vampire) {
+        if (!vampire) vampire = this.currentMember;
         if (!vampire || vampire.summonType !== 'vampire' || vampire.health <= 0) return;
 
         const necromancer = this.party.find(p => p.id === vampire.summonerId);
@@ -3441,7 +3565,7 @@ export class CombatSystem {
                 const summonChance = 0.33 + (necromancer.level * 0.01 / 3);
                 if (Math.random() < summonChance) {
                     const isBat = Math.random() < 0.5;
-                    this.summonBeastFromVampire(isBat ? 'vampire_bat' : 'wolf');
+                    this.summonBeastFromVampire(isBat ? 'vampire_bat' : 'wolf', m);
                     return; // vampire does not attack this round
                 }
             }
@@ -3803,7 +3927,7 @@ export class CombatSystem {
         const eName = this._eName(e);
         const liveFront = this.aliveFront;
         if (liveFront.length === 0) {
-            if (this.aliveBack.length > 0) {
+            if (this.aliveBack.length > 0 && !this.allRealMembersDefeated) {
                 this.phase = 'NEED_PROMOTION';
                 this._addLog('\u26A0\uFE0F The front line has fallen! Promote a back-row ally forward.');
                 this._notify();
@@ -4311,7 +4435,7 @@ export class CombatSystem {
         }
 
         // Post-attack checks.
-        if (this.aliveParty.length === 0) {
+        if (this.aliveParty.length === 0 || this.allRealMembersDefeated) {
             this.phase = 'DEFEAT';
             this._addLog('--- Your party has been defeated! ---');
             this._notify();
@@ -4320,7 +4444,7 @@ export class CombatSystem {
 
         // If the front row just fell from this attack, bump past this slot
         // so promoteToFront resumes at the next enemy / party slot.
-        if (this.aliveFront.length === 0 && this.aliveBack.length > 0) {
+        if (this.aliveFront.length === 0 && this.aliveBack.length > 0 && !this.allRealMembersDefeated) {
             this._initTurnIdx++;
             this.phase = 'NEED_PROMOTION';
             this._addLog('\u26A0\uFE0F The front line has fallen! Promote a back-row ally forward.');
@@ -4342,8 +4466,8 @@ export class CombatSystem {
             if (protector) {
                 const reducedBy = protector.getDragonAuraReduction();
                 if (reducedBy > 0) {
-                    rawDmg = Math.max(1, rawDmg - reducedBy);
-                    this._addLog(`🛡️ ${protector.name}'s shield aura softens the dragon's magic for the whole party (-${reducedBy} damage before defenses).`);
+                    rawDmg = Math.max(1, Math.floor(rawDmg * (1 - reducedBy / 100)));
+                    this._addLog(`🛡️ ${protector.name}'s shield aura softens the dragon's magic for the whole party (-${reducedBy}% damage before defenses).`);
                     opts._dragonAuraLogged = true;
                 }
             }

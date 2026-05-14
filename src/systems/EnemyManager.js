@@ -88,6 +88,7 @@ export class EnemyManager {
 
         // --- Update existing enemies (pass player grid for encounter check) ---
         for (const enemy of this.enemies) {
+            if (enemy.health <= 0) continue; // dead enemies don't move or trigger encounters
             enemy.update(dt, this.map, this.enemies, playerGridX, playerGridZ);
             if (enemy.wantsToAttackPlayer) {
                 if (enemy.friendly) {
@@ -301,14 +302,18 @@ export class EnemyManager {
 
     /** Remove a single enemy from the scene and the array. */
     removeEnemy(enemy) {
-        enemy.removeSprite(this.scene);
+        if (enemy && typeof enemy.removeSprite === 'function') {
+            enemy.removeSprite(this.scene);
+        }
         this.enemies = this.enemies.filter(e => e !== enemy);
     }
 
     /** Remove all enemies from the scene. */
     removeAll() {
         for (const enemy of this.enemies) {
-            enemy.removeSprite(this.scene);
+            if (enemy && typeof enemy.removeSprite === 'function') {
+                enemy.removeSprite(this.scene);
+            }
         }
         this.enemies = [];
     }

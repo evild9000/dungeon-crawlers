@@ -28,6 +28,7 @@
 
 import { getItemDef, ITEM_CATEGORY, WEAPONS, TRINKETS } from '../items/ItemTypes.js';
 import { getClassDef, CLASS_IDS } from './Classes.js';
+import { getFamiliarDef } from './Familiars.js';
 import { getSpeciesDef, SPECIES_IDS } from './Species.js';
 import {
     INITIAL_HEALTH, INITIAL_STAMINA, INITIAL_MANA,
@@ -43,10 +44,40 @@ import {
     RANGER_EXTRA_FAVORED_UNLOCK_LEVEL,
     RANGER_EXTRA_FAVORED_BASE_LEVEL,
     RANGER_EXTRA_FAVORED_PER_5_LV,
+    WARRIOR_RETALIATION_UNLOCK_LEVEL,
+    WARRIOR_RETALIATION_BASE_CHANCE,
+    WARRIOR_RETALIATION_PER_LEVEL,
+    PALADIN_DRAGONSLAYER_UNLOCK_LEVEL,
+    PALADIN_DRAGON_AURA_PERCENT_OFFSET,
+    PALADIN_DRAGON_AURA_PERCENT_CAP,
+    CLERIC_CLEANSE_UNLOCK_LEVEL,
+    CLERIC_CLEANSE_CHANCE_PER_LEVEL,
+    MAGE_FAMILIAR_UNLOCK_LEVEL,
+    MAGE_FAMILIAR_MAX_LEVEL,
+    MAGE_FAMILIAR_MAGIC_PER_LEVEL,
+    MAGE_FAMILIAR_DEFENSE_PER_LEVEL,
+    TRINKET_AUGMENT_POOL_PCT_BY_LEVEL,
+    TRINKET_AUGMENT_REGEN_BY_LEVEL,
+    RANGER_TOTEM_UNLOCK_LEVEL,
+    RANGER_BEAR_TOTEM_DEFENSE_DIVISOR,
 } from '../utils/constants.js';
 
 function generateId() {
     return 'pm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function normalizeFamiliar(familiar) {
+    if (!familiar || typeof familiar !== 'object') return null;
+    const def = getFamiliarDef(familiar.typeId);
+    if (!def) return null;
+    const level = Math.max(1, Math.min(MAGE_FAMILIAR_MAX_LEVEL, familiar.level | 0));
+    const rawName = typeof familiar.name === 'string' ? familiar.name.trim() : '';
+    if (!rawName) return null;
+    return {
+        typeId: def.id,
+        name: rawName.slice(0, 24),
+        level,
+    };
 }
 
 /**
@@ -70,7 +101,7 @@ export class PartyMember {
     constructor({
         id, name,
         health, maxHealth, stamina, maxStamina, mana, maxMana,
-        portraitSeed, inventory, equipment, equipmentEnchants, trinketEnchants,
+        portraitSeed, inventory, equipment, equipmentEnchants, trinketEnchants, trinketPoolBonus,
         classId, speciesId,
         isSummoned, summonType, summonerId, canBeHealed, summonStats,
         isPersistent,
@@ -78,6 +109,7 @@ export class PartyMember {
         activeSongs,
         favoredEnemy,
         extraFavoredEnemies,
+        familiar,
         hungerState, foodTimer,
         savedEffects,
     }) {
@@ -140,7 +172,12 @@ export class PartyMember {
         this.usedBardSong = false;  // "once per combat" tracker
         this.isRaging = false;   // Barbarian: active rage flag
         this.usedRage = false;   // Barbarian: once-per-combat rage tracker
+        this.rageEncourageRounds = 0; // Barbarian L25 party damage aura ramp
         this.fireAuraActive = false; // Paladin: Fire Aura toggle
+        this.dragonslayerActive = false; // Paladin L25: Dragonslayer toggle
+        this.rangerTotem = null; // Ranger L25: wolf | bear | eagle | pixie
+        this.avatarActive = false; // Monk L25: Avatar toggle
+        this.avatarElement = 'fire'; // Monk L25: fire | lightning | acid | ice
         this.isDefendMode = false;  // Warrior L20: Defend Mode toggle (persists turn-to-turn)
 
         // Persistent bard out-of-combat songs (serialized). Array of song IDs:
@@ -158,6 +195,7 @@ export class PartyMember {
         // Stored as an array of tag strings (same pool as favoredEnemy).
         // Backward-compatible: legacy saves that omit this field default to [].
         this.extraFavoredEnemies = Array.isArray(extraFavoredEnemies) ? [...extraFavoredEnemies] : [];
+        this.familiar = normalizeFamiliar(familiar);
 
         // ── Food / Hunger ──
         // hungerState: null (fed) | 'hungry' | 'starving' | 'dying'
@@ -200,6 +238,10 @@ export class PartyMember {
         this.trinketEnchants = trinketEnchants
             ? { ...DEFAULT_TRINKET_ENCHANTS, ...trinketEnchants }
             : { ...DEFAULT_TRINKET_ENCHANTS };
+        this._trinketPoolBonus = trinketPoolBonus
+            ? { health: trinketPoolBonus.health || 0, stamina: trinketPoolBonus.stamina || 0, mana: trinketPoolBonus.mana || 0 }
+            : { health: 0, stamina: 0, mana: 0 };
+        this.refreshTrinketPoolBonuses(false);
 
         // Regen accumulators (fractions of a point)
         this._regenHpAcc = 0;
@@ -238,6 +280,56 @@ export class PartyMember {
             if (def.bonusType2 === bonusType) total += (def.bonusValue2 || 0) + (enchLvl > 0 ? enchLvl : 0);
         }
         return total;
+    }
+
+    getTrinketPoolAugmentPct() {
+        if (this.isSummoned) return 0;
+        let pct = 0;
+        const slots = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
+        for (const s of slots) {
+            if (!this.equipment[s]) continue;
+            const augLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].augmentLevel) || 0;
+            pct += TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augLevel] || 0;
+        }
+        return pct;
+    }
+
+    getTrinketRegenAugmentBonus() {
+        if (this.isSummoned) return 0;
+        let bonus = 0;
+        const slots = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
+        for (const s of slots) {
+            if (!this.equipment[s]) continue;
+            const augLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].regenAugmentLevel) || 0;
+            bonus += TRINKET_AUGMENT_REGEN_BY_LEVEL[augLevel] || 0;
+        }
+        return bonus;
+    }
+
+    refreshTrinketPoolBonuses(fillAdded = false) {
+        if (this.isSummoned) return;
+        const old = this._trinketPoolBonus || { health: 0, stamina: 0, mana: 0 };
+        const baseHealth = Math.max(1, this.maxHealth - (old.health || 0));
+        const baseStamina = Math.max(0, this.maxStamina - (old.stamina || 0));
+        const baseMana = Math.max(0, this.maxMana - (old.mana || 0));
+        const pct = this.getTrinketPoolAugmentPct();
+        const next = {
+            health: Math.floor(baseHealth * pct),
+            stamina: Math.floor(baseStamina * pct),
+            mana: Math.floor(baseMana * pct),
+        };
+        this.maxHealth = baseHealth + next.health;
+        this.maxStamina = baseStamina + next.stamina;
+        this.maxMana = baseMana + next.mana;
+        if (fillAdded) {
+            this.health += Math.max(0, next.health - (old.health || 0));
+            this.stamina += Math.max(0, next.stamina - (old.stamina || 0));
+            this.mana += Math.max(0, next.mana - (old.mana || 0));
+        }
+        this.health = Math.min(this.health, this.maxHealth);
+        this.stamina = Math.min(this.stamina, this.maxStamina);
+        this.mana = Math.min(this.mana, this.maxMana);
+        this._trinketPoolBonus = next;
     }
 
     /**
@@ -288,6 +380,50 @@ export class PartyMember {
         return 0;
     }
 
+    getFamiliarLevelCap() {
+        if (this.classId !== 'mage') return 0;
+        if (this.level < MAGE_FAMILIAR_UNLOCK_LEVEL) return 0;
+        return Math.max(0, Math.min(MAGE_FAMILIAR_MAX_LEVEL, this.level - (MAGE_FAMILIAR_UNLOCK_LEVEL - 1)));
+    }
+
+    getFamiliarLevel() {
+        const cap = this.getFamiliarLevelCap();
+        if (!this.familiar || cap <= 0) return 0;
+        return Math.max(0, Math.min(cap, this.familiar.level | 0));
+    }
+
+    getFamiliarDefenseBonus() {
+        if (this.classId !== 'mage') return 0;
+        return this.getFamiliarLevel() * MAGE_FAMILIAR_DEFENSE_PER_LEVEL;
+    }
+
+    getMagicDamageMultiplier() {
+        if (this.classId !== 'mage') return 1;
+        return 1 + this.getFamiliarLevel() * MAGE_FAMILIAR_MAGIC_PER_LEVEL;
+    }
+
+    getFamiliarSummary() {
+        if (this.classId !== 'mage') return null;
+        const level = this.getFamiliarLevel();
+        if (!this.familiar || level <= 0) return null;
+        const def = getFamiliarDef(this.familiar.typeId);
+        return {
+            ...this.familiar,
+            level,
+            icon: def?.icon || '',
+            typeName: def?.name || this.familiar.typeId,
+            defenseBonus: this.getFamiliarDefenseBonus(),
+            magicBonusPct: Math.round((this.getMagicDamageMultiplier() - 1) * 100),
+        };
+    }
+
+    getRangerTotemDefenseBonus() {
+        if (this.classId !== 'ranger') return 0;
+        if ((this.level || 1) < RANGER_TOTEM_UNLOCK_LEVEL) return 0;
+        if (this.rangerTotem !== 'bear') return 0;
+        return Math.floor((this.level || 1) / RANGER_BEAR_TOTEM_DEFENSE_DIVISOR);
+    }
+
     /** Total defense = species + class base + class-per-level + summon defense + trinkets + effects. */
     getTotalDefense() {
         if (this.isSummoned) return (this.summonStats && this.summonStats.defense) || 0;
@@ -297,6 +433,8 @@ export class PartyMember {
         return (c.defenseBonus || 0)
              + (s.defenseBonus || 0)
              + (c.defensePerLevel || 0) * beyond
+             + this.getFamiliarDefenseBonus()
+             + this.getRangerTotemDefenseBonus()
              + this.getTrinketBonus('defense')
              + this.getEffectModifier('defense')
              - hunger;
@@ -372,19 +510,30 @@ export class PartyMember {
      * extra melees: +1 shot at every multiple of 5 levels.
      */
     getExtraRangedAttacks() {
-        return this.classId === 'ranger' ? Math.floor(this.level / 5) : 0;
+        if (this.classId !== 'ranger') return 0;
+        let extra = Math.floor(this.level / 5);
+        if (this.level >= RANGER_TOTEM_UNLOCK_LEVEL && this.rangerTotem === 'wolf') {
+            extra += 1;
+        }
+        return extra;
     }
 
     /** Regen rate per minute for a given pool, including class + species bonuses. */
     getRegenRate(pool) {
         const c = this.classDef, s = this.speciesDef;
+        const trinketRegen = this.getTrinketRegenAugmentBonus();
         if (pool === 'hp') {
             const songEffect = this.activeEffects.find(e => e && e.type === 'bard_song_healing');
             const songBonus  = songEffect ? (songEffect.hpPerMin || 0) : 0;
-            return REGEN_HP_PER_MIN + (c.regenHp || 0) + (s.regenHp || 0) + songBonus;
+            return REGEN_HP_PER_MIN + (c.regenHp || 0) + (s.regenHp || 0) + songBonus + trinketRegen;
         }
-        if (pool === 'st') return REGEN_ST_PER_MIN + (c.regenSt || 0) + (s.regenSt || 0);
-        if (pool === 'mp') return REGEN_MP_PER_MIN + (c.regenMp || 0) + (s.regenMp || 0);
+        if (pool === 'st') {
+            return REGEN_ST_PER_MIN + (c.regenSt || 0) + (s.regenSt || 0) + trinketRegen;
+        }
+        if (pool === 'mp') {
+            if (this.maxMana <= 0) return 0;
+            return REGEN_MP_PER_MIN + (c.regenMp || 0) + (s.regenMp || 0) + trinketRegen;
+        }
         return 0;
     }
 
@@ -433,6 +582,7 @@ export class PartyMember {
         this.maxHealth  += hpGain;
         this.maxStamina += stGain;
         this.maxMana    += mpGain;
+        this.refreshTrinketPoolBonuses(false);
 
         // Full refill on level-up, as a reward.
         this.health  = this.maxHealth;
@@ -582,6 +732,9 @@ export class PartyMember {
 
         this.removeItem(itemId);
         this.equipment[slot] = itemId;
+        if (def.category === ITEM_CATEGORY.TRINKET) {
+            this.refreshTrinketPoolBonuses(true);
+        }
 
         // Rule 7: equipping a ranged weapon auto-unequips any shield.
         if (def.category === ITEM_CATEGORY.WEAPON
@@ -611,6 +764,9 @@ export class PartyMember {
         // "kit-tuned" the item to its wielder; swapping breaks the binding).
         if (slot === 'weapon' || slot === 'offhand' || slot === 'armor') {
             if (this.equipmentEnchants) this.equipmentEnchants[slot] = null;
+        }
+        if (['cloak', 'neck', 'ring1', 'ring2', 'belt'].includes(slot)) {
+            this.refreshTrinketPoolBonuses(false);
         }
         this.addItem(itemId);
         return true;
@@ -724,6 +880,24 @@ export class PartyMember {
         return WARRIOR_STUN_RESIST_BASE + Math.floor(this.level / 2) * WARRIOR_STUN_RESIST_PER_2_LEVELS;
     }
 
+    getRetaliationChance() {
+        if (this.classId !== 'warrior') return 0;
+        if (this.level < WARRIOR_RETALIATION_UNLOCK_LEVEL) return 0;
+        return Math.min(0.95, WARRIOR_RETALIATION_BASE_CHANCE + this.level * WARRIOR_RETALIATION_PER_LEVEL);
+    }
+
+    getDragonAuraReduction() {
+        if (this.classId !== 'paladin') return 0;
+        if (this.level < PALADIN_DRAGONSLAYER_UNLOCK_LEVEL) return 0;
+        return Math.min(PALADIN_DRAGON_AURA_PERCENT_CAP, this.level + PALADIN_DRAGON_AURA_PERCENT_OFFSET);
+    }
+
+    getClericCleanseChance() {
+        if (this.classId !== 'cleric') return 0;
+        if (this.level < CLERIC_CLEANSE_UNLOCK_LEVEL) return 0;
+        return Math.min(1, this.level * CLERIC_CLEANSE_CHANCE_PER_LEVEL);
+    }
+
     /**
      * Whether this warrior can currently intercept attacks targeting party members.
      * Requires: warrior class, L20+, defend mode ON, shield equipped, alive,
@@ -834,8 +1008,17 @@ export class PartyMember {
         this.usedBardSong = false;
         this.isRaging = false;
         this.usedRage = false;
+        this.rageEncourageRounds = 0;
         this.fireAuraActive = false;
+        this.dragonslayerActive = false;
+        this.rangerTotem = null;
+        this.avatarActive = false;
+        this.avatarElement = 'fire';
         this.isDefendMode = false;
+        // Lich form is a combat-only transformation — always collapse it when
+        // leaving combat (flee, defeat, victory all call clearCombatState).
+        this.isLichForm = false;
+        this.lichPhial  = false;
     }
 
     // ──────────────────────────────────────────
@@ -913,6 +1096,7 @@ export class PartyMember {
             activeSongs: [...(this.activeSongs || [])],
             favoredEnemy: this.favoredEnemy || null,
             extraFavoredEnemies: [...(this.extraFavoredEnemies || [])],
+            familiar: this.familiar ? { ...this.familiar } : null,
             hungerState: this.hungerState || null,
             foodTimer:   this.foodTimer   || 0,
             // Persist wall-clock-based active buffs (scroll of warding/wrath) so
@@ -940,6 +1124,7 @@ export class PartyMember {
                 belt:  this.trinketEnchants && this.trinketEnchants.belt
                     ? { ...this.trinketEnchants.belt }  : null,
             },
+            trinketPoolBonus: { ...(this._trinketPoolBonus || { health: 0, stamina: 0, mana: 0 }) },
         };
         // Persist summon fields so PERSISTENT summons (golems) survive save/load.
         // Non-persistent summons are stripped by Game._onCombatEnd before save.

@@ -1,7 +1,7 @@
 /**
  * PartySpellModal — the "V" key party spell / out-of-combat action screen.
  *
- * Shows two sections if the relevant characters are present and eligible:
+ * Shows sections for the relevant characters when present and eligible:
  *
  *   🎶 Bard Song (Combined)
  *     A single rousing melody that grants the whole party:
@@ -12,8 +12,12 @@
  *     Deactivates automatically when the bard runs out of mana.
  *
  *   ✨ Cleric
- *     Revive — raise a fallen non-summoned party member to 25% HP.
- *     Requires cleric level ≥ CLERIC_REVIVE_MIN_LEVEL, costs CLERIC_REVIVE_MANA_COST.
+ *     Heal        — heals a single living ally for 25%+ max HP (5 MP).
+ *     Mass Heal   — heals ALL living allies at 50% rate (5 MP) — level 4+.
+ *     Revive      — raise a fallen non-summoned party member to 25% HP (25 MP) — level 3+.
+ *
+ *   🛡 Paladin (level 20+)
+ *     Revive      — raise a fallen non-summoned party member to 25% HP (25 MP).
  *
  * `onChanged(party)` is called whenever the party state is mutated so
  * Game.js can refresh the HUD and song tooltip.
@@ -23,7 +27,9 @@ import {
     BARD_HASTE_MAX, BARD_BATTLE_MAX,
     BARD_SONG_MANA_PER_MIN,
     CLERIC_REVIVE_MANA_COST, CLERIC_REVIVE_MIN_LEVEL, CLERIC_REVIVE_HEAL_FRAC,
+    CLERIC_HEAL_MANA_COST, CLERIC_HEAL_PERCENT,
 } from '../utils/constants.js';
+import { UNDEAD_TIERS, BEAST_TYPES, GOLEM_PRESETS } from '../entities/Summons.js';
 import { soundManager } from '../utils/SoundManager.js';
 
 // ── Single combined song definition ──────────────────────────────────────────
@@ -55,6 +61,11 @@ const COMBINED_SONG = {
         `+${Math.min(BARD_HASTE_MAX, scale)} initiative · +${Math.min(BARD_BATTLE_MAX, scale)} atk/def · +${scale} HP regen/min`,
 };
 
+// Minimum level for paladin out-of-combat revive.
+const PALADIN_REVIVE_MIN_LEVEL = 20;
+// Cleric mass heal minimum level (matches combat unlock).
+const CLERIC_MASS_HEAL_MIN_LEVEL = 4;
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Scaling value for a bard: Math.max(1, Math.floor(level / 5)) */
@@ -69,6 +80,17 @@ function stripAllSongEffects(party) {
             e => !(e && e.source === 'bard_song'),
         );
     }
+}
+
+/**
+ * Heal percent for a cleric/paladin out-of-combat heal.
+ * Mirrors the in-combat calculation: base + per-level bonus from classDef.
+ */
+function healPct(member) {
+    const bonus = typeof member.getHealPercentBonus === 'function'
+        ? member.getHealPercentBonus()
+        : 0;
+    return CLERIC_HEAL_PERCENT + bonus;
 }
 
 // ── PartySpellModal ───────────────────────────────────────────────────────────
@@ -130,6 +152,12 @@ export class PartySpellModal {
                 const effects = COMBINED_SONG.makeEffects(scale);
                 for (const member of party) {
                     if (member.health <= 0) continue;
+                    // Don't apply songs to summoned undead or golems
+                    if (member.isSummoned) {
+                        const isUndead = UNDEAD_TIERS.some(u => u.id === member.summonType);
+                        const isGolem = GOLEM_PRESETS[member.summonType];
+                        if (isUndead || isGolem) continue;
+                    }
                     for (const eff of effects) {
                         member.activeEffects.push({ ...eff });
                     }
@@ -232,15 +260,25 @@ export class PartySpellModal {
         }
 
         // ── Cleric Section ────────────────────────────────────────────────────
-        const clerics = party.filter(
-            m => m.classId === 'cleric' && m.health > 0
-              && m.level >= CLERIC_REVIVE_MIN_LEVEL,
-        );
+        // Show whenever a living cleric is present (they can always heal).
+        const clerics = party.filter(m => m.classId === 'cleric' && m.health > 0);
         const deadNonSummons = party.filter(m => m.health <= 0 && !m.isSummoned);
-        if (clerics.length > 0 && deadNonSummons.length > 0) {
+        if (clerics.length > 0) {
             hasContent = true;
             for (const cleric of clerics) {
                 this._body.appendChild(this._buildClericSection(cleric, deadNonSummons));
+            }
+        }
+
+        // ── Paladin Section (L20+ revive) ─────────────────────────────────────
+        const paladins = party.filter(
+            m => m.classId === 'paladin' && m.health > 0
+              && m.level >= PALADIN_REVIVE_MIN_LEVEL,
+        );
+        if (paladins.length > 0 && deadNonSummons.length > 0) {
+            hasContent = true;
+            for (const paladin of paladins) {
+                this._body.appendChild(this._buildPaladinSection(paladin, deadNonSummons));
             }
         }
 
@@ -248,7 +286,7 @@ export class PartySpellModal {
             const empty = document.createElement('p');
             empty.style.color = '#888';
             empty.style.fontStyle = 'italic';
-            empty.textContent = 'No party spells available. (Need a bard or a cleric with fallen allies.)';
+            empty.textContent = 'No party spells available. (Need a bard, cleric, or L20+ paladin with fallen allies.)';
             this._body.appendChild(empty);
         }
     }
@@ -265,7 +303,7 @@ export class PartySpellModal {
             fontSize: '14px', fontWeight: 'bold', color: '#ccf',
             marginBottom: '10px',
         });
-        secTitle.textContent = `\u{1F3B6} Bard Song \u2014 ${bard.name}`;
+        secTitle.textContent = `\u{1F3B6} Bard Song — ${bard.name}`;
         section.appendChild(secTitle);
 
         // Music toggle button
@@ -326,10 +364,10 @@ export class PartySpellModal {
         const info = document.createElement('span');
         info.style.cssText = 'font-size:11px;flex-shrink:0;';
         if (isActive) {
-            info.textContent = `Active \u2014 ${BARD_SONG_MANA_PER_MIN} MP/min`;
+            info.textContent = `Active — ${BARD_SONG_MANA_PER_MIN} MP/min`;
             info.style.color = '#9f9';
         } else {
-            info.textContent = `Free to start \u2014 ${BARD_SONG_MANA_PER_MIN} MP/min`;
+            info.textContent = `Free to start — ${BARD_SONG_MANA_PER_MIN} MP/min`;
             info.style.color = '#999';
         }
 
@@ -404,50 +442,212 @@ export class PartySpellModal {
         secTitle.textContent = `✨ Cleric — ${cleric.name}`;
         section.appendChild(secTitle);
 
-        const costLabel = document.createElement('div');
-        costLabel.style.cssText = 'font-size:11px;color:#999;margin-bottom:8px;';
-        costLabel.textContent = `Revive: costs ${CLERIC_REVIVE_MANA_COST} MP · restores ${Math.round(CLERIC_REVIVE_HEAL_FRAC * 100)}% HP`;
-        section.appendChild(costLabel);
+        // ── Heal (single target) ──────────────────────────────────────────────
+        const healTargets = this._party.filter(
+            m => m.health > 0 && m.health < m.maxHealth
+              && !(m.isSummoned && !m.canBeHealed),
+        );
+        if (healTargets.length > 0) {
+            const healHeader = document.createElement('div');
+            healHeader.style.cssText = 'font-size:11px;color:#aaf;margin-bottom:4px;font-weight:bold;';
+            const pct = healPct(cleric);
+            healHeader.textContent = `Heal — ${Math.round(pct * 100)}% max HP · ${CLERIC_HEAL_MANA_COST} MP`;
+            section.appendChild(healHeader);
 
-        const canRevive = cleric.mana >= CLERIC_REVIVE_MANA_COST;
+            const canHeal = cleric.mana >= CLERIC_HEAL_MANA_COST;
+            for (const target of healTargets) {
+                const healAmt = Math.max(1, Math.ceil(target.maxHealth * pct));
+                section.appendChild(
+                    this._makeTargetButton(
+                        `⚕ Heal ${target.name}`,
+                        `→ +${healAmt} HP`,
+                        canHeal,
+                        () => this._doClericHeal(cleric, target),
+                    ),
+                );
+            }
 
-        for (const target of deadMembers) {
-            const reviveHP = Math.max(1, Math.ceil(target.maxHealth * CLERIC_REVIVE_HEAL_FRAC));
-            const row = document.createElement('div');
-            Object.assign(row.style, { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' });
-
-            const btn = document.createElement('button');
-            btn.textContent = `⚕ Revive ${target.name}`;
-            btn.disabled = !canRevive;
-            Object.assign(btn.style, {
-                flex: '1', padding: '6px 10px', borderRadius: '5px',
-                cursor: canRevive ? 'pointer' : 'not-allowed',
-                border: '1px solid #555', background: canRevive ? '#2a1a3a' : '#1a1a1a',
-                color: canRevive ? '#f9f' : '#666',
-                fontFamily: 'monospace', fontSize: '13px', textAlign: 'left',
-            });
-
-            const info = document.createElement('span');
-            info.style.cssText = 'font-size:11px;color:#999;flex-shrink:0;';
-            info.textContent = `→ ${reviveHP} HP`;
-
-            btn.addEventListener('click', () => {
-                if (!canRevive) return;
-                this._doRevive(cleric, target);
-            });
-
-            row.append(btn, info);
-            section.appendChild(row);
+            if (!canHeal) {
+                section.appendChild(this._makeManaWarning(cleric, CLERIC_HEAL_MANA_COST));
+            }
+            section.appendChild(this._makeSpacer());
         }
 
-        if (!canRevive) {
-            const warn = document.createElement('div');
-            warn.style.cssText = 'font-size:11px;color:#f88;margin-top:4px;';
-            warn.textContent = `Not enough mana (needs ${CLERIC_REVIVE_MANA_COST}, has ${cleric.mana}).`;
-            section.appendChild(warn);
+        // ── Mass Heal (L4+) ───────────────────────────────────────────────────
+        if (cleric.level >= CLERIC_MASS_HEAL_MIN_LEVEL) {
+            const massPct = healPct(cleric) * 0.5;
+            const massHeader = document.createElement('div');
+            massHeader.style.cssText = 'font-size:11px;color:#aaf;margin-bottom:4px;font-weight:bold;';
+            massHeader.textContent = `Mass Heal — ${Math.round(massPct * 100)}% max HP (all allies) · ${CLERIC_HEAL_MANA_COST} MP`;
+            section.appendChild(massHeader);
+
+            const livingTargets = this._party.filter(
+                m => m.health > 0 && !(m.isSummoned && !m.canBeHealed),
+            );
+            const preview = livingTargets
+                .map(t => `${t.name} +${Math.max(1, Math.ceil(t.maxHealth * massPct))}`)
+                .join(', ');
+            const canMass = cleric.mana >= CLERIC_HEAL_MANA_COST;
+
+            const massRow = document.createElement('div');
+            Object.assign(massRow.style, { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' });
+            const massBtn = document.createElement('button');
+            massBtn.textContent = '✨ Mass Heal — all living allies';
+            massBtn.disabled = !canMass;
+            massBtn.title = preview || 'No living targets.';
+            Object.assign(massBtn.style, {
+                flex: '1', padding: '6px 10px', borderRadius: '5px',
+                cursor: canMass ? 'pointer' : 'not-allowed',
+                border: '1px solid #555', background: canMass ? '#1a1a3a' : '#1a1a1a',
+                color: canMass ? '#ccf' : '#666',
+                fontFamily: 'monospace', fontSize: '13px', textAlign: 'left',
+            });
+            massBtn.addEventListener('click', () => {
+                if (!canMass) return;
+                this._doClericMassHeal(cleric);
+            });
+            massRow.appendChild(massBtn);
+            section.appendChild(massRow);
+
+            if (!canMass) {
+                section.appendChild(this._makeManaWarning(cleric, CLERIC_HEAL_MANA_COST));
+            }
+            section.appendChild(this._makeSpacer());
+        }
+
+        // ── Revive (L3+, only when dead allies exist) ─────────────────────────
+        if (cleric.level >= CLERIC_REVIVE_MIN_LEVEL && deadMembers.length > 0) {
+            const reviveHeader = document.createElement('div');
+            reviveHeader.style.cssText = 'font-size:11px;color:#aaf;margin-bottom:4px;font-weight:bold;';
+            reviveHeader.textContent = `Revive — ${Math.round(CLERIC_REVIVE_HEAL_FRAC * 100)}% HP · ${CLERIC_REVIVE_MANA_COST} MP`;
+            section.appendChild(reviveHeader);
+
+            const canRevive = cleric.mana >= CLERIC_REVIVE_MANA_COST;
+            for (const target of deadMembers) {
+                const reviveHP = Math.max(1, Math.ceil(target.maxHealth * CLERIC_REVIVE_HEAL_FRAC));
+                section.appendChild(
+                    this._makeTargetButton(
+                        `⚕ Revive ${target.name}`,
+                        `→ ${reviveHP} HP`,
+                        canRevive,
+                        () => this._doRevive(cleric, target),
+                    ),
+                );
+            }
+
+            if (!canRevive) {
+                section.appendChild(this._makeManaWarning(cleric, CLERIC_REVIVE_MANA_COST));
+            }
         }
 
         return section;
+    }
+
+    // ── Paladin section ───────────────────────────────────────────────────────
+
+    _buildPaladinSection(paladin, deadMembers) {
+        const section = document.createElement('div');
+        section.style.marginBottom = '18px';
+
+        const secTitle = document.createElement('div');
+        Object.assign(secTitle.style, {
+            fontSize: '14px', fontWeight: 'bold',
+            color: '#ffd', marginBottom: '10px',
+        });
+        secTitle.textContent = `🛡 Paladin — ${paladin.name}`;
+        section.appendChild(secTitle);
+
+        const reviveHeader = document.createElement('div');
+        reviveHeader.style.cssText = 'font-size:11px;color:#aaf;margin-bottom:4px;font-weight:bold;';
+        reviveHeader.textContent = `Revive — ${Math.round(CLERIC_REVIVE_HEAL_FRAC * 100)}% HP · ${CLERIC_REVIVE_MANA_COST} MP`;
+        section.appendChild(reviveHeader);
+
+        const canRevive = paladin.mana >= CLERIC_REVIVE_MANA_COST;
+        for (const target of deadMembers) {
+            const reviveHP = Math.max(1, Math.ceil(target.maxHealth * CLERIC_REVIVE_HEAL_FRAC));
+            section.appendChild(
+                this._makeTargetButton(
+                    `⚕ Revive ${target.name}`,
+                    `→ ${reviveHP} HP`,
+                    canRevive,
+                    () => this._doPaladinRevive(paladin, target),
+                ),
+            );
+        }
+
+        if (!canRevive) {
+            section.appendChild(this._makeManaWarning(paladin, CLERIC_REVIVE_MANA_COST));
+        }
+
+        return section;
+    }
+
+    // ── Shared UI helpers ─────────────────────────────────────────────────────
+
+    /** Creates a button row: [action button] [info label] */
+    _makeTargetButton(label, infoText, enabled, onClick) {
+        const row = document.createElement('div');
+        Object.assign(row.style, { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' });
+
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.disabled = !enabled;
+        Object.assign(btn.style, {
+            flex: '1', padding: '6px 10px', borderRadius: '5px',
+            cursor: enabled ? 'pointer' : 'not-allowed',
+            border: '1px solid #555', background: enabled ? '#1a1a3a' : '#1a1a1a',
+            color: enabled ? '#ccf' : '#666',
+            fontFamily: 'monospace', fontSize: '13px', textAlign: 'left',
+        });
+        btn.addEventListener('click', () => { if (enabled) onClick(); });
+
+        const info = document.createElement('span');
+        info.style.cssText = 'font-size:11px;color:#999;flex-shrink:0;';
+        info.textContent = infoText;
+
+        row.append(btn, info);
+        return row;
+    }
+
+    /** Small red "not enough mana" warning line. */
+    _makeManaWarning(caster, cost) {
+        const warn = document.createElement('div');
+        warn.style.cssText = 'font-size:11px;color:#f88;margin-bottom:4px;';
+        warn.textContent = `Not enough mana (needs ${cost}, has ${caster.mana}).`;
+        return warn;
+    }
+
+    /** Thin horizontal spacer between subsections. */
+    _makeSpacer() {
+        const hr = document.createElement('div');
+        hr.style.cssText = 'border-top:1px solid #333;margin:6px 0 8px 0;';
+        return hr;
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+
+    _doClericHeal(cleric, target) {
+        cleric.mana -= CLERIC_HEAL_MANA_COST;
+        const pct = healPct(cleric);
+        const amt = Math.max(1, Math.ceil(target.maxHealth * pct));
+        target.health = Math.min(target.maxHealth, target.health + amt);
+        soundManager.playRecruit();
+        this._onChanged(this._party);
+        this._render();
+    }
+
+    _doClericMassHeal(cleric) {
+        cleric.mana -= CLERIC_HEAL_MANA_COST;
+        const pct = healPct(cleric) * 0.5;
+        for (const m of this._party) {
+            if (m.health <= 0) continue;
+            if (m.isSummoned && !m.canBeHealed) continue;
+            const amt = Math.max(1, Math.ceil(m.maxHealth * pct));
+            m.health = Math.min(m.maxHealth, m.health + amt);
+        }
+        soundManager.playRecruit();
+        this._onChanged(this._party);
+        this._render();
     }
 
     _doRevive(cleric, target) {
@@ -461,6 +661,22 @@ export class PartySpellModal {
         }
 
         soundManager.playRecruit(); // celebratory fanfare
+
+        this._onChanged(this._party);
+        this._render();
+    }
+
+    _doPaladinRevive(paladin, target) {
+        paladin.mana -= CLERIC_REVIVE_MANA_COST;
+        const amt = Math.max(1, Math.ceil(target.maxHealth * CLERIC_REVIVE_HEAL_FRAC));
+        target.health = amt;
+        target.stunned = false;
+        // Remove poison so the newly-revived ally doesn't immediately die.
+        if (Array.isArray(target.activeEffects)) {
+            target.activeEffects = target.activeEffects.filter(e => e && e.type !== 'poison');
+        }
+
+        soundManager.playRecruit();
 
         this._onChanged(this._party);
         this._render();

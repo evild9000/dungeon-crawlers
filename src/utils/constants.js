@@ -742,6 +742,8 @@ export const ARTIFICER_RANGED_PER_LEVEL = 1;
 export const SCATTER_SPLASH_BASE    = 2;
 export const SCATTER_SPLASH_EVERY   = 5;
 export const SCATTER_SPLASH_FRACTION = 0.5; // splash damage = half
+export const ARTIFICER_DRONE_UNLOCK_LEVEL = 25;
+export const ARTIFICER_DRONE_CHANCE_CAP   = 0.75; // level% chance, capped at 75%
 
 // Paladin class
 export const PALADIN_MELEE_PER_LEVEL   = 1;
@@ -767,7 +769,8 @@ export const PALADIN_AOE_SMITE_DAMAGE_MULT   = (1 / 3); // 1/3 normal smite dama
 export const PALADIN_AOE_SMITE_INSTAKILL_MULT = (1 / 3); // 1/3 normal purge chance
 export const PALADIN_DRAGONSLAYER_UNLOCK_LEVEL = 25;
 export const PALADIN_DRAGONSLAYER_MANA_PER_ROUND = 15;
-export const PALADIN_DRAGON_AURA_REDUCTION_DIVISOR = 2; // floor(level / 2)
+export const PALADIN_DRAGON_AURA_PERCENT_OFFSET = 10; // base: level + 10 %
+export const PALADIN_DRAGON_AURA_PERCENT_CAP    = 90; // hard cap: 90%
 
 // Monk L20 special: Quivering Palm
 export const MONK_QUIVERING_PALM_UNLOCK_LEVEL    = 20;

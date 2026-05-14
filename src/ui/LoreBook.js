@@ -26,6 +26,7 @@ function buildAbilityList(def) {
         lines.push('Incorporeal: immune to Druid Entangle \u2014 physical vines pass harmlessly through this creature');
         lines.push('Incorporeal: cannot be paralyzed by Ghoul touch or held by Treant');
         lines.push('Incorporeal: immune to Rogue Backstab Bleed \u2014 has no blood to shed');
+        lines.push('Incorporeal: immune to Rogue Captured Traps \u2014 mechanisms pass through the creature');
     }
     if (tags.includes('undead')) {
         lines.push('Undead: immune to Ghoul paralysis and poison effects');
@@ -36,6 +37,10 @@ function buildAbilityList(def) {
     }
     if (tags.includes('construct')) {
         lines.push('Construct: immune to Bard Charm Monster — no mind to enchant');
+    }
+    if (tags.includes('dragon')) {
+        lines.push('Dragon: Dragonslayer lets level 25 paladins Smite and AoE Smite dragons');
+        lines.push('Dragon: shielded level 25 paladins reduce this creature’s magic/AoE damage against the party by (paladin level + 10)%, capped at 90%, before defenses apply');
     }
     // Immunity from the immune[] array on the type definition.
     // Elemental types (fire, cold, lightning, acid, poison) get "damage and DoT" wording.

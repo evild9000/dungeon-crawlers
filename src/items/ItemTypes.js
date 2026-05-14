@@ -224,6 +224,14 @@ export const CONSUMABLES = {
         stackable: true,
         potionKind: 'buff_wrath',
     },
+    captured_trap: {
+        id: 'captured_trap',
+        name: 'Captured Trap',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Recovered by a level 25+ rogue after a successful trap disarm. In combat, a rogue can spring one to blast all monsters for heavy melee-type damage and a 3-round damage-over-time effect. Incorporeal foes are immune.',
+        icon: '\u{1FAA4}', // mouse trap-ish
+        stackable: true,
+    },
 };
 
 // ──────────────────────────────────────────

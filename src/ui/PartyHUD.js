@@ -1,6 +1,12 @@
 import { generatePortrait } from '../utils/PortraitGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
-import { getSummonPreset } from '../entities/Summons.js';
+import { GOLEM_PRESETS, getSummonPreset, UNDEAD_TIERS } from '../entities/Summons.js';
+import {
+    BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
+    BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT,
+    BARBARIAN_ENCOURAGE_MAX_ROUNDS,
+    BARBARIAN_ENCOURAGE_UNLOCK_LEVEL,
+} from '../utils/constants.js';
 
 /**
  * PartyHUD — renders the bottom-screen party bar with:
@@ -78,6 +84,12 @@ export class PartyHUD {
             );
             this._craftBtn.style.display = hasArtificer ? '' : 'none';
         }
+        if (this._familiarBtn) {
+            const hasMage = Array.isArray(party) && party.some(
+                m => m && m.classId === 'mage' && !m.isSummoned && (m.level || 0) >= 25,
+            );
+            this._familiarBtn.style.display = hasMage ? '' : 'none';
+        }
 
         // Remove cards for members no longer in the party
         for (const [id, card] of this.cards) {
@@ -94,7 +106,7 @@ export class PartyHUD {
                 card = this._createCard(member);
                 this.cards.set(member.id, card);
             }
-            this._updateBars(card, member);
+            this._updateBars(card, member, party);
         }
 
         // Re-append every card in current party order so the DOM reflects any
@@ -194,13 +206,24 @@ export class PartyHUD {
         this._craftBtn = document.createElement('button');
         this._craftBtn.className = 'hud-btn';
         this._craftBtn.textContent = 'Craft (K)';
-        this._craftBtn.title = 'Open the Crafting menu: enchant gear, brew potions, forge / repair golems. Requires an Artificer in the party.';
+        this._craftBtn.title = 'Open the Crafting menu: enchant gear, augment trinkets, brew potions, forge / repair golems. Requires an Artificer in the party.';
         this._craftBtn.style.display = 'none';
         this._craftBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (this._callbacks.onOpenCrafting) this._callbacks.onOpenCrafting();
         });
         this._topBar.appendChild(this._craftBtn);
+
+        this._familiarBtn = document.createElement('button');
+        this._familiarBtn.className = 'hud-btn';
+        this._familiarBtn.textContent = 'Familiar (F)';
+        this._familiarBtn.title = 'Open the mage familiar menu: summon or upgrade level-25 mage familiars.';
+        this._familiarBtn.style.display = 'none';
+        this._familiarBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onOpenFamiliar) this._callbacks.onOpenFamiliar();
+        });
+        this._topBar.appendChild(this._familiarBtn);
 
         // Light button + status (Phase 10)
         const lightBtn = document.createElement('button');
@@ -402,7 +425,38 @@ export class PartyHUD {
         return card;
     }
 
-    _updateBars(card, member) {
+    _isUndeadOrGolemMember(member) {
+        if (!member || !member.isSummoned) return false;
+        if (member.summonStats && member.summonStats.tierId && GOLEM_PRESETS[member.summonType]) return true;
+        return UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich';
+    }
+
+    _getBarbarianEncourageState(member, party) {
+        if (!member || member.health <= 0) return null;
+        if (this._isUndeadOrGolemMember(member)) return null;
+
+        let best = null;
+        for (const barb of party || []) {
+            if (!barb || barb === member || barb.health <= 0) continue;
+            if (barb.classId !== 'barbarian' || (barb.level || 1) < BARBARIAN_ENCOURAGE_UNLOCK_LEVEL || !barb.isRaging) continue;
+
+            const rounds = Math.min(BARBARIAN_ENCOURAGE_MAX_ROUNDS, barb.rageEncourageRounds || 0);
+            const bonusMult = Math.min(BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT, rounds * BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND);
+            if (!best || bonusMult > best.bonusMult) {
+                best = { sourceName: barb.name, rounds, bonusMult };
+            }
+        }
+
+        if (!best || best.bonusMult <= 0) return null;
+        return {
+            sourceName: best.sourceName,
+            rounds: best.rounds,
+            bonusMult: best.bonusMult,
+            bonusPct: Math.round(best.bonusMult * 100),
+        };
+    }
+
+    _updateBars(card, member, party) {
         const fills = card.querySelectorAll('.stat-bar-fill');
         fills[0].style.width = `${Math.max(0, (member.health / member.maxHealth) * 100)}%`;
         fills[1].style.width = `${Math.max(0, (member.stamina / Math.max(1, member.maxStamina)) * 100)}%`;
@@ -681,11 +735,26 @@ export class PartyHUD {
                 dmgTitle = 'Damage: unknown';
             }
             const parts = [`${dmgIcon} ${dmgLabel}`, `\u{1F6E1}️ ${def}`];
+            if (ss.beastKind === 'shambling_mound' && (ss.shamblingGrowthStage ?? 3) < 3) {
+                parts.push(`🌱 ${ss.shamblingGrowthStage || 0}/3`);
+            }
+            if (ss.tierId && ss.attachments) {
+                const a = ss.attachments;
+                if (a.limbs) parts.push(`🦾 ${a.limbs}`);
+                if (a.shield) parts.push('🛡');
+                if (a.trinkets) parts.push(`💎 ${a.trinkets}`);
+            }
             // Show regen rate if applicable (flesh golem, stirge-type beasts)
             const regen = ss.regenPercent;
             if (regen) parts.push(`\u{1F504} ${Math.round(regen * 100)}%/rd`);
             statsRow.textContent = parts.join('  ');
             statsRow.title = `${dmgTitle}\nDefense: ${def}` +
+                (ss.beastKind === 'shambling_mound' && (ss.shamblingGrowthStage ?? 3) < 3
+                    ? `\nMini Shambler growth: ${ss.shamblingGrowthStage || 0}/3 turns. Grows to 67%, 84%, then 100% of full mound HP/defense.`
+                    : '') +
+                (ss.tierId && ss.attachments
+                    ? `\nGolem attachments: ${ss.attachments.limbs || 0} limb(s), ${ss.attachments.shield ? 'shield' : 'no shield'}, ${ss.attachments.trinkets || 0} trinket(s).`
+                    : '') +
                 (regen ? `\nRegen: ${Math.round(regen * 100)}% HP/round` : '');
         }
 
@@ -730,6 +799,11 @@ export class PartyHUD {
             // Stunned
             if (member.stunned)
                 mkPB('⚡', 'Stunned', 'rgba(220,200,0,0.9)', 'Stunned: cannot act this turn');
+            const encourage = this._getBarbarianEncourageState(member, party);
+            if (encourage) {
+                mkPB('📣', `+${encourage.bonusPct}% DMG`, 'rgba(165,60,20,0.95)',
+                    `Barbarian Encouragement: +${encourage.bonusPct}% damage this round.\nSource: ${encourage.sourceName}\nRamp: ${encourage.rounds}/${BARBARIAN_ENCOURAGE_MAX_ROUNDS} rage rounds.`);
+            }
             // Webbed / paralyzed / constricted
             if (member.webbedRounds > 0)
                 mkPB('🕸️', 'Webbed', 'rgba(120,80,0,0.9)', 'Webbed/Paralyzed/Constricted: ' + member.webbedRounds + ' rds left');

@@ -18,6 +18,7 @@
 import { getItemDef, ITEM_CATEGORY, WEAPON_SUBTYPE } from '../items/ItemTypes.js';
 import { generatePortrait } from '../utils/PortraitGenerator.js';
 import { soundManager } from '../utils/SoundManager.js';
+import { getFamiliarDef } from '../entities/Familiars.js';
 import { getSummonPreset } from '../entities/Summons.js';
 import {
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
@@ -32,6 +33,17 @@ import {
     MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
     PALADIN_SMITE_MANA_COST, PALADIN_SMITE_INSTAKILL_BASE,
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
+    WARRIOR_RETALIATION_UNLOCK_LEVEL,
+    PALADIN_DRAGONSLAYER_UNLOCK_LEVEL, PALADIN_DRAGONSLAYER_MANA_PER_ROUND,
+    BARD_RALLYING_MELODY_UNLOCK_LEVEL, BARD_RALLYING_MELODY_MANA_COST,
+    BARD_RALLYING_MELODY_RESTORE_FRACTION,
+    CLERIC_CLEANSE_UNLOCK_LEVEL, CLERIC_CLEANSE_MANA_PER_STATE,
+    MAGE_FAMILIAR_UNLOCK_LEVEL, MAGE_FAMILIAR_GOLD_PER_LEVEL,
+    BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
+    BARBARIAN_ENCOURAGE_MAX_ROUNDS,
+    NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
+    RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
+    MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
 } from '../utils/constants.js';
 
 /**
@@ -368,7 +380,7 @@ export class InventoryUI {
     }
 
     /** Show picker for which (deceased) party member to revive. */
-    _showRevivePicker(itemId, rowEl, fromGroup) {
+    _showRevivePicker(itemId, rowEl, fromGroup, sourceMemberId = null) {
         const existing = rowEl.querySelector('.inv-transfer-picker');
         if (existing) { existing.remove(); return; }
 
@@ -388,9 +400,13 @@ export class InventoryUI {
                 btn.className = 'inv-transfer-member-btn';
                 btn.textContent = `Revive ${member.name}`;
                 btn.addEventListener('click', () => {
-                    const removed = fromGroup
-                        ? state.inventory.removeItem(itemId)
-                        : member.removeItem(itemId);
+                    let removed = false;
+                    if (fromGroup) {
+                        removed = state.inventory.removeItem(itemId);
+                    } else {
+                        const source = state.party.find(m => m.id === (sourceMemberId || this._activeMemberId));
+                        if (source) removed = source.removeItem(itemId);
+                    }
                     if (removed) {
                         member.health  = member.maxHealth;
                         member.stamina = member.maxStamina;
@@ -488,6 +504,10 @@ export class InventoryUI {
 
         // Combat Stats panel
         this.personalContent.appendChild(this._buildCombatStats(member));
+
+        if (member.classId === 'mage' && !member.isSummoned) {
+            this.personalContent.appendChild(this._buildFamiliarSection(member));
+        }
 
         // Combat Row toggle
         this.personalContent.appendChild(this._buildRowToggle(member));
@@ -646,7 +666,7 @@ export class InventoryUI {
                         useBtn.className = 'pinv-action-btn pinv-use-btn';
                         useBtn.textContent = 'Revive...';
                         useBtn.addEventListener('click', () => {
-                            this._showRevivePicker(entry.itemId, row, /*fromGroup*/ false);
+                            this._showRevivePicker(entry.itemId, row, /*fromGroup*/ false, member.id);
                         });
                         btnGroup.appendChild(useBtn);
                     }
@@ -774,6 +794,12 @@ export class InventoryUI {
             `Health / Stamina / Mana — current and maximum.\n` +
             `HP max scales with class (hpMod) and level-up gains.\n` +
             `Stamina fuels combat moves; mana fuels spells and summons.\n` +
+            (member._trinketPoolBonus && (member._trinketPoolBonus.health || member._trinketPoolBonus.stamina || member._trinketPoolBonus.mana)
+                ? `Trinket vitality augments: +${member._trinketPoolBonus.health || 0} HP, +${member._trinketPoolBonus.stamina || 0} ST, +${member._trinketPoolBonus.mana || 0} MP.\n`
+                : '') +
+            (typeof member.getTrinketRegenAugmentBonus === 'function' && member.getTrinketRegenAugmentBonus() > 0
+                ? `Trinket regen augments: +${member.getTrinketRegenAugmentBonus()} HP/ST/MP regen per minute.\n`
+                : '') +
             `Regen per minute:\n` +
             `  HP: ${member.getRegenRate('hp')}\n` +
             `  ST: ${member.getRegenRate('st')}\n` +
@@ -785,8 +811,9 @@ export class InventoryUI {
         const speciesDef = (sp.defenseBonus || 0);
         const perLevelDef = (cls.defensePerLevel || 0) * beyond;
         const armorBlock = member.getArmorBlocking();
+        const familiarDef = member.getFamiliarDefenseBonus ? member.getFamiliarDefenseBonus() : 0;
         const trinketDef = member.getTrinketBonus('defense');
-        const totalDef   = classDef + speciesDef + perLevelDef + armorBlock + trinketDef;
+        const totalDef   = classDef + speciesDef + perLevelDef + armorBlock + familiarDef + trinketDef;
 
         const defRow = document.createElement('div');
         defRow.className = 'pinv-stat-row defense-row';
@@ -794,7 +821,7 @@ export class InventoryUI {
             <span class="pinv-stat-label">🛡 Defense:</span>
             <span class="pinv-stat-value">${totalDef}</span>
             <span class="pinv-stat-breakdown">
-              (class ${classDef} + species ${speciesDef} + level ${perLevelDef} + armor ${armorBlock} + trinkets ${trinketDef})
+              (class ${classDef} + species ${speciesDef} + level ${perLevelDef} + armor ${armorBlock} + familiar ${familiarDef} + trinkets ${trinketDef})
             </span>`;
         defRow.title =
             `Defense reduces incoming damage by this amount.\n` +
@@ -802,6 +829,7 @@ export class InventoryUI {
             `Species bonus:     ${speciesDef}\n` +
             `Per-level bonus:   ${perLevelDef} (+${cls.defensePerLevel || 0}/level)\n` +
             `Armor blocking:    ${armorBlock}\n` +
+            `Familiar bonus:    ${familiarDef}\n` +
             `Trinket bonuses:   ${trinketDef}\n` +
             `Total:             ${totalDef}`;
         section.appendChild(defRow);
@@ -870,6 +898,58 @@ export class InventoryUI {
             perk.push(`Heal: ${cur}% max HP`);
             perkDetails.push(`${isCleric ? 'Cleric' : 'Paladin'} Heal: base ${basePct}% + ${cur - basePct}% from levels = ${cur}% max HP restored\n  Costs ${costMP} MP per cast. (+${Math.round(cls.healPercentPerLevel * 100)}%/level)`);
         }
+        if (member.classId === 'warrior' && member.level >= WARRIOR_RETALIATION_UNLOCK_LEVEL) {
+            const chance = Math.round(member.getRetaliationChance() * 100);
+            perk.push(`Intercept retaliation: ${chance}%`);
+            perkDetails.push(`Warrior L25 Retaliatory Strike: ${chance}% chance after a successful Defend Mode intercept\n  Deals 75% of a normal melee strike back to the attacker.`);
+        }
+        if (member.classId === 'paladin' && member.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL) {
+            const aura = member.getDragonAuraReduction();
+            perk.push(`Dragon aura: ${aura}% reduction`);
+            perkDetails.push(`Paladin L25 Dragonslayer: toggleable dragon-hunting stance\n  Costs ${PALADIN_DRAGONSLAYER_MANA_PER_ROUND} MP/round.\n  Smite and AoE Smite can target dragons while active.\n  If equipped with a shield, reduces dragon magic/AoE damage to the whole party by ${aura}% (cap 90%) before defenses.`);
+        }
+        if (member.classId === 'cleric' && member.level >= CLERIC_CLEANSE_UNLOCK_LEVEL) {
+            const cleanse = Math.round(member.getClericCleanseChance() * 100);
+            perk.push(`Heal cleanse: ${cleanse}%`);
+            perkDetails.push(`Cleric L25 Cleansing Grace: Heal and Mass Heal have a ${cleanse}% chance to purge harmful states\n  Costs ${CLERIC_CLEANSE_MANA_PER_STATE} MP per harmful state removed.`);
+        }
+        if (member.classId === 'bard' && member.level >= BARD_RALLYING_MELODY_UNLOCK_LEVEL) {
+            const restore = Math.round(BARD_RALLYING_MELODY_RESTORE_FRACTION * 100);
+            perk.push(`Rallying Melody: ${restore}% restore`);
+            perkDetails.push(`Bard L25 Rallying Melody: costs ${BARD_RALLYING_MELODY_MANA_COST} MP\n  Restores ${restore}% of max HP, mana, and stamina to every living party member.\n  Does NOT affect golems or summoned undead.`);
+        }
+        if (member.classId === 'artificer' && member.level >= 25) {
+            perk.push('Advanced Augments');
+            perkDetails.push('Artificer L25 Advanced Augments:\n  Trinkets at effective level 4+ can receive separate vitality augments (+5/10/15/20% HP, ST, and MP at augment levels 4-7) and regen augments (+2/+4/+6/+8 HP, ST, and MP regen per minute at levels 4-7).\n  These two trinket augment tracks are purchased separately and can coexist.\n  Persistent golems can receive extra limbs, a golem shield, and golem trinkets from the Crafting menu.');
+        }
+        if (member.classId === 'barbarian' && member.level >= BARBARIAN_ENCOURAGE_UNLOCK_LEVEL) {
+            const maxPct = Math.round(BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND * BARBARIAN_ENCOURAGE_MAX_ROUNDS * 100);
+            perk.push(`Rage encouragement: up to +${maxPct}%`);
+            perkDetails.push(`Barbarian L25 Encouragement:\n  While raging, other living party members gain cumulative +${Math.round(BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND * 100)}% damage per round.\n  Caps after ${BARBARIAN_ENCOURAGE_MAX_ROUNDS} rounds. Multiple barbarians do not stack on the same recipient.`);
+        }
+        if (member.classId === 'necromancer' && member.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
+            perk.push(`Demi-Lich: ${NECRO_DEMI_LICH_MANA_COST} MP`);
+            perkDetails.push(`Necromancer L25 Demi-Lich:\n  Requires Lich Form. Costs ${NECRO_DEMI_LICH_MANA_COST} MP.\n  Summons a back-row undead caster with defense 10 + level × 2, HP equal to current necromancer HP, defense-ignoring AoE magic, Ghost Fear, half magic/AoE damage, and immunity to stun/web/holds/poison.`);
+        }
+        if (member.classId === 'ranger' && member.level >= RANGER_TOTEM_UNLOCK_LEVEL) {
+            perk.push(`Animal Totem: ${RANGER_TOTEM_MANA_PER_ROUND} MP/rd`);
+            perkDetails.push(`Ranger L25 Animal Totems:\n  Free combat activation/change; costs ${RANGER_TOTEM_MANA_PER_ROUND} MP per round.\n  Wolf adds bleed and +1 extra ranged attack each round, Bear adds stun and defense, Eagle adds ranged/explosive damage and ranged deflection (checked before warrior/shambling intercept), Pixie adds poison and halves magic/AoE damage to the ranger.`);
+        }
+        if (member.classId === 'monk' && member.level >= MONK_AVATAR_UNLOCK_LEVEL) {
+            perk.push(`Avatar: ${MONK_AVATAR_MANA_PER_ROUND} MP/rd`);
+            perkDetails.push(`Monk L25 Avatar:\n  Free toggle on; costs ${MONK_AVATAR_MANA_PER_ROUND} MP per round.\n  Regenerates 10% max HP/round, can shrug off harmful states at turn start, and adds a chosen elemental DoT to landed attacks except Quivering Palm.`);
+        }
+        if (member.classId === 'mage' && member.level >= MAGE_FAMILIAR_UNLOCK_LEVEL) {
+            const fam = member.getFamiliarSummary ? member.getFamiliarSummary() : null;
+            const cap = member.getFamiliarLevelCap ? member.getFamiliarLevelCap() : 0;
+            if (fam) {
+                perk.push(`Familiar: ${fam.typeName} L${fam.level}`);
+                perkDetails.push(`Mage L25 Familiar: ${fam.icon} ${fam.name} the ${fam.typeName}\n  Grants +${fam.magicBonusPct}% magic/AoE damage and +${fam.defenseBonus} defense.\n  Current level cap: ${cap}.`);
+            } else {
+                perk.push(`Familiar cap: L${cap}`);
+                perkDetails.push(`Mage L25 Familiar: summon outside combat with the Familiar menu.\n  First summon costs ${MAGE_FAMILIAR_GOLD_PER_LEVEL.toLocaleString()} gold and starts at level 1.\n  Each familiar level grants +10% magic/AoE damage and +1 defense.`);
+            }
+        }
         if (cls.drainPerLevel) {
             const base = NECRO_LIFE_DRAIN_AMOUNT;
             const cur  = base + member.getDrainBonus();
@@ -883,7 +963,7 @@ export class InventoryUI {
                 const ikPct  = Math.round(member.getFavoredEnemyInstakillChance() * 100);
                 const tagStr = allFav.join(', ');
                 perk.push(`Favored [${tagStr}]: ${ikPct}% instakill`);
-                perkDetails.push(`Ranger Favored Enemies (${tagStr}): ignores defense, ${ikPct}% instakill chance\n  (1% per 3 levels; currently L${member.level})\n  Extra slots unlocked at L20, L25, L30…`);
+                perkDetails.push(`Ranger Favored Enemies (${tagStr}): ignores defense, ${ikPct}% instakill chance\n  (1% per 3 levels; currently L${member.level})\n  Bosses/mega-bosses are immune to instant death; triggered procs deal x4 ranged damage instead.\n  Extra slots unlocked at L20, L25, L30…`);
             }
         }
 
@@ -918,13 +998,18 @@ export class InventoryUI {
                                  (cls.magicPerLevel  || 0)) * beyond;
         const weapon  = member.getWeaponBonus(type);
         const trinket = member.getTrinketBonus(type);
+        const familiarMult = type === 'magic' && member.getMagicDamageMultiplier
+            ? member.getMagicDamageMultiplier()
+            : 1;
+        const familiarPct = Math.max(0, Math.round((familiarMult - 1) * 100));
         const total   = base + speciesB + perLevel + weapon + trinket;
+        const breakdownExtra = type === 'magic' ? `; familiar x${familiarMult.toFixed(2)}` : '';
 
         row.innerHTML = `
             <span class="pinv-stat-label">${label}:</span>
             <span class="pinv-stat-value">+${total}</span>
             <span class="pinv-stat-breakdown">
-              (class ${base} + species ${speciesB} + level ${perLevel} + weapon ${weapon} + trinkets ${trinket})
+              (class ${base} + species ${speciesB} + level ${perLevel} + weapon ${weapon} + trinkets ${trinket}${breakdownExtra})
             </span>`;
         row.title =
             `${label} damage bonus on top of weapon base roll.\n` +
@@ -933,8 +1018,51 @@ export class InventoryUI {
             `Per-level bonus: +${perLevel}\n` +
             `Weapon subtype:  +${weapon}\n` +
             `Trinket bonuses: +${trinket}\n` +
-            `Total:           +${total}`;
+            `Total:           +${total}` +
+            (type === 'magic'
+                ? `\nFamiliar bonus:  ${familiarPct > 0 ? `+${familiarPct}% final magic/AoE damage` : 'none'}`
+                : '');
         return row;
+    }
+
+    _buildFamiliarSection(member) {
+        const section = document.createElement('div');
+        section.className = 'pinv-section';
+        section.innerHTML = '<div class="pinv-section-title">🪄 Familiar</div>';
+
+        const cap = member.getFamiliarLevelCap ? member.getFamiliarLevelCap() : 0;
+        const fam = member.getFamiliarSummary ? member.getFamiliarSummary() : null;
+
+        const help = document.createElement('div');
+        help.className = 'pinv-row-help';
+        help.textContent = fam
+            ? `${fam.icon} ${fam.name} the ${fam.typeName}. Level ${fam.level}/${cap}. Grants +${fam.magicBonusPct}% magic/AoE damage and +${fam.defenseBonus} defense. Familiar names and species are permanent once chosen.`
+            : `No familiar summoned yet. Open Familiar (F) outside combat to summon one. First summon costs ${MAGE_FAMILIAR_GOLD_PER_LEVEL.toLocaleString()} gold and starts at level 1. Current cap: level ${cap}.`;
+        section.appendChild(help);
+
+        if (fam) {
+            const row = document.createElement('div');
+            row.className = 'pinv-item-row';
+
+            const info = document.createElement('span');
+            info.className = 'pinv-item-info';
+            info.textContent = `${fam.icon} ${fam.name} — ${fam.typeName} (Lv ${fam.level}/${cap})`;
+            info.title = `${fam.typeName} familiar\n+${fam.magicBonusPct}% magic/AoE damage\n+${fam.defenseBonus} defense`;
+            row.appendChild(info);
+            section.appendChild(row);
+        } else {
+            const choices = document.createElement('div');
+            choices.className = 'pinv-row-help';
+            const labels = ['cat', 'toad', 'raven', 'hawk', 'spider', 'centipede', 'owl', 'rat', 'lizard', 'rabbit', 'snake']
+                .map(id => {
+                    const def = getFamiliarDef(id);
+                    return def ? `${def.icon} ${def.name}` : id;
+                });
+            choices.textContent = `Available familiars: ${labels.join(', ')}.`;
+            section.appendChild(choices);
+        }
+
+        return section;
     }
 
     _buildRowToggle(member) {

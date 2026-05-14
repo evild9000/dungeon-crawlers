@@ -21,6 +21,7 @@ import {
     DRUID_ENTANGLE_MANA_COST, DRUID_ENTANGLE_BASE_DEBUFF, DRUID_ENTANGLE_CHANCE,
     DRUID_SUMMON_MANA_COST,
     SCATTER_SPLASH_BASE, SCATTER_SPLASH_EVERY, SCATTER_SPLASH_FRACTION,
+    ARTIFICER_DRONE_UNLOCK_LEVEL, ARTIFICER_DRONE_CHANCE_CAP,
     PALADIN_SMITE_MANA_COST,
     PALADIN_SMITE_INSTAKILL_BASE, PALADIN_SMITE_INSTAKILL_PER_LEVEL,
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
@@ -333,6 +334,10 @@ export class CombatUI {
                     mummy_rot: {
                         icon: '🟤', label: 'Rotting', bg: 'rgba(110,55,0,0.9)',
                         tip: (fx) => 'Mummy Rot: ' + (fx.damage||0) + ' dmg/round (permanent)'
+                    },
+                    drone_binding: {
+                        icon: '⚙️', label: 'Bound', bg: 'rgba(80,80,200,0.9)',
+                        tip: (fx) => 'Drone Binding: -' + Math.abs(fx.damageBonus||0) + ' atk, -' + Math.abs(fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
                     }
                 };
 
@@ -594,6 +599,9 @@ export class CombatUI {
                 `Primary target takes a full ranged hit; ${splashCount} splash shot${splashCount === 1 ? '' : 's'} hit other enemies for ${Math.round(Math.min(1.0, SCATTER_SPLASH_FRACTION + m.level * 0.01) * 100)}% damage (50% base + 1% per artificer level, max 100%).`,
                 `Splashes gain +1 every ${SCATTER_SPLASH_EVERY} artificer levels.`,
                 `${crit.toFixed(0)}% crit chance on each shot.`,
+                ...(m.level >= ARTIFICER_DRONE_UNLOCK_LEVEL ? [
+                    `L25 Enchanted Drone: each splash has a ${Math.round(Math.min(ARTIFICER_DRONE_CHANCE_CAP, m.level / 100) * 100)}% chance to spawn a drone. Drone randomly: revives a fallen ally, heals 5% missing HP (non-undead), grants 2 mirror images to a party member, AoE blasts all enemies, stuns a random enemy, crits a random enemy (×4), or ensnares a random enemy in bindings (-${Math.max(1,Math.floor(m.level/6))} atk/def for ${Math.max(1,Math.floor(m.level/6))} rds; incorporeal immune).`,
+                ] : []),
             ]
             : [
                 `Ranged attack. Costs ${RANGED_STAMINA_COST} stamina.`,
@@ -1207,12 +1215,12 @@ export class CombatUI {
                 });
                 dragonslayerBtn.classList.add('combat-special-btn');
                 if (dragonslayerActive) dragonslayerBtn.style.boxShadow = '0 0 8px #ffd166, 0 0 16px #b06a0066';
-                const auraReduction = Math.floor(m.level / 2);
+                const auraReduction = m.getDragonAuraReduction();
                 dragonslayerBtn.title = [
                     `Paladin L${PALADIN_DRAGONSLAYER_UNLOCK_LEVEL}: Dragonslayer (toggle).`,
                     `Costs ${PALADIN_DRAGONSLAYER_MANA_PER_ROUND} MP per round.`,
                     'Smite and AoE Smite can target dragons while active.',
-                    `If shielded, dragon magic/AoE damage is reduced by ${auraReduction} for the whole party before defenses.`,
+                    `If shielded, dragon magic/AoE damage is reduced by ${auraReduction}% (level + 10%, cap 90%) for the whole party before defenses.`,
                     dragonslayerActive ? 'Currently ACTIVE.' : 'Currently inactive.',
                     !dragonslayerCan ? 'Not enough mana to invoke.' : '',
                 ].filter(Boolean).join('\n');

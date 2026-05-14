@@ -33,7 +33,10 @@ export class InputManager {
         // --- Pointer lock ---
         canvas.addEventListener('click', () => {
             if (!this.pointerLocked) {
-                canvas.requestPointerLock();
+                const lockPromise = canvas.requestPointerLock();
+                if (lockPromise && typeof lockPromise.catch === 'function') {
+                    lockPromise.catch(() => {});
+                }
             }
         });
 
