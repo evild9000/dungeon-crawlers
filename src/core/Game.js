@@ -915,7 +915,29 @@ export class Game {
         this.scene.add(this.ambientLight);
 
         const dLvl = this.gameState.dungeonLevel || 1;
+        // Always reroll traps, fountains, and chests on load to prevent save/load abuse
         this.dungeonData = getDungeonData(dLvl);
+
+        // If the save contains any fountains or chests marked as used, preserve their used state in the rerolled set (optional: comment out to always reroll everything)
+        if (this.gameState.dungeonFountains) {
+            // Mark rerolled fountains as used if their position matches a used one in the save
+            const usedFountains = new Set(
+                this.gameState.dungeonFountains.filter(f => f.used).map(f => `${f.x},${f.z}`)
+            );
+            for (const f of this.dungeonData.fountains) {
+                if (usedFountains.has(`${f.x},${f.z}`)) f.used = true;
+            }
+        }
+        if (this.gameState.dungeonChests) {
+            // Mark rerolled chests as used if their position matches a used one in the save
+            const usedChests = new Set(
+                this.gameState.dungeonChests.filter(c => c.used).map(c => `${c.x},${c.z}`)
+            );
+            for (const c of this.dungeonData.chests) {
+                if (usedChests.has(`${c.x},${c.z}`)) c.used = true;
+            }
+        }
+
         this.dungeonRenderer = new DungeonRenderer();
         this.scene.add(this.dungeonRenderer.build(this.dungeonData));
 
