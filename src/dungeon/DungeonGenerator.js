@@ -315,13 +315,16 @@ export function getTrapPositions(dungeonLevel, portalDown, portalUp, playerStart
  * We attempt `min(dungeonLevel, 5)` rolls, each with FOUNTAIN_SPAWN_CHANCE.
  * Returns an array of `{ x, z, used:false }` objects on random walkable cells.
  */
-export function getFountainPositions(dungeonLevel, portalDown, portalUp, playerStart) {
+export function getFountainPositions(dungeonLevel, portalDown, portalUp, playerStart, rerollSalt = 0) {
     const { map } = _getLayout(dungeonLevel);
     const rows = map.length, cols = map[0].length;
     const start = playerStart || PLAYER_START;
 
     // Distinct RNG seed so fountains don't collide with traps or torches.
-    const rng = _lcg(((dungeonLevel * 2654435761) ^ 0x5A3C9E7F) | 0);
+    // `rerollSalt` lets callers reshuffle placements (e.g. on save load)
+    // without changing the underlying dungeon layout.
+    const salt = rerollSalt | 0;
+    const rng = _lcg((((dungeonLevel * 2654435761) ^ 0x5A3C9E7F) + salt) | 0);
 
     // Build eligible cell list: walkable, not near player start, not portal cells.
     const eligible = [];
@@ -367,13 +370,15 @@ export function getFountainPositions(dungeonLevel, portalDown, portalUp, playerS
  * `state` is populated lazily by Game.js when the chest is first interacted
  * with so progress can be resumed if the player leaves mid-sequence.
  */
-export function getChestPositions(dungeonLevel, portalDown, portalUp, playerStart, occupied = []) {
+export function getChestPositions(dungeonLevel, portalDown, portalUp, playerStart, occupied = [], rerollSalt = 0) {
     const { map } = _getLayout(dungeonLevel);
     const rows = map.length, cols = map[0].length;
     const start = playerStart || PLAYER_START;
 
     // Distinct RNG seed from traps/fountains so chest placements are stable.
-    const rng = _lcg(((dungeonLevel * 1103515245) ^ 0x3B1C2D4E) | 0);
+    // `rerollSalt` lets callers reshuffle placements (e.g. on save load).
+    const salt = rerollSalt | 0;
+    const rng = _lcg((((dungeonLevel * 1103515245) ^ 0x3B1C2D4E) + salt) | 0);
 
     const occupiedSet = new Set((occupied || []).map(p => `${p.x},${p.z}`));
 
@@ -410,14 +415,15 @@ export function getChestPositions(dungeonLevel, portalDown, portalUp, playerStar
     return chests;
 }
 
-export function getDungeonData(dungeonLevel = 1) {
+export function getDungeonData(dungeonLevel = 1, options = {}) {
+    const rerollSalt = (options && options.rerollSalt) ? (options.rerollSalt | 0) : 0;
     const { map, rooms } = _getLayout(dungeonLevel);
     const playerStart = { x: rooms[0].cx, z: rooms[0].cz };
     const portals = getPortalPositions(dungeonLevel);
     const torchPositions = getTorchPositions(dungeonLevel);
     const traps = getTrapPositions(dungeonLevel, portals.down, portals.up, playerStart);
-    const fountains = getFountainPositions(dungeonLevel, portals.down, portals.up, playerStart);
-    const chests = getChestPositions(dungeonLevel, portals.down, portals.up, playerStart, fountains);
+    const fountains = getFountainPositions(dungeonLevel, portals.down, portals.up, playerStart, rerollSalt);
+    const chests = getChestPositions(dungeonLevel, portals.down, portals.up, playerStart, fountains, rerollSalt);
 
     return {
         map,

@@ -915,27 +915,39 @@ export class Game {
         this.scene.add(this.ambientLight);
 
         const dLvl = this.gameState.dungeonLevel || 1;
-        // Always reroll traps, fountains, and chests on load to prevent save/load abuse
-        this.dungeonData = getDungeonData(dLvl);
+        if (isNew) {
+            this.dungeonData = getDungeonData(dLvl, { rerollSalt: 0 });
+        } else {
+            // On load, add a changing salt so fountains/chests reroll even though
+            // topology remains deterministic. Retry a few times to avoid reusing
+            // the exact previous save positions where possible.
+            const prevFountains = new Set((this.gameState.dungeonFountains || []).map(f => `${f.x},${f.z}`));
+            const prevChests = new Set((this.gameState.dungeonChests || []).map(c => `${c.x},${c.z}`));
 
-        // If the save contains any fountains or chests marked as used, preserve their used state in the rerolled set (optional: comment out to always reroll everything)
-        if (this.gameState.dungeonFountains) {
-            // Mark rerolled fountains as used if their position matches a used one in the save
-            const usedFountains = new Set(
-                this.gameState.dungeonFountains.filter(f => f.used).map(f => `${f.x},${f.z}`)
-            );
-            for (const f of this.dungeonData.fountains) {
-                if (usedFountains.has(`${f.x},${f.z}`)) f.used = true;
+            let best = null;
+            let bestOverlap = Number.POSITIVE_INFINITY;
+            const baseSalt = (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) | 0;
+
+            for (let i = 0; i < 8; i++) {
+                const salt = (baseSalt + (i * 1013904223)) | 0;
+                const candidate = getDungeonData(dLvl, { rerollSalt: salt });
+
+                let overlap = 0;
+                for (const f of candidate.fountains || []) {
+                    if (prevFountains.has(`${f.x},${f.z}`)) overlap++;
+                }
+                for (const c of candidate.chests || []) {
+                    if (prevChests.has(`${c.x},${c.z}`)) overlap++;
+                }
+
+                if (overlap < bestOverlap) {
+                    bestOverlap = overlap;
+                    best = candidate;
+                }
+                if (overlap === 0) break;
             }
-        }
-        if (this.gameState.dungeonChests) {
-            // Mark rerolled chests as used if their position matches a used one in the save
-            const usedChests = new Set(
-                this.gameState.dungeonChests.filter(c => c.used).map(c => `${c.x},${c.z}`)
-            );
-            for (const c of this.dungeonData.chests) {
-                if (usedChests.has(`${c.x},${c.z}`)) c.used = true;
-            }
+
+            this.dungeonData = best || getDungeonData(dLvl, { rerollSalt: baseSalt });
         }
 
         this.dungeonRenderer = new DungeonRenderer();
