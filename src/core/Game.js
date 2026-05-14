@@ -2264,19 +2264,20 @@ export class Game {
         }
 
         const historyHtml = (lock.history || []).map(h => {
-            const marks = h.marks.map(m => {
-                if (m === 'g') return '<span style="color:#51e06f;font-weight:bold;">X</span>';
-                if (m === 'y') return '<span style="color:#f0c94b;font-weight:bold;">X</span>';
-                return '<span style="color:#ff6262;font-weight:bold;">X</span>';
-            }).join(' ');
-            return `<div style="padding:5px 0;border-top:1px solid rgba(255,179,71,0.2);"><b>${h.guess}</b> → ${marks}</div>`;
+            // Show summary feedback instead of per-digit X's
+            return `<div style="padding:5px 0;border-top:1px solid rgba(255,179,71,0.2);">
+                <b>${h.guess}</b> → 
+                <span style="color:#51e06f;font-weight:bold;">${h.green} correct in place</span>, 
+                <span style="color:#f0c94b;font-weight:bold;">${h.yellow} correct but wrong place</span>, 
+                <span style="color:#ff6262;font-weight:bold;">${h.red} incorrect</span>
+            </div>`;
         }).join('');
 
         box.innerHTML = `
             <div style="font-size:18px;font-weight:bold;color:#ffcf7d;margin-bottom:10px;">🔐 Arcane Lock Puzzle</div>
             <div style="font-size:13px;line-height:1.6;margin-bottom:10px;">
                 Enter a 5-digit code (digits 1-9). You have <b>${lock.attemptsLeft}</b> guesses left.<br>
-                Feedback uses colored X markers only: green = correct digit and slot, yellow = correct digit wrong slot, red = digit not present.
+                Feedback: <span style="color:#51e06f;font-weight:bold;">N correct in place</span>, <span style="color:#f0c94b;font-weight:bold;">M correct but wrong place</span>, <span style="color:#ff6262;font-weight:bold;">K incorrect</span>.
             </div>
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
                 <input id="chest-code-input" type="text" maxlength="5" placeholder="12345"
