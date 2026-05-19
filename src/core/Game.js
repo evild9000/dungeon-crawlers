@@ -2538,19 +2538,34 @@ export class Game {
         if (!resumeOnly && lock) lock.solved = true;
 
         const loot = this._rollChestTreasure(true); // Always generate treasure for magical chests
+
+        // Speed bonus: +20% gold per guess under 12 (only on fresh solve, not resume)
+        let bonusGold = 0;
+        let bonusNote = '';
+        if (!resumeOnly && lock && loot.gold > 0) {
+            const guessesUnder12 = lock.attemptsLeft; // attemptsLeft = remaining = 12 - used
+            if (guessesUnder12 > 0) {
+                bonusGold = Math.floor(loot.gold * guessesUnder12 * 0.20);
+                this.gameState.inventory.addGold(bonusGold);
+                bonusNote = `⚡ Speed bonus: +${bonusGold} gold (solved in ${12 - guessesUnder12} guess${12 - guessesUnder12 === 1 ? '' : 'es'}!)`;
+            }
+        }
+
         chest.used = true;
         if (this.dungeonRenderer) this.dungeonRenderer.removeChest(chest.x, chest.z);
 
         if (this.partyHUD) {
-            if (loot.gold > 0) this.partyHUD.showToast(`+${loot.gold} gold`);
+            const totalGold = loot.gold + bonusGold;
+            if (totalGold > 0) this.partyHUD.showToast(`+${totalGold} gold`);
             this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         }
         this._saveNow();
 
         let body = 'The lock clicks open and the chest unfolds in a burst of arcane light.';
-        if (loot.gold > 0 || loot.items.length > 0) {
+        if (loot.gold > 0 || loot.items.length > 0 || bonusGold > 0) {
             body += '<br><br>';
             if (loot.gold > 0) body += `💎 <b>${loot.gold} gold</b><br>`;
+            if (bonusNote) body += `<span style="color:#ffe87a;">${bonusNote}</span><br>`;
             if (loot.items.length > 0) body += `📦 ${loot.items.join(', ')}`;
         } else {
             body += '<br><br><i>The chest was real, but empty.</i>';
@@ -2935,6 +2950,14 @@ export class Game {
         if (raw.length > 32)  { this._recruitError.textContent = 'Name must be 32 characters or fewer.'; return; }
         const clean = raw.replace(/[^a-zA-Z0-9 ]/g, '');
         if (clean.length === 0) { this._recruitError.textContent = 'Name must contain letters or numbers.'; return; }
+
+        const mainMember = (this.gameState.party || []).find(m => !m.isSummoned);
+        const maxPartySize = mainMember ? ((mainMember.level || 1) + 3) : 4;
+        const realPartyCount = (this.gameState.party || []).filter(m => !m.isSummoned).length;
+        if (realPartyCount >= maxPartySize) {
+            this._recruitError.textContent = `Party is full! (max ${maxPartySize} adventurers at your level — gain levels to recruit more)`;
+            return;
+        }
 
         const cost = (this.gameState.recruitsHired + 1) * RECRUIT_BASE_COST;
         const inv = this.gameState.inventory;

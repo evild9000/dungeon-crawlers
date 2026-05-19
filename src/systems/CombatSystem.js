@@ -19,6 +19,7 @@ import {
     BACKSTAB_STAMINA_MULT, BACKSTAB_DAMAGE_MULT,
     BACKSTAB_DAMAGE_PER_LEVEL, BACKSTAB_INSTAKILL_CHANCE,
     MELEE_DAMAGE_BONUS_MULT, RANGED_DAMAGE_BONUS_MULT,
+    MONSTER_MELEE_DAMAGE_BONUS_PER_LEVEL, MONSTER_RANGED_DAMAGE_BONUS_PER_LEVEL,
     CLERIC_HEAL_MANA_COST, CLERIC_HEAL_PERCENT,
     MAGE_SHIELD_MANA_COST, MAGE_SHIELD_BASE_DEF, MAGE_SHIELD_BASE_ROUNDS, MAGE_SHIELD_BONUS_EVERY, MAGE_SHIELD_MIN_LEVEL,
     NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
@@ -322,6 +323,9 @@ export class CombatSystem {
             ['anti_magic_beam', 'anti-magic'],
             ['slow_ray', 'slow ray'],
             ['mummy_rot', 'mummy rot'],
+            ['fracture', 'fracture'],
+            ['necrotic_curse', 'necrotic curse'],
+            ['hag_curse', 'hag curse'],
         ]);
 
         const consumeMana = (label) => {
@@ -345,6 +349,11 @@ export class CombatSystem {
             }
         } else if ((target.webbedRounds || 0) > 0) {
             if (consumeMana('immobilization')) target.webbedRounds = 0;
+        }
+
+        // Prone (Zombie Giant stomp) — cleric mass heal can restore fallen allies
+        if ((target.proneRounds || 0) > 0) {
+            if (consumeMana('prone')) target.proneRounds = 0;
         }
 
         if (!Array.isArray(target.activeEffects) || target.activeEffects.length === 0) {
@@ -501,7 +510,7 @@ export class CombatSystem {
             member.webbedRounds = 0;
             removed.push('immobilization');
         }
-        const harmful = new Set(['poison', 'burn', 'acid_dot', 'drowning', 'drown_armor_break', 'ice_chill', 'shocked', 'chilled', 'petrified', 'anti_magic_beam', 'slow_ray', 'mummy_rot']);
+        const harmful = new Set(['poison', 'burn', 'acid_dot', 'drowning', 'drown_armor_break', 'ice_chill', 'shocked', 'chilled', 'petrified', 'anti_magic_beam', 'slow_ray', 'mummy_rot', 'hag_curse']);
         const kept = [];
         for (const fx of member.activeEffects || []) {
             if (fx && harmful.has(fx.type) && Math.random() < chance) {
@@ -831,6 +840,7 @@ export class CombatSystem {
         let dmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
         dmg += m.getWeaponBonus('ranged');
         dmg += m.getClassDamageBonus('ranged');
+        dmg += this._getPartyMemberDamageMod(m);
         if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
 
         let isCrit = false;
@@ -933,6 +943,7 @@ export class CombatSystem {
         let dmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
         dmg += m.getWeaponBonus('ranged');
         dmg += m.getClassDamageBonus('ranged');
+        dmg += this._getPartyMemberDamageMod(m);
         if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
 
         let isCrit = false;
@@ -1118,6 +1129,7 @@ export class CombatSystem {
         let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
         dmg += m.getWeaponBonus('magic');
         dmg += m.getClassDamageBonus('magic');
+        dmg += this._getPartyMemberDamageMod(m);
         dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1)));
         if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
 
@@ -1220,6 +1232,11 @@ export class CombatSystem {
             const tTags = tDef.tags || [];
             if (tTags.includes('incorporeal')) {
                 this._addLog(`🚫 ${m.name} cannot backstab the incorporeal ${this._eName(targetEnemy)}!`);
+                return;
+            }
+            // Cannot backstab a poltergeist — it phases unpredictably
+            if (tDef.noBackstab) {
+                this._addLog(`🚫 ${m.name} cannot backstab the elusive ${this._eName(targetEnemy)}!`);
                 return;
             }
         }
@@ -1351,6 +1368,15 @@ export class CombatSystem {
         }
 
         m.mana -= CLERIC_HEAL_MANA_COST;
+
+        // Mummy Rot blocks single-target healing (mass heal can still cleanse it)
+        const hasRot = (targetMember.activeEffects || []).some(fx => fx && fx.type === 'mummy_rot' && (fx.permanent || fx.rounds > 0));
+        if (hasRot) {
+            this._addLog(`\ud83d\udfe4 ${targetMember.name}'s Mummy Rot suppresses ${m.name}'s healing!`);
+            this._advancePlayerTurn();
+            return;
+        }
+
         const pct = CLERIC_HEAL_PERCENT + m.getHealPercentBonus();
         const amt = Math.max(1, Math.ceil(targetMember.maxHealth * pct));
         const before = targetMember.health;
@@ -2418,6 +2444,12 @@ export class CombatSystem {
         const preset = BEAST_TYPES[beastId];
         if (!preset) return;
 
+        // Vampire bat is exclusively summoned by necromancer vampires, not by rangers/druids.
+        if (beastId === 'vampire_bat') {
+            this._addLog(`Only a vampire can summon a Vampire Bat.`);
+            return;
+        }
+
         // Treant is druid-only and requires level 5.
         if (beastId === 'treant') {
             if (m.classId !== 'druid') {
@@ -3041,7 +3073,7 @@ export class CombatSystem {
             e.activeEffects = e.activeEffects.filter(x => x.type !== 'bard_disrupt');
             e.activeEffects.push({
                 type: 'bard_disrupt',
-                rounds: 1,
+                rounds: Math.max(1, Math.floor(m.level / 7)),
                 damageBonus:  -debuff,
                 defenseBonus: -debuff,
             });
@@ -3203,6 +3235,15 @@ export class CombatSystem {
         m.row = 'front';
         this._addLog(`${m.name} moves to the front row!`);
         this._advanceThroughInitiative();
+    }
+
+    /** Free action: toggle any living summon between front and back row. Does not advance the turn. */
+    repositionSummon(memberId) {
+        const m = this.party.find(p => p.id === memberId && p.isSummoned);
+        if (!m || m.health <= 0) return;
+        m.row = m.row === 'front' ? 'back' : 'front';
+        this._addLog(`${m.name} repositions to the ${m.row} row.`);
+        this._notify();
     }
 
     // ────────────────────────────────────────────
@@ -3452,13 +3493,13 @@ export class CombatSystem {
             const t = targets[Math.floor(Math.random() * targets.length)];
             const dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 6);
             const dealt = this._damageSummonEnemy(t, dmg);
-            this._addLog(`\u{1F9DB} ${m.name} strikes ${this._eName(t)} for ${dealt}!`);
+            this._addLog(`\u{1F987} ${m.name} strikes ${this._eName(t)} for ${dealt}!`);
             // Vampire bat life drain: heals for damage dealt
             if (dealt > 0) {
                 const before = m.health;
                 m.health = Math.min(m.maxHealth, m.health + dealt);
                 const healed = m.health - before;
-                if (healed > 0) this._addLog(`\u{1F9DB} ${m.name} drains ${healed} HP from ${this._eName(t)}!`);
+                if (healed > 0) this._addLog(`\u{1F987} ${m.name} drains ${healed} HP from ${this._eName(t)}!`);
             }
             if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
             return;
@@ -3786,6 +3827,13 @@ export class CombatSystem {
             this._notify();
             return;
         }
+        // Even if summoned undead are still alive, defeat if all real members are gone/phylactery.
+        if (this.allRealMembersDefeated) {
+            this.phase = 'DEFEAT';
+            this._addLog('--- Your party has been defeated! ---');
+            this._notify();
+            return;
+        }
 
         this._logTarget = 'enemy';
         this._tickEnemyEffects();
@@ -3852,6 +3900,14 @@ export class CombatSystem {
                 continue;
             }
 
+            // Prone-skip (Zombie Giant stomp)
+            if (m.proneRounds && m.proneRounds > 0) {
+                this._addLog(`\u23EC ${m.name} is knocked PRONE and cannot act! (${m.proneRounds} rd left)`);
+                m.proneRounds--;
+                this._initTurnIdx++;
+                continue;
+            }
+
             // Stun-skip (raging barbarians shrug off stun; warriors have level-based shrug)
             if (m.stunned) {
                 if (m.classId === 'barbarian' && m.isRaging) {
@@ -3884,6 +3940,12 @@ export class CombatSystem {
                 this._addLog(`--- ${m.name}'s turn ---`);
                 this._takeSummonTurn(m);
                 if (this.aliveHostileEnemies.length === 0) { this._finishVictory(); return; }
+                if (this.allRealMembersDefeated) {
+                    this.phase = 'DEFEAT';
+                    this._addLog('--- Your party has been defeated! ---');
+                    this._notify();
+                    return;
+                }
                 this._initTurnIdx++;
                 continue;
             }
@@ -4374,6 +4436,339 @@ export class CombatSystem {
                 }
             }
 
+        // ── Ice Demon: 4 melee strikes with ice DoT ──────────────────────
+        } else if (typeDef.isIceDemonAI) {
+            const bonus = 5;
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            this._addLog(`❄️ ${eName} strikes with razor-sharp ice claws!`);
+            for (let hi = 0; hi < 4; hi++) {
+                if (this.aliveFront.length === 0) break;
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                if (e.stamina < MONSTER_MELEE_STAMINA_COST) break;
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                const preDef = Math.max(1, dmg - target.getArmorBlocking() - target.getTotalDefense());
+                this._applyEnemyHit(e, target, dmg, 'melee');
+                if (target.health > 0) {
+                    const iceTick = Math.max(1, Math.floor(preDef * 0.30));
+                    target.addEffect({ type: 'ice_chill', damageBonus: -2, rounds: 2 });
+                    target.health = Math.max(0, target.health - iceTick);
+                    this._addLog(`❄️ ${target.name} is chilled by infernal frost! (${iceTick} cold, -2 dmg 2 rds)`);
+                }
+            }
+
+        // ── Acid Demon: AoE acid blast + DoT, summons acid slimes ────────
+        } else if (typeDef.isAcidDemonAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            if (e.mana >= MONSTER_MAGIC_MANA_COST) {
+                e.mana -= MONSTER_MAGIC_MANA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
+                this._addLog(`\u{1F7E2} ${eName} spews a wave of corrosive acid!`);
+                for (const target of this.aliveParty.slice()) {
+                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
+                    if (target.health > 0) {
+                        const acidTick = Math.max(1, Math.floor(dmg * 0.25));
+                        target.addEffect({ type: 'acid_dot', rounds: 3, damage: acidTick, defenseBonus: -2 });
+                        this._addLog(`\u{1F7E2} ${target.name} is corroded! (${acidTick}/rd, -2 def 3 rds)`);
+                    }
+                    if (this.aliveParty.length === 0) break;
+                }
+            } else if (this.aliveFront.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._applyEnemyHit(e, target, dmg, 'melee');
+            }
+            if (Math.random() < 0.50 && this.aliveParty.length > 0) {
+                this._summonEnemyMinion(e, 'acid_slime', '\u{1F7E2}');
+            }
+
+        // ── Bloat Demon: 6 ranged toxin blasts, each inflicts poison DoT ──
+        } else if (typeDef.isBloatDemonAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            this._addLog(`\u{1F922} ${eName} erupts with a volley of toxic bile blasts!`);
+            const anyAlive = this.aliveParty;
+            for (let ai = 0; ai < 6 && anyAlive.length > 0; ai++) {
+                const target = anyAlive[Math.floor(Math.random() * anyAlive.length)];
+                if (e.stamina < MONSTER_MELEE_STAMINA_COST) break;
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._applyEnemyHit(e, target, dmg, 'ranged');
+                if (target.health > 0) {
+                    const perTick = Math.max(1, Math.floor(dmg * 0.33));
+                    target.addEffect({ type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+                    this._addLog(`\u{1F7E2} ${target.name} is poisoned by foul bile! (${perTick}/rd ${POISON_DURATION_ROUNDS} rds)`);
+                }
+            }
+
+        // ── Dracolich: random breath (50%) or 2 claws + bite; undead dragon ──
+        } else if (typeDef.isDracolichAI) {
+            const breathTypes = ['fire', 'acid', 'lightning', 'cold', 'poison'];
+            const bType = breathTypes[Math.floor(Math.random() * breathTypes.length)];
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            if (Math.random() < 0.50 && e.mana >= MONSTER_MAGIC_MANA_COST) {
+                e.mana -= MONSTER_MAGIC_MANA_COST;
+                const breathIcons = { fire: '\u{1F525}', acid: '\u{1F7E2}', lightning: '⚡', poison: '\u{1F922}', cold: '❄️' };
+                const breathVerbs = { fire: 'necrotic fire', acid: 'corrosive acid', lightning: 'dark lightning', cold: 'deathly frost', poison: 'vile poison' };
+                this._addLog(`${breathIcons[bType] || '\u{1F480}'} ${eName} exhales ${breathVerbs[bType] || 'dark breath'} from its skeletal maw!`);
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
+                for (const t of this.aliveParty.slice()) {
+                    this._applyEnemyHit(e, t, dmg, 'magic', { aoe: true, dragonBreath: bType });
+                    if (this.aliveParty.length === 0) break;
+                }
+            } else {
+                this._addLog(`\u{1F480} ${eName} tears at the party with undead talons!`);
+                const attacks = [{ label: 'claw', times: 2 }, { label: 'bite', times: 1 }];
+                for (const atk of attacks) {
+                    for (let ai = 0; ai < atk.times; ai++) {
+                        if (this.aliveFront.length === 0 && this.aliveBack.length === 0) break;
+                        const frontNow = this.aliveFront;
+                        const tgt = frontNow.length > 0 ? frontNow[Math.floor(Math.random() * frontNow.length)] : this.aliveParty[0];
+                        if (!tgt || e.stamina < MONSTER_MELEE_STAMINA_COST) break;
+                        e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                        let dmg = randomInt(dmin, dmax);
+                        dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                        dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                        this._applyEnemyHit(e, tgt, dmg, 'melee');
+                    }
+                }
+            }
+
+        // ── Evil Necromancer: 60% summon 1-3 undead, else AoE necrotic + poison DoT ──
+        } else if (typeDef.isEvilNecromancerAI) {
+            const undeadPool = ['skeleton', 'zombie', 'ghoul_pup', 'wight', 'bone_gnasher', 'shadow', 'wraith'];
+            if (Math.random() < 0.60) {
+                const count = 1 + Math.floor(Math.random() * 3);
+                this._addLog(`\u{1F480} ${eName} raises skeletal hands and calls forth the dead!`);
+                for (let si = 0; si < count; si++) {
+                    const undeadType = undeadPool[Math.floor(Math.random() * undeadPool.length)];
+                    this._summonEnemyMinion(e, undeadType, '\u{1F480}');
+                }
+            } else if (e.mana >= MONSTER_MAGIC_MANA_COST) {
+                e.mana -= MONSTER_MAGIC_MANA_COST;
+                const dmin = MONSTER_MAGIC_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+                const dmax = MONSTER_MAGIC_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
+                this._addLog(`\u{1F52E} ${eName} channels necrotic energy — a wave of death washes over the party!`);
+                for (const target of this.aliveParty.slice()) {
+                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
+                    if (target.health > 0) {
+                        const perTick = Math.max(1, Math.floor(dmg * 0.25));
+                        target.addEffect({ type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+                        this._addLog(`\u{1F9DF} ${target.name} is afflicted with necrotic rot! (${perTick}/rd ${POISON_DURATION_ROUNDS} rds)`);
+                    }
+                    if (this.aliveParty.length === 0) break;
+                }
+            }
+
+        // ── Hell Hound: 50% bite (melee + fire DoT) / 50% fire breath (front AoE) ──
+        } else if (typeDef.isHellHoundAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const canBite = this.aliveFront.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST;
+            const canBreathe = e.mana >= MONSTER_MAGIC_MANA_COST && this.aliveFront.length > 0;
+            if (canBite && (Math.random() < 0.50 || !canBreathe)) {
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._addLog(`\u{1F525} ${eName} lunges with a burning bite at ${target.name}!`);
+                this._applyEnemyHit(e, target, dmg, 'melee');
+                if (target.health > 0) {
+                    const burnTick = Math.max(1, Math.floor(dmg * DRAKE_FIRE_BURN_FRACTION));
+                    target.addEffect({ type: 'burn', rounds: DRAKE_FIRE_BURN_ROUNDS, damage: burnTick });
+                    this._addLog(`\u{1F525} ${target.name} is set ablaze! (${burnTick}/rd ${DRAKE_FIRE_BURN_ROUNDS} rds)`);
+                }
+            } else if (canBreathe) {
+                e.mana -= MONSTER_MAGIC_MANA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
+                this._addLog(`\u{1F525} ${eName} breathes a column of hellfire at the front line!`);
+                for (const target of this.aliveFront.slice()) {
+                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
+                    if (target.health > 0) {
+                        const burnTick = Math.max(1, Math.floor(dmg * DRAKE_FIRE_BURN_FRACTION));
+                        target.addEffect({ type: 'burn', rounds: DRAKE_FIRE_BURN_ROUNDS, damage: burnTick });
+                        this._addLog(`\u{1F525} ${target.name} is engulfed in hellfire! (${burnTick}/rd ${DRAKE_FIRE_BURN_ROUNDS} rds)`);
+                    }
+                    if (this.aliveParty.length === 0) break;
+                }
+            } else if (canBite) {
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._applyEnemyHit(e, target, dmg, 'melee');
+            }
+
+        // ── Evil Berserker: level/5 melee strikes, resists physical damage ──
+        } else if (typeDef.isEvilBerserkerAI) {
+            const attackCount = Math.max(1, Math.floor(dlvl / 5));
+            const bonus = 3;
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            this._addLog(`⚔️ ${eName} charges into a berserk frenzy — ${attackCount} strikes!`);
+            for (let ai = 0; ai < attackCount; ai++) {
+                if (this.aliveFront.length === 0) break;
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                if (e.stamina < MONSTER_MELEE_STAMINA_COST) break;
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._applyEnemyHit(e, target, dmg, 'melee');
+            }
+
+        // ── Mummy: front-row melee + Mummy Rot (blocks healing 3 rounds) ───
+        } else if (typeDef.isMummyAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            if (this.aliveFront.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._addLog(`🟤 ${eName} lurches forward with rotting fists at ${target.name}!`);
+                this._applyEnemyHit(e, target, dmg, 'melee');
+                if (target.health > 0) {
+                    target.activeEffects = (target.activeEffects || []).filter(x => x.type !== 'mummy_rot');
+                    target.activeEffects.push({ type: 'mummy_rot', rounds: 3 });
+                    this._addLog(`🟤 ${target.name} is infected with Mummy Rot! (no healing for 3 rounds)`);
+                }
+            }
+
+        // ── Revenant: phase-strike teleport to any party member; one-time revive ─
+        } else if (typeDef.isRevenantAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + 2 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + 2 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const anyTarget = this.aliveParty;
+            if (anyTarget.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+                const target = anyTarget[Math.floor(Math.random() * anyTarget.length)];
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                const enragedStr = e.revenantRevived ? ' [ENRAGED]' : '';
+                this._addLog(`👻 ${eName}${enragedStr} phases through space and strikes ${target.name}!`);
+                this._applyEnemyHit(e, target, dmg, 'melee', { phaseStrike: true, skipInterceptors: true });
+            }
+
+        // ── Bone Archer: ranged-any; lvl 15+ fires 3-arrow volley, 25% fracture DoT ─
+        } else if (typeDef.isBoneArcherAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const arrowCount = dlvl >= 15 ? 3 : 1;
+            const fractureDuration = Math.max(1, Math.floor(dlvl / 8));
+            if (arrowCount > 1) this._addLog(`💀 ${eName} looses a three-arrow volley!`);
+            for (let ai = 0; ai < arrowCount; ai++) {
+                if (this.aliveParty.length === 0) break;
+                const target = this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+                if (e.stamina < MONSTER_MELEE_STAMINA_COST) break;
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._applyEnemyHit(e, target, dmg, 'ranged');
+                if (target.health > 0 && Math.random() < 0.25) {
+                    const fractureTick = Math.max(1, Math.floor(dmg * 0.30));
+                    target.addEffect({ type: 'fracture', damage: fractureTick, rounds: fractureDuration });
+                    this._addLog(`🦴 ${target.name} suffers a fracture! (${fractureTick} bleed/rd, ${fractureDuration} rds)`);
+                }
+            }
+
+        // ── Poltergeist: 50/50 ranged debris (40% stun) or phase-strike melee ─
+        } else if (typeDef.isPoltergeistAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            if (Math.random() < 0.50 && this.aliveParty.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+                // Ranged debris — any target
+                const target = this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._addLog(`👻 ${eName} hurls spectral debris at ${target.name}!`);
+                this._applyEnemyHit(e, target, dmg, 'ranged');
+                if (target.health > 0 && !target.stunned && Math.random() < 0.40) {
+                    if (this._tryApplyStun(target)) {
+                        this._addLog(`⚡ ${target.name} is stunned by the flying debris!`);
+                    }
+                }
+            } else if (this.aliveParty.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+                // Phase-strike melee — any target, ignores armor
+                const target = this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._addLog(`👻 ${eName} phases through ${target.name}'s defences!`);
+                this._applyEnemyHit(e, target, dmg, 'melee', { phaseStrike: true, skipInterceptors: true });
+            }
+
+        // ── Zombie Giant: AoE front-row stomp +50%, 50% prone per target ───
+        } else if (typeDef.isZombieGiantAI) {
+            const bonus = 4;
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            if (this.aliveFront.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                dmg = Math.round(dmg * 1.50); // +50% stomp bonus
+                this._addLog(`🧟 ${eName} SLAMS the ground with a devastating stomp!`);
+                for (const target of this.aliveFront.slice()) {
+                    this._applyEnemyHit(e, target, dmg, 'melee', { aoe: true });
+                    if (target.health > 0 && Math.random() < 0.50) {
+                        target.proneRounds = 1;
+                        this._addLog(`⏬ ${target.name} is knocked PRONE! (1 round)`);
+                    }
+                    if (this.aliveParty.length === 0) break;
+                }
+            }
+
+        // ── Death Knight (hostile): 2 melee, 30% necrotic curse, 25% shield block ─
+        } else if (typeDef.isDeathKnightAI) {
+            const bonus = 2;
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            this._addLog(`⚔️ ${eName} advances with dark purpose!`);
+            for (let hi = 0; hi < 2; hi++) {
+                if (this.aliveFront.length === 0) break;
+                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+                if (e.stamina < MONSTER_MELEE_STAMINA_COST) break;
+                e.stamina -= MONSTER_MELEE_STAMINA_COST;
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._applyEnemyHit(e, target, dmg, 'melee');
+                if (target.health > 0 && Math.random() < 0.30) {
+                    const penalty = Math.max(1, Math.floor(dlvl / 8));
+                    target.addEffect({ type: 'necrotic_curse', damageBonus: -penalty, rounds: 2 });
+                    this._addLog(`💀 ${target.name} is cursed with necrotic energy! (-${penalty} all damage, 2 rds)`);
+                }
+            }
+
         // ── Imp: single ranged attack targeting any row ───────────────────
         } else if (typeDef.rangedAny && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
             e.stamina -= MONSTER_MELEE_STAMINA_COST;
@@ -4429,6 +4824,15 @@ export class CombatSystem {
             } // end inner earthquake else
         }
 
+        // ── Hag's Curse: 30% post-attack hex (level/8 penalty to all stats) ──
+        if (typeDef.hagCurseChance && this.aliveParty.length > 0 && Math.random() < typeDef.hagCurseChance) {
+            const curseTarget = this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+            const penalty = Math.max(1, Math.floor((e.level || 1) / 8));
+            const curseDuration = Math.max(2, Math.floor((e.level || 1) / 4));
+            curseTarget.addEffect({ type: 'hag_curse', damageBonus: -penalty, defenseBonus: -penalty, rounds: curseDuration });
+            this._addLog(`🧙 ${eName} cackles and hexes ${curseTarget.name}! (-${penalty} all combat stats, ${curseDuration} rds)`);
+        }
+
         // Mega-boss: 33% chance per turn to summon a normal copy of itself
         if (e.isMegaBoss && this.aliveParty.length > 0 && Math.random() < 0.33) {
             this._megaBossSummonMinion(e);
@@ -4472,6 +4876,11 @@ export class CombatSystem {
                 }
             }
         }
+
+        // Apply per-level monster damage bonus: melee +2%/level, ranged +1.5%/level.
+        const eLvl = e.level || 1;
+        if (attackKind === 'melee')       rawDmg = Math.max(1, Math.round(rawDmg * (1 + eLvl * MONSTER_MELEE_DAMAGE_BONUS_PER_LEVEL)));
+        else if (attackKind === 'ranged') rawDmg = Math.max(1, Math.round(rawDmg * (1 + eLvl * MONSTER_RANGED_DAMAGE_BONUS_PER_LEVEL)));
 
         if (attackKind === 'ranged' && !opts._eagleDeflected) {
             const eagleRangers = (this.party || []).filter(p =>
@@ -5006,8 +5415,94 @@ export class CombatSystem {
             }
         }
 
+        // Level-25+ follow-up attack chain — triggered once per primary hit, not on follow-ups or AoE.
+        if (!opts.isFollowup && !opts.aoe && (attackKind === 'melee' || attackKind === 'ranged')) {
+            this._triggerMonsterFollowupAttacks(e, attackKind);
+        }
+
         if (target.health <= 0) {
             this._addLog(`${target.name} has fallen!`);
+        }
+    }
+
+    /**
+     * Spawn an enemy minion into the current combat (used by acid demon and evil necromancer).
+     * The minion enters the initiative order and acts from next round onward.
+     */
+    _summonEnemyMinion(summoner, type, icon = '\u{1F47A}') {
+        const typeDef = ENEMY_TYPES[type];
+        if (!typeDef) return;
+        const lvl    = this.dungeonLevel;
+        const baseHp = Math.max(5, Math.round((10 + lvl * 14) * (typeDef.hpMult || 1) * 0.75));
+        const baseSt = Math.max(5, Math.round(10 + lvl * 4));
+        const baseMp = Math.max(5, Math.round(10 + lvl * 4));
+        const def    = Math.max(0, Math.round((lvl / 2) * (typeDef.defenseMult || 1)));
+        const minion = {
+            id:            'minion_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+            type,
+            seed:          Math.floor(Math.random() * 100000),
+            level:         lvl,
+            health:        baseHp,
+            maxHealth:     baseHp,
+            stamina:       baseSt,
+            maxStamina:    baseSt,
+            mana:          baseMp,
+            maxMana:       baseMp,
+            defense:       def,
+            activeEffects: [],
+            stunned:       false,
+            isBoss:        false,
+            isMegaBoss:    false,
+            bossAtkBonus:  0,
+            bossDL:        0,
+            charmedRounds: 0,
+            charmerId:     null,
+            name:          null,
+            sprite:        null,
+            createSprite:  () => {},
+            addEffect:     function(fx) { this.activeEffects.push(fx); },
+        };
+        this.enemies.push(minion);
+        const init = 1 + Math.floor(Math.random() * 6);
+        this._initiativeOrder.push({ kind: 'enemy', ref: minion, init, skipThisRound: true });
+        this._addLog(`${icon} ${this._eName(summoner)} summons a ${typeDef.name}!`);
+    }
+
+    /**
+     * L25+ monster multi-attack chain. Each primary melee/ranged hit independently
+     * rolls a cascade: 2nd (level%), 3rd (level/2%), 4th (level/4%),
+     * 5th (level/8%, L50+), 6th (level/16%, L80+).
+     */
+    _triggerMonsterFollowupAttacks(e, attackKind) {
+        const dlvl = this.dungeonLevel;
+        if (dlvl < 25 || e.health <= 0 || this.aliveParty.length === 0) return;
+
+        const lvlBoost      = Math.max(0, dlvl - 1);
+        const lvlThreeBonus = Math.max(0, dlvl - (MONSTER_DAMAGE_BONUS_THRESHOLD - 1));
+        const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+        const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+
+        // Cascading tiers — break out as soon as one roll fails or a tier is unavailable.
+        const tiers = [
+            dlvl / 100,                       // 2nd attack
+            dlvl / 200,                       // 3rd attack
+            dlvl / 400,                       // 4th attack
+            dlvl >= 50 ? dlvl / 800  : null,  // 5th attack (L50+)
+            dlvl >= 80 ? dlvl / 1600 : null,  // 6th attack (L80+)
+        ];
+
+        for (const chance of tiers) {
+            if (chance === null || Math.random() >= chance) break;
+            if (e.health <= 0 || this.aliveParty.length === 0) break;
+
+            const pool = attackKind === 'melee' ? (this.aliveFront.length > 0 ? this.aliveFront : this.aliveParty) : this.aliveParty;
+            const target = pool[Math.floor(Math.random() * pool.length)];
+            if (!target) break;
+
+            let dmg = randomInt(dmin, dmax);
+            dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+            dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+            this._applyEnemyHit(e, target, dmg, attackKind, { isFollowup: true });
         }
     }
 
@@ -5024,6 +5519,16 @@ export class CombatSystem {
             const eDef = ENEMY_TYPES[enemy.type] || {};
             if (eDef.halfMagicDamage) {
                 amount = Math.max(1, Math.floor(amount * 0.5));
+            }
+        }
+        // Physical resistance (evil berserker etc.): half damage from all non-magic attacks.
+        if (!isMagic) {
+            const eDef = ENEMY_TYPES[enemy?.type] || {};
+            if (eDef.resistPhysical) amount = Math.max(1, Math.floor(amount * 0.5));
+            // Death Knight enemy: 25% shield block vs physical/ranged
+            if (eDef.shieldBlock && Math.random() < eDef.shieldBlock) {
+                this._addLog(`🛡️ ${this._eName(enemy)}'s shield deflects the blow!`);
+                return 0;
             }
         }
 
@@ -5047,6 +5552,20 @@ export class CombatSystem {
         }
         final = Math.max(1, Math.round(final));
         enemy.health = Math.max(0, enemy.health - final);
+
+        // Revenant: one-time revive at 50% HP when first killed
+        if (enemy.health <= 0) {
+            const rDef = ENEMY_TYPES[enemy?.type] || {};
+            if (rDef.isRevenantAI && !enemy.revenantRevived) {
+                enemy.revenantRevived = true;
+                enemy.health = Math.ceil(enemy.maxHealth * 0.50);
+                const rageBonus = Math.max(2, Math.ceil(enemy.level * 0.5));
+                enemy.activeEffects = enemy.activeEffects || [];
+                enemy.activeEffects.push({ type: 'revenant_rage', damageBonus: rageBonus, rounds: 9999, permanent: true });
+                this._addLog(`👻 ${this._eName(enemy)} refuses to die — it rises again at 50% HP with UNNATURAL FURY! (+${rageBonus} dmg)`);
+            }
+        }
+
         return final;
     }
 
@@ -5129,13 +5648,15 @@ export class CombatSystem {
                     this._addLog(`\u{1F525} ${eName} is immune to fire!`);
                     break;
                 }
-                const fireTick = Math.max(1, Math.floor(baseDotTick * RIDER_FIRE_DAMAGE_BONUS_MULT));
+                let fireTick = Math.max(1, Math.floor(baseDotTick * RIDER_FIRE_DAMAGE_BONUS_MULT));
+                if (enemyTypeDef.takesDoubleFire) fireTick *= 2;
                 refresh({
                     type: 'burn',
                     rounds: dotRounds + RIDER_FIRE_BONUS_ROUNDS,
                     damage: fireTick,
                 });
-                this._addLog(`\u{1F525} ${eName} is set ablaze! (${fireTick}/rd for ${dotRounds + RIDER_FIRE_BONUS_ROUNDS} rds)`);
+                const fireDoubleStr = enemyTypeDef.takesDoubleFire ? ' (double — weak to fire!)' : '';
+                this._addLog(`\u{1F525} ${eName} is set ablaze! (${fireTick}/rd for ${dotRounds + RIDER_FIRE_BONUS_ROUNDS} rds)${fireDoubleStr}`);
                 break;
             }
             case 'acid': {
@@ -5269,6 +5790,40 @@ export class CombatSystem {
                         this._addLog(`🪨 ${m.name} shakes off the stone — petrification ends!`);
                     }
                 }
+                // Tick down Mummy Rot (non-permanent version from hostile mummy)
+                if (e.type === 'mummy_rot' && !e.permanent && e.rounds > 0) {
+                    e.rounds--;
+                    if (e.rounds <= 0) {
+                        this._addLog(`🟤 ${m.name}'s Mummy Rot has run its course!`);
+                    }
+                }
+                // Tick down necrotic curse (Death Knight debuff)
+                if (e.type === 'necrotic_curse' && e.rounds > 0) {
+                    e.rounds--;
+                    if (e.rounds <= 0) {
+                        this._addLog(`💀 ${m.name} shakes off the necrotic curse!`);
+                    }
+                }
+                // Tick down Hag's Curse (multistat debuff from hag/stone hag)
+                if (e.type === 'hag_curse' && e.rounds > 0) {
+                    e.rounds--;
+                    if (e.rounds <= 0) {
+                        this._addLog(`🧙 ${m.name} shakes off the hag's hex!`);
+                    }
+                }
+            }
+            // Fracture DoT (Bone Archer — bleed from shattered bone)
+            let totalFracture = 0;
+            for (const e of effects) {
+                if (e.type === 'fracture' && e.rounds > 0) {
+                    totalFracture += (e.damage || 0);
+                    e.rounds--;
+                }
+            }
+            if (totalFracture > 0 && m.health > 0) {
+                m.health = Math.max(0, m.health - totalFracture);
+                this._addLog(`🦴 ${m.name} bleeds from fractures — ${totalFracture} damage!`);
+                if (m.health <= 0) this._addLog(`${m.name} has succumbed to the fracture wounds!`);
             }
             if (totalPoison > 0) {
                 m.health = Math.max(0, m.health - totalPoison);
@@ -5418,7 +5973,7 @@ export class CombatSystem {
                 const reviveHp = Math.max(1, Math.floor(pm.maxHealth * reviveFrac));
                 pm.health   = reviveHp;
                 pm.lichPhial = false;
-                this._addLog(`💀 ${pm.name} is reborn from the phial at ${reviveHp} HP!`);
+                this._addLog(`💀 ${pm.name} is reborn from the phial in Lich Form at ${reviveHp} HP!`);
             }
         }
 
@@ -5536,8 +6091,11 @@ export class CombatSystem {
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {
-                    e.health = Math.max(0, e.health - fx.damage);
-                    this._addLog(`${DOT_TYPES[fx.type]}: ${this._eName(e)} suffers ${fx.damage} damage!`);
+                    let tickDmg = fx.damage;
+                    // Mummy takes double fire/burn damage
+                    if (fx.type === 'burn' && typeDef.takesDoubleFire) tickDmg *= 2;
+                    e.health = Math.max(0, e.health - tickDmg);
+                    this._addLog(`${DOT_TYPES[fx.type]}: ${this._eName(e)} suffers ${tickDmg} damage!`);
                     if (e.health <= 0) {
                         this._addLog(`${this._eName(e)} is consumed by the ${fx.type.replace(/_/g, ' ')}!`);
                         break;
@@ -5929,6 +6487,11 @@ export class CombatSystem {
      */
     _tryStunEnemy(enemy) {
         if (!enemy || enemy.health <= 0) return false;
+        // Undead and incorporeal are immune to stun from ALL sources
+        if (this._enemyHasImmunity(enemy, 'stun')) {
+            this._addLog(`🛡️ ${this._eName(enemy)} is immune to stun!`);
+            return false;
+        }
         if (enemy.isMegaBoss) {
             this._addLog(`\u{1F451} ${this._eName(enemy)} is immune to stun!`);
             return false;
@@ -5954,95 +6517,9 @@ export class CombatSystem {
             this._addLog(`💀 ${target.name}'s lich form shrugs off the stun!`);
             return false;
         }
-        // Golems with 'stun' in their summonStats.immune array are immune
-        if (target.isSummoned && Array.isArray(target.summonStats?.immune)
-            && target.summonStats.immune.includes('stun')) {
-            this._addLog(`⚙️ ${target.name} is immune to stun!`);
-            return false;
-        }
-        const resistChance = (typeof target.getStunResistChance === 'function')
-            ? target.getStunResistChance()
-            : 0;
-        if (resistChance > 0 && Math.random() < resistChance) {
-            this._addLog(`⛏️ ${target.name} shrugs off the stun! (${Math.round(resistChance * 100)}% resist)`);
-            return false;
-        }
-        target.stunned = true;
-        return true;
-    }
-
-    _addLog(msg) {
-        this.log.push(msg);
-        if (this._logTarget === 'enemy') {
-            this.enemyLog.push(msg);
-            if (this.enemyLog.length > 600) this.enemyLog.shift();
-        } else {
-            this.playerLog.push(msg);
-            if (this.playerLog.length > 600) this.playerLog.shift();
-        }
-    }
-    /**
-     * Flat defense bonus to add to an active summon's innate defense when the
-     * fountain_summon buff is active.  Returns 20% of summonStats.defense.
-     */
-    _getSummonDefenseBonus(target) {
-        if (!target.isSummoned || !this._hasSummonBuff()) return 0;
-        return Math.floor(((target.summonStats && target.summonStats.defense) || 0) * 0.2);
-    }
-
-    _skipDead() {
-        while (
-            this.currentMemberIndex < this.party.length &&
-            this.party[this.currentMemberIndex].health <= 0
-        ) {
-            this.currentMemberIndex++;
-        }
-    }
-
-    _eName(enemy) {
-        // Boss enemies have a custom .name set on spawn (includes crown emoji).
-        if (enemy.name) return enemy.name;
-        const base = (ENEMY_TYPES[enemy.type] || { name: 'Enemy' }).name;
-        return enemy.level && enemy.level > 1 ? `${base} L${enemy.level}` : base;
-    }
-
-    /**
-     * Warrior L20 Stun Resistance.
-     * Rolls resistance for the target; if resisted, logs a message and returns false.
-     * If not resisted, sets target.stunned = true and returns true.
-     * Pass `skipResist: true` to bypass resistance (e.g. raging barbarian's OWN stun immunity
-     * is handled separately; this only applies stun resist for warriors).
-     */
-    /**
-     * Attempt to stun an ENEMY. Checks mega-boss / boss resist before setting
-     * `enemy.stunned`. Returns true if the stun landed, false if resisted.
-     * All player-inflicted stuns must go through this gate.
-     */
-    _tryStunEnemy(enemy) {
-        if (!enemy || enemy.health <= 0) return false;
-        if (enemy.isMegaBoss) {
-            this._addLog(`\u{1F451} ${this._eName(enemy)} is immune to stun!`);
-            return false;
-        }
-        if (enemy.isBoss) {
-            this._addLog(`\u{1F451} ${this._eName(enemy)} is immune to stun!`);
-            return false;
-        }
-        // Level-based stun resist (all sources): level% chance, capped at 50%
-        const levelResist = Math.min(0.50, (enemy.level || 1) * 0.01);
-        if (levelResist > 0 && Math.random() < levelResist) {
-            this._addLog(`⚡ ${this._eName(enemy)} resists the stun!`);
-            return false;
-        }
-        enemy.stunned = true;
-        return true;
-    }
-
-    _tryApplyStun(target) {
-        if (!target || target.health <= 0) return false;
-        // Lich form is immune to stun
-        if (target.isLichForm) {
-            this._addLog(`💀 ${target.name}'s lich form shrugs off the stun!`);
+        // Necromancer undead summons are immune to stun
+        if (target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich')) {
+            this._addLog(`💀 ${target.name} is undead — immune to stun!`);
             return false;
         }
         // Golems with 'stun' in their summonStats.immune array are immune

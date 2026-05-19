@@ -217,7 +217,8 @@ export const BEAST_TYPES = {
     vampire_bat: {
         id: 'vampire_bat',
         name: 'Vampire Bat',
-        icon: '\u{1F9DB}',
+        icon: '\u{1F987}',
+        enemySprite: 'vampire_bat',
         portraitClass: 'summoned', portraitSpecies: 'human',
         attackType: 'ranged',
         speciesLabel: 'Vampire Bat',

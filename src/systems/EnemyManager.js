@@ -135,7 +135,12 @@ export class EnemyManager {
             const occupied = this.enemies.some(e => e.gridX === cell.x && e.gridZ === cell.z);
             if (occupied) continue;
 
-            const type = this._spawnableTypes[Math.floor(Math.random() * this._spawnableTypes.length)];
+            const eligible = this._spawnableTypes.filter(t => {
+                const def = ENEMY_TYPES[t];
+                return !def || !def.minLevel || this.dungeonLevel >= def.minLevel;
+            });
+            const pool = eligible.length > 0 ? eligible : this._spawnableTypes;
+            const type = pool[Math.floor(Math.random() * pool.length)];
             const enemy = new Enemy({ type, gridX: cell.x, gridZ: cell.z, level: this.dungeonLevel });
 
             // Apply type-level stat multipliers (e.g. earth_elemental has double HP & defense).
@@ -259,15 +264,19 @@ export class EnemyManager {
         const spawned = [];
         if (count <= 0) return spawned;
 
-        // Build a thematic pool from the trigger enemy's tags.
-        let pool = this._spawnableTypes;
+        // Build a thematic pool from the trigger enemy's tags, filtered by minLevel.
+        const levelEligible = this._spawnableTypes.filter(t => {
+            const def = ENEMY_TYPES[t];
+            return !def || !def.minLevel || this.dungeonLevel >= def.minLevel;
+        });
+        let pool = levelEligible.length > 0 ? levelEligible : this._spawnableTypes;
         if (triggerType) {
             const triggerDef = ENEMY_TYPES[triggerType];
             const triggerTags = (triggerDef && triggerDef.tags) ? triggerDef.tags : [];
             if (triggerTags.length > 0) {
                 // Pick the most-specific first tag as the primary group key.
                 const primaryTag = triggerTags[0];
-                const themed = this._spawnableTypes.filter(t => {
+                const themed = pool.filter(t => {
                     const def = ENEMY_TYPES[t];
                     return def && def.tags && def.tags.includes(primaryTag);
                 });

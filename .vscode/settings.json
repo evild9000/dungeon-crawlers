@@ -1,0 +1,16 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Get-ChildItem -Path \\.\\\\src -Recurse -Filter \\*\\.js \\| ForEach-Object \\{ node --check \\$_\\.FullName \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\systems\\\\CombatSystem\\.js\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\main\\.js\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

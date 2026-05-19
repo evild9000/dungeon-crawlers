@@ -140,7 +140,7 @@ export const ENEMY_TYPES = {
     bone_gnasher: { name: 'Bone Gnasher',    spriteW: 1.4, spriteH: 1.4, stunChance: 0.35, tags: ['undead'] },
     blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, tags: ['beast', 'vermin'] },
     ice_sprite:   { name: 'Ice Sprite',      spriteW: 1.0, spriteH: 1.2, aoeMagic: true, aoeStunChance: 0.15, tags: ['monster'], immune: ['cold'] },
-    stone_hag:    { name: 'Stone Hag',       spriteW: 1.4, spriteH: 1.8, stunChance: 0.30, regenPercent: 0.08, tags: ['humanoid'] },
+    stone_hag:    { name: 'Stone Hag',       spriteW: 1.4, spriteH: 1.8, isHagAI: true, hagCurseChance: 0.30, stunChance: 0.30, regenPercent: 0.08, tags: ['humanoid'] },
     ghoul_pup:    { name: 'Ghoul Pup',       spriteW: 1.2, spriteH: 1.2, poisonChance: 0.30, stunChance: 0.20, tags: ['undead'] },
     myconid:      { name: 'Myconid',         spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoePoisonChance: 0.25, tags: ['monster'] },
     dust_devil:   { name: 'Dust Devil',      spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.10, tags: ['demon'] },
@@ -195,7 +195,7 @@ export const ENEMY_TYPES = {
 
     // hag: old witch, AoE magic caster.
     hag:          { name: 'Hag',          spriteW: 1.4, spriteH: 1.8,
-        aoeMagic: true,
+        isHagAI: true, hagCurseChance: 0.30, aoeMagic: true,
         tags: ['humanoid'] },
 
     // bandit: rogue mercenary, can attack back row.
@@ -296,6 +296,98 @@ export const ENEMY_TYPES = {
     yeti:         { name: 'Yeti',         spriteW: 2.0, spriteH: 2.2,
         isYetiAI: true, stunChance: 0.30,
         tags: ['beast'], immune: ['cold'] },
+
+    // ── Phase 14: Level 25+ Deep Dungeon Monsters ────────────────────
+    // ice_demon: 4 powerful melee attacks with ice DoT, immune to cold.
+    ice_demon:      { name: 'Ice Demon',           spriteW: 1.8, spriteH: 2.2,
+        isIceDemonAI: true,
+        hpMult: 2.0, defenseMult: 1.5,
+        tags: ['demon'], immune: ['cold'],
+        minLevel: 25 },
+
+    // acid_demon: AoE acid blast + DoT, summons acid slimes.
+    acid_demon:     { name: 'Acid Demon',           spriteW: 1.8, spriteH: 2.2,
+        isAcidDemonAI: true,
+        hpMult: 1.8,
+        tags: ['demon'], immune: ['acid'],
+        minLevel: 25 },
+
+    // bloat_demon: 6 ranged toxin blasts, each inflicting poison DoT.
+    bloat_demon:    { name: 'Foul Toxin Bloat Demon', spriteW: 2.2, spriteH: 2.0,
+        isBloatDemonAI: true,
+        hpMult: 2.5,
+        tags: ['demon'], immune: ['poison'],
+        minLevel: 25 },
+
+    // dracolich: undead dragon — random breath each turn or 2 claws + bite;
+    //            immune to cold, half damage from magic/AoE, undead immunities.
+    dracolich:      { name: 'Dracolich',            spriteW: 2.4, spriteH: 2.0,
+        isDracolichAI: true,
+        hpMult: 3.0, defenseMult: 2.0, halfMagicDamage: true,
+        tags: ['undead', 'dragon'], immune: ['cold'],
+        minLevel: 25 },
+
+    // evil_necromancer: 60% chance summons 1-3 random undead; else AoE magic + necrotic DoT.
+    evil_necromancer: { name: 'Evil Necromancer',   spriteW: 1.4, spriteH: 1.9,
+        isEvilNecromancerAI: true,
+        hpMult: 1.5,
+        tags: ['humanoid'],
+        minLevel: 25 },
+
+    // hell_hound: 50% bite (melee + fire DoT) / 50% fire breath (front-row AoE + fire DoT).
+    hell_hound:     { name: 'Hell Hound',           spriteW: 1.8, spriteH: 1.4,
+        isHellHoundAI: true,
+        tags: ['beast', 'demon'], immune: ['fire'],
+        minLevel: 25 },
+
+    // evil_berserker: resistPhysical (half from all physical), level/5 base attacks.
+    evil_berserker: { name: 'Evil Berserker',       spriteW: 1.8, spriteH: 2.2,
+        isEvilBerserkerAI: true,
+        hpMult: 1.5, defenseMult: 1.2, resistPhysical: true,
+        tags: ['humanoid'],
+        minLevel: 25 },
+
+    // ── New Undead Monsters ─────────────────────────────────────────────────
+    // mummy: melee-only, resistPhysical 50%, takesDoubleFire, applies Mummy Rot on hit (no healing 3 rds).
+    mummy: { name: 'Mummy', spriteW: 1.4, spriteH: 2.0,
+        isMummyAI: true,
+        resistPhysical: true, takesDoubleFire: true,
+        tags: ['undead'],
+        minLevel: 3 },
+
+    // revenant: incorporeal phase-strike, teleports past front-row, one-time revive at 50% HP (+50% dmg after).
+    revenant: { name: 'Revenant', spriteW: 1.4, spriteH: 2.0,
+        isRevenantAI: true,
+        phaseStrike: true,
+        tags: ['undead', 'incorporeal'], immune: ['cold'],
+        minLevel: 6 },
+
+    // bone_archer: ranged-any; at lvl 15+ fires 3-arrow volley; 25% fracture DoT per arrow.
+    bone_archer: { name: 'Bone Archer', spriteW: 1.2, spriteH: 1.9,
+        isBoneArcherAI: true,
+        tags: ['undead'],
+        minLevel: 4 },
+
+    // poltergeist: 50/50 ranged debris (40% stun) or phase-strike melee; cannot be backstabbed.
+    poltergeist: { name: 'Poltergeist', spriteW: 1.2, spriteH: 1.6,
+        isPoltergeistAI: true,
+        noBackstab: true,
+        tags: ['undead', 'incorporeal'],
+        minLevel: 5 },
+
+    // zombie_giant: hpMult:3, front-row AoE stomp +50%, 50% prone per target.
+    zombie_giant: { name: 'Zombie Giant', spriteW: 2.0, spriteH: 2.4,
+        isZombieGiantAI: true,
+        hpMult: 3.0,
+        tags: ['undead'],
+        minLevel: 8 },
+
+    // death_knight (hostile): 2 melee, +30% defense, 30% necrotic curse, 25% shield block, immune cold.
+    death_knight: { name: 'Death Knight', spriteW: 1.8, spriteH: 2.2,
+        isDeathKnightAI: true,
+        defenseMult: 1.3, shieldBlock: 0.25,
+        tags: ['undead'], immune: ['cold'],
+        minLevel: 10 },
 };
 // Only enemy types (excludes tinkerer for spawning purposes)
 export const ENEMY_TYPE_KEYS = Object.keys(ENEMY_TYPES);
@@ -366,6 +458,8 @@ export const STARTING_FOOD = 3;
 
 // Combat special mechanics
 export const MONSTER_DAMAGE_MULTIPLIER = 0.9;  // monsters deal 90% damage
+export const MONSTER_MELEE_DAMAGE_BONUS_PER_LEVEL = 0.02;   // monster melee: +2% per level (level 25 → +50%)
+export const MONSTER_RANGED_DAMAGE_BONUS_PER_LEVEL = 0.015; // monster ranged: +1.5% per level (level 25 → +37.5%)
 export const RANGED_CRIT_CHANCE = 0.20;         // 20% chance for double damage
 export const MELEE_STUN_CHANCE = 0.20;          // 20% chance to stun enemy
 export const SHIELD_BLOCK_CHANCE = 0.25;        // 25% chance to block attack entirely

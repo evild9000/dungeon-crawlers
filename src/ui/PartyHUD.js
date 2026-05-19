@@ -1,4 +1,5 @@
 import { generatePortrait } from '../utils/PortraitGenerator.js';
+import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
 import { GOLEM_PRESETS, getSummonPreset, UNDEAD_TIERS } from '../entities/Summons.js';
 import {
@@ -643,8 +644,8 @@ export class PartyHUD {
                     lichBadge.style.background = 'rgba(0,160,100,0.92)';
                     lichBadge.style.border = '1px solid #44ffaa';
                     lichBadge.style.color = '#afffdd';
-                    lichBadge.textContent = '\u{1F9F4}' + (member.lichPhialCountdown || 3);
-                    lichBadge.title = `Phylactery: soul contained — reviving in ${member.lichPhialCountdown || 3} round(s).`;
+                    lichBadge.textContent = '\u{1F9F4}' + (member.lichReviveRoundsLeft || 3);
+                    lichBadge.title = `Phylactery: soul contained — reviving in ${member.lichReviveRoundsLeft || 3} round(s).`;
                 } else {
                     lichBadge.style.background = 'rgba(100,20,160,0.92)';
                     lichBadge.style.border = '1px solid #aa44ff';
@@ -821,8 +822,27 @@ export class PartyHUD {
             if (pic) mkPB('❄️', 'Ice Chill', 'rgba(100,180,230,0.9)',
                 'Ice Chill: -' + Math.abs(pic.damageBonus||0) + ' dmg dealt — ' + pic.rounds + ' rds left');
             const pmr = pefx.find(x => x && x.type === 'mummy_rot');
-            if (pmr) mkPB('🟤', 'Rotting', 'rgba(110,55,0,0.9)',
-                'Mummy Rot: ' + (pmr.damage||0) + ' dmg/round (permanent)');
+            if (pmr) {
+                const rotTip = pmr.permanent
+                    ? 'Mummy Rot: ' + (pmr.damage||0) + ' dmg/round (permanent) — no healing'
+                    : 'Mummy Rot: no healing — ' + (pmr.rounds||0) + ' rds left';
+                mkPB('🟤', 'Rotting', 'rgba(110,55,0,0.9)', rotTip);
+            }
+            // Fracture (Bone Archer bleed DoT)
+            const pfrac = pefx.find(x => x && x.type === 'fracture' && x.rounds > 0);
+            if (pfrac) mkPB('🦴', 'Fracture', 'rgba(140,80,30,0.9)',
+                'Fracture: ' + (pfrac.damage||0) + ' bleed/round — ' + pfrac.rounds + ' rds left');
+            // Necrotic Curse (Death Knight — reduces all damage dealt)
+            const pnc = pefx.find(x => x && x.type === 'necrotic_curse' && x.rounds > 0);
+            if (pnc) mkPB('💀', 'Cursed', 'rgba(60,0,80,0.9)',
+                'Necrotic Curse: ' + (pnc.damageBonus||0) + ' all damage — ' + pnc.rounds + ' rds left');
+            // Hag's Curse (hag/stone hag — reduces all combat stats)
+            const phc = pefx.find(x => x && x.type === 'hag_curse' && x.rounds > 0);
+            if (phc) mkPB('🧙', 'Hexed', 'rgba(80,0,80,0.9)',
+                'Hag\'s Curse: ' + (phc.damageBonus||0) + ' all stats, ' + (phc.defenseBonus||0) + ' def — ' + phc.rounds + ' rds left');
+            // Prone (Zombie Giant stomp)
+            if (member.proneRounds > 0) mkPB('⏬', 'Prone', 'rgba(100,70,20,0.9)',
+                'Prone: cannot act — ' + member.proneRounds + ' rd left');
             const pms = pefx.find(x => x && x.type === 'mage_shield' && x.rounds > 0);
             if (pms) mkPB('🛡️', 'Shielded', 'rgba(0,80,180,0.85)',
                 'Arcane Shield: +' + (pms.defenseBonus||0) + ' defense — ' + pms.rounds + ' rds left');
@@ -857,6 +877,13 @@ export class PartyHUD {
     _getSummonPortraitURL(summon) {
         const key = `summon:${summon.id}`;
         if (this.portraitCache.has(key)) return this.portraitCache.get(key);
+
+        if (summon.enemySprite) {
+            const spriteCanvas = generateEnemySprite(summon.enemySprite, 42);
+            const url = spriteCanvas.toDataURL();
+            this.portraitCache.set(key, url);
+            return url;
+        }
 
         const size = 96;
         const canvas = document.createElement('canvas');

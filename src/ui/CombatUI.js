@@ -335,6 +335,14 @@ export class CombatUI {
                         icon: '🟤', label: 'Rotting', bg: 'rgba(110,55,0,0.9)',
                         tip: (fx) => 'Mummy Rot: ' + (fx.damage||0) + ' dmg/round (permanent)'
                     },
+                    revenant_rage: {
+                        icon: '👻', label: 'Enraged', bg: 'rgba(80,0,120,0.9)',
+                        tip: (fx) => 'Revenant Fury: +' + (fx.damageBonus||0) + ' damage (risen from death)'
+                    },
+                    hag_curse: {
+                        icon: '🧙', label: 'Hexed', bg: 'rgba(80,0,80,0.9)',
+                        tip: (fx) => 'Hag\'s Curse: ' + (fx.damageBonus||0) + ' all damage, ' + (fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
+                    },
                     drone_binding: {
                         icon: '⚙️', label: 'Bound', bg: 'rgba(80,80,200,0.9)',
                         tip: (fx) => 'Drone Binding: -' + Math.abs(fx.damageBonus||0) + ' atk, -' + Math.abs(fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
@@ -1493,6 +1501,14 @@ export class CombatUI {
             }
         }
 
+        // ── Reposition Summons (free action — available any time there are living summons)
+        const liveSummons = this.combat.party.filter(p => p.isSummoned && p.health > 0);
+        if (liveSummons.length > 0) {
+            const repoBtn = this._addBtn('↕️ Reposition Summons (free)', true, () => this._showSummonReposition());
+            repoBtn.classList.add('combat-special-btn');
+            repoBtn.title = 'Move any of your living summons between front and back row. Free action — does not end your turn.';
+        }
+
         // ── Defend
         const defendBtn = this._addBtn('Defend', true, () => this.combat.defend());
         defendBtn.title = 'Reduce incoming damage by half this turn.';
@@ -1534,6 +1550,8 @@ export class CombatUI {
             if (id === 'shambling_mound') {
                 if (!m || m.classId !== 'druid' || m.level < DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL) continue;
             }
+            // Vampire bat is exclusive to necromancer vampires — never shown to ranger/druid
+            if (id === 'vampire_bat') continue;
             // Wolf, bear, eagle, pixie available to ranger and druid
             const btn = document.createElement('button');
             btn.className = 'combat-action-btn combat-special-btn';
@@ -1561,6 +1579,32 @@ export class CombatUI {
             btn.addEventListener('click', () => this.combat.promoteToFront(m.id));
             this.actionsEl.appendChild(btn);
         }
+    }
+
+    _showSummonReposition() {
+        this.actionsEl.innerHTML = '';
+        this.turnInfo.textContent = '\u2195\uFE0F Reposition Summons (free action):';
+        const liveSummons = this.combat.party.filter(p => p.isSummoned && p.health > 0);
+        for (const m of liveSummons) {
+            const rowLabel = m.row === 'front' ? '[Front] \u2192 Back' : '[Back] \u2192 Front';
+            const btn = document.createElement('button');
+            btn.className = 'combat-action-btn combat-special-btn';
+            const summonPreset = getSummonPreset(m);
+            const icon = summonPreset ? summonPreset.icon : (m.classDef ? m.classDef.icon : '');
+            btn.textContent = `${icon} ${m.name} (${m.health}/${m.maxHealth}) ${rowLabel}`;
+            btn.title = `Currently in ${m.row} row. Click to move to ${m.row === 'front' ? 'back' : 'front'} row.`;
+            btn.addEventListener('click', () => {
+                this.combat.repositionSummon(m.id);
+                this._showSummonReposition();
+            });
+            this.actionsEl.appendChild(btn);
+        }
+        const doneBtn = document.createElement('button');
+        doneBtn.className = 'combat-action-btn';
+        doneBtn.textContent = 'Done';
+        doneBtn.title = 'Return to action menu.';
+        doneBtn.addEventListener('click', () => this._refresh());
+        this.actionsEl.appendChild(doneBtn);
     }
 
     _addBtn(label, enabled, onClick) {

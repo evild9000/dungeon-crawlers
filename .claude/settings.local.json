@@ -135,7 +135,11 @@
       "Bash(node --check src/ui/CraftingUI.js src/systems/CombatSystem.js src/ui/CombatUI.js src/entities/Summons.js src/core/Game.js src/entities/PartyMember.js src/entities/Enemy.js src/entities/Classes.js)",
       "Bash(node --check src/utils/constants.js src/items/ItemTypes.js src/systems/EnemyManager.js)",
       "Bash(node --check src/ui/PartyHUD.js src/ui/PartySpellModal.js src/ui/InventoryUI.js src/ui/ShopUI.js src/ui/LoreBook.js src/ui/MinimapUI.js src/entities/PartyMember.js src/entities/Classes.js src/entities/Enemy.js src/items/ItemTypes.js src/core/GameState.js src/utils/constants.js src/utils/SpriteGenerator.js)",
-      "Bash(node --check src/core/Game.js src/dungeon/DungeonGenerator.js src/dungeon/DungeonRenderer.js src/systems/CollisionSystem.js src/systems/Inventory.js src/systems/MinimapSystem.js src/systems/PartyLightSystem.js)"
+      "Bash(node --check src/core/Game.js src/dungeon/DungeonGenerator.js src/dungeon/DungeonRenderer.js src/systems/CollisionSystem.js src/systems/Inventory.js src/systems/MinimapSystem.js src/systems/PartyLightSystem.js)",
+      "Bash(node --check src/systems/CombatSystem.js src/ui/CombatUI.js src/ui/CraftingUI.js src/core/Game.js src/utils/constants.js)",
+      "Bash(node --check src/ui/PartySpellModal.js)",
+      "PowerShell(Select-String -Path \"C:/Users/evild/OneDrive/Desktop/Game test/src/core/Game.js\" -Pattern \"FLED|flee\" -CaseSensitive:$false)",
+      "Bash(git push *)"
     ]
   }
 }

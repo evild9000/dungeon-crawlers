@@ -23,13 +23,18 @@ function buildAbilityList(def) {
 
     // Passive tag-based traits
     if (tags.includes('incorporeal')) {
-        lines.push('Incorporeal: immune to Druid Entangle \u2014 physical vines pass harmlessly through this creature');
+        lines.push('Incorporeal: immune to Druid Entangle — physical vines pass harmlessly through this creature');
         lines.push('Incorporeal: cannot be paralyzed by Ghoul touch or held by Treant');
-        lines.push('Incorporeal: immune to Rogue Backstab Bleed \u2014 has no blood to shed');
-        lines.push('Incorporeal: immune to Rogue Captured Traps \u2014 mechanisms pass through the creature');
+        lines.push('Incorporeal: immune to Rogue Backstab Bleed — has no blood to shed');
+        lines.push('Incorporeal: immune to Rogue Captured Traps — mechanisms pass through the creature');
+        lines.push('Incorporeal: immune to Web and constrict effects — ethereal form cannot be physically ensnared');
+        lines.push('Incorporeal: immune to Artificer Drone Arcane Bindings — no physical form to ensnare');
+        lines.push('Incorporeal: immune to stun from all sources — no solid form to disorient');
     }
     if (tags.includes('undead')) {
-        lines.push('Undead: immune to Ghoul paralysis and poison effects');
+        lines.push('Undead: immune to stun from all sources — undead physiology resists physical disruption');
+        lines.push('Undead: immune to bleed and poison effects — no living blood or metabolism');
+        lines.push('Undead: immune to Ghoul paralysis');
         lines.push('Undead: immune to Bard Charm Monster — cannot be mind-controlled');
     }
     if (tags.includes('elemental')) {
@@ -103,6 +108,26 @@ function buildAbilityList(def) {
     if (def.isEvilPriestAI)  lines.push('Dark Ministry: 50% chance to mass-heal all non-undead enemies for 15% HP; 50% chance to unleash AoE magic blast');
     if (def.isWerewolfAI)    lines.push('Lycanthropy: regenerates 25% max HP per round; defense bonus (+50%)');
     if (def.isYetiAI)        lines.push('Feral Fury: attacks twice with fists each turn, can stun, applies ice DoT on hits');
+
+    // Phase 14: Level-25+ Deep Dungeon monster abilities
+    if (def.isIceDemonAI)           lines.push('Glacial Fury: 4 powerful melee strikes per turn with +5 bonus; each hit applies ice chill (30% bonus cold damage, -2 attack for 2 rounds)');
+    if (def.isAcidDemonAI)          lines.push('Acid Assault: AoE acid wave hits all party members (magic damage) with acid DoT (25% per round, -2 def, 3 rounds); 50% chance per turn to summon an Acid Slime minion; falls back to melee if out of mana');
+    if (def.isBloatDemonAI)         lines.push('Toxic Volley: 6 ranged bile blasts per turn — each hits any party member and immediately applies poison DoT (33% hit damage per round)');
+    if (def.isDracolichAI)          lines.push('Undead Dragon: 50% — random elemental breath (fire/acid/lightning/cold/poison) AoE hits all party; 50% — 2 claw attacks + 1 bite to front row; all undead immunities apply');
+    if (def.isEvilNecromancerAI)    lines.push('Dark Sorcery: 60% chance — raises 1-3 random undead minions (skeleton, zombie, ghoul, wight, shadow, wraith…); 40% — AoE necrotic magic blast with necrotic poison DoT on all party');
+    if (def.isHellHoundAI)          lines.push('Infernal Predator: 50% — burning bite (melee, single front-row target) + fire DoT; 50% — hellfire breath (AoE magic, front row only) + fire DoT on all hit targets');
+    if (def.isEvilBerserkerAI)      lines.push('Berserk Frenzy: attacks (dungeon level ÷ 5) times per turn against the front row (+3 melee bonus each); each primary strike independently rolls for level 25+ follow-up attacks — total blow count can be very high at deep dungeon levels; takes only half damage from all non-magic (physical) attacks');
+
+    // Hag abilities
+    if (def.hagCurseChance)         lines.push(`Hag's Curse: ${Math.round(def.hagCurseChance * 100)}% chance per turn to hex a random target — reduces all damage dealt (melee/ranged/magic) and defense by level÷8 for several rounds`);
+
+    // Undead hostile enemy abilities
+    if (def.isMummyAI)              lines.push('Mummy Rot: every melee strike inflicts Mummy Rot (3 rounds) — completely blocks all healing on the target');
+    if (def.isRevenantAI)           lines.push('Death Denied: phase-strikes any party member (ignores armor); when first reduced to 0 HP, rises again at 50% HP in a permanent ENRAGED state (+damage for rest of combat)');
+    if (def.isBoneArcherAI)         lines.push('Bone Arrow: ranged attack hits any row; at dungeon level 15+, fires a 3-arrow volley per turn; 25% chance per arrow to inflict Fracture (bleed DoT: 30% arrow damage per round)');
+    if (def.isPoltergeistAI)        lines.push('Spectral Assault: 50% hurls invisible debris (ranged, 40% stun chance); 50% phase-strikes any party member through armor (ignores all defenses and armor)');
+    if (def.isZombieGiantAI)        lines.push('Thunderous Stomp: AoE melee strike at 150% damage to all front-row members — 50% chance per target to knock them Prone (cannot act next round)');
+    if (def.isDeathKnightAI)        lines.push('Dark Blade: attacks twice per turn with +2 bonus; 25% chance to block non-magic attacks with shield; 30% chance per turn to inflict Necrotic Curse (reduces all damage dealt for 2 rounds)');
 
     return lines;
 }
