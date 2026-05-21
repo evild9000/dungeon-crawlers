@@ -840,6 +840,26 @@ export class PartyHUD {
             const phc = pefx.find(x => x && x.type === 'hag_curse' && x.rounds > 0);
             if (phc) mkPB('🧙', 'Hexed', 'rgba(80,0,80,0.9)',
                 'Hag\'s Curse: ' + (phc.damageBonus||0) + ' all stats, ' + (phc.defenseBonus||0) + ' def — ' + phc.rounds + ' rds left');
+            // Quasit Venom (armor-ignoring poison DoT)
+            const pqv = pefx.find(x => x && x.type === 'quasit_poison' && x.rounds > 0);
+            if (pqv) mkPB('\u{1F47F}', 'Venom', 'rgba(60,0,120,0.9)',
+                'Quasit Venom: ' + (pqv.damage||0) + ' dmg/round (ignores armor) — ' + pqv.rounds + ' rds left');
+            // Wither (Witch Doctor — all damage reduced)
+            const pwt = pefx.find(x => x && x.type === 'wither' && x.rounds > 0);
+            if (pwt) mkPB('\u{1F9B4}', 'Withered', 'rgba(80,40,0,0.9)',
+                'Wither: ' + (pwt.damageBonus||0) + ' all damage dealt — ' + pwt.rounds + ' rds left');
+            // Hex (Witch Doctor — defense reduced)
+            const phex = pefx.find(x => x && x.type === 'hex' && x.rounds > 0);
+            if (phex) mkPB('\u{1F480}', 'Hexed', 'rgba(100,0,0,0.9)',
+                'Hex: ' + (phex.defenseBonus||0) + ' defense — ' + phex.rounds + ' rds left');
+            // Taunted (Gladiator — all damage reduced)
+            const ptnt = pefx.find(x => x && x.type === 'taunted' && x.rounds > 0);
+            if (ptnt) mkPB('⚔️', 'Taunted', 'rgba(140,60,0,0.9)',
+                'Taunted: ' + (ptnt.damageBonus||0) + ' all damage — ' + ptnt.rounds + ' rd left');
+            // Rust Corrosion (Rust Monster — permanent defense debuff)
+            const prc = pefx.find(x => x && x.type === 'rust_corrosion');
+            if (prc) mkPB('\u{1F99F}', 'Corroded', 'rgba(100,50,10,0.9)',
+                'Rust Corrosion: ' + (prc.defenseBonus||0) + ' defense (permanent this combat)');
             // Prone (Zombie Giant stomp)
             if (member.proneRounds > 0) mkPB('⏬', 'Prone', 'rgba(100,70,20,0.9)',
                 'Prone: cannot act — ' + member.proneRounds + ' rd left');

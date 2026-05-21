@@ -129,6 +129,44 @@ function buildAbilityList(def) {
     if (def.isZombieGiantAI)        lines.push('Thunderous Stomp: AoE melee strike at 150% damage to all front-row members — 50% chance per target to knock them Prone (cannot act next round)');
     if (def.isDeathKnightAI)        lines.push('Dark Blade: attacks twice per turn with +2 bonus; 25% chance to block non-magic attacks with shield; 30% chance per turn to inflict Necrotic Curse (reduces all damage dealt for 2 rounds)');
 
+    // Bestiary Expansion — Demons
+    if (def.isSuccubusAI)           lines.push('Drain Kiss: ranged magic attack on any party member — drains mana equal to damage dealt; 35% chance to Charm the target (cannot act 1 round); below 50% HP switches to AoE Psychic Shriek hitting all party members');
+    if (def.isChainDevilAI)         lines.push('Animated Chains: lashes 2 chain attacks per turn (3 at dungeon level 30+) at any party member; 50% chance per hit to Bind the target in chains (webbed, cannot act for ' + (typeof WEB_DURATION_ROUNDS !== 'undefined' ? WEB_DURATION_ROUNDS : 2) + ' rounds)');
+    if (def.isBloodDemonAI)         lines.push('Blood Frenzy: powerful front-row melee +2 bonus; life-steals 40% of damage dealt as HP; on any kill — fully heals to max HP AND gains +2 permanent damage bonus for the rest of combat (stacks)');
+    if (def.isPitFiendAI)           lines.push('Hellfire Pillar: 50% chance per turn — calls down an infernal pillar of fire on the ENTIRE party (AoE magic + burn DoT); otherwise delivers 3 crushing melee strikes (+5 bonus) to the front row');
+    if (def.isQuasitAI)             lines.push('Venom Swarm: 5 rapid ranged attacks per turn at 60% damage each — ANY party member; every hit injects Quasit Venom (DoT = damage dealt per round, duration = dungeon level ÷ 4) which IGNORES armor on each subsequent tick');
+
+    // Bestiary Expansion — Beasts
+    if (def.isGiantCrocodileAI)     lines.push('Death Roll: powerful bite at front row (+2 bonus); if the bite connects — immediately follows with a Death Roll that Webs the target for 2 rounds AND applies a bleed DoT (30% bite damage per round)');
+    if (def.isChimeraAI)            lines.push('Triple Assault: attacks with ALL THREE heads every round simultaneously — Lion Claws (2 melee hits on front row, each opens a bleed DoT equal to damage dealt); Goat Horns (single massive melee hit at 150% damage with stun attempt); Dragon Breath (fire AoE magic hitting the ENTIRE party with burn DoT)');
+    if (def.isWyvernAI)             lines.push('Aerial Predator: each turn delivers all of — Claw (front-row melee); Poison Sting (ranged, any target, double-strength venom DoT); and 25% chance of a Dive-Bomb melee strike on a back-row target normally safe from melee');
+    if (def.isDisplacerBeastAI)     lines.push('Displacement: illusory doubles grant a permanent 40% dodge chance against ALL melee and ranged physical attacks — this dodge never deactivates and cannot be disabled');
+    if (def.isRemorhazAI)           lines.push('Searing Hide: 30% chance — any physical attack on this creature burns the attacker (fire DoT equal to a fraction of the attacker\'s damage); takes only half damage from magic; immune to fire and cold');
+    if (def.isThunderbirdAI)        lines.push('Storm Strike: 2 ranged lightning attacks per turn; 35% chance each bolt chains to an adjacent party member for half damage; every 3rd round unleashes a Thunderclap AoE against the front row (25% stun chance per target)');
+    if (def.isRustMonsterAI)        lines.push('Corrosive Touch: on any hit against a target wearing Chainmail or Plate Mail — permanently corrodes the armor (defense penalty = rust monster level − 5, lasts the entire combat); this debuff cannot be removed by Cleric or any cleansing ability');
+
+    // Bestiary Expansion — Humanoids
+    if (def.isWitchDoctorAI)        lines.push('Dark Rituals: each turn rolls one of four spells — Hex (reduces target defense for 2 rounds); Wither (reduces target\'s ALL damage output by level÷4 for level÷4 rounds); Plague (AoE poison DoT on whole party); Soul Siphon (tears 20% of target\'s MAX HP from current HP ignoring armor, adds that HP to witch doctor\'s current and maximum HP); spawns with only 50% normal HP');
+    if (def.isGladiatorAI)          lines.push('Arena Master: 2 melee attacks per turn (+2 bonus); 30% chance to Taunt the entire party (reduces all damage dealt for 1 round); 40% chance — any target it strikes retaliates for 50% of the damage received back at the gladiator; high base defense');
+    if (def.isAssassinLordAI)       lines.push('Shadow Strike: on its first turn, phase-strikes the lowest-HP party member for 3× damage (ignores all armor and defenses); thereafter attacks twice per turn (+3 bonus) with 30% bleed chance on hits; 25% dodge chance vs all physical attacks');
+    if (def.isBattleMageAI)         lines.push('Arcane Warrior: alternates — odd turns deliver 2 melee strikes (+20% arcane bonus); even turns unleash an AoE magic blast on the whole party; below 50% HP enters Arcane Overload — performs BOTH attacks in one turn but takes 15% max HP backlash damage');
+
+    // Bestiary Expansion — Constructs
+    if (def.isIronGolemAI)          lines.push('Iron Juggernaut: single devastating melee strike (+5 bonus); once per combat releases a Poison Gas Breath cloud (guaranteed poison DoT on ALL party members); takes only half magic damage; triple HP, double defense');
+    if (def.isClockworkHorrorAI)    lines.push('Mechanical Fury: 3 rapid melee strikes per turn (75% damage each) at any party member; FULLY IMMUNE to all magic, AoE, and DoT effects — spells, fire, poison, acid and all elemental damage deal zero; takes DOUBLE damage from acid');
+    if (def.isGargoyleSentinelAI)   lines.push('Stone Shell — Phase 1: while above 50% HP takes only 50% damage from ALL sources; regenerates 10% HP per round; Phase 2 (≤50% HP): shell cracks — loses damage reduction, gains +5 melee bonus AND adds AoE Wing Buffet (front-row melee AoE with stun attempt each target)');
+    if (def.fullMagicImmune && !def.isGargoyleSentinelAI) lines.push('Total Magic Immunity: completely unaffected by all magical attacks, AoE, and damage-over-time effects');
+
+    // Bestiary Expansion — Aberrations
+    if (def.isGibberingMoutherAI)   lines.push('Gibbering Madness: attacks ALL front-row members each turn (individual rolls per target at 75% damage); 30% chance per hit — target is driven to gibbering madness (cannot act 1 round); at 50% HP the original form splits into 2 smaller copies (each with 30% of original HP) — only the original can split');
+    if (def.isAbolethAI)            lines.push('Psychic Domination: AoE psychic assault hits ALL party members; 40% chance per target to mentally enslave them (cannot act for dungeon level ÷ 10 rounds); takes only half damage from physical attacks; Water Elemental Synergy: if a water elemental is present in the same combat, both the aboleth AND the elemental deal +25% damage');
+    if (def.isStarSpawnAI)          lines.push('Reality Distortion: each turn applies a random eldritch effect to EVERY party member independently — 35% magic damage, 20% mana drain (20% max mana), 20% Wither debuff (−damage 2 rds), 25% stun attempt; completely immune to all DoT effects (poison, burn, acid, bleed, etc.)');
+
+    // Bestiary Expansion — Mixed
+    if (def.isVoidWraithAI)         lines.push('Void Drain: phase-strikes any party member (ignores ALL armor and defense); drains 25% of damage dealt as both HP AND mana simultaneously from the target; takes only half damage from physical attacks; on each kill gains a permanent stacking +10% damage bonus');
+    if (def.isVampireLordAI)        lines.push('Vampire Lord: 40% life drain on melee hits; summons Vampire Spawn (40% per turn); AoE Hypnotic Gaze charms 1-2 party members for 2 rounds (20% per turn); when HP drops below 15% dissolves into Gaseous Form (takes only 1 damage from all sources, regenerates 10% HP per round for 2 rounds, then re-solidifies); Paladin Smite deals triple bonus damage');
+    if (def.isMyconidSovereignAI)   lines.push('Spore Sovereign: every turn blasts the ENTIRE party with toxic spore cloud (AoE magic + 40% poison DoT); 60% chance per turn to spawn 1-2 Myconid minions; higher HP, defense, and minimum dungeon level than standard Myconid');
+
     return lines;
 }
 

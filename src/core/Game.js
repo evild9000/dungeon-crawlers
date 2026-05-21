@@ -276,6 +276,15 @@ export class Game {
         document.getElementById('btn-close-help')
             .addEventListener('click', () => this._hideHelp());
 
+        // --- Class abilities overlay ---
+        this._classHelpOverlay = document.getElementById('class-help-overlay');
+        document.getElementById('btn-class-help-open')
+            .addEventListener('click', () => { this._hideHelp(); this._showClassHelp(); });
+        document.getElementById('btn-back-class-help')
+            .addEventListener('click', () => { this._hideClassHelp(); this._showHelp(); });
+        document.getElementById('btn-close-class-help')
+            .addEventListener('click', () => this._hideClassHelp());
+
         // --- Log history overlay ---
         this._logOverlay = document.getElementById('log-overlay');
         this._logContent = document.getElementById('log-content');
@@ -371,6 +380,7 @@ export class Game {
             || this.inventoryUI.isGroupOpen
             || this.inventoryUI.isPersonalOpen
             || (this._helpOverlay && this._helpOverlay.style.display === 'flex')
+            || (this._classHelpOverlay && this._classHelpOverlay.style.display === 'block')
             || (this._recruitModal && this._recruitModal.style.display === 'flex')
             || (this._logOverlay && this._logOverlay.style.display === 'flex')
             || (this._portalModal && this._portalModal.style.display === 'flex')
@@ -439,6 +449,7 @@ export class Game {
                 else if (this.inventoryUI.isGroupOpen) this.inventoryUI.hideGroup();
                 else if (this._recruitModal && this._recruitModal.style.display === 'flex') this._hideRecruitModal();
                 else if (this._helpOverlay.style.display === 'flex') this._hideHelp();
+                else if (this._classHelpOverlay && this._classHelpOverlay.style.display === 'block') this._hideClassHelp();
                 else if (this._logOverlay && this._logOverlay.style.display === 'flex') this._hideLog();
                 else if (this._portalModal && this._portalModal.style.display === 'flex') this._hidePortalModal();
                 else if (this._trapModal && this._trapModal.style.display === 'flex') this._skipTrap();
@@ -696,11 +707,19 @@ export class Game {
 
     _showHelp() {
         this._helpOverlay.style.display = 'flex';
-        // Release pointer lock so the help can be scrolled/interacted with
         if (document.pointerLockElement) document.exitPointerLock();
     }
     _hideHelp() {
         this._helpOverlay.style.display = 'none';
+    }
+    _showClassHelp() {
+        if (this._classHelpOverlay) {
+            this._classHelpOverlay.style.display = 'block';
+            if (document.pointerLockElement) document.exitPointerLock();
+        }
+    }
+    _hideClassHelp() {
+        if (this._classHelpOverlay) this._classHelpOverlay.style.display = 'none';
     }
 
     /**
@@ -897,6 +916,7 @@ export class Game {
         this.shopUI.hide();
         if (this.craftingUI) this.craftingUI.hide();
         this._hideHelp();
+        this._hideClassHelp();
         this._hideRecruitModal();
         if (this._onPointerLockChange) {
             document.removeEventListener('pointerlockchange', this._onPointerLockChange);

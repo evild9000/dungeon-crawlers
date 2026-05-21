@@ -139,7 +139,11 @@
       "Bash(node --check src/systems/CombatSystem.js src/ui/CombatUI.js src/ui/CraftingUI.js src/core/Game.js src/utils/constants.js)",
       "Bash(node --check src/ui/PartySpellModal.js)",
       "PowerShell(Select-String -Path \"C:/Users/evild/OneDrive/Desktop/Game test/src/core/Game.js\" -Pattern \"FLED|flee\" -CaseSensitive:$false)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(node --check src/ui/LoreBook.js)",
+      "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\systems\\\\CombatSystem.js\")",
+      "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\core\\\\Game.js\")",
+      "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\utils\\\\constants.js\")"
     ]
   }
 }

@@ -66,6 +66,12 @@ import {
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
     MONK_AVATAR_HP_REGEN, MONK_AVATAR_CLEANSE_BASE, MONK_AVATAR_CLEANSE_PER_LEVEL,
     MONK_AVATAR_DOT_DURATION_DIVISOR,
+    WARRIOR_SQUIRE_UNLOCK_LEVEL, WARRIOR_SQUIRE_STAMINA_COST,
+    WARRIOR_SQUIRE_ATTACKS_PER_LEVELS, WARRIOR_SQUIRE_COUNT_L60, WARRIOR_SQUIRE_COUNT_L90,
+    WARRIOR_SQUIRE_SHIELD_BLOCK, WARRIOR_SQUIRE_HP_FRACTION, WARRIOR_SQUIRE_STAMINA_FRACTION,
+    WARRIOR_FORMATION_UNLOCK_LEVEL, WARRIOR_FORMATION_STAMINA_PER_ROUND,
+    WARRIOR_FORMATION_BONUS_PER_MEMBER, WARRIOR_FORMATION_BASE_BONUS,
+    WARRIOR_FORMATION_MIN_MEMBERS, WARRIOR_FORMATION_OPPORTUNITY_OFFSET,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -346,6 +352,26 @@ export class CombatUI {
                     drone_binding: {
                         icon: '⚙️', label: 'Bound', bg: 'rgba(80,80,200,0.9)',
                         tip: (fx) => 'Drone Binding: -' + Math.abs(fx.damageBonus||0) + ' atk, -' + Math.abs(fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
+                    },
+                    quasit_poison: {
+                        icon: '\u{1F47F}', label: 'Venom', bg: 'rgba(60,0,120,0.9)',
+                        tip: (fx) => 'Quasit Venom: ' + (fx.damage||0) + ' dmg/round (ignores armor) — ' + fx.rounds + ' rds left'
+                    },
+                    wither: {
+                        icon: '\u{1F9B4}', label: 'Withered', bg: 'rgba(80,40,0,0.9)',
+                        tip: (fx) => 'Wither: ' + (fx.damageBonus||0) + ' all damage dealt — ' + fx.rounds + ' rds left'
+                    },
+                    hex: {
+                        icon: '\u{1F480}', label: 'Hexed', bg: 'rgba(100,0,0,0.9)',
+                        tip: (fx) => 'Hex: ' + (fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
+                    },
+                    taunted: {
+                        icon: '⚔️', label: 'Taunted', bg: 'rgba(140,60,0,0.9)',
+                        tip: (fx) => 'Taunted: ' + (fx.damageBonus||0) + ' all damage — ' + fx.rounds + ' rd left'
+                    },
+                    rust_corrosion: {
+                        icon: '\u{1F99F}', label: 'Corroded', bg: 'rgba(100,50,10,0.9)',
+                        tip: (fx) => 'Rust Corrosion: ' + (fx.defenseBonus||0) + ' defense (lasts full combat)'
                     }
                 };
 
@@ -1499,6 +1525,59 @@ export class CombatUI {
                 const etBtn = this._addBtn('⏭️ End Turn', true, () => this.combat.endTurn());
                 etBtn.title = 'Pass this turn while remaining in Defend Mode.';
             }
+        }
+
+        // ── Warrior L30: Summon Squire(s)
+        if (m.classId === 'warrior' && m.level >= WARRIOR_SQUIRE_UNLOCK_LEVEL) {
+            const alreadySummoned = !!m.squiresSummoned;
+            const canAfford       = m.stamina >= WARRIOR_SQUIRE_STAMINA_COST;
+            const sqCount         = m.level >= WARRIOR_SQUIRE_COUNT_L90 ? 3 : m.level >= WARRIOR_SQUIRE_COUNT_L60 ? 2 : 1;
+            const sqLabel = alreadySummoned
+                ? `⚔️ Squires (summoned)`
+                : `⚔️ Summon Squire${sqCount > 1 ? 's' : ''} (${WARRIOR_SQUIRE_STAMINA_COST} ST)`;
+            const sqBtn = this._addBtn(sqLabel, !alreadySummoned && canAfford, () => this.combat.warriorSummonSquires());
+            sqBtn.classList.add('combat-special-btn');
+            const sqAttacks = Math.max(1, Math.floor(m.level / WARRIOR_SQUIRE_ATTACKS_PER_LEVELS));
+            sqBtn.title = [
+                `Warrior L${WARRIOR_SQUIRE_UNLOCK_LEVEL}: Summon Squire${sqCount > 1 ? 's' : ''}. Costs ${WARRIOR_SQUIRE_STAMINA_COST} ST. Once per combat.`,
+                `Summons ${sqCount} front-row squire${sqCount > 1 ? 's' : ''} with ${Math.round(WARRIOR_SQUIRE_HP_FRACTION * 100)}% of your HP, stamina, melee, and defense.`,
+                `Each squire makes ${sqAttacks} melee attack${sqAttacks > 1 ? 's' : ''} per round (1 per ${WARRIOR_SQUIRE_ATTACKS_PER_LEVELS} levels).`,
+                `Squires have a ${Math.round(WARRIOR_SQUIRE_SHIELD_BLOCK * 100)}% chance to block any incoming attack outright.`,
+                `Squires automatically enter/leave Formation with you.`,
+                alreadySummoned ? 'Already summoned this combat.' : (!canAfford ? `Not enough stamina (need ${WARRIOR_SQUIRE_STAMINA_COST} ST).` : ''),
+            ].filter(Boolean).join('\n');
+        }
+
+        // ── Warrior L30: Formation toggle (FREE action)
+        if (m.classId === 'warrior' && m.level >= WARRIOR_FORMATION_UNLOCK_LEVEL) {
+            const formOn    = !!m.isInFormation;
+            const formLabel = formOn
+                ? `🗡️ Formation: ON (${WARRIOR_FORMATION_STAMINA_PER_ROUND} ST/rnd)`
+                : `🗡️ Formation: OFF (toggle)`;
+            const formBtn = this._addBtn(formLabel, true, () => this.combat.warriorFormationToggle());
+            formBtn.classList.add('combat-special-btn');
+            if (formOn) formBtn.style.boxShadow = '0 0 8px #ff9900, 0 0 16px #cc660088';
+            const mySquires = this.combat.party.filter(p =>
+                p.isSummoned && p.summonType === 'squire' && p.summonerId === m.id && p.health > 0);
+            const allFormation = this.combat.party.filter(p =>
+                p.health > 0 && p.isInFormation && p.classId === 'warrior');
+            const n       = formOn ? allFormation.length : 0;
+            const multStr = n >= WARRIOR_FORMATION_MIN_MEMBERS
+                ? `×${(1 + WARRIOR_FORMATION_BASE_BONUS + WARRIOR_FORMATION_BONUS_PER_MEMBER * n).toFixed(2)}`
+                : `none yet (need ≥${WARRIOR_FORMATION_MIN_MEMBERS} members)`;
+            const oppChance = Math.round(((m.level || 1) + WARRIOR_FORMATION_OPPORTUNITY_OFFSET));
+            formBtn.title = [
+                `Warrior L${WARRIOR_FORMATION_UNLOCK_LEVEL}: Formation — FREE action (does not use your turn).`,
+                `With ≥${WARRIOR_FORMATION_MIN_MEMBERS} members: +100% + ${Math.round(WARRIOR_FORMATION_BONUS_PER_MEMBER * 100)}% per member to all formation attacks.`,
+                `Applies to: warrior attacks, extra swings, squire attacks, and retaliatory strikes.`,
+                `Formation crit: (level ÷ 2)% chance for ×(2 + level÷100) damage.`,
+                `Costs ${WARRIOR_FORMATION_STAMINA_PER_ROUND} ST/round for you and each squire independently. Warrior failure drops all squires from formation too.`,
+                mySquires.length > 0
+                    ? `Your squires: ${mySquires.map(s => s.name).join(', ')} — auto-sync with your formation toggle.`
+                    : `No squires present (summon them first for the best bonus).`,
+                `While in BOTH Defend Mode AND Formation: squires get a ${oppChance}% opportunity attack after each retaliatory strike.`,
+                formOn ? `ACTIVE — formation members: ${n}. Damage multiplier: ${multStr}.` : `INACTIVE.`,
+            ].join('\n');
         }
 
         // ── Reposition Summons (free action — available any time there are living summons)

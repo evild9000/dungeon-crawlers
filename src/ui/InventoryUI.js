@@ -34,6 +34,12 @@ import {
     PALADIN_SMITE_MANA_COST, PALADIN_SMITE_INSTAKILL_BASE,
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
     WARRIOR_RETALIATION_UNLOCK_LEVEL,
+    WARRIOR_SQUIRE_UNLOCK_LEVEL, WARRIOR_SQUIRE_STAMINA_COST,
+    WARRIOR_SQUIRE_ATTACKS_PER_LEVELS, WARRIOR_SQUIRE_SHIELD_BLOCK,
+    WARRIOR_SQUIRE_COUNT_L60, WARRIOR_SQUIRE_COUNT_L90,
+    WARRIOR_FORMATION_UNLOCK_LEVEL, WARRIOR_FORMATION_STAMINA_PER_ROUND,
+    WARRIOR_FORMATION_BONUS_PER_MEMBER, WARRIOR_FORMATION_MIN_MEMBERS,
+    WARRIOR_FORMATION_OPPORTUNITY_OFFSET,
     PALADIN_DRAGONSLAYER_UNLOCK_LEVEL, PALADIN_DRAGONSLAYER_MANA_PER_ROUND,
     BARD_RALLYING_MELODY_UNLOCK_LEVEL, BARD_RALLYING_MELODY_MANA_COST,
     BARD_RALLYING_MELODY_RESTORE_FRACTION,
@@ -902,6 +908,17 @@ export class InventoryUI {
             const chance = Math.round(member.getRetaliationChance() * 100);
             perk.push(`Intercept retaliation: ${chance}%`);
             perkDetails.push(`Warrior L25 Retaliatory Strike: ${chance}% chance after a successful Defend Mode intercept\n  Deals 75% of a normal melee strike back to the attacker.`);
+        }
+        if (member.classId === 'warrior' && member.level >= WARRIOR_SQUIRE_UNLOCK_LEVEL) {
+            const sqCount  = member.level >= WARRIOR_SQUIRE_COUNT_L90 ? 3 : member.level >= WARRIOR_SQUIRE_COUNT_L60 ? 2 : 1;
+            const attacks  = Math.max(1, Math.floor(member.level / WARRIOR_SQUIRE_ATTACKS_PER_LEVELS));
+            perk.push(`Summon Squire${sqCount > 1 ? 's' : ''}: ${sqCount}`);
+            perkDetails.push(`Warrior L${WARRIOR_SQUIRE_UNLOCK_LEVEL} Summon Squire: once per combat, costs ${WARRIOR_SQUIRE_STAMINA_COST} ST.\n  Summons ${sqCount} front-row squire${sqCount > 1 ? 's' : ''} with 66% of your HP, stamina, melee, and defense.\n  Each squire makes ${attacks} attack${attacks > 1 ? 's' : ''}/round and has a ${Math.round(WARRIOR_SQUIRE_SHIELD_BLOCK * 100)}% chance to block any incoming hit outright.\n  Squires auto-join/leave your Formation.`);
+        }
+        if (member.classId === 'warrior' && member.level >= WARRIOR_FORMATION_UNLOCK_LEVEL) {
+            const oppChance = (member.level || 1) + WARRIOR_FORMATION_OPPORTUNITY_OFFSET;
+            perk.push(`Formation stance`);
+            perkDetails.push(`Warrior L${WARRIOR_FORMATION_UNLOCK_LEVEL} Formation: FREE toggle (does not use your turn).\n  Costs ${WARRIOR_FORMATION_STAMINA_PER_ROUND} ST/round for you and each squire independently.\n  With ≥${WARRIOR_FORMATION_MIN_MEMBERS} members in formation: +100% + ${Math.round(WARRIOR_FORMATION_BONUS_PER_MEMBER * 100)}% per member to all formation attacks.\n  Formation crit: (level ÷ 2)% chance for ×(2 + level÷100) damage.\n  While in Defend Mode + Formation: squires get a ${oppChance}% opportunity attack after each retaliatory strike.\n  Warrior stamina failure also drops all own squires from formation.`);
         }
         if (member.classId === 'paladin' && member.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL) {
             const aura = member.getDragonAuraReduction();

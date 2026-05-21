@@ -1733,6 +1733,92 @@
         .help-stat-green { color: #77cc77; font-weight: bold; }
         .help-stat-blue { color: #6699dd; font-weight: bold; }
 
+        /* ── Class Abilities overlay ── */
+        #class-help-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.88);
+            z-index: 300;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #class-help-content {
+            background: #1a1408;
+            border: 1px solid #665533;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+            color: #c8b472;
+            font-family: monospace;
+        }
+        .class-help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #665533;
+        }
+        .class-help-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #e8d5a8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .class-entry {
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #332a1a;
+        }
+        .class-entry:last-child { border-bottom: none; }
+        .class-name {
+            font-size: 14px;
+            color: #d4b87b;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .class-meta {
+            font-size: 11px;
+            color: #887744;
+            margin-bottom: 4px;
+        }
+        .ability-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .ability-table td {
+            font-size: 12px;
+            color: #aa9966;
+            padding: 2px 4px 2px 0;
+            vertical-align: top;
+            line-height: 1.45;
+        }
+        .ability-level {
+            color: #d4b87b;
+            font-weight: bold;
+            white-space: nowrap;
+            min-width: 65px;
+            padding-right: 10px !important;
+        }
+        .class-help-open-btn {
+            background: #2a1e0a;
+            border: 1px solid #d4b87b;
+            color: #d4b87b;
+            padding: 6px 16px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 13px;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+        .class-help-open-btn:hover { background: #3a2c10; }
+
         #btn-close-help {
             margin-top: 12px;
             width: 100%;
@@ -2207,7 +2293,7 @@
                 <div class="help-row"><b>Equipped weapons</b> add their power to matching attack types.</div>
                 <div class="help-row"><b>Equipped armor</b> reduces incoming damage by its blocking value. See Armor Restrictions below.</div>
                 <div class="help-row"><b>Equipped shields</b> have a <b>25% chance to completely block</b> an incoming attack. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers/Artificers cannot use shields at all.</div>
-                <div class="help-row"><b>Warrior Defend Mode (L20)</b> — A warrior in Defend Mode intercepts attacks targeting any party member (melee, ranged, or magic/AoE). The warrior rolls their augmented block chance (shield base + 1%/3 warrior levels); on a hit, the original target takes no damage and the warrior absorbs 10% of the post-defense damage instead. Toggling Defend Mode on/off costs the warrior's action that turn. <b>While in Defend Mode, the warrior's own melee, ranged, and magic attack buttons are all disabled</b> — only special/passive abilities remain available.</div>
+                <div class="help-row"><b>Warrior Defend Mode (L20)</b> — A warrior in Defend Mode intercepts attacks targeting any party member (melee, ranged, or magic/AoE). The warrior rolls their augmented block chance (shield base + 1%/3 warrior levels); on a hit, the original target takes no damage and the warrior absorbs <b>40% of the post-defense damage</b> instead. Toggling Defend Mode on/off costs the warrior's action that turn. <b>While in Defend Mode, the warrior's own melee, ranged, and magic attack buttons are all disabled</b> — only special/passive abilities remain available.</div>
                 <div class="help-row"><b>Warrior Stun Resistance</b> — Warriors have a passive <b>level × 2% chance to shrug off any stun</b> (caps at 95% at level 47+). A shrugged stun is fully negated and the warrior acts normally that turn.</div>
                 <div class="help-row"><b>Encounter size</b>: combat always pulls in enough adjacent monsters to match your party size (summons included).</div>
                 <div class="help-row">Fallen allies are <b>not</b> auto-revived at the end of combat — use a Resurrection Potion to bring them back.</div>
@@ -2290,18 +2376,8 @@
 
             <div class="help-section">
                 <div class="help-section-title">Classes</div>
-                <div class="help-row"><b>&#x2694;&#xFE0F; Warrior</b> — Front-line tank. +50% HP/ST, no mana. +1 melee, base +1 defense. All armor, shields OK. <b>Per level:</b> +1 melee, +1 defense, +3% stun. <b>Extra attack every 5 levels</b> (L5→+1, L10→+2, L15→+3, L20→+4). <b>Stun Resistance (passive, all levels):</b> level × 2% chance to shrug off stun and act normally (caps at 95%). <b>L20 — Defend Mode</b> (toggle, uses action): adds +1%/3 warrior levels to shield block chance; <em>disables attacks</em> while active. Any attack targeting a party member first checks whether a defending warrior intercepts at their augmented block chance — on success the warrior reduces the raw incoming damage by their <em>own</em> armor and defense, then takes <b>20% of that remainder</b> (minimum 1). Covers melee, ranged, and magic/AoE. Cannot intercept while stunned, held, petrified, or dead. Multiple defending warriors are each checked independently. <b>L25 — Retaliatory Strike</b>: every successful intercept has a <b>25% + (warrior level / 2)%</b> chance to answer with a <b>75% damage melee counter-strike</b> against the attacking foe.</div>
-                <div class="help-row"><b>&#x1F3F9; Ranger</b> — Bowman. +25% HP/ST, -50% mana. +1 ranged. No plate. Shield OK (but not with a bow equipped). Can <b>Summon Woodland Beast</b> (7 MP): wolf, bear, eagle, or pixie. <b>Favored Enemy</b>: choose a monster category — Rangers ignore enemy defense and gain a 1%/3 levels instakill chance vs. their favored type (bosses and mega-bosses are immune to instant death — a triggered instakill deals ×4 ranged damage instead). <b>Track</b> (level 3+): reveals all enemies on the Minimap. <b>Per level:</b> +1 ranged, +3% crit. <b>L20 — Explosive Arrow</b> (6 ST): fires a single detonating arrow that hits <em>all</em> hostile enemies at once for <b>~67% post-defense ranged damage</b> per target, half crit chance, and half instakill chance vs favored enemies (boss/mega-boss procs convert to ×4 damage instead of instant death). <b>L20+ — Extra Favored Enemies</b>: unlock one extra favored enemy slot per 5 levels above L15 (+1 at L20, +2 at L25, +3 at L30…). <b>L25 — Animal Totem</b> (free action, 5 MP/round): Wolf adds bleed to ranged/explosive hits <b>and grants +1 extra ranged attack each round</b>; Bear adds +floor(level/3) defense and 25% ranged stun; Eagle adds level/2% ranged/explosive damage and level/2% chance to deflect ranged attacks for 50% return damage (deflect checks before warrior/shambling intercept); Pixie adds poison to ranged/explosive hits and halves magic/AoE damage to the ranger before defense.</div>
-                <div class="help-row"><b>&#x1FA84; Mage</b> — Arcane caster. -25% HP/ST, +50% mana. +1 magic, +2 MP regen. Cloth only, <b>no shield</b>. Magic attacks hit <b>level+6 random targets</b> (with replacement — one enemy may be hit multiple times). <b>Arcane Shield</b> (L3, 8 MP): grants <b>all party members</b> a defense bonus for several rounds; also protects against AoE attacks that hit all rows. <b>Per level:</b> +1 magic, +1% magic stun, and <b>+1% magic/AoE defense penetration</b> (ignores enemy defense by mage level%). <b>L20 — Mirror Image</b> (35 MP): creates floor(level/7) illusory duplicates (2 at L20). Each image absorbs one incoming hit of any type (melee, ranged, magic, or AoE) before shattering — while images remain, all attacks strike a random image instead of the mage. Cannot cast again while images are active. <b>L20 — AoE Crit</b> (passive): each target hit by a magic AoE has a 1% chance per 2 mage levels to be critically struck for ×(2.0+level×0.01) damage (10% at L20). <b>L25 — Familiar</b> (F outside combat): choose a permanent species and name; first summon costs 10,000g and each upgrade costs 10,000g × the new level. Familiar level is capped at mage level - 24, max 20, and grants +10% magic/AoE damage plus +1 defense per level.</div>
-                <div class="help-row"><b>&#x1F5E1;&#xFE0F; Rogue</b> — Stealthy striker. +100% ST, no mana. +1 melee, +2 ST regen. Cloth or leather armor. Can melee from <b>back row</b>. <b>Backstab</b>: 3× stamina for <b>2× damage + 10% per rogue level</b> + 5% instakill (+1%/level; bosses and mega-bosses are immune to instant death — a triggered instakill deals ×4 melee damage instead). Can <b>spot and disarm traps</b>. <b>Per level:</b> +1 melee, +1% instakill. <b>L20 — Backstab Bleed</b>: every backstab passively applies a <b>bleed DoT</b> equal to 50% of damage dealt per round, lasting floor(level/5) rounds. <b>L25 — Trapcraft</b>: successful disarms place a Captured Trap into that rogue's inventory. In combat, Spring Trap consumes one to hit all monsters with melee-type damage equal to twice normal rogue melee and applies a 3-round trap wound for 50% initial damage per round; newer trap wounds overwrite older ones, and incorporeal targets are immune. <b>L25 — Evasion</b>: level% chance to avoid magic/AoE attacks for 2 stamina.</div>
-                <div class="help-row"><b>&#x1F9D8; Monk</b> — Martial artist. <b>Neutral stats</b> (no HP/ST/MP modifier). +1 melee, +1 ST/MP regen. Cloth only, <b>no shield</b>. Melee costs <b>both</b> ST &amp; MP. 50% whirlwind. <b>40% base dodge</b> (2 ST + 2 MP, melee only) — <b>caps at 95%</b>. <b>All incoming damage is also reduced by the monk's current dodge %</b>, so a L1 monk on a non-dodged hit still takes 60% damage. Dodge and damage reduction both require ST &gt; 0 <em>and</em> MP &gt; 0. <b>Per level:</b> +1 melee, +1% whirlwind, +1% dodge. <b>L20 — Quivering Palm</b>: front-row strike for <b>2× melee damage</b>, then plants an internal DoT on the target. The DoT starts at the base melee roll and <b>doubles every round</b> (bypasses all armor &amp; defense) for 2+ rounds, <b>capped at 10 doublings</b> total. <b>L25 — Avatar</b> (free toggle on, 10 MP/round): regenerates 10% HP/round, checks each harmful state at turn start to shrug it off at 16% + level/2%, and adds a chosen Fire/Air/Earth/Water elemental DoT to landed attacks except Quivering Palm.</div>
-                <div class="help-row"><b>&#x2728; Cleric</b> — Healer. +25% HP, -50% ST, +25% mana. All armor, shields OK. <b>Heal</b>: 5 MP → 25% max HP. <b>Mass Heal</b> (L4): 5 MP, heals the whole party at half rate. <b>Revive</b> (L3): 25 MP brings a fallen ally back at 25% HP. <b>Turn Undead</b> (L6, 20 MP): deals 2× magic attack damage to <em>all</em> undead enemies and debuffs their attack &amp; defense for several rounds. <b>Per level:</b> +2% heal power. <b>L20 — Mass Regen</b> (15 MP): applies a <b>healing over time</b> to all living party members (excluding undead/golems). Heals ~10%+/round for floor(level/4) rounds; refreshes on re-cast. <b>L20 — Mass Revive</b> (30 MP): revives up to floor(level/7) fallen allies at 33%+ HP in party order. <b>L25 — Cleansing Grace</b>: Heal and Mass Heal each have a <b>cleric level × 2%</b> chance to purge harmful states such as stun, immobilize, petrify, poison, and other DoTs/debuffs. Each harmful state removed costs the cleric <b>3 extra mana</b>.</div>
-                <div class="help-row"><b>&#x1F480; Necromancer</b> — Dark caster. -25% HP, -50% ST, +75% mana. Cloth only, <b>no shield</b>. <b>Summon Undead</b> (7 MP, combat only): <b>Skeleton at L1</b>, then stronger tiers unlock every 2 levels: zombie → ghoul → spectre → mummy → ghost → vampire → death knight. All undead gain +1 melee &amp; +1 defense per necromancer level on top of tier scaling. <b>40% chance to summon a 2nd undead free</b> (horde cascade); each additional roll drops 5%, and each necromancer level adds +1% to every roll. Undead act immediately on summon. <b>Upkeep:</b> each living undead minion costs <b>1 MP per round</b>. All undead immune to poison &amp; stun. <b>Ghost</b>: fear up to [necroLevel] enemies (−3 atk/−3 def, permanent, 50% resist). <b>Death Knight</b>: 25% melee block, stun, regen, instakill chance. Magic drains HP to caster and own undead. <b>Dark Harvest</b>: sacrifice <b>10% max HP + 10% max Stamina</b> to recover <b>10% max Mana</b>. <b>Per level:</b> +1 magic, +1 drain. <b>L20 — Lich Form</b> (toggle, 15 MP/round): poison/stun immunity, scaling magic/AoE resistance, extra undead summons, stamina-to-mana sustain, and Phylactery revival. <b>L25 — Demi-Lich</b> (20 MP, requires Lich Form): back-row undead caster with HP equal to the necromancer's current HP, defense 10 + level×2, defense-ignoring magic/AoE hitting floor(level/5) targets, Ghost Fear, half magic/AoE damage, and immunity to stun/web/holds/poison.</div>
-                <div class="help-row"><b>&#x1F3B6; Bard</b> — Inspiring performer. -20% ST, +20% MP. +1 MP regen. Cloth/leather/chain (no plate); shields OK. <b>Out-of-combat (V)</b>: activate the <b>Combined Song</b> — party-wide Haste, Battle, and Healing buffs <em>(does NOT affect golems or summoned undead)</em>; drains 5 MP/min, cancel any time. <b>In-combat — Dissonant Chord</b> (7 MP, <em>once per fight</em>): hits all enemies with magic damage, debuffs -atk/-def for 1 round, 50% stun chance each. Scale = +1 per 5 levels. <b>Per level:</b> +1 magic damage. <b>L20 — Charm Monster</b> (50 MP): attempt to charm a single enemy to fight for the party. Success chance = 50% + 1% per 2 bard levels (60% at L20, max 95%). Duration = floor(level/5) rounds (4 at L20). <b>Immune</b>: undead, elementals, constructs — and bosses/mega-bosses always resist. Charmed monsters move to your side, fight hostile enemies, and can be healed by clerics (except undead, constructs, and elementals). When the charm expires the monster returns to the enemy ranks. <b>L25 — Rallying Melody</b> (40 MP): restores <b>10%</b> of max HP, mana, and stamina to every living party member <em>(does NOT affect golems or summoned undead)</em>.</div>
-                <div class="help-row"><b>&#x1F33F; Druid</b> — Nature caster. -15% HP/ST, +30% MP. +1 MP regen. Cloth/leather only (no chain or plate); shields OK. <b>Entangle</b> (8 MP): rolls 50% on each enemy to debuff -2 defense &amp; -2 damage (rises by +1 every 2 levels beyond 1); does not affect incorporeal enemies. <b>Summon Woodland Beast</b> (7 MP): wolf, bear, eagle, or pixie — same as ranger. <b>Summon Treant</b> (7 MP, level 5+): a massive ancient tree spirit joins the front row; slams enemies for heavy melee damage and has a 33% chance to hold the target (undead &amp; incorporeal foes are immune to the hold). <b>Per level:</b> +1 magic damage. <b>L20 — Commune</b> (free action): commune with the Fae to gain 1 fae token (shown as ✨ badge on portrait). At 3 tokens, the <b>Faerie Queen</b> is summoned — she joins the <b>back row</b>, has 2× druid max HP, 30+level defense, and attacks with <b>Wrath of Nature</b>: hits floor(druidLevel/4) random targets each turn with magic damage, applying a fae poison DoT and a 33%+ chance to Hold each target for 2 rounds. She has 50% magic and AoE resistance and can be healed by clerics. Tokens persist between rounds; summoning costs no MP but consumes all tokens. <b>L25 — Shambling Mound</b> (100 MP): 4× druid max HP, 20+druid level defense, base melee + 2× druid level slam, 45% stun, 20% regen, mini-shambler growth (not on its summon round), and only the original mound can spawn minis (grown minis cannot). Post-warrior intercepts for its druid still apply.</div>
-                <div class="help-row"><b>&#x1F6E1;&#xFE0F; Paladin</b> — Holy warrior. +25% HP, neutral ST, -25% MP. All armor, shields OK. <b>Smite</b> (5 MP, front row only): armor-ignoring holy melee strike. Against <b>undead</b> or <b>demon</b> foes the attack gains <b>+2 damage per paladin level</b>, scaled by <b>(2 + 0.1 × level)</b>, with a <b>(1% + 1%/level)</b> chance to <b>purge</b> the target — <b>capped at 50%</b>. Against normal enemies Smite does plain melee damage. <b>Boss/Mega-Boss purge resistance:</b> when the purge roll succeeds against a boss or mega-boss, instead of instant death they take <b>×4 smite damage</b>. <b>Lay On Hands</b> (5 MP): heals the most-injured living ally for 12.5% of their max HP (base), +1% per paladin level. <b>Fire Aura</b> (toggle, free action to activate): reflects all melee hits back at the attacker as fire damage; costs 4 MP/round upkeep; deactivating costs your turn. <b>Per level:</b> +1 melee, +1 defense. <b>Extra attack every 7 levels</b> (L7→+1, L14→+2, L21→+3). <b>L20 — Revive</b> (25 MP): brings a single fallen ally back at 25% HP (mirrors Cleric Revive). <b>L20 — AoE Smite</b> (15 MP, front row only): calls down a <b>holy nova</b> hitting <em>all</em> undead and demon enemies at ⅓ damage with ⅓ purge chance (same 50% cap; bosses take ×4 AoE smite damage instead of instant death). <b>L25 — Dragonslayer</b> (toggle, 15 MP/round): while active, <b>Smite</b> and <b>AoE Smite</b> also affect <b>dragons</b>. In addition, if the paladin has a <b>shield equipped</b>, any dragon magic/AoE attack against the party is reduced by <b>paladin level + 10%</b> (cap 90%) <em>before</em> each target's defenses are applied.</div>
-                <div class="help-row"><b>&#x1FA93; Barbarian</b> — Berserker. +60% HP, +40% ST, <b>no mana</b>. +2 melee, +1 HP/+2 ST regen. Cloth or leather armor only; <b>no shields</b>. <b>Rage</b> (once per combat, free action): halves <em>all</em> incoming damage, grants stun immunity, regens <b>5% max HP per round</b>, adds <b>+1 melee damage per barbarian level</b>, and unlocks <b>+1 bonus melee strike per 3 levels</b> (each costs 3 ST). Rage lasts until end of combat. <b>Per level:</b> +1 melee. <b>L20 — Blood Rage</b>: melee hits while raging generate temp HP; without temp HP, Wound Mode boosts damage at 75%/50%/25% HP. <b>L25 — Encouragement</b>: while raging, other living party members gain cumulative <b>+3% damage per round</b> to melee, ranged, magic, and AoE, capped at <b>+60%</b> after 20 rounds. A member only benefits from one raging barbarian at a time; barbarians can benefit from each other's rage but not their own.</div>
-                <div class="help-row"><b>&#x2699;&#xFE0F; Artificer</b> — Tinker-gunner. Neutral stats. Cloth/leather only (no chain or plate); <b>no shields</b>. <b>Scatter Shot</b> replaces the default ranged attack: primary shot hits at full damage, plus <b>2 splash shots</b> at <b>50% + 1%/level damage</b> (max 100%) to other enemies (+1 splash every 5 artificer levels). Can <b>forge persistent Golems</b> (unlocked by Artificer level — &#x1F9DF; Flesh at L1, &#x1F5FF; Clay at L5, &#x1FAA8; Stone at L10, &#x1F9FE; Iron at L15, &#x2699;&#xFE0F; Mithril at L20, &#x1F5FF; Adamantine at L25, &#x1F4AB; Divine Soul at L30). Higher-tier golems gain powerful attacks (kinetic waves, armor-piercing bolts, divine strikes), elemental damage resistance, and immunity to stun, poison, and web. All golem stats scale with <b>Artificer Level (AL)</b>: melee damage <b>2–12 + floor(AL×1.5)</b>, defense <b>AL×2</b>, and HP (base + per-AL scaling). <b>Repair Golem</b> (1 matching reagent → 50% max HP). Golems persist between combats but die permanently on KO. <b>Advanced Crafting (K)</b>: Enchant weapons/armor up to +7 with elemental riders; brew healing potions and powerful scrolls (Warding, Wrath); and forge/repair golems. <b>L25 — Advanced Augments</b>: add separate vitality augments to effective level 4+ trinkets (+5/10/15/20% HP, stamina, and mana at augment L4-L7), and install golem attachments: extra limbs, golem shields, and golem trinkets. Higher-tier golem reagent costs are significant — plan your dungeon runs accordingly. <b>Per level:</b> +1 ranged.</div>
+                <div class="help-row">Each class has unique stats, per-level bonuses, and level-gated abilities.</div>
+                <div class="help-row"><button id="btn-class-help-open" type="button" class="class-help-open-btn">&#x1F4D6; View Class Abilities &rarr;</button></div>
             </div>
 
             <div class="help-section">
@@ -2415,6 +2491,183 @@
             </div>
         </div>
         <button id="btn-close-help" class="menu-btn">Close</button>
+    </div>
+
+    <!-- ======== CLASS ABILITIES OVERLAY ======== -->
+    <div id="class-help-overlay">
+        <div id="class-help-content">
+            <div class="class-help-header">
+                <button id="btn-back-class-help" type="button" class="menu-btn">&#x2190; Back</button>
+                <h2>Class Abilities</h2>
+                <button id="btn-close-class-help" type="button" class="menu-btn">&#x2715; Close</button>
+            </div>
+
+            <!-- ── Warrior ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x2694;&#xFE0F; Warrior</div>
+                <div class="class-meta"><b>Stats:</b> +50% HP/ST, no mana &nbsp;|&nbsp; +1 melee, +1 def &nbsp;|&nbsp; All armor + shields OK</div>
+                <div class="class-meta"><b>Per level:</b> +1 melee, +1 defense, +3% stun chance</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">Passive</td><td><b>Stun Resistance</b> — level &times; 2% chance to shrug off any stun and act normally (caps at 95%).</td></tr>
+                    <tr><td class="ability-level">L5+</td><td><b>Extra Melee Attacks</b> — +1 additional attack every 5 levels (L5&rarr;+1, L10&rarr;+2, L15&rarr;+3, L20&rarr;+4, &hellip;).</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Defend Mode</b> (toggle, uses action) — Intercepts attacks aimed at any ally using augmented shield block chance (base + 1%/3 warrior levels). On success: original target takes no damage; warrior takes <b>40% of post-defense damage</b> (min 1). Covers melee, ranged, and magic/AoE. Own attacks disabled while active.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Retaliatory Strike</b> — After each successful intercept: <b>25% + (level/2)%</b> chance to immediately counter with a <b>75% damage melee strike</b> against the attacker.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Summon Squires</b> (10 ST, once/combat) — Summons floor(level/10)&minus;1 squire(s) to the front row. Each squire attacks floor(level/15) times using 66% of warrior damage, has 66% warrior defense, and a 25% shield-block chance. &bull; <b>Formation</b> (free action toggle, 2 ST/rd) — while squires are present, warrior melee &amp; retaliations deal &times;(1 + 0.1 &times; squires) damage; each hit has level/200 crit chance for &times;(1.0 + 0.01 &times; level) damage. Squires also make opportunity strikes after each warrior weapon rider fires.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Ranger ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F3F9; Ranger</div>
+                <div class="class-meta"><b>Stats:</b> +25% HP/ST, &minus;50% mana &nbsp;|&nbsp; +1 ranged &nbsp;|&nbsp; No plate; shield OK (not with bow)</div>
+                <div class="class-meta"><b>Per level:</b> +1 ranged, +3% crit chance</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Favored Enemy</b> — choose a category; Rangers ignore defense and gain 1%/3 levels instakill chance vs favored type (bosses take &times;4 ranged instead of instant death).</td></tr>
+                    <tr><td class="ability-level">L3</td><td><b>Track</b> — reveals all enemies on the Minimap.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Explosive Arrow</b> (6 ST) — detonating arrow hits <em>all</em> hostile enemies for ~67% post-defense ranged damage each; half crit chance and half instakill chance vs favored enemies.</td></tr>
+                    <tr><td class="ability-level">L20+</td><td><b>Extra Favored Enemy slots</b> — +1 slot per 5 levels above L15 (L20&rarr;+1, L25&rarr;+2, L30&rarr;+3&hellip;).</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Animal Totem</b> (free action, 5 MP/round) — <b>Wolf:</b> bleed on ranged/explosive hits + 1 extra ranged attack/round. <b>Bear:</b> +floor(lvl/3) defense, 25% ranged stun. <b>Eagle:</b> level/2% damage bonus; level/2% deflect vs ranged (deflect fires before warrior intercept). <b>Pixie:</b> poison on hits + halves incoming magic/AoE damage.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Mage ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1FA84; Mage</div>
+                <div class="class-meta"><b>Stats:</b> &minus;25% HP/ST, +50% mana &nbsp;|&nbsp; +1 magic, +2 MP regen &nbsp;|&nbsp; Cloth only, no shield</div>
+                <div class="class-meta"><b>Per level:</b> +1 magic, +1% stun chance, +1% defense penetration (magic/AoE ignores enemy defense by mage level%)</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Magic Barrage</b> — hits level+6 random targets (same target may be hit multiple times).</td></tr>
+                    <tr><td class="ability-level">L3</td><td><b>Arcane Shield</b> (8 MP) — grants all party members a defense bonus for several rounds; also reduces AoE damage.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Mirror Image</b> (35 MP) — creates floor(level/7) illusions (2 at L20). Each absorbs one hit of any type before shattering; all attacks target a random image while active.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>AoE Crit</b> (passive) — each AoE target has a 1% chance per 2 mage levels to be critically struck for &times;(2.0 + level&times;0.01) damage (10% crit at L20).</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Familiar</b> (F key, out of combat) — permanent companion (10,000g per level). Level capped at mage level&minus;24 (max 20). Grants +10% magic/AoE damage and +1 defense per familiar level.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Rogue ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F5E1;&#xFE0F; Rogue</div>
+                <div class="class-meta"><b>Stats:</b> +100% ST, no mana &nbsp;|&nbsp; +1 melee, +2 ST regen &nbsp;|&nbsp; Cloth/leather; can melee from back row</div>
+                <div class="class-meta"><b>Per level:</b> +1 melee, +1% instakill</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Backstab</b> (3&times; ST) — 2&times; damage + 10%/level; 5% + 1%/level instakill (bosses take &times;4 melee instead).</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Trap Detection</b> — can spot and disarm dungeon traps.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Backstab Bleed</b> (passive) — every backstab applies a bleed DoT equal to 50% of damage per round for floor(level/5) rounds.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Trapcraft</b> — disarmed traps go to inventory. In combat, Spring Trap hits all enemies for 2&times; rogue melee and applies a 3-round wound (50% initial damage/rd). Newer wounds overwrite older.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Evasion</b> — level% chance to avoid magic/AoE attacks for 2 ST each.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Monk ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F9D8; Monk</div>
+                <div class="class-meta"><b>Stats:</b> Neutral (no modifier) &nbsp;|&nbsp; +1 melee, +1 ST/MP regen &nbsp;|&nbsp; Cloth only, no shield; melee costs both ST &amp; MP</div>
+                <div class="class-meta"><b>Per level:</b> +1 melee, +1% whirlwind, +1% dodge</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Dodge</b> (40% base, caps 95%) — 2 ST + 2 MP; dodged attacks deal no damage. <em>All</em> incoming damage is also reduced by the dodge% (non-dodge hits still reduced if ST &amp; MP &gt; 0).</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Whirlwind</b> (50% + 1%/level base) — on each melee strike, chance to also hit every other enemy.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Quivering Palm</b> — front-row strike for 2&times; melee damage, then plants a doubling internal DoT (bypasses all armor/defense). Starts at base melee roll, doubles each round, capped at 10 doublings.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Avatar</b> (free toggle, 10 MP/round) — regenerates 10% HP/round; shrugs harmful states at turn start (16% + level/2%); adds chosen Fire/Air/Earth/Water elemental DoT to landed attacks.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Cleric ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x2728; Cleric</div>
+                <div class="class-meta"><b>Stats:</b> +25% HP, &minus;50% ST, +25% mana &nbsp;|&nbsp; All armor + shields OK</div>
+                <div class="class-meta"><b>Per level:</b> +2% heal power</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Heal</b> (5 MP) — restores 25%+ max HP to a single ally.</td></tr>
+                    <tr><td class="ability-level">L3</td><td><b>Revive</b> (25 MP) — brings a fallen ally back at 25% HP.</td></tr>
+                    <tr><td class="ability-level">L4</td><td><b>Mass Heal</b> (5 MP) — heals all living party members at half rate.</td></tr>
+                    <tr><td class="ability-level">L6</td><td><b>Turn Undead</b> (20 MP) — deals 2&times; magic damage to all undead enemies and debuffs their attack &amp; defense for several rounds.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Mass Regen</b> (15 MP) — HoT on all living members (excludes undead/golems). Heals ~10%+/round for floor(level/4) rounds; refreshes on re-cast.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Mass Revive</b> (30 MP) — revives up to floor(level/7) fallen allies at 33%+ HP in party order.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Cleansing Grace</b> (passive) — Heal and Mass Heal each have a level &times; 2% chance per cast to purge harmful states (stun, petrify, poison, DoTs, debuffs). Each state purged costs 3 extra MP.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Necromancer ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F480; Necromancer</div>
+                <div class="class-meta"><b>Stats:</b> &minus;25% HP, &minus;50% ST, +75% mana &nbsp;|&nbsp; Cloth only, no shield</div>
+                <div class="class-meta"><b>Per level:</b> +1 magic, +1 drain; all undead gain +1 melee &amp; +1 def per necro level on top of tier stats</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Summon Undead</b> (7 MP) — skeleton at L1; stronger tiers every 2 levels (zombie&rarr;ghoul&rarr;spectre&rarr;mummy&rarr;ghost&rarr;vampire&rarr;death knight). 40% cascade: free 2nd summon on success; each extra roll drops 5%, +1%/necro level. All undead: immune to poison &amp; stun. 1 MP/round upkeep.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Dark Harvest</b> — sacrifice 10% max HP + 10% max ST &rarr; recover 10% max MP.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Lich Form</b> (toggle, 15 MP/round) — poison/stun immunity; scaling magic/AoE resistance; extra undead summon slots; stamina-to-mana sustain; Phylactery revival on death.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Demi-Lich</b> (20 MP, requires Lich Form) — back-row undead caster. HP = necromancer's current HP. Defense = 10 + level&times;2. Attacks floor(level/5) targets with defense-ignoring magic/AoE. Has Ghost Fear, half magic/AoE damage taken, and is immune to stun, web, holds, and poison.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Bard ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F3B6; Bard</div>
+                <div class="class-meta"><b>Stats:</b> &minus;20% ST, +20% MP &nbsp;|&nbsp; +1 MP regen &nbsp;|&nbsp; Cloth/leather/chain (no plate); shield OK</div>
+                <div class="class-meta"><b>Per level:</b> +1 magic damage</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All (V)</td><td><b>Combined Song</b> (out of combat, 5 MP/min) — party-wide Haste, Battle, and Healing buffs. Does NOT affect golems or summoned undead.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Dissonant Chord</b> (7 MP, <em>once per fight</em>) — magic damage to all enemies, &minus;atk/&minus;def for 1 round, 50% stun chance each. Scales +1 per 5 levels.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Charm Monster</b> (50 MP) — charm a single enemy to fight for your party. Chance: 50% + 1%/2 bard levels (max 95%). Duration: floor(level/5) rounds. Immune: undead, elementals, constructs, bosses/mega-bosses.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Rallying Melody</b> (40 MP) — restores 10% of max HP, mana, and stamina to every living party member. Does NOT affect golems or summoned undead.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Druid ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F33F; Druid</div>
+                <div class="class-meta"><b>Stats:</b> &minus;15% HP/ST, +30% MP &nbsp;|&nbsp; +1 MP regen &nbsp;|&nbsp; Cloth/leather only; shield OK</div>
+                <div class="class-meta"><b>Per level:</b> +1 magic damage</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Entangle</b> (8 MP) — 50% chance per enemy to apply &minus;2 def / &minus;2 dmg (rises +1 every 2 levels beyond 1). Does not affect incorporeal.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Summon Woodland Beast</b> (7 MP) — wolf, bear, eagle, or pixie (same stats as Ranger beast summons).</td></tr>
+                    <tr><td class="ability-level">L5</td><td><b>Summon Treant</b> (7 MP) — front-row ancient tree spirit; heavy melee slam + 33% hold per hit (undead &amp; incorporeal immune to hold).</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Commune</b> (free action) — gain 1 fae token (&star; badge). At 3 tokens, summon the <b>Faerie Queen</b> (back row; 2&times; druid HP, 30+level def, 50% magic/AoE resist). Her <em>Wrath of Nature</em> hits floor(level/4) enemies each turn with fae poison DoT and 33%+ hold chance.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Shambling Mound</b> (100 MP) — 4&times; druid max HP, 20+level def, heavy slam with 45% stun, 20% HP regen per round. Grows mini-shamblers over time (original only). Post-warrior intercepts for its druid still apply.</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Paladin ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1F6E1;&#xFE0F; Paladin</div>
+                <div class="class-meta"><b>Stats:</b> +25% HP, neutral ST, &minus;25% MP &nbsp;|&nbsp; +1 melee, +1 def &nbsp;|&nbsp; All armor + shields OK</div>
+                <div class="class-meta"><b>Per level:</b> +1 melee, +1 def, +1% heal, +1% smite instakill &nbsp;|&nbsp; Extra attack every 7 levels</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Smite</b> (5 MP, front row) — armor-ignoring holy strike. vs <b>undead/demon:</b> +2 dmg/level &times; (2+0.1&times;level), (1%+1%/level) purge chance (cap 50%); bosses take &times;4 instead. vs normals: plain melee.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Lay on Hands</b> (5 MP) — heals most-injured ally for 12.5%+ max HP (+1%/level).</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Fire Aura</b> (free toggle on, 4 MP/round) — reflects all incoming melee hits back at attacker as fire damage. Deactivating costs your action.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Revive</b> (25 MP) — brings a fallen ally back at 25% HP.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>AoE Smite</b> (15 MP, front row) — holy nova hitting all undead/demon enemies at &frac13; damage with &frac13; purge chance (50% cap; bosses take &times;4 AoE smite).</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Dragonslayer</b> (toggle, 15 MP/round) — Smite and AoE Smite also target dragons. While active with shield equipped: dragon magic/AoE attacks on the party are reduced by <b>level + 10%</b> (cap 90%) before each target's defenses apply. <em>Must be toggled ON and paladin must be alive to soften dragon breath.</em></td></tr>
+                </table>
+            </div>
+
+            <!-- ── Barbarian ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x1FA93; Barbarian</div>
+                <div class="class-meta"><b>Stats:</b> +60% HP, +40% ST, no mana &nbsp;|&nbsp; +2 melee, +1 HP/+2 ST regen &nbsp;|&nbsp; Cloth/leather only; no shields</div>
+                <div class="class-meta"><b>Per level:</b> +1 melee</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Rage</b> (once per combat, free action) — halves all incoming damage; stun immunity; +5% max HP regen/round; +1 melee dmg/level; +1 bonus strike per 3 levels (each costs 3 ST). Lasts until end of combat.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Blood Rage</b> — melee hits while raging generate temporary HP. Without temp HP, <em>Wound Mode</em> scales damage based on HP remaining (75%/50%/25% HP thresholds).</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Encouragement</b> — while raging, other living party members gain +3% damage/round to all attack types, capped at +60% after 20 rounds. One raging barbarian benefit at a time (barbarians can boost each other).</td></tr>
+                </table>
+            </div>
+
+            <!-- ── Artificer ── -->
+            <div class="class-entry">
+                <div class="class-name">&#x2699;&#xFE0F; Artificer</div>
+                <div class="class-meta"><b>Stats:</b> Neutral &nbsp;|&nbsp; Cloth/leather only; no shields</div>
+                <div class="class-meta"><b>Per level:</b> +1 ranged &nbsp;|&nbsp; Golem stats scale with Artificer Level (AL): dmg 2&ndash;12 + floor(AL&times;1.5), def AL&times;2</div>
+                <table class="ability-table">
+                    <tr><td class="ability-level">All</td><td><b>Scatter Shot</b> (replaces ranged) — primary shot at full damage + 2 splash shots at 50%+1%/level damage to other enemies (+1 splash per 5 artificer levels).</td></tr>
+                    <tr><td class="ability-level">L1</td><td><b>Forge Golem</b> — Flesh Golem (L1), Clay (L5), Stone (L10), Iron (L15), Mithril (L20), Adamantine (L25), Divine Soul (L30). Higher tiers: kinetic AoE, armor-piercing bolts, or divine strikes; magic/ranged/AoE resistance; stun/poison/web immunity. Golems persist between combats but die permanently. <b>Repair</b>: 1 matching reagent &rarr; 50% HP restored.</td></tr>
+                    <tr><td class="ability-level">K</td><td><b>Advanced Crafting</b> — enchant weapons/armor to +7 with elemental riders; brew healing potions and powerful scrolls (Warding, Wrath); forge/repair golems.</td></tr>
+                    <tr><td class="ability-level">L25</td><td><b>Advanced Augments</b> — add vitality augments to effective level 4+ trinkets (+5/10/15/20% HP, ST, MP at augment L4&ndash;L7); install golem attachments (extra limbs, golem shields, golem trinkets).</td></tr>
+                </table>
+            </div>
+
+        </div>
     </div>
 
     <!-- ======== GAME UI ======== -->

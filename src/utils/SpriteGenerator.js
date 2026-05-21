@@ -3677,6 +3677,1072 @@ function drawDeathKnight(c, r) {
     c.fillRect(16,56,12,4); c.fillRect(36,56,12,4);
 }
 
+// ── Bestiary Expansion ────────────────────────────────────────────────────────
+
+function drawSuccubus(c, r) {
+    const skin  = `rgb(${r.int(160,200)},${r.int(60,100)},${r.int(160,210)})`;
+    const dark  = `rgb(${r.int(40,70)},${r.int(0,20)},${r.int(40,70)})`;
+    const wing  = `rgba(${r.int(30,60)},${r.int(0,15)},${r.int(50,80)},0.85)`;
+    const glow  = `rgb(${r.int(200,255)},${r.int(20,60)},${r.int(20,60)})`;
+    // Wings
+    c.fillStyle = wing;
+    c.beginPath(); c.moveTo(32,28); c.quadraticCurveTo(6,10,2,40);
+    c.lineTo(18,34); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32,28); c.quadraticCurveTo(58,10,62,40);
+    c.lineTo(46,34); c.closePath(); c.fill();
+    // Body — elegant dress/form
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(32,42,12,16,0,0,Math.PI*2); c.fill();
+    // Torso skin
+    c.fillStyle = skin;
+    c.fillRect(23,26,18,20);
+    // Arms
+    c.fillRect(14,26,10,14); c.fillRect(40,26,10,14);
+    // Head
+    c.beginPath(); c.ellipse(32,16,11,13,0,0,Math.PI*2); c.fill();
+    // Hair
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(32,10,11,7,0,0,Math.PI); c.fill();
+    c.fillRect(20,10,5,14); c.fillRect(39,10,5,14);
+    // Horns
+    c.fillStyle = '#1a0020';
+    c.beginPath(); c.moveTo(24,8); c.lineTo(20,0); c.lineTo(27,8); c.fill();
+    c.beginPath(); c.moveTo(40,8); c.lineTo(44,0); c.lineTo(37,8); c.fill();
+    // Glowing eyes
+    c.shadowColor = glow; c.shadowBlur = 8;
+    c.fillStyle = glow;
+    c.beginPath(); c.ellipse(28,16,3,2,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(36,16,3,2,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Tail hint
+    c.strokeStyle = dark; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(32,56); c.quadraticCurveTo(44,60,48,56); c.stroke();
+}
+
+function drawChainDevil(c, r) {
+    const iron  = `rgb(${r.int(50,80)},${r.int(50,80)},${r.int(60,90)})`;
+    const dark  = `rgb(${r.int(20,40)},${r.int(20,40)},${r.int(25,50)})`;
+    const rust  = `rgb(${r.int(90,130)},${r.int(60,90)},${r.int(30,60)})`;
+    // Body
+    c.fillStyle = dark;
+    c.fillRect(18,24,28,32);
+    // Chains coiled around body
+    c.strokeStyle = iron; c.lineWidth = 3;
+    for (let i=0; i<5; i++) {
+        c.beginPath();
+        c.ellipse(32, 28+i*6, 12+i%2*3, 4, 0, 0, Math.PI*2);
+        c.stroke();
+    }
+    // Chain links detail
+    c.strokeStyle = rust; c.lineWidth = 1.5;
+    for (let i=0; i<4; i++) {
+        c.beginPath();
+        c.ellipse(32, 30+i*6, 10, 3, 0, 0, Math.PI*2);
+        c.stroke();
+    }
+    // Head
+    c.fillStyle = iron;
+    c.beginPath(); c.ellipse(32,14,11,12,0,0,Math.PI*2); c.fill();
+    c.fillStyle = dark;
+    c.fillRect(22,16,20,6);
+    // Eye slits
+    c.fillStyle = rust;
+    c.fillRect(24,17,6,3); c.fillRect(34,17,6,3);
+    // Arms with chains
+    c.fillStyle = dark;
+    c.fillRect(6,24,14,10); c.fillRect(44,24,14,10);
+    c.strokeStyle = iron; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(6,30); c.lineTo(0,44); c.stroke();
+    c.beginPath(); c.moveTo(58,30); c.lineTo(64,44); c.stroke();
+    // Legs
+    c.fillStyle = dark;
+    c.fillRect(18,56,10,8); c.fillRect(36,56,10,8);
+}
+
+function drawBloodDemon(c, r) {
+    const skin  = `rgb(${r.int(140,180)},${r.int(0,30)},${r.int(0,30)})`;
+    const dark  = `rgb(${r.int(60,90)},${r.int(0,15)},${r.int(0,15)})`;
+    const blood = `rgb(${r.int(180,220)},${r.int(0,20)},${r.int(0,20)})`;
+    const glow  = `rgb(${r.int(220,255)},${r.int(50,100)},${r.int(0,30)})`;
+    // Muscular body
+    c.fillStyle = skin;
+    c.fillRect(16,24,32,32);
+    // Muscle definition
+    c.fillStyle = dark;
+    c.fillRect(28,26,8,28); // center line
+    c.beginPath(); c.arc(24,34,6,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(40,34,6,0,Math.PI*2); c.fill();
+    // Arms — massive
+    c.fillStyle = skin;
+    c.fillRect(4,24,14,20); c.fillRect(46,24,14,20);
+    // Claws
+    c.fillStyle = dark;
+    for (let i=0;i<4;i++) {
+        c.beginPath(); c.moveTo(4+i*3,44); c.lineTo(2+i*3,54); c.lineTo(5+i*3,44); c.fill();
+        c.beginPath(); c.moveTo(48+i*3,44); c.lineTo(46+i*3,54); c.lineTo(49+i*3,44); c.fill();
+    }
+    // Blood drips
+    c.fillStyle = blood;
+    for (let i=0;i<3;i++) {
+        c.beginPath(); c.ellipse(6+i*4,50,2,5,0,0,Math.PI*2); c.fill();
+        c.beginPath(); c.ellipse(50+i*4,50,2,5,0,0,Math.PI*2); c.fill();
+    }
+    // Head with horns
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,14,13,12,0,0,Math.PI*2); c.fill();
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(22,8); c.lineTo(16,0); c.lineTo(26,8); c.fill();
+    c.beginPath(); c.moveTo(42,8); c.lineTo(48,0); c.lineTo(38,8); c.fill();
+    // Glowing eyes
+    c.shadowColor = glow; c.shadowBlur = 10;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(27,14,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,14,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Legs
+    c.fillStyle = skin;
+    c.fillRect(18,56,10,8); c.fillRect(36,56,10,8);
+}
+
+function drawPitFiend(c, r) {
+    const skin  = `rgb(${r.int(120,160)},${r.int(0,25)},${r.int(0,25)})`;
+    const dark  = `rgb(${r.int(40,70)},${r.int(0,10)},${r.int(0,10)})`;
+    const wing  = `rgba(${r.int(60,90)},${r.int(0,10)},${r.int(0,10)},0.9)`;
+    const eye   = `rgb(${r.int(220,255)},${r.int(150,200)},${r.int(0,30)})`;
+    // Massive wings
+    c.fillStyle = wing;
+    c.beginPath(); c.moveTo(32,22); c.quadraticCurveTo(4,4,0,36);
+    c.lineTo(18,28); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32,22); c.quadraticCurveTo(60,4,64,36);
+    c.lineTo(46,28); c.closePath(); c.fill();
+    // Massive body
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,40,20,22,0,0,Math.PI*2); c.fill();
+    // Belly scales
+    c.fillStyle = dark;
+    for (let i=0; i<4; i++)
+        for (let j=0; j<3; j++)
+            c.fillRect(22+j*7, 28+i*7, 6, 5);
+    // Huge arms
+    c.fillStyle = skin;
+    c.fillRect(2,22,16,22); c.fillRect(46,22,16,22);
+    // Claws
+    c.fillStyle = dark;
+    for (let i=0;i<3;i++) {
+        c.beginPath(); c.moveTo(2+i*4,44); c.lineTo(0+i*4,56); c.lineTo(4+i*4,44); c.fill();
+        c.beginPath(); c.moveTo(48+i*4,44); c.lineTo(46+i*4,56); c.lineTo(50+i*4,44); c.fill();
+    }
+    // Large head with multiple eyes
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,12,18,14,0,0,Math.PI*2); c.fill();
+    // Horns
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(16,6); c.lineTo(8,0); c.lineTo(20,8); c.fill();
+    c.beginPath(); c.moveTo(48,6); c.lineTo(56,0); c.lineTo(44,8); c.fill();
+    // Multiple eyes — row of three
+    c.shadowColor = eye; c.shadowBlur = 8;
+    c.fillStyle = eye;
+    c.beginPath(); c.arc(24,12,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(32,10,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(40,12,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Fanged mouth
+    c.fillStyle = dark;
+    c.fillRect(22,18,20,5);
+    c.fillStyle = '#eeddcc';
+    for (let i=0;i<5;i++) c.fillRect(23+i*3,18,2,4);
+    // Legs
+    c.fillStyle = skin;
+    c.fillRect(14,58,14,6); c.fillRect(36,58,14,6);
+}
+
+function drawQuasit(c, r) {
+    const skin  = `rgb(${r.int(60,110)},${r.int(90,130)},${r.int(50,90)})`;
+    const dark  = `rgb(${r.int(20,50)},${r.int(40,70)},${r.int(20,50)})`;
+    const wing  = `rgba(${r.int(30,70)},${r.int(40,80)},${r.int(30,60)},0.8)`;
+    const eye   = `rgb(${r.int(180,230)},${r.int(0,30)},${r.int(0,30)})`;
+    // Tiny body — centered lower
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,46,12,14,0,0,Math.PI*2); c.fill();
+    // Small bat wings
+    c.fillStyle = wing;
+    c.beginPath(); c.moveTo(32,38); c.quadraticCurveTo(16,26,10,38);
+    c.lineTo(22,40); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32,38); c.quadraticCurveTo(48,26,54,38);
+    c.lineTo(42,40); c.closePath(); c.fill();
+    // Arms — stubby
+    c.fillStyle = skin;
+    c.fillRect(14,42,10,8); c.fillRect(40,42,10,8);
+    // Claws
+    c.fillStyle = dark;
+    for (let i=0;i<3;i++) {
+        c.beginPath(); c.moveTo(14+i*3,50); c.lineTo(13+i*3,56); c.lineTo(16+i*3,50); c.fill();
+        c.beginPath(); c.moveTo(40+i*3,50); c.lineTo(39+i*3,56); c.lineTo(42+i*3,50); c.fill();
+    }
+    // Small head
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,32,10,10,0,0,Math.PI*2); c.fill();
+    // Tiny horns
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(26,26); c.lineTo(23,20); c.lineTo(28,26); c.fill();
+    c.beginPath(); c.moveTo(38,26); c.lineTo(41,20); c.lineTo(36,26); c.fill();
+    // Beady red eyes
+    c.shadowColor = eye; c.shadowBlur = 6;
+    c.fillStyle = eye;
+    c.beginPath(); c.arc(28,32,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(36,32,2,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Tiny legs
+    c.fillStyle = dark;
+    c.fillRect(26,58,7,6); c.fillRect(31,58,7,6);
+}
+
+function drawGiantCrocodile(c, r) {
+    const green = `rgb(${r.int(30,70)},${r.int(90,130)},${r.int(20,60)})`;
+    const dark  = `rgb(${r.int(10,40)},${r.int(40,70)},${r.int(10,40)})`;
+    const belly = `rgb(${r.int(140,180)},${r.int(160,190)},${r.int(100,130)})`;
+    // Long body — low to ground
+    c.fillStyle = green;
+    c.beginPath(); c.ellipse(32,42,30,16,0,0,Math.PI*2); c.fill();
+    // Belly
+    c.fillStyle = belly;
+    c.beginPath(); c.ellipse(32,48,24,10,0,0,Math.PI*2); c.fill();
+    // Scales on back
+    c.fillStyle = dark;
+    for (let i=0;i<6;i++) {
+        c.beginPath(); c.ellipse(8+i*10,36,5,3,0,0,Math.PI*2); c.fill();
+    }
+    // Tail
+    c.fillStyle = green;
+    c.beginPath(); c.moveTo(62,42); c.quadraticCurveTo(68,36,64,30); c.lineTo(60,38); c.closePath(); c.fill();
+    // Head — wide jaws
+    c.beginPath(); c.ellipse(14,38,18,12,0,0,Math.PI*2); c.fill();
+    // Upper jaw
+    c.beginPath(); c.ellipse(14,32,18,8,0,0,Math.PI*2); c.fill();
+    // Open mouth
+    c.fillStyle = '#cc4422';
+    c.fillRect(2,34,26,8);
+    // Teeth
+    c.fillStyle = '#eeeecc';
+    for (let i=0;i<7;i++) {
+        c.fillRect(3+i*4,34,3,5);
+        c.fillRect(3+i*4,39,3,4);
+    }
+    // Eye
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(18,28,4,3,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#ffdd00';
+    c.beginPath(); c.ellipse(18,28,2,2,0,0,Math.PI*2); c.fill();
+    // Legs — stubby
+    c.fillStyle = green;
+    c.fillRect(14,54,10,10); c.fillRect(38,54,10,10);
+    c.fillRect(6,48,8,8); c.fillRect(50,48,8,8);
+}
+
+function drawChimera(c, r) {
+    const lion  = `rgb(${r.int(180,220)},${r.int(140,180)},${r.int(60,100)})`;
+    const goat  = `rgb(${r.int(160,200)},${r.int(160,200)},${r.int(140,170)})`;
+    const drag  = `rgb(${r.int(30,80)},${r.int(100,150)},${r.int(30,80)})`;
+    const dark  = `rgb(${r.int(40,70)},${r.int(30,60)},${r.int(20,50)})`;
+    // Main body
+    c.fillStyle = lion;
+    c.beginPath(); c.ellipse(32,42,22,16,0,0,Math.PI*2); c.fill();
+    // Legs
+    c.fillStyle = lion;
+    c.fillRect(14,54,8,10); c.fillRect(40,54,8,10);
+    c.fillStyle = drag;
+    c.fillRect(22,54,8,10); c.fillRect(34,54,8,10);
+    // Lion head — left
+    c.fillStyle = lion;
+    c.beginPath(); c.ellipse(14,22,14,12,0,0,Math.PI*2); c.fill();
+    c.fillStyle = `rgb(${r.int(150,180)},${r.int(100,140)},${r.int(20,60)})`;
+    c.beginPath(); c.ellipse(14,22,10,9,-0.2,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111'; // lion eyes
+    c.beginPath(); c.arc(10,20,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(18,20,2,0,Math.PI*2); c.fill();
+    // Goat head — center
+    c.fillStyle = goat;
+    c.beginPath(); c.ellipse(32,14,10,12,0,0,Math.PI*2); c.fill();
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(28,8); c.lineTo(24,0); c.lineTo(30,8); c.fill();
+    c.beginPath(); c.moveTo(36,8); c.lineTo(40,0); c.lineTo(34,8); c.fill();
+    c.fillStyle = '#664400';
+    c.beginPath(); c.arc(29,14,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(35,14,2,0,Math.PI*2); c.fill();
+    // Dragon head — right
+    c.fillStyle = drag;
+    c.beginPath(); c.ellipse(50,22,14,10,0,0,Math.PI*2); c.fill();
+    c.fillStyle = `rgb(${r.int(180,220)},${r.int(60,100)},${r.int(0,30)})`;
+    c.beginPath(); c.arc(46,20,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(54,20,2,0,Math.PI*2); c.fill();
+    // Dragon mouth fire hint
+    c.shadowColor = '#ff6600'; c.shadowBlur = 6;
+    c.fillStyle = '#ff8800';
+    c.fillRect(58,24,6,4);
+    c.shadowBlur = 0;
+}
+
+function drawWyvern(c, r) {
+    const scale = `rgb(${r.int(40,80)},${r.int(70,110)},${r.int(40,80)})`;
+    const dark  = `rgb(${r.int(20,50)},${r.int(30,60)},${r.int(20,50)})`;
+    const wing  = `rgba(${r.int(30,60)},${r.int(60,90)},${r.int(30,60)},0.85)`;
+    const eye   = `rgb(${r.int(200,240)},${r.int(150,200)},${r.int(0,40)})`;
+    // Large wings
+    c.fillStyle = wing;
+    c.beginPath(); c.moveTo(28,28); c.quadraticCurveTo(6,10,2,42);
+    c.lineTo(22,34); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(36,28); c.quadraticCurveTo(58,10,62,42);
+    c.lineTo(42,34); c.closePath(); c.fill();
+    // Wing membrane detail
+    c.strokeStyle = dark; c.lineWidth = 1;
+    for (let i=1;i<4;i++) {
+        c.beginPath(); c.moveTo(28,28); c.lineTo(4+i*4,42); c.stroke();
+        c.beginPath(); c.moveTo(36,28); c.lineTo(60-i*4,42); c.stroke();
+    }
+    // Body
+    c.fillStyle = scale;
+    c.beginPath(); c.ellipse(32,40,14,18,0,0,Math.PI*2); c.fill();
+    // Scale pattern
+    c.fillStyle = dark;
+    for (let i=0;i<4;i++) c.fillRect(26,30+i*6,12,4);
+    // Only two legs
+    c.fillStyle = scale;
+    c.fillRect(22,54,10,10); c.fillRect(32,54,10,10);
+    // Barbed tail
+    c.strokeStyle = scale; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(32,56); c.quadraticCurveTo(50,60,56,52); c.stroke();
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(56,48); c.lineTo(62,50); c.lineTo(56,56); c.fill();
+    // Head — dragon-like
+    c.fillStyle = scale;
+    c.beginPath(); c.ellipse(32,14,12,12,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(32,20,12,6,0,0,Math.PI*2); c.fill();
+    // Snout
+    c.fillStyle = dark;
+    c.fillRect(22,20,20,6);
+    c.fillStyle = '#eeddcc';
+    for (let i=0;i<4;i++) c.fillRect(23+i*4,22,3,4);
+    // Eye
+    c.shadowColor = eye; c.shadowBlur = 6;
+    c.fillStyle = eye;
+    c.beginPath(); c.arc(27,12,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,12,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+}
+
+function drawDisplacerBeast(c, r) {
+    const fur   = `rgb(${r.int(30,70)},${r.int(10,40)},${r.int(60,100)})`;
+    const dark  = `rgb(${r.int(10,30)},${r.int(0,20)},${r.int(30,60)})`;
+    const eye   = `rgb(${r.int(50,120)},${r.int(180,230)},${r.int(50,120)})`;
+    // Panther body
+    c.fillStyle = fur;
+    c.beginPath(); c.ellipse(32,40,22,14,0,0,Math.PI*2); c.fill();
+    // Legs — four
+    c.fillRect(14,50,8,14); c.fillRect(24,50,8,14);
+    c.fillRect(34,50,8,14); c.fillRect(44,50,8,14);
+    // Tentacle appendages
+    c.strokeStyle = dark; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(22,38); c.quadraticCurveTo(6,28,4,14); c.stroke();
+    c.beginPath(); c.moveTo(42,38); c.quadraticCurveTo(58,28,60,14); c.stroke();
+    // Tentacle tips — barbed
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(4,14); c.lineTo(0,8); c.lineTo(8,10); c.fill();
+    c.beginPath(); c.moveTo(60,14); c.lineTo(64,8); c.lineTo(56,10); c.fill();
+    // Neck and head
+    c.fillStyle = fur;
+    c.fillRect(26,26,12,16);
+    c.beginPath(); c.ellipse(32,20,12,12,0,0,Math.PI*2); c.fill();
+    // Ears
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(22,14); c.lineTo(18,6); c.lineTo(27,14); c.fill();
+    c.beginPath(); c.moveTo(42,14); c.lineTo(46,6); c.lineTo(37,14); c.fill();
+    // Glowing green eyes
+    c.shadowColor = eye; c.shadowBlur = 8;
+    c.fillStyle = eye;
+    c.beginPath(); c.ellipse(27,20,3,2,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(37,20,3,2,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Tail
+    c.strokeStyle = fur; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(54,40); c.quadraticCurveTo(62,34,60,26); c.stroke();
+}
+
+function drawRemorhaz(c, r) {
+    const orange = `rgb(${r.int(200,240)},${r.int(100,150)},${r.int(0,40)})`;
+    const dark   = `rgb(${r.int(30,60)},${r.int(15,40)},${r.int(0,20)})`;
+    const glow   = `rgb(${r.int(220,255)},${r.int(140,180)},${r.int(0,30)})`;
+    // Segmented worm body — S-curve
+    c.fillStyle = dark;
+    for (let i=0;i<8;i++) {
+        const x = 8+i*8, y = 32+(i%2===0?-8:8);
+        c.beginPath(); c.ellipse(x,y,9,7,0,0,Math.PI*2); c.fill();
+    }
+    // Glowing underbelly segments
+    c.fillStyle = glow;
+    c.shadowColor = glow; c.shadowBlur = 6;
+    for (let i=0;i<8;i++) {
+        const x = 8+i*8, y = 32+(i%2===0?-8:8);
+        c.beginPath(); c.ellipse(x,y+2,6,4,0,0,Math.PI*2); c.fill();
+    }
+    c.shadowBlur = 0;
+    // Many legs
+    c.strokeStyle = dark; c.lineWidth = 2;
+    for (let i=0;i<7;i++) {
+        const x = 12+i*8;
+        c.beginPath(); c.moveTo(x,38); c.lineTo(x-4,48); c.stroke();
+        c.beginPath(); c.moveTo(x,26); c.lineTo(x+4,16); c.stroke();
+    }
+    // Massive mandibles / head
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(54,32,12,10,0,0,Math.PI*2); c.fill();
+    c.fillStyle = orange;
+    c.beginPath(); c.moveTo(62,26); c.lineTo(64,18); c.lineTo(60,28); c.fill();
+    c.beginPath(); c.moveTo(62,38); c.lineTo(64,46); c.lineTo(60,36); c.fill();
+    // Eyes
+    c.shadowColor = glow; c.shadowBlur = 6;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(52,28,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(52,36,2,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+}
+
+function drawThunderbird(c, r) {
+    const blue  = `rgb(${r.int(30,80)},${r.int(100,160)},${r.int(200,240)})`;
+    const white = `rgb(${r.int(200,240)},${r.int(210,245)},${r.int(230,255)})`;
+    const light = `rgb(${r.int(180,220)},${r.int(220,255)},${r.int(100,180)})`;
+    // Huge wings
+    c.fillStyle = blue;
+    c.beginPath(); c.moveTo(32,28); c.quadraticCurveTo(4,6,0,40);
+    c.lineTo(24,34); c.lineTo(20,50); c.lineTo(30,38); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32,28); c.quadraticCurveTo(60,6,64,40);
+    c.lineTo(40,34); c.lineTo(44,50); c.lineTo(34,38); c.closePath(); c.fill();
+    // Lightning along wings
+    c.strokeStyle = light; c.lineWidth = 2;
+    c.shadowColor = light; c.shadowBlur = 8;
+    for (let i=0;i<3;i++) {
+        c.beginPath();
+        c.moveTo(28-i*6,30+i*4);
+        c.lineTo(22-i*6,22+i*4);
+        c.lineTo(18-i*6,28+i*4);
+        c.stroke();
+        c.beginPath();
+        c.moveTo(36+i*6,30+i*4);
+        c.lineTo(42+i*6,22+i*4);
+        c.lineTo(46+i*6,28+i*4);
+        c.stroke();
+    }
+    c.shadowBlur = 0;
+    // Body
+    c.fillStyle = white;
+    c.beginPath(); c.ellipse(32,38,10,14,0,0,Math.PI*2); c.fill();
+    // Head
+    c.fillStyle = white;
+    c.beginPath(); c.ellipse(32,20,10,10,0,0,Math.PI*2); c.fill();
+    // Beak
+    c.fillStyle = `rgb(${r.int(180,220)},${r.int(150,180)},${r.int(20,60)})`;
+    c.beginPath(); c.moveTo(32,22); c.lineTo(26,26); c.lineTo(32,28); c.closePath(); c.fill();
+    // Fierce eyes
+    c.shadowColor = light; c.shadowBlur = 6;
+    c.fillStyle = light;
+    c.beginPath(); c.arc(28,18,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(36,18,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Talons
+    c.fillStyle = blue;
+    c.fillRect(24,50,8,12); c.fillRect(32,50,8,12);
+}
+
+function drawRustMonster(c, r) {
+    const rust  = `rgb(${r.int(150,190)},${r.int(70,110)},${r.int(20,60)})`;
+    const brown = `rgb(${r.int(100,140)},${r.int(60,90)},${r.int(20,50)})`;
+    const dark  = `rgb(${r.int(40,70)},${r.int(20,50)},${r.int(0,20)})`;
+    // Insect-like body
+    c.fillStyle = rust;
+    c.beginPath(); c.ellipse(32,40,20,16,0,0,Math.PI*2); c.fill();
+    // Shell segments
+    c.fillStyle = brown;
+    c.beginPath(); c.ellipse(32,36,18,10,0,0,Math.PI*2); c.fill();
+    c.fillStyle = dark;
+    c.fillRect(14,32,36,4);
+    // Four legs
+    c.strokeStyle = rust; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(16,42); c.lineTo(8,54); c.stroke();
+    c.beginPath(); c.moveTo(24,46); c.lineTo(16,58); c.stroke();
+    c.beginPath(); c.moveTo(40,46); c.lineTo(48,58); c.stroke();
+    c.beginPath(); c.moveTo(48,42); c.lineTo(56,54); c.stroke();
+    // Feathery antennae
+    c.strokeStyle = brown; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(26,28); c.quadraticCurveTo(16,18,10,10); c.stroke();
+    c.beginPath(); c.moveTo(38,28); c.quadraticCurveTo(48,18,54,10); c.stroke();
+    // Antenna feathers
+    c.lineWidth = 1;
+    for (let i=0;i<4;i++) {
+        c.beginPath(); c.moveTo(20-i*2,22-i*3); c.lineTo(16-i*2,18-i*3); c.stroke();
+        c.beginPath(); c.moveTo(44+i*2,22-i*3); c.lineTo(48+i*2,18-i*3); c.stroke();
+    }
+    // Head
+    c.fillStyle = rust;
+    c.beginPath(); c.ellipse(32,28,10,8,0,0,Math.PI*2); c.fill();
+    // Beady eyes
+    c.fillStyle = dark;
+    c.beginPath(); c.arc(27,26,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,26,2,0,Math.PI*2); c.fill();
+    c.fillStyle = '#ffcc00';
+    c.beginPath(); c.arc(27,26,1,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,26,1,0,Math.PI*2); c.fill();
+}
+
+function drawWitchDoctor(c, r) {
+    const skin  = `rgb(${r.int(50,90)},${r.int(30,60)},${r.int(20,50)})`;
+    const robe  = `rgb(${r.int(30,60)},${r.int(20,50)},${r.int(10,30)})`;
+    const bone  = `rgb(${r.int(200,230)},${r.int(190,215)},${r.int(160,185)})`;
+    const accent= `rgb(${r.int(160,210)},${r.int(80,130)},${r.int(0,40)})`;
+    // Robe body
+    c.fillStyle = robe;
+    c.beginPath(); c.moveTo(18,26); c.lineTo(12,64); c.lineTo(52,64); c.lineTo(46,26); c.closePath(); c.fill();
+    // Bone jewelry
+    c.strokeStyle = bone; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(20,30); c.lineTo(44,30); c.stroke();
+    c.fillStyle = bone;
+    for (let i=0;i<3;i++) c.fillRect(22+i*8,28,4,8);
+    // Arms
+    c.fillStyle = skin;
+    c.fillRect(8,26,12,16); c.fillRect(44,26,12,16);
+    // Staff in right hand
+    c.strokeStyle = robe; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(56,12); c.lineTo(56,60); c.stroke();
+    c.fillStyle = bone;
+    c.beginPath(); c.ellipse(56,12,5,5,0,0,Math.PI*2); c.fill();
+    // Skull on staff
+    c.fillStyle = '#111'; c.fillRect(53,8,6,4);
+    c.fillStyle = bone; c.fillRect(54,9,2,2); c.fillRect(57,9,2,2);
+    // Skull mask / head
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,14,12,13,0,0,Math.PI*2); c.fill();
+    c.fillStyle = bone;
+    c.beginPath(); c.ellipse(32,14,10,11,0,0,Math.PI*2); c.fill();
+    // Mask eye holes
+    c.fillStyle = '#111';
+    c.beginPath(); c.ellipse(27,12,4,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(37,12,4,4,0,0,Math.PI*2); c.fill();
+    c.fillStyle = accent;
+    c.beginPath(); c.arc(27,12,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,12,2,0,Math.PI*2); c.fill();
+    // Headdress feathers
+    c.strokeStyle = accent; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(32,4); c.lineTo(32,0); c.stroke();
+    c.beginPath(); c.moveTo(26,5); c.lineTo(22,0); c.stroke();
+    c.beginPath(); c.moveTo(38,5); c.lineTo(42,0); c.stroke();
+}
+
+function drawGladiator(c, r) {
+    const armor = `rgb(${r.int(180,220)},${r.int(140,180)},${r.int(30,70)})`;
+    const red   = `rgb(${r.int(160,210)},${r.int(20,60)},${r.int(20,60)})`;
+    const skin  = `rgb(${r.int(190,225)},${r.int(150,185)},${r.int(120,155)})`;
+    const dark  = `rgb(${r.int(30,60)},${r.int(20,50)},${r.int(10,30)})`;
+    // Body armor
+    c.fillStyle = armor;
+    c.fillRect(18,26,28,28);
+    // Red sash/trim
+    c.fillStyle = red;
+    c.fillRect(18,38,28,6);
+    // Pauldrons
+    c.fillStyle = armor;
+    c.beginPath(); c.ellipse(12,28,10,7,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(52,28,10,7,0,0,Math.PI*2); c.fill();
+    // Shield — left
+    c.fillStyle = armor;
+    c.fillRect(2,26,14,22);
+    c.strokeStyle = red; c.lineWidth = 2;
+    c.strokeRect(3,27,12,20);
+    c.beginPath(); c.moveTo(9,28); c.lineTo(9,46); c.stroke();
+    // Sword — right
+    c.fillStyle = '#ccddee';
+    c.fillRect(52,12,4,22);
+    c.fillRect(46,20,16,4);
+    c.fillStyle = dark;
+    c.fillRect(53,34,2,12);
+    // Arms
+    c.fillStyle = skin;
+    c.fillRect(6,28,12,18); c.fillRect(46,28,12,18);
+    // Crested helm
+    c.fillStyle = armor;
+    c.beginPath(); c.ellipse(32,13,14,13,0,0,Math.PI*2); c.fill();
+    // Crest plume
+    c.fillStyle = red;
+    c.beginPath(); c.moveTo(28,4); c.quadraticCurveTo(32,0,36,4); c.lineTo(36,8); c.lineTo(28,8); c.closePath(); c.fill();
+    // Visor
+    c.fillStyle = dark; c.fillRect(22,16,20,6);
+    c.fillStyle = skin; c.fillRect(23,17,8,3); c.fillRect(33,17,8,3);
+    // Legs — greaves
+    c.fillStyle = armor;
+    c.fillRect(18,54,12,10); c.fillRect(34,54,12,10);
+    c.fillStyle = red;
+    c.fillRect(18,60,12,4); c.fillRect(34,60,12,4);
+}
+
+function drawAssassinLord(c, r) {
+    const cloak = `rgb(${r.int(10,35)},${r.int(10,35)},${r.int(15,40)})`;
+    const dark  = `rgb(${r.int(5,20)},${r.int(5,20)},${r.int(8,25)})`;
+    const mask  = `rgb(${r.int(30,60)},${r.int(30,60)},${r.int(35,65)})`;
+    const blade = `rgb(${r.int(180,220)},${r.int(180,220)},${r.int(200,230)})`;
+    const glow  = `rgba(${r.int(100,160)},${r.int(0,40)},${r.int(180,230)},0.7)`;
+    // Shadow wreath
+    c.fillStyle = glow;
+    c.shadowColor = glow; c.shadowBlur = 14;
+    c.beginPath(); c.ellipse(32,40,24,22,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Cloak body
+    c.fillStyle = cloak;
+    c.beginPath(); c.moveTo(16,24); c.lineTo(8,64); c.lineTo(56,64); c.lineTo(48,24); c.closePath(); c.fill();
+    // Tattered cloak edges
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(8,52); c.lineTo(4,64); c.lineTo(12,58); c.fill();
+    c.beginPath(); c.moveTo(56,52); c.lineTo(60,64); c.lineTo(52,58); c.fill();
+    // Dual daggers
+    c.fillStyle = blade;
+    c.fillRect(6,30,3,20); c.fillRect(55,30,3,20);
+    c.fillStyle = dark;
+    c.fillRect(5,46,5,4); c.fillRect(54,46,5,4);
+    // Arms
+    c.fillStyle = cloak;
+    c.fillRect(6,26,12,12); c.fillRect(46,26,12,12);
+    // Hood
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(14,26); c.quadraticCurveTo(32,4,50,26); c.quadraticCurveTo(42,20,32,18); c.quadraticCurveTo(22,20,14,26); c.fill();
+    // Mask — cold expression
+    c.fillStyle = mask;
+    c.beginPath(); c.ellipse(32,22,10,11,0,0,Math.PI*2); c.fill();
+    // Eye slits — glowing
+    c.shadowColor = glow; c.shadowBlur = 6;
+    c.fillStyle = glow;
+    c.fillRect(25,20,5,2); c.fillRect(34,20,5,2);
+    c.shadowBlur = 0;
+}
+
+function drawBattleMage(c, r) {
+    const robe  = `rgb(${r.int(50,90)},${r.int(20,60)},${r.int(100,150)})`;
+    const silver= `rgb(${r.int(160,200)},${r.int(160,200)},${r.int(180,220)})`;
+    const glow  = `rgb(${r.int(140,200)},${r.int(50,120)},${r.int(220,255)})`;
+    const skin  = `rgb(${r.int(200,230)},${r.int(175,205)},${r.int(150,180)})`;
+    // Robe body
+    c.fillStyle = robe;
+    c.beginPath(); c.moveTo(18,26); c.lineTo(14,64); c.lineTo(50,64); c.lineTo(46,26); c.closePath(); c.fill();
+    // Heavy pauldrons
+    c.fillStyle = silver;
+    c.beginPath(); c.ellipse(10,28,12,8,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(54,28,12,8,0,0,Math.PI*2); c.fill();
+    // Runic tattoos glowing on chest
+    c.shadowColor = glow; c.shadowBlur = 8;
+    c.strokeStyle = glow; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(26,32); c.lineTo(32,28); c.lineTo(38,32); c.lineTo(32,38); c.closePath(); c.stroke();
+    c.beginPath(); c.arc(32,33,4,0,Math.PI*2); c.stroke();
+    c.shadowBlur = 0;
+    // Arcane staff
+    c.strokeStyle = silver; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(56,64); c.lineTo(52,10); c.stroke();
+    c.shadowColor = glow; c.shadowBlur = 12;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(52,10,6,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Arms
+    c.fillStyle = skin;
+    c.fillRect(6,28,12,18); c.fillRect(46,28,12,18);
+    // Head
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,14,12,13,0,0,Math.PI*2); c.fill();
+    // Hair
+    c.fillStyle = robe;
+    c.beginPath(); c.ellipse(32,9,12,7,0,0,Math.PI); c.fill();
+    // Eyes with runic glow
+    c.shadowColor = glow; c.shadowBlur = 6;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(27,14,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,14,2,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+}
+
+function drawIronGolem(c, r) {
+    const iron  = `rgb(${r.int(90,130)},${r.int(90,130)},${r.int(100,140)})`;
+    const dark  = `rgb(${r.int(40,70)},${r.int(40,70)},${r.int(50,80)})`;
+    const rivet = `rgb(${r.int(60,90)},${r.int(60,90)},${r.int(70,100)})`;
+    const eye   = `rgb(${r.int(150,210)},${r.int(150,210)},${r.int(220,255)})`;
+    // Massive boxy body
+    c.fillStyle = iron;
+    c.fillRect(14,24,36,36);
+    // Plate seams
+    c.strokeStyle = dark; c.lineWidth = 2;
+    c.strokeRect(14,24,36,36);
+    c.beginPath(); c.moveTo(32,24); c.lineTo(32,60); c.stroke();
+    c.beginPath(); c.moveTo(14,42); c.lineTo(50,42); c.stroke();
+    // Rivets
+    c.fillStyle = rivet;
+    for (let x=0;x<3;x++) for (let y=0;y<3;y++)
+        c.beginPath(), c.arc(18+x*14,28+y*14,2,0,Math.PI*2), c.fill();
+    // Arms — boxy
+    c.fillStyle = iron;
+    c.fillRect(2,24,14,28); c.fillRect(48,24,14,28);
+    c.strokeStyle = dark; c.lineWidth = 2;
+    c.strokeRect(2,24,14,28); c.strokeRect(48,24,14,28);
+    // Fists
+    c.fillStyle = dark;
+    c.fillRect(2,50,14,10); c.fillRect(48,50,14,10);
+    // Head — boxy, no face
+    c.fillStyle = iron;
+    c.fillRect(20,8,24,18);
+    c.strokeStyle = dark; c.lineWidth = 2;
+    c.strokeRect(20,8,24,18);
+    // Glowing eye slots only
+    c.fillStyle = dark; c.fillRect(22,14,20,6);
+    c.shadowColor = eye; c.shadowBlur = 10;
+    c.fillStyle = eye;
+    c.fillRect(24,15,6,4); c.fillRect(34,15,6,4);
+    c.shadowBlur = 0;
+    // Legs — boxy
+    c.fillStyle = iron;
+    c.fillRect(16,58,14,6); c.fillRect(34,58,14,6);
+}
+
+function drawClockworkHorror(c, r) {
+    const brass = `rgb(${r.int(170,210)},${r.int(130,170)},${r.int(40,80)})`;
+    const copper= `rgb(${r.int(180,220)},${r.int(100,140)},${r.int(30,70)})`;
+    const dark  = `rgb(${r.int(30,60)},${r.int(20,50)},${r.int(0,30)})`;
+    const glow  = `rgb(${r.int(200,240)},${r.int(160,210)},${r.int(0,50)})`;
+    // Central body
+    c.fillStyle = brass;
+    c.beginPath(); c.ellipse(32,38,16,18,0,0,Math.PI*2); c.fill();
+    c.strokeStyle = dark; c.lineWidth = 1.5;
+    c.beginPath(); c.ellipse(32,38,16,18,0,0,Math.PI*2); c.stroke();
+    // Gears visible on body
+    const drawGear = (x,y,r2) => {
+        c.beginPath(); c.arc(x,y,r2,0,Math.PI*2); c.fill();
+        c.strokeStyle = dark; c.lineWidth = 1;
+        for (let t=0;t<8;t++) {
+            const a=t*Math.PI/4;
+            c.beginPath();
+            c.moveTo(x+Math.cos(a)*r2,y+Math.sin(a)*r2);
+            c.lineTo(x+Math.cos(a)*(r2+3),y+Math.sin(a)*(r2+3));
+            c.stroke();
+        }
+    };
+    c.fillStyle = copper;
+    drawGear(26,36,6); drawGear(38,40,5); drawGear(32,50,4);
+    // Multiple limbs
+    c.strokeStyle = brass; c.lineWidth = 4;
+    const limbs = [[14,30,2,14],[20,24,6,12],[44,30,62,14],[48,24,58,12],[10,44,0,56],[54,44,64,56]];
+    for (const [x1,y1,x2,y2] of limbs) {
+        c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+    }
+    // Head — mechanical, no face
+    c.fillStyle = brass;
+    c.fillRect(22,10,20,20);
+    c.strokeStyle = dark; c.lineWidth = 1.5; c.strokeRect(22,10,20,20);
+    // Spinning gear head detail
+    c.fillStyle = copper;
+    drawGear(32,20,7);
+    // Glowing core / eyes
+    c.shadowColor = glow; c.shadowBlur = 8;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(32,20,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+}
+
+function drawGargoyleSentinel(c, r) {
+    const stone = `rgb(${r.int(100,140)},${r.int(100,140)},${r.int(110,150)})`;
+    const dark  = `rgb(${r.int(50,80)},${r.int(50,80)},${r.int(60,90)})`;
+    const wing  = `rgba(${r.int(80,120)},${r.int(80,120)},${r.int(90,130)},0.9)`;
+    const eye   = `rgb(${r.int(180,230)},${r.int(0,30)},${r.int(0,30)})`;
+    // Stone bat wings
+    c.fillStyle = wing;
+    c.beginPath(); c.moveTo(32,30); c.quadraticCurveTo(8,12,2,44);
+    c.lineTo(20,36); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32,30); c.quadraticCurveTo(56,12,62,44);
+    c.lineTo(44,36); c.closePath(); c.fill();
+    // Hunched body
+    c.fillStyle = stone;
+    c.beginPath(); c.ellipse(32,44,16,18,0,0,Math.PI*2); c.fill();
+    // Stone texture cracks
+    c.strokeStyle = dark; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(26,36); c.lineTo(30,48); c.lineTo(28,56); c.stroke();
+    c.beginPath(); c.moveTo(38,38); c.lineTo(35,50); c.stroke();
+    // Arms — clawed
+    c.fillStyle = stone;
+    c.fillRect(10,36,14,16); c.fillRect(40,36,14,16);
+    // Claws
+    c.fillStyle = dark;
+    for (let i=0;i<3;i++) {
+        c.beginPath(); c.moveTo(10+i*4,52); c.lineTo(9+i*4,60); c.lineTo(13+i*4,52); c.fill();
+        c.beginPath(); c.moveTo(40+i*4,52); c.lineTo(39+i*4,60); c.lineTo(43+i*4,52); c.fill();
+    }
+    // Head — hunched forward, fanged
+    c.fillStyle = stone;
+    c.beginPath(); c.ellipse(32,24,13,12,0,0,Math.PI*2); c.fill();
+    // Fanged mouth
+    c.fillStyle = dark; c.fillRect(22,28,20,6);
+    c.fillStyle = '#ddd';
+    for (let i=0;i<5;i++) c.fillRect(23+i*3,28,2,5);
+    // Glowing red eyes
+    c.shadowColor = eye; c.shadowBlur = 10;
+    c.fillStyle = eye;
+    c.beginPath(); c.arc(27,22,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,22,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Legs
+    c.fillStyle = stone;
+    c.fillRect(22,58,10,6); c.fillRect(32,58,10,6);
+}
+
+function drawGibberingMouther(c, r) {
+    const flesh = `rgb(${r.int(210,245)},${r.int(160,200)},${r.int(160,200)})`;
+    const pink  = `rgb(${r.int(220,255)},${r.int(100,150)},${r.int(120,170)})`;
+    const dark  = `rgb(${r.int(80,120)},${r.int(20,60)},${r.int(30,70)})`;
+    const white = `rgb(${r.int(230,255)},${r.int(230,255)},${r.int(230,255)})`;
+    // Blobby body
+    c.fillStyle = flesh;
+    c.beginPath(); c.ellipse(32,38,26,22,0,0,Math.PI*2); c.fill();
+    // Extra flesh bulges
+    c.beginPath(); c.ellipse(14,36,10,12,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(50,34,10,12,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(32,54,18,12,0,0,Math.PI*2); c.fill();
+    // Multiple mouths agape
+    const drawMouth = (x,y,w,h) => {
+        c.fillStyle = dark;
+        c.beginPath(); c.ellipse(x,y,w,h,0,0,Math.PI*2); c.fill();
+        c.fillStyle = pink;
+        c.beginPath(); c.ellipse(x,y+2,w-2,h-2,0,0,Math.PI); c.fill();
+        c.fillStyle = white;
+        for (let i=0;i<3;i++) {
+            c.fillRect(x-w+2+i*(w*2/3|0),y-h+2,3,h);
+            c.fillRect(x-w+2+i*(w*2/3|0),y+1,3,h-2);
+        }
+    };
+    drawMouth(22,32,7,5); drawMouth(40,30,6,5); drawMouth(32,44,8,6);
+    drawMouth(16,46,5,4); drawMouth(48,46,5,4);
+    // Scattered eyeballs
+    const drawEye = (x,y) => {
+        c.fillStyle = white;
+        c.beginPath(); c.arc(x,y,4,0,Math.PI*2); c.fill();
+        c.fillStyle = dark;
+        c.beginPath(); c.arc(x,y,2,0,Math.PI*2); c.fill();
+        c.fillStyle = white;
+        c.beginPath(); c.arc(x+1,y-1,1,0,Math.PI*2); c.fill();
+    };
+    drawEye(26,24); drawEye(38,26); drawEye(14,32); drawEye(50,28); drawEye(32,52);
+}
+
+function drawAboleth(c, r) {
+    const blue  = `rgb(${r.int(20,60)},${r.int(100,150)},${r.int(130,180)})`;
+    const green = `rgb(${r.int(20,60)},${r.int(130,170)},${r.int(80,130)})`;
+    const dark  = `rgb(${r.int(10,40)},${r.int(40,80)},${r.int(50,90)})`;
+    const eye   = `rgb(${r.int(180,230)},${r.int(0,40)},${r.int(0,40)})`;
+    // Large fish-like body
+    c.fillStyle = blue;
+    c.beginPath(); c.ellipse(32,36,28,20,0,0,Math.PI*2); c.fill();
+    // Slimy iridescent sheen
+    c.fillStyle = green;
+    c.beginPath(); c.ellipse(32,36,22,14,0,0,Math.PI*2); c.fill();
+    // Belly
+    c.fillStyle = `rgb(${r.int(150,190)},${r.int(200,230)},${r.int(180,220)})`;
+    c.beginPath(); c.ellipse(32,42,18,10,0,0,Math.PI*2); c.fill();
+    // Tail fin
+    c.fillStyle = blue;
+    c.beginPath(); c.moveTo(58,36); c.lineTo(64,28); c.lineTo(64,44); c.closePath(); c.fill();
+    // Three red eyes in a row
+    c.shadowColor = eye; c.shadowBlur = 8;
+    c.fillStyle = eye;
+    c.beginPath(); c.ellipse(22,28,4,3,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(32,26,4,3,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(42,28,4,3,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Tentacles — four
+    c.strokeStyle = dark; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(18,40); c.quadraticCurveTo(8,50,4,60); c.stroke();
+    c.beginPath(); c.moveTo(24,44); c.quadraticCurveTo(16,56,12,64); c.stroke();
+    c.beginPath(); c.moveTo(40,44); c.quadraticCurveTo(48,56,52,64); c.stroke();
+    c.beginPath(); c.moveTo(46,40); c.quadraticCurveTo(56,50,60,60); c.stroke();
+    // Mouth — large, below eyes
+    c.fillStyle = dark; c.fillRect(20,30,24,8);
+    c.fillStyle = `rgb(${r.int(150,180)},${r.int(20,60)},${r.int(20,60)})`;
+    c.beginPath(); c.ellipse(32,34,10,4,0,0,Math.PI); c.fill();
+}
+
+function drawStarSpawn(c, r) {
+    const purple= `rgb(${r.int(30,70)},${r.int(0,30)},${r.int(60,100)})`;
+    const dark  = `rgb(${r.int(5,25)},${r.int(0,15)},${r.int(20,50)})`;
+    const star  = `rgb(${r.int(150,210)},${r.int(150,210)},${r.int(220,255)})`;
+    const eye   = `rgb(${r.int(200,255)},${r.int(150,220)},${r.int(0,60)})`;
+    // Dark alien body
+    c.fillStyle = purple;
+    c.beginPath(); c.ellipse(32,38,20,24,0,0,Math.PI*2); c.fill();
+    // Starfield pattern on body
+    c.fillStyle = star;
+    for (let i=0;i<12;i++) {
+        const x = 16 + (i*7)%32, y = 26 + (i*5)%28;
+        const s = r.int(1,3);
+        c.beginPath(); c.arc(x,y,s,0,Math.PI*2); c.fill();
+    }
+    // Multiple mismatched eyes
+    const eyeSizes = [4,3,5,2,3];
+    const eyePos = [[22,28],[38,24],[30,32],[18,36],[44,34]];
+    c.shadowColor = eye; c.shadowBlur = 6;
+    c.fillStyle = eye;
+    for (let i=0;i<5;i++) {
+        c.beginPath(); c.ellipse(eyePos[i][0],eyePos[i][1],eyeSizes[i],eyeSizes[i]-1,0,0,Math.PI*2); c.fill();
+    }
+    c.shadowBlur = 0;
+    // Writhing appendages
+    c.strokeStyle = dark; c.lineWidth = 3;
+    for (let i=0;i<5;i++) {
+        const ax = 14+i*10, dir = i%2===0?-1:1;
+        c.beginPath();
+        c.moveTo(ax,52);
+        c.quadraticCurveTo(ax+dir*10,58,ax+dir*6,64);
+        c.stroke();
+    }
+    // Head blob
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(32,18,14,12,0,0,Math.PI*2); c.fill();
+    c.fillStyle = star;
+    for (let i=0;i<4;i++) {
+        const x = 22+i*6, y = 14+r.int(-3,3);
+        c.beginPath(); c.arc(x,y,r.int(1,2),0,Math.PI*2); c.fill();
+    }
+}
+
+function drawVoidWraith(c, r) {
+    const purple= `rgba(${r.int(80,130)},${r.int(0,40)},${r.int(140,200)},0.9)`;
+    const void_ = `rgb(${r.int(0,15)},${r.int(0,10)},${r.int(0,20)})`;
+    const wisp  = `rgba(${r.int(100,160)},${r.int(0,50)},${r.int(180,240)},0.6)`;
+    const glow  = `rgb(${r.int(160,220)},${r.int(50,120)},${r.int(220,255)})`;
+    // Void energy wisps — outer glow
+    c.shadowColor = glow; c.shadowBlur = 18;
+    c.fillStyle = wisp;
+    c.beginPath(); c.ellipse(32,38,22,26,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Dark robe / void form
+    c.fillStyle = purple;
+    c.beginPath();
+    c.moveTo(14,26); c.quadraticCurveTo(8,52,6,64);
+    c.lineTo(16,58); c.lineTo(20,64); c.lineTo(26,54);
+    c.lineTo(32,64); c.lineTo(38,54); c.lineTo(44,64);
+    c.lineTo(48,58); c.lineTo(58,64);
+    c.quadraticCurveTo(56,52,50,26);
+    c.closePath(); c.fill();
+    // Void black center
+    c.fillStyle = void_;
+    c.beginPath(); c.ellipse(32,42,14,18,0,0,Math.PI*2); c.fill();
+    // Dark purple energy tendrils
+    c.strokeStyle = wisp; c.lineWidth = 2;
+    for (let i=0;i<4;i++) {
+        c.beginPath(); c.moveTo(32,44); c.quadraticCurveTo(20+i*6,54,14+i*8,62); c.stroke();
+    }
+    // Hood
+    c.fillStyle = void_;
+    c.beginPath(); c.moveTo(14,26); c.quadraticCurveTo(32,4,50,26);
+    c.quadraticCurveTo(44,18,32,16); c.quadraticCurveTo(20,18,14,26); c.fill();
+    // Face — void with glowing eyes
+    c.fillStyle = void_; c.beginPath(); c.ellipse(32,22,8,8,0,0,Math.PI*2); c.fill();
+    c.shadowColor = glow; c.shadowBlur = 10;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(28,22,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(36,22,2,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+}
+
+function drawVampireLord(c, r) {
+    const skin  = `rgb(${r.int(200,230)},${r.int(200,230)},${r.int(210,240)})`;
+    const suit  = `rgb(${r.int(10,35)},${r.int(5,25)},${r.int(15,40)})`;
+    const cape  = `rgb(${r.int(100,150)},${r.int(0,30)},${r.int(0,30)})`;
+    const glow  = `rgb(${r.int(200,255)},${r.int(0,40)},${r.int(0,40)})`;
+    // Cape / wings spread
+    c.fillStyle = cape;
+    c.beginPath(); c.moveTo(32,28); c.quadraticCurveTo(4,18,0,50);
+    c.lineTo(18,40); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(32,28); c.quadraticCurveTo(60,18,64,50);
+    c.lineTo(46,40); c.closePath(); c.fill();
+    // Elegant noble body
+    c.fillStyle = suit;
+    c.fillRect(18,26,28,32);
+    // White shirt front
+    c.fillStyle = '#f0f0f0';
+    c.fillRect(26,28,12,22);
+    // Red vest/cravat
+    c.fillStyle = cape;
+    c.fillRect(28,30,8,16);
+    // Arms
+    c.fillStyle = suit;
+    c.fillRect(8,26,12,22); c.fillRect(44,26,12,22);
+    // Pale hands
+    c.fillStyle = skin;
+    c.fillRect(8,46,12,8); c.fillRect(44,46,12,8);
+    // Pale head — noble features
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(32,14,12,14,0,0,Math.PI*2); c.fill();
+    // Widow's peak hair
+    c.fillStyle = suit;
+    c.beginPath(); c.ellipse(32,7,12,7,0,0,Math.PI); c.fill();
+    c.beginPath(); c.moveTo(29,10); c.lineTo(32,6); c.lineTo(35,10); c.fill();
+    // Glowing red eyes
+    c.shadowColor = glow; c.shadowBlur = 10;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(27,14,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,14,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Fanged grin
+    c.fillStyle = suit; c.fillRect(24,20,16,5);
+    c.fillStyle = '#fff';
+    c.fillRect(28,20,3,4); c.fillRect(33,20,3,4);
+    // Legs
+    c.fillStyle = suit;
+    c.fillRect(18,58,12,6); c.fillRect(34,58,12,6);
+}
+
+function drawMyconidSovereign(c, r) {
+    const cap   = `rgb(${r.int(140,180)},${r.int(50,90)},${r.int(30,70)})`;
+    const stem  = `rgb(${r.int(160,200)},${r.int(140,180)},${r.int(100,140)})`;
+    const spot  = `rgb(${r.int(200,240)},${r.int(190,225)},${r.int(160,200)})`;
+    const eye   = `rgb(${r.int(150,210)},${r.int(200,240)},${r.int(80,140)})`;
+    const spore = `rgba(${r.int(180,230)},${r.int(120,180)},${r.int(0,60)},0.7)`;
+    // Wide mushroom cap — large sovereign
+    c.fillStyle = cap;
+    c.beginPath(); c.ellipse(32,18,28,16,0,0,Math.PI); c.fill();
+    c.beginPath(); c.ellipse(32,18,28,6,0,0,Math.PI*2); c.fill();
+    // Cap spots
+    c.fillStyle = spot;
+    c.beginPath(); c.ellipse(20,14,5,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(32,12,4,3,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(44,14,5,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(26,20,3,2,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(38,20,3,2,0,0,Math.PI*2); c.fill();
+    // Stem / body
+    c.fillStyle = stem;
+    c.fillRect(20,22,24,36);
+    // Gills under cap
+    c.strokeStyle = `rgba(100,50,30,0.4)`; c.lineWidth = 1;
+    for (let i=0;i<7;i++) c.beginPath(), c.moveTo(8+i*8,22), c.lineTo(8+i*8,18), c.stroke();
+    // Multiple eyes on body
+    c.shadowColor = eye; c.shadowBlur = 6;
+    c.fillStyle = eye;
+    for (const [x,y] of [[26,30],[38,30],[32,40],[26,48],[38,48]]) {
+        c.beginPath(); c.ellipse(x,y,3,3,0,0,Math.PI*2); c.fill();
+    }
+    c.shadowBlur = 0;
+    // Spore vents
+    c.fillStyle = '#333';
+    c.beginPath(); c.ellipse(24,36,3,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(40,36,3,4,0,0,Math.PI*2); c.fill();
+    c.shadowColor = spore; c.shadowBlur = 8;
+    c.fillStyle = spore;
+    c.beginPath(); c.ellipse(24,32,3,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(40,32,3,4,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Arms
+    c.fillStyle = stem;
+    c.fillRect(6,28,16,12); c.fillRect(42,28,16,12);
+    // Legs
+    c.fillRect(22,56,10,8); c.fillRect(32,56,10,8);
+}
+
 const DRAWERS = {
     skeleton: drawSkeleton, slime: drawSlime, goblin: drawGoblin,
     spider: drawSpider, wraith: drawWraith,
@@ -3747,6 +4813,32 @@ const DRAWERS = {
     poltergeist: drawPoltergeist,
     zombie_giant: drawZombieGiant,
     death_knight: drawDeathKnight,
+    // Bestiary Expansion
+    succubus:          drawSuccubus,
+    chain_devil:       drawChainDevil,
+    blood_demon:       drawBloodDemon,
+    pit_fiend:         drawPitFiend,
+    quasit:            drawQuasit,
+    giant_crocodile:   drawGiantCrocodile,
+    chimera:           drawChimera,
+    wyvern:            drawWyvern,
+    displacer_beast:   drawDisplacerBeast,
+    remorhaz:          drawRemorhaz,
+    thunderbird:       drawThunderbird,
+    rust_monster:      drawRustMonster,
+    witch_doctor:      drawWitchDoctor,
+    gladiator:         drawGladiator,
+    assassin_lord:     drawAssassinLord,
+    battle_mage:       drawBattleMage,
+    iron_golem:        drawIronGolem,
+    clockwork_horror:  drawClockworkHorror,
+    gargoyle_sentinel: drawGargoyleSentinel,
+    gibbering_mouther: drawGibberingMouther,
+    aboleth:           drawAboleth,
+    star_spawn:        drawStarSpawn,
+    void_wraith:       drawVoidWraith,
+    vampire_lord:      drawVampireLord,
+    myconid_sovereign: drawMyconidSovereign,
 };
 
 /**

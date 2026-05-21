@@ -876,6 +876,7 @@ export class PartyMember {
      */
     getStunResistChance() {
         if (this.classId !== 'warrior') return 0;
+        if (this.isSummoned) return 0; // squires haven't trained this ability
         if (this.level < WARRIOR_DEFEND_MODE_UNLOCK_LEVEL) return 0;
         return WARRIOR_STUN_RESIST_BASE + Math.floor(this.level / 2) * WARRIOR_STUN_RESIST_PER_2_LEVELS;
     }
@@ -1014,7 +1015,9 @@ export class PartyMember {
         this.rangerTotem = null;
         this.avatarActive = false;
         this.avatarElement = 'fire';
-        this.isDefendMode = false;
+        this.isDefendMode    = false;
+        this.isInFormation   = false;
+        this.squiresSummoned = false;
         // Lich form is a combat-only transformation — always collapse it when
         // leaving combat (flee, defeat, victory all call clearCombatState).
         this.isLichForm = false;

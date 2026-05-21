@@ -149,7 +149,7 @@ export const ENEMY_TYPES = {
 
     // ── New monsters (unbounded dungeon level) ────────────────────────
     banshee:         { name: 'Banshee',          spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeStunChance: 0.40, tags: ['undead', 'incorporeal'] },
-    lich:            { name: 'Lich',             spriteW: 1.4, spriteH: 2.0, aoeMagic: true, regenPercent: 0.05, tags: ['undead'] },
+    lich:            { name: 'Lich',             spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeMagicDamageMult: 1.25, regenPercent: 0.05, tags: ['undead'] },
     minotaur:        { name: 'Minotaur',         spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['humanoid', 'beast'] },
     shadow:          { name: 'Shadow',           spriteW: 1.2, spriteH: 2.0, phaseStrike: true, lifeDrain: 0.30, tags: ['undead', 'incorporeal'] },
     ogre:            { name: 'Ogre',             spriteW: 2.0, spriteH: 2.2, stunChance: 0.45, tags: ['humanoid'] },
@@ -388,6 +388,123 @@ export const ENEMY_TYPES = {
         defenseMult: 1.3, shieldBlock: 0.25,
         tags: ['undead'], immune: ['cold'],
         minLevel: 10 },
+
+    // ── Bestiary Expansion ────────────────────────────────────────────────
+    succubus:         { name: 'Succubus',           spriteW: 1.4, spriteH: 2.0,
+        isSuccubusAI: true,
+        tags: ['demon'], immune: ['fire', 'poison'] },
+
+    chain_devil:      { name: 'Chain Devil',         spriteW: 1.8, spriteH: 2.0,
+        isChainDevilAI: true,
+        tags: ['demon'], immune: ['fire'] },
+
+    blood_demon:      { name: 'Blood Demon',         spriteW: 1.8, spriteH: 2.2,
+        isBloodDemonAI: true,
+        tags: ['demon'], immune: ['fire', 'bleed'] },
+
+    pit_fiend:        { name: 'Pit Fiend',           spriteW: 2.0, spriteH: 2.4,
+        isPitFiendAI: true,
+        hpMult: 3.0, defenseMult: 2.0,
+        tags: ['demon'], immune: ['fire', 'cold'],
+        minLevel: 25 },
+
+    quasit:           { name: 'Quasit',              spriteW: 0.8, spriteH: 1.0,
+        isQuasitAI: true,
+        tags: ['demon'], immune: ['fire', 'poison'] },
+
+    giant_crocodile:  { name: 'Giant Crocodile',     spriteW: 2.2, spriteH: 1.2,
+        isGiantCrocodileAI: true,
+        hpMult: 1.8,
+        tags: ['beast'] },
+
+    chimera:          { name: 'Chimera',             spriteW: 2.2, spriteH: 1.8,
+        isChimeraAI: true,
+        hpMult: 2.0, defenseMult: 1.5,
+        tags: ['beast', 'dragon', 'monster'], immune: ['fire'],
+        minLevel: 25 },
+
+    wyvern:           { name: 'Wyvern',              spriteW: 2.0, spriteH: 1.6,
+        isWyvernAI: true,
+        tags: ['beast', 'dragon'], immune: ['poison'] },
+
+    displacer_beast:  { name: 'Displacer Beast',     spriteW: 1.8, spriteH: 1.4,
+        isDisplacerBeastAI: true, displaceChance: 0.40,
+        tags: ['beast', 'monster'] },
+
+    remorhaz:         { name: 'Remorhaz',            spriteW: 2.4, spriteH: 1.0,
+        isRemorhazAI: true, halfMagicDamage: true, burnRetaliate: 0.30,
+        hpMult: 1.6,
+        tags: ['beast'], immune: ['fire', 'cold'] },
+
+    thunderbird:      { name: 'Thunderbird',         spriteW: 2.0, spriteH: 1.6,
+        isThunderbirdAI: true,
+        tags: ['beast', 'monster'], immune: ['lightning'] },
+
+    rust_monster:     { name: 'Rust Monster',        spriteW: 1.6, spriteH: 1.0,
+        isRustMonsterAI: true,
+        tags: ['beast', 'vermin'] },
+
+    witch_doctor:     { name: 'Witch Doctor',        spriteW: 1.4, spriteH: 1.9,
+        isWitchDoctorAI: true, hpMult: 0.5,
+        tags: ['humanoid'] },
+
+    gladiator:        { name: 'Gladiator',           spriteW: 1.8, spriteH: 2.0,
+        isGladiatorAI: true, defenseMult: 1.5,
+        tags: ['humanoid'] },
+
+    assassin_lord:    { name: 'Assassin Lord',       spriteW: 1.4, spriteH: 1.9,
+        isAssassinLordAI: true, displaceChance: 0.25,
+        tags: ['humanoid'],
+        minLevel: 25 },
+
+    battle_mage:      { name: 'Battle Mage',         spriteW: 1.6, spriteH: 2.0,
+        isBattleMageAI: true, defenseMult: 1.3, hpMult: 1.5,
+        tags: ['humanoid'],
+        minLevel: 25 },
+
+    iron_golem:       { name: 'Iron Golem',          spriteW: 2.0, spriteH: 2.4,
+        isIronGolemAI: true,
+        hpMult: 3.0, defenseMult: 2.0, halfMagicDamage: true,
+        tags: ['construct'], immune: ['poison', 'stun', 'bleed', 'fire', 'cold', 'lightning', 'acid'],
+        minLevel: 25 },
+
+    clockwork_horror: { name: 'Clockwork Horror',    spriteW: 1.8, spriteH: 1.8,
+        isClockworkHorrorAI: true, fullMagicImmune: true, fullDoTImmune: true,
+        tags: ['construct'], immune: ['stun', 'poison', 'bleed'] },
+
+    gargoyle_sentinel:{ name: 'Gargoyle Sentinel',   spriteW: 1.8, spriteH: 2.2,
+        isGargoyleSentinelAI: true, regenPercent: 0.10,
+        tags: ['construct', 'monster'] },
+
+    gibbering_mouther:{ name: 'Gibbering Mouther',   spriteW: 1.6, spriteH: 1.4,
+        isGibberingMoutherAI: true,
+        tags: ['aberration'], immune: ['stun'] },
+
+    aboleth:          { name: 'Aboleth',             spriteW: 2.4, spriteH: 1.6,
+        isAbolethAI: true, resistPhysical: true,
+        tags: ['aberration'], immune: ['bleed', 'stun'] },
+
+    star_spawn:       { name: 'Star Spawn',          spriteW: 2.0, spriteH: 2.0,
+        isStarSpawnAI: true, fullDoTImmune: true,
+        tags: ['aberration'], immune: ['stun', 'poison', 'bleed'],
+        minLevel: 30 },
+
+    void_wraith:      { name: 'Void Wraith',         spriteW: 1.6, spriteH: 2.2,
+        isVoidWraithAI: true, resistPhysical: true, phaseStrike: true,
+        tags: ['undead', 'incorporeal', 'elemental'], immune: ['cold', 'poison', 'stun', 'bleed', 'fire'],
+        minLevel: 25 },
+
+    vampire_lord:     { name: 'Vampire Lord',        spriteW: 1.8, spriteH: 2.2,
+        isVampireLordAI: true, lifeDrain: 0.40, regenPercent: 0.05,
+        hpMult: 3.0, defenseMult: 1.5,
+        tags: ['undead'], immune: ['poison', 'stun'],
+        minLevel: 30 },
+
+    myconid_sovereign:{ name: 'Myconid Sovereign',   spriteW: 1.8, spriteH: 2.0,
+        isMyconidSovereignAI: true,
+        hpMult: 1.8, defenseMult: 1.3,
+        tags: ['monster'],
+        minLevel: 20 },
 };
 // Only enemy types (excludes tinkerer for spawning purposes)
 export const ENEMY_TYPE_KEYS = Object.keys(ENEMY_TYPES);
@@ -545,7 +662,7 @@ export const WARRIOR_STUN_PER_LEVEL = 0.03;   // +3% melee stun per level
 // Warrior L20 special abilities
 export const WARRIOR_DEFEND_MODE_UNLOCK_LEVEL   = 20;
 export const WARRIOR_DEFEND_BLOCK_BONUS_PER_3LV = 0.01; // +1% intercept/block per 3 warrior levels
-export const WARRIOR_INTERCEPT_DAMAGE_MULT      = 0.20; // intercepted damage reduced to 20% post-defense
+export const WARRIOR_INTERCEPT_DAMAGE_MULT      = 0.40; // intercepted damage: warrior absorbs 40% post-defense
 export const WARRIOR_STUN_RESIST_BASE           = 0.20; // 20% base stun resistance at L20
 export const WARRIOR_STUN_RESIST_PER_2_LEVELS   = 0.01; // +1% per 2 levels beyond 1 (so 30% at L20)
 export const WARRIOR_RETALIATION_UNLOCK_LEVEL   = 25;
@@ -1221,3 +1338,26 @@ export const NECRO_LICH_REVIVE_HP_PER_2LV    = 0.01; // +1% per 2 levels over 20
 export const NECRO_LICH_REVIVE_ROUNDS        = 3;    // rounds in phial before revival
 export const NECRO_LICH_MAGIC_RESIST_BASE    = 0.50; // 50% magic/AoE resistance
 export const NECRO_LICH_MAGIC_RESIST_PER_4LV = 0.01; // +1% per 4 levels over 20
+
+// ── Warrior L30 — Squire Summon ──────────────────────────────────────────────
+export const WARRIOR_SQUIRE_UNLOCK_LEVEL          = 30;
+export const WARRIOR_SQUIRE_STAMINA_COST          = 10;
+export const WARRIOR_SQUIRE_HP_FRACTION           = 0.66;
+export const WARRIOR_SQUIRE_STAMINA_FRACTION      = 0.66;
+export const WARRIOR_SQUIRE_MELEE_FRACTION        = 0.66;
+export const WARRIOR_SQUIRE_DEFENSE_FRACTION      = 0.66;
+export const WARRIOR_SQUIRE_SHIELD_BLOCK          = 0.25;
+export const WARRIOR_SQUIRE_ATTACKS_PER_LEVELS    = 15;
+export const WARRIOR_SQUIRE_COUNT_L60             = 60;
+export const WARRIOR_SQUIRE_COUNT_L90             = 90;
+
+// ── Warrior L30 — Formation ──────────────────────────────────────────────────
+export const WARRIOR_FORMATION_UNLOCK_LEVEL       = 30;
+export const WARRIOR_FORMATION_STAMINA_PER_ROUND  = 10;
+export const WARRIOR_FORMATION_BASE_BONUS         = 1.00;
+export const WARRIOR_FORMATION_BONUS_PER_MEMBER   = 0.15;
+export const WARRIOR_FORMATION_MIN_MEMBERS        = 2;
+export const WARRIOR_FORMATION_OPPORTUNITY_OFFSET = 10;
+export const WARRIOR_FORMATION_CRIT_DIVISOR       = 200; // critChance = level / DIVISOR
+export const WARRIOR_FORMATION_CRIT_BASE          = 1.00; // +100% base crit bonus
+export const WARRIOR_FORMATION_CRIT_PER_LEVEL     = 0.01; // +1% per level added to crit mult
