@@ -36,6 +36,11 @@ import {
     MONK_QUIVERING_PALM_STAMINA_MULT, MONK_QUIVERING_PALM_MANA_MULT,
     PALADIN_L20_UNLOCK_LEVEL,
     PALADIN_AOE_SMITE_MANA_MULT, PALADIN_AOE_SMITE_INSTAKILL_MULT,
+    PALADIN_L30_UNLOCK_LEVEL,
+    PALADIN_AURA_RIGHTEOUSNESS_REDUCTION, PALADIN_AURA_RIGHTEOUSNESS_HEAL_FRAC,
+    PALADIN_DIVINE_JUDGMENT_STAMINA_COST, PALADIN_DIVINE_JUDGMENT_MANA_COST,
+    PALADIN_DIVINE_JUDGMENT_BASE_PCT, PALADIN_DIVINE_JUDGMENT_PER_LEVEL,
+    PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR, PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR,
     CLERIC_MASS_REGEN_UNLOCK_LEVEL, CLERIC_MASS_REGEN_MANA_COST,
     CLERIC_MASS_REGEN_BASE_PCT, CLERIC_MASS_REGEN_PER_3_LEVELS,
     CLERIC_MASS_REGEN_DURATION_PER_4LV,
@@ -43,35 +48,67 @@ import {
     CLERIC_MASS_REVIVE_HEAL_BASE, CLERIC_MASS_REVIVE_HEAL_PER_3LV,
     CLERIC_MASS_REVIVE_COUNT_DIVISOR,
     CLERIC_CLEANSE_UNLOCK_LEVEL, CLERIC_CLEANSE_MANA_PER_STATE,
+    CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL, CLERIC_SPIRITUAL_WEAPON_SUMMON_COST,
+    CLERIC_SPIRITUAL_WEAPON_UPKEEP, CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR,
+    CLERIC_BANISHMENT_UNLOCK_LEVEL, CLERIC_BANISHMENT_MANA_COST,
+    CLERIC_BANISHMENT_TAGS,
     BARD_CHARM_UNLOCK_LEVEL, BARD_CHARM_MANA_COST,
     BARD_CHARM_BASE_CHANCE, BARD_CHARM_CHANCE_PER_2_LV,
     BARD_CHARM_DURATION_DIVISOR, BARD_CHARM_IMMUNE_TAGS,
     BARD_RALLYING_MELODY_UNLOCK_LEVEL, BARD_RALLYING_MELODY_MANA_COST,
     BARD_RALLYING_MELODY_RESTORE_FRACTION,
+    BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL, BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND,
+    BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
+    BARD_SYMPHONY_UNLOCK_LEVEL, BARD_SYMPHONY_BASE_MANA_COST, BARD_SYMPHONY_BASE_STA_COST,
+    BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL, BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED,
+    BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL,
     RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL, RANGER_EXPLOSIVE_ARROW_STAMINA_MULT,
-    RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT,
+    RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT, RANGER_EXPLOSIVE_ARROW_CRIT_MULT,
     ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL, ROGUE_BACKSTAB_BLEED_FRAC,
     ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR,
     ROGUE_TRAP_UNLOCK_LEVEL, ROGUE_TRAP_DOT_FRACTION, ROGUE_TRAP_DOT_ROUNDS,
     ROGUE_EVASION_STAMINA_COST,
+    ROGUE_TWIN_FANGS_UNLOCK_LEVEL, ROGUE_TWIN_FANGS_OFFHAND_MULT, ROGUE_TWIN_FANGS_INSTAKILL_MULT,
+    ROGUE_SHADOW_STEP_UNLOCK_LEVEL, ROGUE_SHADOW_STEP_STAMINA_COST,
+    ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
+    MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
+    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_ROUNDS,
     DRUID_COMMUNE_UNLOCK_LEVEL, DRUID_COMMUNE_FAE_TOKENS_NEEDED,
     DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST,
+    DRUID_WILD_SHAPE_UNLOCK_LEVEL, DRUID_WILD_SHAPE_MANA_INITIAL, DRUID_WILD_SHAPE_MANA_PER_ROUND,
+    DRUID_WILD_BEAR_ATTACKS_DIVISOR, DRUID_WILD_BEAR_STUN_BASE, DRUID_WILD_BEAR_STUN_PER_LEVEL, DRUID_WILD_BEAR_DEFENSE_DIVISOR,
+    DRUID_WILD_WOLF_ATTACKS_DIVISOR, DRUID_WILD_WOLF_BLEED_BASE, DRUID_WILD_WOLF_BLEED_PER_LEVEL, DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR, DRUID_WILD_WOLF_DEFENSE_DIVISOR,
+    DRUID_WILD_EAGLE_ATTACKS_DIVISOR, DRUID_WILD_EAGLE_CRIT_BASE, DRUID_WILD_EAGLE_CRIT_PER_LEVEL, DRUID_WILD_EAGLE_CRIT_MULT_BASE, DRUID_WILD_EAGLE_CRIT_MULT_PER_LEVEL, DRUID_WILD_EAGLE_EVASION_PER_LEVEL,
+    DRUID_WILD_PIXIE_MAGIC_RESIST,
+    DRUID_WILD_TREANT_ATTACKS_DIVISOR, DRUID_WILD_TREANT_HOLD_BASE, DRUID_WILD_TREANT_HOLD_PER_LEVEL, DRUID_WILD_TREANT_DEFENSE_DIVISOR,
+    DRUID_VERDANT_SURGE_UNLOCK_LEVEL, DRUID_VERDANT_SURGE_ACTION_LOSS_CHANCE,
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
+    NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
+    ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
+    ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
+    ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
+    ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     RANGER_TOTEM_DURATION_DIVISOR, RANGER_BEAR_TOTEM_DEFENSE_DIVISOR,
     RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL, RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
     MONK_AVATAR_HP_REGEN, MONK_AVATAR_CLEANSE_BASE, MONK_AVATAR_CLEANSE_PER_LEVEL,
     MONK_AVATAR_DOT_DURATION_DIVISOR,
+    MONK_KI_UNLOCK_LEVEL,
     WARRIOR_SQUIRE_UNLOCK_LEVEL, WARRIOR_SQUIRE_STAMINA_COST,
     WARRIOR_SQUIRE_ATTACKS_PER_LEVELS, WARRIOR_SQUIRE_COUNT_L60, WARRIOR_SQUIRE_COUNT_L90,
     WARRIOR_SQUIRE_SHIELD_BLOCK, WARRIOR_SQUIRE_HP_FRACTION, WARRIOR_SQUIRE_STAMINA_FRACTION,
     WARRIOR_FORMATION_UNLOCK_LEVEL, WARRIOR_FORMATION_STAMINA_PER_ROUND,
     WARRIOR_FORMATION_BONUS_PER_MEMBER, WARRIOR_FORMATION_BASE_BONUS,
     WARRIOR_FORMATION_MIN_MEMBERS, WARRIOR_FORMATION_OPPORTUNITY_OFFSET,
+    RANGER_HUNTERS_MARK_UNLOCK_LEVEL, RANGER_HUNTERS_MARK_STAMINA_COST,
+    RANGER_HUNTERS_MARK_MANA_COST, RANGER_HUNTERS_MARK_DAMAGE_BONUS,
+    RANGER_HUNTERS_MARK_UPKEEP_MANA, RANGER_HUNTERS_MARK_UPKEEP_STAMINA,
+    RANGER_BEASTLORD_UNLOCK_LEVEL, RANGER_BEASTLORD_MANA_PER_ROUND,
+    RANGER_BEASTLORD_SUMMON_BASE, RANGER_BEASTLORD_UPKEEP_PER_SUMMON,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -109,6 +146,7 @@ export class CombatUI {
     show(onEnd) {
         this._onCombatEnd = onEnd;
         this._active = true;
+        this._actionInProgress = false;
         this._prevMemberHealth = {}; // track previous health to detect KO events
         this.overlay.style.display = 'flex';
         this._buildEnemyCards();
@@ -127,6 +165,15 @@ export class CombatUI {
 
     _refresh() {
         if (!this._active) return;
+
+        // Reset action guard and stale target-selection state every refresh so
+        // a missed or double-click from the previous turn can never carry over.
+        this._actionInProgress = false;
+        if (this._selectingTarget) {
+            this._selectingTarget = false;
+            this._targetCallback  = null;
+            this._clearTargetable();
+        }
 
         // Detect newly knocked-out party members (play sorrowful tone once per KO)
         if (this.combat.party) {
@@ -285,8 +332,13 @@ export class CombatUI {
                 if (enemy.stunned)
                     mkB('⚡', 'Stunned', 'rgba(220,200,0,0.9)', 'Stunned: skips next turn');
                 const ent = efx.find(x => x && x.type === 'entangle' && x.rounds > 0);
-                if (ent) mkB('🌿', 'Entangled', 'rgba(30,130,30,0.9)',
-                    'Entangled: -' + (ent.defenseBonus||0) + ' def, -' + (ent.damageBonus||0) + ' dmg — ' + ent.rounds + ' rds left');
+                if (ent) {
+                    const entLabel = ent.verdantSurge ? 'Verdant Surge' : 'Entangled';
+                    const entTip = ent.verdantSurge
+                        ? `Verdant Surge: -${Math.abs(ent.defenseBonus||0)} def, -${Math.abs(ent.damageBonus||0)} dmg, nature DoT ${ent.verdantMin}-${ent.verdantMax}/rd, 25% action loss — ${ent.rounds} rds left`
+                        : `Entangled: -${Math.abs(ent.defenseBonus||0)} def, -${Math.abs(ent.damageBonus||0)} dmg — ${ent.rounds} rds left`;
+                    mkB('🌿', entLabel, ent.verdantSurge ? 'rgba(0,120,60,0.95)' : 'rgba(30,130,30,0.9)', entTip);
+                }
                 // ── Render all DoT-type effects using a comprehensive map ──
                 const DOT_MAP = {
                     bleed: {
@@ -416,6 +468,11 @@ export class CombatUI {
                         `Quivering Palm (${source}): ${(qp.damage || 0)} internal dmg/round — Level ${(qp.doublings || 0)}/10 doublings — ${qp.rounds} rds left`);
                 }
 
+                // ── Pressure Points debuff tag ──
+                const ppFx = efx.find(x => x && x.type === 'pressure_points');
+                if (ppFx) mkB('✋', 'Pressure Pts', 'rgba(100,30,160,0.9)',
+                    `Pressure Points: ${ppFx.defenseBonus||0} defense penalty (persists until all Quivering Palms expire)`);
+
                 // Fae hold badge
                 const fh = efx.find(x => x && x.type === 'fae_hold' && x.rounds > 0);
                 if (fh) mkB('\u{1F9DA}', 'Held ' + fh.rounds + 'rd', 'rgba(60,200,60,0.9)',
@@ -424,6 +481,30 @@ export class CombatUI {
                 if (enemy.charmedRounds > 0)
                     mkB('🎵', 'CHARMED ' + enemy.charmedRounds + 'rd', 'rgba(0,160,80,0.95)',
                         'Charmed by Bard! Fighting for your party. ' + enemy.charmedRounds + ' round(s) remaining.');
+
+                // ── Hunter's Mark debuff tag ──
+                const _hmFx = efx.find(x => x && x.type === 'hunters_mark');
+                if (_hmFx) {
+                    const _hmPct = Math.round(RANGER_HUNTERS_MARK_DAMAGE_BONUS * 100);
+                    const _hmRanger = (this.combat.party || []).find(p => p.id === _hmFx.markerId);
+                    const _hmName = _hmRanger ? _hmRanger.name : 'Ranger';
+                    mkB('🎯', `Marked +${_hmPct}%`, 'rgba(180,60,0,0.92)',
+                        `Hunter's Mark (${_hmName}): takes +${_hmPct}% damage from all sources. Upkeep ${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP + ${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST/rd.`);
+                }
+
+                // ── Boss Aura buff tag — non-boss enemies deal +25% or +50% damage while a boss/mega-boss lives ──
+                if (!enemy.isBoss && !enemy.isMegaBoss && enemy.health > 0) {
+                    let _auraBoss = false, _auraMega = false;
+                    for (const _ae of this.combat.enemies) {
+                        if (_ae === enemy || _ae.health <= 0) continue;
+                        if (_ae.isMegaBoss) _auraMega = true;
+                        else if (_ae.isBoss) _auraBoss = true;
+                    }
+                    if (_auraMega) mkB('💀', '+50% dmg', 'rgba(160,0,0,0.95)',
+                        'Mega-Boss Aura: the Mega Boss empowers this creature — +50% damage dealt this combat.');
+                    else if (_auraBoss) mkB('👑', '+25% dmg', 'rgba(120,30,140,0.85)',
+                        'Boss Aura: the Boss\'s presence emboldens this creature — +25% damage dealt this combat.');
+                }
             }
         }
         // Charmed card management: move charmed enemy cards to/from charmedCardsEl
@@ -561,6 +642,44 @@ export class CombatUI {
         if (shieldDef) eqParts.push(shieldDef.name);
         if (eqParts.length > 0) this.turnInfo.textContent += `  [${eqParts.join(' | ')}]`;
 
+        // ── Symphony of Destruction: while channeling, show only symphony controls ──
+        if (m.classId === 'bard' && m.symphonyActive) {
+            const nextRound = (m.symphonyRound || 1) + 1;
+            const nextMult  = Math.pow(2, nextRound - 1);
+            const mc = m.symphonyManaCost || (BARD_SYMPHONY_BASE_MANA_COST * 2);
+            const sc = m.symphonyStaCost  || (BARD_SYMPHONY_BASE_STA_COST  * 2);
+            const canContinue = m.mana >= mc && m.stamina >= sc;
+
+            const contBtn = this._addBtn(
+                `♪ Continue Symphony (-${mc} MP / -${sc} ST)`,
+                canContinue,
+                () => this.combat.bardContinueSymphony(),
+            );
+            contBtn.classList.add('combat-special-btn');
+            contBtn.style.background = 'linear-gradient(135deg,#3a1060,#7a20b0)';
+            contBtn.title = [
+                `Symphony of Destruction — Round ${nextRound}`,
+                `Deals sonic AoE damage to ALL enemies at ×${nextMult} the base magic damage.`,
+                `Costs ${mc} MP and ${sc} ST this round (doubles each round).`,
+                `Incorporeal enemies are immune to the symphony.`,
+                !canContinue ? `Not enough mana and/or stamina (needs ${mc} MP, ${sc} ST).` : '',
+            ].filter(Boolean).join('\n');
+
+            const stopBtn = this._addBtn(
+                `♪ Stop Symphony (free)`,
+                true,
+                () => this.combat.bardStopSymphony(),
+            );
+            stopBtn.classList.add('combat-special-btn');
+            stopBtn.style.background = 'linear-gradient(135deg,#4a3000,#7a5500)';
+            stopBtn.title = [
+                `Stop the Symphony of Destruction (free action — does not end your turn).`,
+                `All other abilities will become available again after stopping.`,
+                `Current round: ${m.symphonyRound || 1}  |  Next round cost: ${mc} MP / ${sc} ST`,
+            ].join('\n');
+            return;
+        }
+
         const mBonus = m.getClassDamageBonus('melee');
         const rBonus = m.getClassDamageBonus('ranged');
         const gBonus = m.getClassDamageBonus('magic');
@@ -569,7 +688,7 @@ export class CombatUI {
         const inDefendMode = m.classId === 'warrior' && !!m.isDefendMode;
 
         // ── Melee (gated by row)
-        const canMelee = this.combat.canMelee(m) && !inDefendMode;
+        const canMelee = this.combat.canMelee(m) && !inDefendMode && !m.wildShapeForm;
         const isMonk = m.classId === 'monk';
         const meleeStMiss = m.stamina < MELEE_STAMINA_COST;
         const meleeMpMiss = isMonk && m.mana < MONK_MELEE_MANA_COST;
@@ -617,7 +736,7 @@ export class CombatUI {
             : `Ranged (-${RANGED_STAMINA_COST} ST)`;
         if (rangedTotalBonus > 0) rangedLabel += ` +${rangedTotalBonus}`;
         if (rangedExhausted) rangedLabel += ' [HALF]';
-        const rangedBtn = this._addBtn(rangedLabel, !inDefendMode, () => {
+        const rangedBtn = this._addBtn(rangedLabel, !inDefendMode && !m.wildShapeForm, () => {
             soundManager.playRanged();
             if (isArtificer) {
                 this._pickTarget(e => this.combat.scatterShot(e));
@@ -652,7 +771,7 @@ export class CombatUI {
         let magicLabel = `Magic (-${magicManaCost} MP)`;
         if (magicTotalBonus > 0) magicLabel += ` +${magicTotalBonus}`;
         if (magicExhausted) magicLabel += ' [HALF]';
-        const magicBtn = this._addBtn(magicLabel, !inDefendMode, () => {
+        const magicBtn = this._addBtn(magicLabel, !inDefendMode && !m.wildShapeForm, () => {
             soundManager.playMagic();
             this.combat.magicAttack();
         });
@@ -714,6 +833,54 @@ export class CombatUI {
                 miActive ? `${m.mirrorImages} image(s) still active — cannot cast again while images remain.` : '',
                 miUnlocked && !miActive && !miCan ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
+
+            // ── Mage L30: Arcane Overload (passive — fires automatically on magic attack; indicator only)
+            if (m.level >= MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL) {
+                const aoBurstChance = Math.round(Math.min(100, (MAGE_ARCANE_OVERLOAD_BURST_BASE + m.level * 0.01) * 100));
+                const aoInfo = document.createElement('div');
+                aoInfo.style.cssText = `
+                    margin-top:4px; padding:4px 8px; font-size:11px; color:#cc88ff;
+                    border:1px solid #664488; border-radius:4px; background:#22113344;
+                `;
+                aoInfo.textContent = `✨ Arcane Overload active — ${aoBurstChance}% 2nd burst (×2 MP), cascading`;
+                aoInfo.title = [
+                    `Mage L${MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL}: Arcane Overload (passive).`,
+                    `Each Magic Attack has a ${aoBurstChance}% chance to fire an extra burst at 2× mana cost.`,
+                    `Each successive burst is ${Math.round(MAGE_ARCANE_OVERLOAD_BURST_STEP * 100)}% less likely but doubles the mana cost again.`,
+                    'If mana is insufficient for the next burst, the chain collapses.',
+                    'Bursts use the same damage formula, target count, and AoE crit chance as the base attack.',
+                ].join('\n');
+                this.actionsEl.appendChild(aoInfo);
+            }
+
+            // ── Mage L30: Elemental Rift (free action, once per combat)
+            if (m.level >= MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL) {
+                const riftOpen   = !!m.elementalRiftOpen;
+                const riftUsed   = !!m.elementalRiftUsed;
+                const riftAfford = m.mana >= MAGE_ELEMENTAL_RIFT_MANA_INITIAL;
+                const riftCan    = !riftUsed && riftAfford;
+                const summonPct  = Math.min(100, m.level + MAGE_ELEMENTAL_RIFT_SUMMON_BASE);
+                const riftLabel  = riftOpen
+                    ? `\u{1F300} Elemental Rift (open — ${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP/round)`
+                    : riftUsed
+                        ? `\u{1F300} Elemental Rift (spent)`
+                        : `\u{1F300} Elemental Rift (-${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP)`;
+                const riftBtn = this._addBtn(riftLabel, riftCan, () => this.combat.mageOpenElementalRift());
+                riftBtn.classList.add('combat-special-btn');
+                if (riftOpen) riftBtn.style.boxShadow = '0 0 8px #44ccff, 0 0 18px #2288ff66';
+                riftBtn.title = [
+                    `Mage L${MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL}: Elemental Rift (free action, once per combat).`,
+                    `Costs ${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP to open; ${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP/round upkeep.`,
+                    `Each round the rift is open: ${summonPct}% chance to summon a random elemental (fire/water/earth/air).`,
+                    'Elementals are immune to charm/enslavement and their respective element DoTs.',
+                    'Fire Elemental: AoE magic + burn DoT + stun chance.',
+                    'Water Elemental: AoE magic + drowning DoT (living targets).',
+                    'Air Elemental: AoE magic + stun chance (incorporeal — immune to physical CC).',
+                    'Earth Elemental: 2× HP, +20 def; melee or AoE, stun chance.',
+                    riftUsed ? 'Already used this combat.' : '',
+                    !riftAfford && !riftUsed ? `Not enough mana (needs ${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         // ── Class specials
@@ -728,10 +895,12 @@ export class CombatUI {
             btn.classList.add('combat-special-btn');
             const instakill = (BACKSTAB_INSTAKILL_CHANCE + m.getInstakillBonus()) * 100;
             const bonusPct = Math.round(BACKSTAB_DAMAGE_PER_LEVEL * m.level * 100);
+                        const hasTwinFangs = m.level >= ROGUE_TWIN_FANGS_UNLOCK_LEVEL && typeof m.hasOffhandMeleeWeapon === 'function' && m.hasOffhandMeleeWeapon();
+            const shadowActive = Array.isArray(m.activeEffects) && m.activeEffects.some(fx => fx.type === 'shadow_step' && fx.rounds > 0);
             btn.title = [
                 'Rogue special: Backstab. (Works from any row.)',
-                `Costs ${cost} stamina (3\u00D7 melee cost).`,
-                `Deals ${BACKSTAB_DAMAGE_MULT}\u00D7 melee damage, then +${bonusPct}% (10% per rogue level).`,
+                `Costs ${cost} stamina (3× melee cost).`,
+                `Deals ${BACKSTAB_DAMAGE_MULT}× melee damage, then +${bonusPct}% (10% per rogue level).`,
                 `${instakill.toFixed(0)}% chance for an INSTANT KILL (not vs. Bosses or Mega Bosses).`,
                 'Rogues can also spot and disarm dungeon traps while exploring.',
                 m.level >= ROGUE_TRAP_UNLOCK_LEVEL
@@ -740,7 +909,13 @@ export class CombatUI {
                 m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL
                     ? `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}+: Backstab Bleed — applies ${Math.round(ROGUE_BACKSTAB_BLEED_FRAC*100)}% bleed DoT for ${Math.floor(m.level/ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR)} rounds (immune: undead, construct, elemental, incorporeal).`
                     : `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}: Backstab Bleed unlocks — every backstab will apply a stacking bleed DoT.`,
-            ].join('\n');
+                m.level >= ROGUE_TWIN_FANGS_UNLOCK_LEVEL
+                    ? hasTwinFangs
+                        ? `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL} Twin Fangs ACTIVE: offhand follows up at ${ROGUE_TWIN_FANGS_OFFHAND_MULT}× fresh offhand weapon roll × level scaling (NOT multiplied by the ×${BACKSTAB_DAMAGE_MULT} backstab multiplier); half normal backstab instakill chance; independent bleed DoT.`
+                        : `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL} Twin Fangs: equip an offhand melee weapon to unlock the second strike.`
+                    : `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL}: Twin Fangs unlocks — offhand melee follow-up strike on every Backstab.`,
+                shadowActive ? `🌑 Shadow Step active (${(m.activeEffects.find(fx => fx.type === 'shadow_step') || {}).rounds || 0} rds) — Backstab deals ×${ROGUE_SHADOW_STEP_BACKSTAB_MULT} damage!` : '',
+            ].filter(Boolean).join('\n')
 
             if (m.level >= ROGUE_TRAP_UNLOCK_LEVEL) {
                 const trapCount = (m.inventory || []).reduce((sum, item) =>
@@ -757,7 +932,29 @@ export class CombatUI {
                     trapCount <= 0 ? 'No Captured Traps in this rogue inventory.' : '',
                 ].filter(Boolean).join('\n');
             }
-        }
+
+            // L30 Shadow Step button
+            if (m.level >= ROGUE_SHADOW_STEP_UNLOCK_LEVEL) {
+                const ssActive  = Array.isArray(m.activeEffects) && m.activeEffects.some(fx => fx.type === 'shadow_step' && fx.rounds > 0);
+                const ssUsed    = !!m.shadowStepUsed;
+                const ssCanCast = !ssUsed && !ssActive && m.stamina >= ROGUE_SHADOW_STEP_STAMINA_COST;
+                const _ssFx     = ssActive ? m.activeEffects.find(fx => fx.type === 'shadow_step') : null;
+                const ssRounds  = _ssFx ? (_ssFx.rounds || 0) : 0;
+                const ssLabel   = ssActive
+                    ? `🌑 Shadow Step (${ssRounds} rds left)`
+                    : ssUsed ? '🌑 Shadow Step (used)' : `🌑 Shadow Step (-${ROGUE_SHADOW_STEP_STAMINA_COST} ST)`;
+                const ssBtn = this._addBtn(ssLabel, ssCanCast, () => this.combat.rogueShadowStep());
+                ssBtn.classList.add('combat-special-btn');
+                ssBtn.title = [
+                    `Rogue L${ROGUE_SHADOW_STEP_UNLOCK_LEVEL}: Shadow Step (1×/combat).`,
+                    `Costs ${ROGUE_SHADOW_STEP_STAMINA_COST} stamina. Lasts ${ROGUE_SHADOW_STEP_DURATION} rounds.`,
+                    'While active: completely untargetable — all enemy attacks and status effects pass through harmlessly.',
+                    `Backstab deals ×${ROGUE_SHADOW_STEP_BACKSTAB_MULT} damage while in Shadow Step (stacks with Twin Fangs and all other bonuses).`,
+                    ssActive ? `Currently active: ${ssRounds} round(s) remaining.` : '',
+                    ssUsed && !ssActive ? 'Already used this combat.' : '',
+                    !ssUsed && !ssActive && m.stamina < ROGUE_SHADOW_STEP_STAMINA_COST ? `Need ${ROGUE_SHADOW_STEP_STAMINA_COST} stamina (have ${m.stamina}).` : '',
+                ].filter(Boolean).join('\n');
+            }        }
 
         if (m.classId === 'barbarian') {
             const rageExtraAttacks = Math.floor((m.level || 1) / 3);
@@ -785,6 +982,102 @@ export class CombatUI {
                 `${rageExtraAttacks} extra melee strike(s) per attack (each costs ${BARBARIAN_RAGE_STAMINA_COST} ST).`,
                 rageDisabled ? 'Already used this combat.' : 'Lasts until end of combat.',
             ].filter(Boolean).join('\n');
+
+            // Heroic Deeds (L30)
+            if (m.level >= BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL) {
+                const tokens = m.heroicDeedTokens || 0;
+                const hasToken = tokens >= 1;
+                const deedLabel = `🏆 Heroic Deeds (${tokens})`;
+                const deedBtn = this._addBtn(deedLabel, hasToken, () => {
+                    // Toggle a sub-panel with the four deed buttons
+                    const existing = this.actionsEl.querySelector('.heroic-deeds-panel');
+                    if (existing) { existing.remove(); return; }
+                    const panel = document.createElement('div');
+                    panel.className = 'heroic-deeds-panel combat-subpanel';
+                    panel.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-top:4px;padding:4px;border:1px solid #a07030;background:#1a1008;';
+
+                    // 1. Rapid Assault
+                    const raBtn = document.createElement('button');
+                    raBtn.textContent = '⚡ Rapid Assault';
+                    raBtn.className = 'combat-special-btn';
+                    raBtn.disabled = !hasToken;
+                    raBtn.title = 'Free action. Double your attacks this round — fires a second full melee chain on your target.';
+                    raBtn.onclick = () => {
+                        this.combat.barbarianRapidAssault();
+                        panel.remove();
+                        this._refresh();
+                        if (this.combat.currentMember?.rapidAssaultPending) {
+                            this._pickTarget(e => this.combat.meleeAttack(e), {
+                                prompt: '⚡ RAPID ASSAULT — choose your target!',
+                            });
+                        }
+                    };
+                    panel.appendChild(raBtn);
+
+                    // 2. Reckless Move
+                    const rmBtn = document.createElement('button');
+                    rmBtn.textContent = '💥 Reckless Move';
+                    rmBtn.className = 'combat-special-btn';
+                    rmBtn.disabled = !hasToken;
+                    rmBtn.title = [
+                        'Free action. Slam into up to 4 random enemies.',
+                        'Each takes single melee damage (Blood Frenzy applies).',
+                        'Non-incorporeal, non-boss enemies may be knocked back (lose next turn).',
+                        'Resist chance = enemy level% (cap 90%).',
+                    ].join('\n');
+                    rmBtn.onclick = () => {
+                        this.combat.barbarianRecklessMove();
+                        panel.remove();
+                        this._refresh();
+                    };
+                    panel.appendChild(rmBtn);
+
+                    // 3. Refreshing Mead
+                    const meadBtn = document.createElement('button');
+                    meadBtn.textContent = '🍺 Refreshing Mead';
+                    meadBtn.className = 'combat-special-btn';
+                    meadBtn.disabled = !hasToken;
+                    meadBtn.title = [
+                        'Free action. Quaff a legendary mead.',
+                        'Restore 50% max HP and 50% max stamina.',
+                        'Remove all negative effects, DoTs, and status ailments.',
+                    ].join('\n');
+                    meadBtn.onclick = () => {
+                        this.combat.barbarianRefreshingMead();
+                        panel.remove();
+                        this._refresh();
+                    };
+                    panel.appendChild(meadBtn);
+
+                    // 4. Battle Horn
+                    const hornBtn = document.createElement('button');
+                    hornBtn.textContent = '📯 Battle Horn';
+                    hornBtn.className = 'combat-special-btn';
+                    hornBtn.disabled = !hasToken;
+                    const hornPenalty = Math.floor(m.level / 3);
+                    hornBtn.title = [
+                        'Free action. Blow the Battle Horn — sonic + psychic fear AoE.',
+                        `Applies -${hornPenalty} attack and -${hornPenalty} defense to all affected enemies (entire combat).`,
+                        'Immune: undead, constructs, elementals, plants, incorporeal.',
+                        '50% resist chance per enemy.',
+                    ].join('\n');
+                    hornBtn.onclick = () => {
+                        this.combat.barbarianBattleHorn();
+                        panel.remove();
+                        this._refresh();
+                    };
+                    panel.appendChild(hornBtn);
+
+                    this.actionsEl.appendChild(panel);
+                });
+                deedBtn.classList.add('combat-special-btn');
+                deedBtn.title = [
+                    `Barbarian L${BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL}: Heroic Deeds (free actions).`,
+                    'Earn 1 token per enemy kill. Tokens vanish at end of combat.',
+                    `Current tokens: ${tokens}.`,
+                    'Deeds: Rapid Assault (×2 attacks), Reckless Move (knock 4 enemies), Refreshing Mead (+50% HP/ST, clear effects), Battle Horn (fear AoE).',
+                ].join('\n');
+            }
         }
 
         if (m.classId === 'cleric') {
@@ -869,7 +1162,7 @@ export class CombatUI {
             turnBtn.title = [
                 `Cleric special: Turn Undead (unlocks at level ${CLERIC_TURN_UNDEAD_MIN_LEVEL}).`,
                 `Costs ${CLERIC_TURN_UNDEAD_MANA_COST} mana.`,
-                'Deals 2× magic attack damage to ALL undead enemies.',
+                `Deals 2× magic attack damage × (1 + 5% per cleric level) to ALL undead enemies (at L${m.level}: ×${(2 * (1 + 0.05 * (m.level || 1))).toFixed(1)} total multiplier).`,
                 `Debuffs undead: -${turnDebuff} attack & defense for several rounds.`,
                 !turnUnlocked ? `Requires cleric level ${CLERIC_TURN_UNDEAD_MIN_LEVEL}.` : '',
                 turnUnlocked && !hasUndead ? 'No undead enemies in this fight.' : '',
@@ -916,6 +1209,62 @@ export class CombatUI {
                 massReviveUnlocked && !hasFallenAllies ? 'No fallen allies to revive.' : '',
                 massReviveUnlocked && hasFallenAllies && m.mana < CLERIC_MASS_REVIVE_MANA_COST ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
+
+            // ── Spiritual Weapon — L30
+            if (m.level >= CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL) {
+                const swActive = (m.spiritualWeapons || []).length;
+                const swCan    = m.mana >= CLERIC_SPIRITUAL_WEAPON_SUMMON_COST;
+                const swAtks   = Math.max(1, Math.floor((m.level || 1) / CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR));
+                const swUpkeep = swActive * CLERIC_SPIRITUAL_WEAPON_UPKEEP;
+                const swLabel  = swActive > 0
+                    ? `⚔️ Spiritual Weapon (-${CLERIC_SPIRITUAL_WEAPON_SUMMON_COST} MP) [${swActive} active]`
+                    : `⚔️ Spiritual Weapon (-${CLERIC_SPIRITUAL_WEAPON_SUMMON_COST} MP)`;
+                const swBtn = this._addBtn(swLabel, swCan, () => this.combat.clericSummonSpiritualWeapon());
+                swBtn.classList.add('combat-special-btn');
+                swBtn.title = [
+                    `Cleric L${CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL}: Spiritual Weapon.`,
+                    `Costs ${CLERIC_SPIRITUAL_WEAPON_SUMMON_COST} MP to summon. Multiples allowed.`,
+                    `Each weapon attacks ${swAtks} time${swAtks !== 1 ? 's' : ''} per round (floor(level/8)), hitting a random enemy.`,
+                    `Damage: melee weapon roll + magic class bonus. Qualifies as ranged and magic (force).`,
+                    `Upkeep: ${CLERIC_SPIRITUAL_WEAPON_UPKEEP} MP/round per weapon. Currently maintaining: ${swActive > 0 ? `${swActive} weapon${swActive !== 1 ? 's' : ''} (${swUpkeep} MP/round)` : 'none'}.`,
+                    `Immune to all damage, debuffs, DoTs, holds, and stuns. Back-row construct of force.`,
+                    `Dismissed if cleric dies or at end of combat. Fires immediately when summoned.`,
+                    !swCan ? `Not enough mana (need ${CLERIC_SPIRITUAL_WEAPON_SUMMON_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // ── Banishment — L30
+            if (m.level >= CLERIC_BANISHMENT_UNLOCK_LEVEL) {
+                const banCan = m.mana >= CLERIC_BANISHMENT_MANA_COST;
+                // Valid targets: alive enemies with elemental or demon tag
+                const validTargets = (this.combat.aliveHostileEnemies || []).filter(e =>
+                    CLERIC_BANISHMENT_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)));
+                const hasTarget = validTargets.length > 0;
+                const canBanish = banCan && hasTarget;
+                const banLabel  = canBanish
+                    ? `✨ Banishment (-${CLERIC_BANISHMENT_MANA_COST} MP)`
+                    : hasTarget
+                        ? `✨ Banishment (need ${CLERIC_BANISHMENT_MANA_COST} MP)`
+                        : `✨ Banishment [no valid targets]`;
+                const banBtn = this._addBtn(banLabel, canBanish, () => {
+                    this._pickTarget(e => this.combat.clericBanishment(e), {
+                        prompt: '✨ Choose a target for Banishment (elemental or demon)...',
+                        filter: e => CLERIC_BANISHMENT_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)),
+                    });
+                });
+                banBtn.classList.add('combat-special-btn');
+                const banishChance = Math.min(100, m.level);
+                banBtn.title = [
+                    `Cleric L${CLERIC_BANISHMENT_UNLOCK_LEVEL}: Banishment.`,
+                    `Costs ${CLERIC_BANISHMENT_MANA_COST} MP. Target must be an elemental or demon.`,
+                    `${banishChance}% chance to instantly destroy the target outright.`,
+                    `Bosses & mega-bosses: immune to instant destruction, but still take the full ×20 holy force damage.`,
+                    `If not destroyed: deals magic roll × 20 holy force damage, bypassing all defense.`,
+                    `Valid targets currently: ${validTargets.length > 0 ? validTargets.map(e => this.combat._eName(e)).join(', ') : 'none'}.`,
+                    !banCan ? `Not enough mana (need ${CLERIC_BANISHMENT_MANA_COST} MP).` : '',
+                    !hasTarget ? 'No elemental or demon targets in this fight.' : '',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         if (m.classId === 'necromancer') {
@@ -1001,6 +1350,20 @@ export class CombatUI {
                     m.mana < NECRO_DEMI_LICH_MANA_COST ? 'Not enough mana.' : '',
                 ].filter(Boolean).join('\n');
             }
+
+            // L30 Plague Bringer
+            if (m.level >= NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL) {
+                const plagueCan = m.mana >= NECRO_PLAGUE_BRINGER_MANA_COST;
+                const plagueBtn = this._addBtn(`☣️ Plague Bringer (-${NECRO_PLAGUE_BRINGER_MANA_COST} MP)`, plagueCan, () => this.combat.necroPlagueBringer());
+                plagueBtn.classList.add('combat-special-btn');
+                plagueBtn.title = [
+                    `Necromancer L${NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL}: Plague Bringer (${NECRO_PLAGUE_BRINGER_MANA_COST} MP).`,
+                    'Inflicts Mummy Rot (permanent DoT) and Plague Infection on all qualifying enemies.',
+                    'Immune: undead, constructs, elementals, incorporeal, plants.',
+                    'When a plague-infected enemy dies, it explodes — dealing necrotic damage to all other enemies (chain reaction).',
+                    m.mana < NECRO_PLAGUE_BRINGER_MANA_COST ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         if (m.classId === 'ranger' && m.level >= RANGER_TOTEM_UNLOCK_LEVEL) {
@@ -1080,16 +1443,66 @@ export class CombatUI {
                 this.combat.rangerExplosiveArrow();
             });
             xaBtn.classList.add('combat-special-btn');
-            const allFavored = m.getAllFavoredEnemies();
             xaBtn.title = [
-                'Ranger L20 Special: Explosive Arrow.',
-                `Costs ${xaCost} stamina (3× normal ranged).`,
-                'Fires an explosive arrow that hits ALL hostile enemies.',
-                `Each enemy takes ${Math.round(RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT * 100)}% of normal post-defense ranged damage.`,
-                'Half normal crit chance per target.',
-                allFavored.length > 0
-                    ? `Half normal instakill chance vs favored enemies: ${allFavored.join(', ')}. Bosses/mega-bosses are immune to instant death; triggered procs deal x4 ranged damage instead.`
-                    : `No favored enemies set — choose them in the character screen (K).`,
+                `Ranger L${RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL}: Explosive Arrow.`,
+                `Costs ${xaCost} ST. Hits ALL enemies for ~${Math.round(RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT * 100)}% of normal ranged damage each.`,
+                `Crit chance ~${Math.round(RANGER_EXPLOSIVE_ARROW_CRIT_MULT * 100)}% of normal. Instakill chance half normal.`,
+                xaExhausted ? 'Not enough stamina — fires at half power.' : '',
+            ].filter(Boolean).join('\n');
+        }
+
+        // Ranger L30: Hunter's Mark (free action)
+        if (m.classId === 'ranger' && m.level >= RANGER_HUNTERS_MARK_UNLOCK_LEVEL) {
+            const hmCanCost = m.stamina >= RANGER_HUNTERS_MARK_STAMINA_COST && m.mana >= RANGER_HUNTERS_MARK_MANA_COST;
+            const hmActive = !!(m.hunterMarkEnemyId);
+            let hmLabel;
+            if (hmActive) {
+                const hmTarget = this.combat.enemies.find(e => e.id === m.hunterMarkEnemyId);
+                const hmName = hmTarget ? (hmTarget.name || hmTarget.type) : 'unknown';
+                hmLabel = `🎯 Mark: ${hmName}`;
+            } else {
+                hmLabel = `🎯 Hunter's Mark (-${RANGER_HUNTERS_MARK_STAMINA_COST} ST -${RANGER_HUNTERS_MARK_MANA_COST} MP)`;
+            }
+            const hmBtn = this._addBtn(hmLabel, hmCanCost || hmActive, () => {
+                this._pickTarget(e => this.combat.rangerHuntersMark(e), {
+                    prompt: `🎯 Choose a target for Hunter's Mark...`,
+                });
+            });
+            hmBtn.classList.add('combat-special-btn');
+            const hmMarkPct = Math.round(RANGER_HUNTERS_MARK_DAMAGE_BONUS * 100);
+            hmBtn.title = [
+                `Ranger L${RANGER_HUNTERS_MARK_UNLOCK_LEVEL}: Hunter's Mark (free action — does not use your turn).`,
+                `Place a mark on a single enemy. Costs ${RANGER_HUNTERS_MARK_STAMINA_COST} ST + ${RANGER_HUNTERS_MARK_MANA_COST} MP.`,
+                `Marked target receives +${hmMarkPct}% damage from ALL sources (all player attacks, summons, DoTs).`,
+                `Upkeep: ${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP + ${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST per round.`,
+                `If the ranger kills the marked target, the ranger gains a FREE BONUS TURN.`,
+                `On the bonus turn, the mark can be moved to a new target (free again), potentially chain-killing.`,
+                hmActive ? 'Mark is currently active — click to move it to a new target.' : 'No mark active.',
+                !hmCanCost && !hmActive ? `Not enough resources (needs ${RANGER_HUNTERS_MARK_STAMINA_COST} ST and ${RANGER_HUNTERS_MARK_MANA_COST} MP).` : '',
+            ].filter(Boolean).join('\n');
+        }
+
+        // Ranger L30: Beastlord Toggle (free action)
+        if (m.classId === 'ranger' && m.level >= RANGER_BEASTLORD_UNLOCK_LEVEL) {
+            const blActive = !!m.beastlordActive;
+            const blCanActivate = m.mana >= RANGER_BEASTLORD_MANA_PER_ROUND;
+            const blBeastCount = this.combat.party.filter(p => p.isSummoned && p.summonerId === m.id && p.summonStats && p.summonStats.beastlordSummoned && p.health > 0).length;
+            const blTotalUpkeep = RANGER_BEASTLORD_MANA_PER_ROUND + blBeastCount * RANGER_BEASTLORD_UPKEEP_PER_SUMMON;
+            const blSummonPct = Math.floor((m.level || 1) / 2) + RANGER_BEASTLORD_SUMMON_BASE;
+            const blLabel = blActive
+                ? `🦎 Beastlord ON (${blSummonPct}% auto | -${blTotalUpkeep} MP/rd)`
+                : `🦎 Beastlord Toggle (-${RANGER_BEASTLORD_MANA_PER_ROUND} MP/rd)`;
+            const blBtn = this._addBtn(blLabel, blCanActivate || blActive, () => this.combat.rangerToggleBeastlord());
+            blBtn.classList.add('combat-special-btn');
+            if (blActive) blBtn.style.background = '#2a4a2a';
+            blBtn.title = [
+                `Ranger L${RANGER_BEASTLORD_UNLOCK_LEVEL}: Beastlord (free action toggle — does not use your turn).`,
+                `Base cost: ${RANGER_BEASTLORD_MANA_PER_ROUND} MP per round.`,
+                `While active, each round: ${blSummonPct}% chance to auto-summon a random beast (wolf/bear/eagle/pixie).`,
+                'Auto-summoned beasts cost 1 MP/round each as additional upkeep.',
+                'Summons follow all normal rules: wolf packs, upgrades (Giant Bear/Golden Eagle/Pixie Princess).',
+                blActive ? `Active — ${blBeastCount} Beastlord beast(s) alive. Total upkeep: ${blTotalUpkeep} MP/round.` : 'Not active.',
+                !blCanActivate && !blActive ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
         }
 
@@ -1152,6 +1565,60 @@ export class CombatUI {
                 'Does NOT affect golems or summoned undead.',
                 !canRally ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
+        }
+
+        // Bard L30: Symphony of Destruction (1/combat channeled AoE)
+        if (m.classId === 'bard' && m.level >= BARD_SYMPHONY_UNLOCK_LEVEL && !m.symphonyUsedThisCombat) {
+            const symManaCost = BARD_SYMPHONY_BASE_MANA_COST;
+            const symStaCost  = BARD_SYMPHONY_BASE_STA_COST;
+            const canSym = m.mana >= symManaCost && m.stamina >= symStaCost;
+            const symBtn = this._addBtn(
+                `♪♪ Symphony of Destruction (-${symManaCost} MP/-${symStaCost} ST)`,
+                canSym,
+                () => this.combat.bardStartSymphony(),
+            );
+            symBtn.classList.add('combat-special-btn');
+            symBtn.style.background = 'linear-gradient(135deg,#3a1060,#7a20b0)';
+            symBtn.title = [
+                `Bard L${BARD_SYMPHONY_UNLOCK_LEVEL}: Symphony of Destruction (1/combat).`,
+                `Costs ${symManaCost} MP and ${symStaCost} ST to start; doubles each round.`,
+                `Round 1: ×1 damage to ALL enemies.  Round 2: ×2.  Round 3: ×4, etc.`,
+                `Each round costs twice the previous round (10→20→40→80 MP/ST).`,
+                `Deals sonic AoE magic damage. Incorporeal enemies are immune.`,
+                `While channeling: all other abilities are locked. Stop is a free action.`,
+                `Ends if bard is stunned, webbed, or can no longer pay the doubled cost.`,
+                !canSym ? `Not enough mana/stamina (needs ${symManaCost} MP and ${symStaCost} ST).` : '',
+            ].filter(Boolean).join('\n');
+        }
+
+        // Bard L30: Thunderous Drums toggle
+        if (m.classId === 'bard' && m.level >= BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL) {
+            const maxRedPct = Math.round(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION * 100);
+            const curRedPct = Math.min(maxRedPct, m.level);
+            if (!m.thunderousDrumsActive) {
+                const canDrum = m.mana >= BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND;
+                const drumOnBtn = this._addBtn(`🥁 Thunderous Drums`, canDrum, () => this.combat.bardThunderousDrumsOn());
+                drumOnBtn.classList.add('combat-special-btn');
+                drumOnBtn.title = [
+                    `Bard L${BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL}: Thunderous Drums.`,
+                    `Costs ${BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND} MP/round to maintain.`,
+                    `Reduces all sonic and psychic attack damage by ${curRedPct}% (cap ${maxRedPct}%).`,
+                    `Gives all party members a ${curRedPct}% chance to resist stun, charm, enslave, and other sonic/psychic effects (cap ${maxRedPct}%).`,
+                    'Sonic: shrieker screech, harpy song, banshee wail.',
+                    'Psychic: vampire charm, succubus kiss, aboleth enslavement, and similar mind attacks.',
+                    'Drums cease if mana runs out.',
+                    !canDrum ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+            } else {
+                const drumOffBtn = this._addBtn(`🥁 Stop Drums`, true, () => this.combat.bardThunderousDrumsOff());
+                drumOffBtn.classList.add('combat-special-btn');
+                drumOffBtn.style.background = 'linear-gradient(135deg,#4a3000,#7a5500)';
+                drumOffBtn.title = [
+                    `Thunderous Drums are ACTIVE (-${BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND} MP/round).`,
+                    `Currently reducing sonic/psychic damage by ${curRedPct}% and granting ${curRedPct}% effect resist.`,
+                    'Click to stop the drums (free action).',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         // Druid: Entangle
@@ -1234,6 +1701,85 @@ export class CombatUI {
                 communeUnlocked && tokens >= DRUID_COMMUNE_FAE_TOKENS_NEEDED
                     ? '✨ READY — next use will summon the Faerie Queen!' : '',
             ].filter(Boolean).join('\n');
+
+            // ── Wild Shape (L30) ─────────────────────────────────────────────────
+            if (m.level >= DRUID_WILD_SHAPE_UNLOCK_LEVEL) {
+                const wsActive  = !!m.wildShapeForm;
+                const wsCanAfford = m.mana >= DRUID_WILD_SHAPE_MANA_INITIAL;
+                const lvl = m.level;
+
+                if (!wsActive) {
+                    // Show form selection buttons
+                    const FORMS = [
+                        { id: 'bear',   icon: '\u{1F43B}', name: 'Bear Form',         defDiv: DRUID_WILD_BEAR_DEFENSE_DIVISOR,   row: 'front' },
+                        { id: 'wolf',   icon: '\u{1F43A}', name: 'Wolf Form',          defDiv: DRUID_WILD_WOLF_DEFENSE_DIVISOR,   row: 'front' },
+                        { id: 'eagle',  icon: '\u{1F985}', name: 'Storm Eagle Form',   defDiv: 0,                                  row: 'back'  },
+                        { id: 'pixie',  icon: '\u{1F9DA}', name: 'Pixie Form',         defDiv: 0,                                  row: 'back'  },
+                        { id: 'treant', icon: '\u{1F333}', name: 'Treant Form',        defDiv: DRUID_WILD_TREANT_DEFENSE_DIVISOR, row: 'front' },
+                    ];
+                    for (const f of FORMS) {
+                        const formLabel = `${f.icon} ${f.name} (-${DRUID_WILD_SHAPE_MANA_INITIAL} MP)`;
+                        const formBtn = this._addBtn(formLabel, wsCanAfford, () => this.combat.druidActivateWildShape(f.id));
+                        formBtn.classList.add('combat-special-btn');
+                        formBtn.style.borderLeft = '3px solid #2a6';
+                        const defBonus = f.defDiv > 0 ? Math.floor(lvl / f.defDiv) : 0;
+                        const formTitles = {
+                            bear:   [`Bear Form: HP doubles, front row, ${Math.max(1,Math.floor(lvl/DRUID_WILD_BEAR_ATTACKS_DIVISOR))} magic-melee hits/turn.`,
+                                     `Stun chance: ${Math.round((DRUID_WILD_BEAR_STUN_BASE + lvl*DRUID_WILD_BEAR_STUN_PER_LEVEL)*100)}%. +${defBonus} defense.`,
+                                     'Bears in party: +50% dmg, +def, extra attack.'],
+                            wolf:   [`Wolf Form: front row, ${Math.max(1,Math.floor(lvl/DRUID_WILD_WOLF_ATTACKS_DIVISOR))} magic-melee hits on random front enemies.`,
+                                     `Bleed chance: ${Math.round((DRUID_WILD_WOLF_BLEED_BASE + lvl*DRUID_WILD_WOLF_BLEED_PER_LEVEL)*100)}%, ${Math.max(1,Math.floor(lvl/DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR))} rounds. +${Math.floor(lvl/DRUID_WILD_WOLF_DEFENSE_DIVISOR)} defense.`,
+                                     'Wolves in party: +50% dmg, +def, extra attack. Wolf pack cascade 65%.'],
+                            eagle:  [`Storm Eagle Form: back row, ${Math.max(1,Math.floor(lvl/DRUID_WILD_EAGLE_ATTACKS_DIVISOR))} magic-ranged strikes/turn.`,
+                                     `Crit: ${Math.round((DRUID_WILD_EAGLE_CRIT_BASE + lvl*DRUID_WILD_EAGLE_CRIT_PER_LEVEL)*100)}% chance, ${(DRUID_WILD_EAGLE_CRIT_MULT_BASE + lvl*DRUID_WILD_EAGLE_CRIT_MULT_PER_LEVEL).toFixed(1)}× mult.`,
+                                     `Ranged evasion: ${Math.round(Math.min(95, lvl*DRUID_WILD_EAGLE_EVASION_PER_LEVEL*100))}%.`,
+                                     'Eagles in party: +50% dmg, +def, extra attack.'],
+                            pixie:  [`Pixie Form: back row, AoE hits ALL enemies each turn.`,
+                                     `${Math.round(DRUID_WILD_PIXIE_MAGIC_RESIST*100)}% less magic/AoE damage while in form.`,
+                                     'Pixies in party: +75% dmg, +def, extra burst.'],
+                            treant: [`Treant Form: HP doubles, front row, ${Math.max(1,Math.floor(lvl/DRUID_WILD_TREANT_ATTACKS_DIVISOR))} magic-melee hits on random front enemies.`,
+                                     `Hold chance: ${Math.round((DRUID_WILD_TREANT_HOLD_BASE + lvl*DRUID_WILD_TREANT_HOLD_PER_LEVEL)*100)}%. +${defBonus} defense.`,
+                                     'Treants in party: +50% dmg, +def, extra attack.'],
+                        };
+                        formBtn.title = [
+                            `Druid L${DRUID_WILD_SHAPE_UNLOCK_LEVEL}: Wild Shape — ${f.name} (free action).`,
+                            `Costs ${DRUID_WILD_SHAPE_MANA_INITIAL} MP to activate + ${DRUID_WILD_SHAPE_MANA_PER_ROUND} MP/round upkeep.`,
+                            ...(formTitles[f.id] || []),
+                            'Summoning a matching beast while in form: extra beast spawned + wild shape buffs applied.',
+                            !wsCanAfford ? `Not enough mana (needs ${DRUID_WILD_SHAPE_MANA_INITIAL} MP).` : '',
+                        ].filter(Boolean).join('\n');
+                    }
+                } else {
+                    // In Wild Shape — show attack button + exit button
+                    const FORM_META = {
+                        bear:   { icon: '\u{1F43B}', name: 'Bear Form',       needTarget: true,  atk: (t) => this.combat.druidBearAttack(t)   },
+                        wolf:   { icon: '\u{1F43A}', name: 'Wolf Form',       needTarget: true,  atk: (t) => this.combat.druidWolfAttack(t)   },
+                        eagle:  { icon: '\u{1F985}', name: 'Eagle Form',      needTarget: true,  atk: (t) => this.combat.druidEagleAttack(t)   },
+                        pixie:  { icon: '\u{1F9DA}', name: 'Pixie Form',      needTarget: false, atk: ()  => this.combat.druidPixieAttack()    },
+                        treant: { icon: '\u{1F333}', name: 'Treant Form',     needTarget: true,  atk: (t) => this.combat.druidTreantAttack(t)  },
+                    };
+                    const meta = FORM_META[m.wildShapeForm] || { icon: '\u{1F43E}', name: m.wildShapeForm, needTarget: false };
+                    const atkLabel = `${meta.icon} ${meta.name} Attack`;
+                    const atkBtn = this._addBtn(atkLabel, true, () => {
+                        if (meta.needTarget) {
+                            this._pickTarget(t => meta.atk(t), { prompt: `${meta.icon} Choose a target...` });
+                        } else {
+                            meta.atk();
+                        }
+                    });
+                    atkBtn.classList.add('combat-action-btn');
+                    atkBtn.style.background = '#1a3a1a';
+                    atkBtn.style.borderLeft = '3px solid #4a4';
+
+                    const exitBtn = this._addBtn(`\u{1F43E} Exit Wild Shape`, true, () => this.combat.druidDeactivateWildShape());
+                    exitBtn.classList.add('combat-special-btn');
+                    exitBtn.title = [
+                        'Exit Wild Shape (free action — does not use your turn).',
+                        'Must exit current form before entering a different one.',
+                        'HP bonus from Bear/Treant form is removed on exit (HP clamped to new max).',
+                    ].join('\n');
+                }
+            }
         }
 
         // Paladin: Smite + Lay On Hands
@@ -1388,6 +1934,71 @@ export class CombatUI {
                     canMelee && hasAoeSmiteTarget && !canAoeSmite ? 'Not enough mana.' : '',
                 ].filter(Boolean).join('\n');
             }
+
+            // ── Paladin L30: Aura of Righteousness (passive) + Divine Judgment ────
+            if (m.level >= PALADIN_L30_UNLOCK_LEVEL) {
+                // Compute current stacked aura reduction across all alive L30+ paladins
+                const _auraPaladins = (this.combat.party || []).filter(p =>
+                    p && p.health > 0 && !p.isSummoned
+                    && p.classId === 'paladin' && p.level >= PALADIN_L30_UNLOCK_LEVEL,
+                ).length;
+                let _auraTotalReduction = 0;
+                let _auraStep = PALADIN_AURA_RIGHTEOUSNESS_REDUCTION;
+                for (let _i = 0; _i < _auraPaladins; _i++) {
+                    _auraTotalReduction += _auraStep;
+                    _auraStep /= 2;
+                }
+                const _auraReductionPct = (_auraTotalReduction * 100).toFixed(1);
+                const _auraHealPct      = Math.round(PALADIN_AURA_RIGHTEOUSNESS_HEAL_FRAC * 100);
+
+                const auraPassiveBtn = this._addBtn(`✝️ Aura of Righteousness (passive)`, false, () => {});
+                auraPassiveBtn.title = [
+                    `Paladin L${PALADIN_L30_UNLOCK_LEVEL} passive: Aura of Righteousness.`,
+                    `Party damage reduction: ${_auraReductionPct}% before defenses (${_auraPaladins > 1 ? _auraPaladins + ' L30+ paladins stacking' : 'single paladin'}).`,
+                    `Stacking formula: each additional paladin contributes half the previous (5%, 2.5%, 1.25%…, hard cap ~10%).`,
+                    `Each regular melee hit by this paladin also heals every living non-undead/non-golem party member for ${_auraHealPct}% of damage dealt (min 1).`,
+                    `Paladin must be alive for the damage reduction to apply.`,
+                ].join('\n');
+
+                // ── Divine Judgment (once per combat)
+                const djUsed        = !!m.divineJudgmentUsed;
+                const djFilter      = (e) => this.combat.canPaladinSmiteTarget(m, e);
+                const hasJudgeTarget = this.combat.aliveEnemies.some(djFilter);
+                const djCanAfford   = m.stamina >= PALADIN_DIVINE_JUDGMENT_STAMINA_COST
+                                   && m.mana    >= PALADIN_DIVINE_JUDGMENT_MANA_COST;
+                const djCan         = !djUsed && canMelee && hasJudgeTarget && djCanAfford;
+                let djLabel = `⚡✨ Divine Judgment (-${PALADIN_DIVINE_JUDGMENT_STAMINA_COST} ST / -${PALADIN_DIVINE_JUDGMENT_MANA_COST} MP)`;
+                if (djUsed)              djLabel += ' [USED]';
+                else if (!canMelee)      djLabel += ' [BACK ROW]';
+                else if (!hasJudgeTarget) djLabel += ' [NO TARGET]';
+
+                const djBtn = this._addBtn(djLabel, djCan, () => {
+                    soundManager.playMelee();
+                    this._pickTarget(e => this.combat.paladinDivineJudgment(e), {
+                        filter: djFilter,
+                        prompt: 'Call Divine Judgment upon whom?',
+                    });
+                });
+                djBtn.classList.add('combat-special-btn');
+
+                const _curPct     = (PALADIN_DIVINE_JUDGMENT_BASE_PCT + m.level * PALADIN_DIVINE_JUDGMENT_PER_LEVEL) * 100;
+                const _bossPct    = _curPct / PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR;
+                const _megaPct    = _curPct / PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR;
+                djBtn.title = [
+                    `Paladin L${PALADIN_L30_UNLOCK_LEVEL} special: Divine Judgment (once per combat).`,
+                    `Costs ${PALADIN_DIVINE_JUDGMENT_STAMINA_COST} stamina and ${PALADIN_DIVINE_JUDGMENT_MANA_COST} mana. Front-row only.`,
+                    `Calls holy wrath on a smiteable target, dealing ${_curPct.toFixed(1)}% of their current HP as holy damage (ignores all defense).`,
+                    `vs bosses: ${_bossPct.toFixed(1)}% of current HP. vs mega bosses: ${_megaPct.toFixed(1)}% of current HP.`,
+                    `Hits hardest on healthy targets — powerful opener.`,
+                    m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
+                        ? 'Targets: undead, demons, dragons (Dragonslayer active).'
+                        : 'Targets undead and demons; activate Dragonslayer to include dragons.',
+                    djUsed ? 'Already used this combat.' : '',
+                    !canMelee ? 'Cannot use from back row.' : '',
+                    !hasJudgeTarget ? 'No valid smiteable targets.' : '',
+                    canMelee && hasJudgeTarget && !djUsed && !djCanAfford ? 'Not enough stamina or mana.' : '',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         // Artificer: Heal Golem (own golem only; uses 1 reagent of the golem's tier)
@@ -1429,6 +2040,46 @@ export class CombatUI {
                 hasLive && needsHeal && !canPayAny ? 'No matching reagent in inventory.' : '',
                 'Out of combat, use the Crafting menu (K) to forge, repair, or dismiss a golem.',
             ].filter(Boolean).join('\n');
+
+            // L30 Golem Berserk Mode (free action — ON and OFF buttons)
+            if (m.level >= ARTIFICER_BERSERK_UNLOCK_LEVEL) {
+                const berserkGolems = myGolems.filter(g => !g.golemBerserkUsed);
+                const anyBerserk    = myGolems.some(g => g.golemBerserkActive);
+                const canActivate   = berserkGolems.some(g => !g.golemBerserkActive && !g.golemBerserkUsed);
+                const canDeactivate = anyBerserk;
+
+                const bOnBtn = this._addBtn('⚡ Berserk ON (free)', canActivate, () => {
+                    this._pickPartyTarget(t => this.combat.golemBerserkOn(t), {
+                        filter: (pm) => pm && pm.isSummoned && pm.summonerId === m.id &&
+                            GOLEM_PRESETS[pm.summonType] && pm.health > 0 &&
+                            !pm.golemBerserkActive && !pm.golemBerserkUsed,
+                        prompt: 'Activate Berserk on which golem?',
+                    });
+                });
+                bOnBtn.classList.add('combat-special-btn');
+                const dmgPct = Math.round(ARTIFICER_BERSERK_DMG_PER_LEVEL * 100);
+                bOnBtn.title = [
+                    `Artificer L${ARTIFICER_BERSERK_UNLOCK_LEVEL}: Golem Berserk Mode (free action, one use per combat).`,
+                    `Damage multiplier: 1 + level × ${dmgPct}% (e.g. level 30 = +60%).`,
+                    `Overload: ${Math.round(ARTIFICER_BERSERK_OVERLOAD_PCT * 100)}% current HP self-damage per round.`,
+                    `Auto-exits at ${Math.round(ARTIFICER_BERSERK_MIN_HP_PCT * 100)}% max HP; cannot repair while berserk.`,
+                    !canActivate ? (hasLive ? 'No eligible golem (already berserk, used, or dead).' : 'No living golem.') : '',
+                ].filter(Boolean).join('\n');
+
+                const bOffBtn = this._addBtn('⚙️ Berserk OFF (free)', canDeactivate, () => {
+                    this._pickPartyTarget(t => this.combat.golemBerserkOff(t), {
+                        filter: (pm) => pm && pm.isSummoned && pm.summonerId === m.id &&
+                            GOLEM_PRESETS[pm.summonType] && pm.golemBerserkActive,
+                        prompt: 'Disengage Berserk on which golem?',
+                    });
+                });
+                bOffBtn.classList.add('combat-special-btn');
+                bOffBtn.title = [
+                    'Disengage Berserk Mode on a golem (free action).',
+                    'Marks the charge as used for this combat — cannot re-enter.',
+                    !canDeactivate ? 'No golem is currently in Berserk Mode.' : '',
+                ].filter(Boolean).join('\n');
+            }
         }
 
         if (isMonk && m.level >= MONK_AVATAR_UNLOCK_LEVEL) {
@@ -1493,6 +2144,28 @@ export class CombatUI {
                 !canMelee ? 'Cannot use from back row.' : '',
                 qpStMiss ? 'Not enough stamina.' : '',
                 qpMpMiss ? 'Not enough mana.' : '',
+            ].filter(Boolean).join('\n');
+        }
+
+        // ── Monk L30: Ki Surge
+        if (isMonk && m.level >= MONK_KI_UNLOCK_LEVEL) {
+            const ki = m.kiCharges || 0;
+            const kiCan = canMelee && ki > 0;
+            let kiLabel = `\u{1F9D8} Ki Surge (${ki} charge${ki !== 1 ? 's' : ''})`;
+            if (!canMelee) kiLabel += ' [BACK ROW]';
+            else if (ki <= 0) kiLabel += ' [NO KI]';
+            const kiBtn = this._addBtn(kiLabel, kiCan, () => {
+                soundManager.playMelee();
+                this.combat.monkKiSurge();
+            });
+            kiBtn.classList.add('combat-special-btn');
+            kiBtn.title = [
+                `Monk L${MONK_KI_UNLOCK_LEVEL}: Ki Surge.`,
+                `Strikes ALL enemies for melee × Ki Charges damage. Bypasses all defense. Counts as magic/AoE.`,
+                `Ki Charges: ${ki}. Banked by dodging (L30+) or Avatar cleansing harmful effects.`,
+                'Expends all Ki Charges. Front-row only.',
+                !canMelee ? 'Cannot use from back row.' : '',
+                ki <= 0 ? 'No Ki Charges available.' : '',
             ].filter(Boolean).join('\n');
         }
 
@@ -1691,7 +2364,16 @@ export class CombatUI {
         btn.className = 'combat-action-btn';
         btn.textContent = label;
         btn.disabled = !enabled;
-        if (enabled) btn.addEventListener('click', onClick);
+        if (enabled) btn.addEventListener('click', () => {
+            // Guard: ignore if another action is already being processed (prevents
+            // double-click and stale-callback bugs).
+            if (this._actionInProgress) return;
+            this._actionInProgress = true;
+            // Disable every action button immediately so no second click can land
+            // before _refresh() rebuilds them.
+            this.actionsEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+            onClick();
+        });
         this.actionsEl.appendChild(btn);
         return btn;
     }
@@ -1716,6 +2398,15 @@ export class CombatUI {
         this._selectingTarget = true;
         this._targetCallback = callback;
         this.turnInfo.textContent = prompt || 'Select a target...';
+
+        // Replace action buttons with a single Cancel button so the player can back out
+        this.actionsEl.innerHTML = '';
+        const _cancelBtn = document.createElement('button');
+        _cancelBtn.className = 'combat-action-btn';
+        _cancelBtn.textContent = '← Cancel';
+        _cancelBtn.title = 'Cancel target selection and return to your action choices.';
+        _cancelBtn.addEventListener('click', () => this._refresh());
+        this.actionsEl.appendChild(_cancelBtn);
 
         // Mark only valid targets as clickable; dim invalid ones (uses base, not alive, so charmed are also hidden)
         for (const e of base) {

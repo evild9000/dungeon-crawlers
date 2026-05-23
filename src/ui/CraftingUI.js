@@ -12,7 +12,7 @@
  *   - Potions & Scrolls: craft Minor / Greater healing potions and
  *     Warding / Wrath scrolls. Finished items go into the group inventory.
  *   - Golems: forge a persistent artificer summon, then at L25 install
- *     golem attachments. Only one golem per artificer at a time; permadeath.
+ *     golem attachments. Max golems scales with level (1/2/3/4/5 at <30/30/50/70/90); permadeath.
  */
 
 import {
@@ -29,6 +29,7 @@ import {
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
     calcScrollBonus, calcScrollCost,
+    ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
 } from '../utils/constants.js';
 import { getItemDef, WEAPONS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';
@@ -514,12 +515,18 @@ export class CraftingUI {
         }
 
         const unlocked = getArtificerUnlockedGolems(artificer.level);
-        const existingGolem = (state.party || []).find(
+        const existingGolems = (state.party || []).filter(
             p => p && p.isSummoned && p.summonerId === artificer.id &&
                  p.summonStats && p.summonStats.tierId && p.health > 0 && GOLEM_PRESETS[p.summonType],
         );
+        const maxGolems = artificer.level >= 90 ? 5
+                        : artificer.level >= 70 ? 4
+                        : artificer.level >= 50 ? 3
+                        : artificer.level >= ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL ? 2
+                        : 1;
+        const atCap = existingGolems.length >= maxGolems;
 
-        if (existingGolem) {
+        for (const existingGolem of existingGolems) {
             const row = document.createElement('div');
             row.className = 'craft-row';
             row.innerHTML = `<div class="craft-row-info"><b>${GOLEM_PRESETS[existingGolem.summonType].icon} ${existingGolem.name}</b><br>` +
@@ -554,7 +561,6 @@ export class CraftingUI {
                 btn.textContent = `Repair — 1 ${tier ? tier.reagentTier : 'common'}`;
                 btn.addEventListener('click', () => {
                     if (!this._combatSystem) return;
-                    // Out-of-combat repair: route through CombatSystem.healGolem with spendTurn=false.
                     this._combatSystem.setInventory(state.inventory);
                     const ok = this._combatSystem.healGolem(existingGolem, artificer, /*spendTurn*/ false);
                     if (ok) {
@@ -571,10 +577,12 @@ export class CraftingUI {
             } else {
                 body.appendChild(this._note(`Golem attachments unlock at Artificer level ${ARTIFICER_GOLEM_ATTACHMENT_UNLOCK_LEVEL}.`));
             }
+        }
 
+        if (existingGolems.length > 0) {
             const separator = document.createElement('div');
             separator.className = 'craft-sep';
-            separator.textContent = '— One golem per artificer at a time —';
+            separator.textContent = `— Golems: ${existingGolems.length} / ${maxGolems} —`;
             body.appendChild(separator);
         }
 
@@ -587,21 +595,17 @@ export class CraftingUI {
                 (isUnlocked ? '' : ` <span class="craft-locked">(unlocks at Lv ${tier.unlockLevel})</span>`) +
                 `<br><span class="craft-desc">${tier.description}</span></div>`;
 
-            const canPay = isUnlocked && !existingGolem && this._canPay(state, tier.cost);
+            const canPay = isUnlocked && !atCap && this._canPay(state, tier.cost);
             const btn = document.createElement('button');
             btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
             btn.disabled = !canPay;
             btn.textContent = `Forge — ${this._formatCost(tier.cost)}`;
-            btn.title = existingGolem
-                ? 'You already command a golem. Dismiss it first.'
+            btn.title = atCap
+                ? `You command ${existingGolems.length}/${maxGolems} golems. Dismiss one first.`
                 : (isUnlocked ? 'Forge this golem.' : `Requires artificer level ${tier.unlockLevel}.`);
             btn.addEventListener('click', () => {
                 if (!this._combatSystem) return;
                 this._combatSystem.setInventory(state.inventory);
-                // Temporarily set currentMember path isn't available out of combat;
-                // use the explicit-member signature + spendTurn=false.
-                // We also need the CombatSystem to see the party so it can push the
-                // new golem into it.
                 this._combatSystem.party = state.party;
                 const golem = this._combatSystem.summonGolem(tier.id, artificer, /*spendTurn*/ false, state.inventory);
                 if (golem) {

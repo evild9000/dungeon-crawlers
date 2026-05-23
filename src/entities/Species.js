@@ -69,6 +69,26 @@ export const SPECIES = {
         portraitTrait: { skinShift: 0, ears: 'round', beard: false, tusks: false, skinTint: null, heightScale: 0.88 },
         description: 'Nimble wanderers. +1 defense (less damage taken), +1 ST regen/min.',
     },
+    undead: {
+        id: 'undead',
+        name: 'Undead',
+        icon: '\u{1F480}',
+        regenHp: 0, regenSt: 0, regenMp: 0,
+        meleeBonus: 0, rangedBonus: 0, magicBonus: 0,
+        defenseBonus: 0,
+        portraitTrait: { skinShift: 0, ears: 'round', beard: false, tusks: false, skinTint: '#6a7a5a', heightScale: 1.08 },
+        description: 'Animated dead. Grey-green rotting flesh.',
+    },
+    elemental: {
+        id: 'elemental',
+        name: 'Elemental',
+        icon: '\u{1F300}',
+        regenHp: 0, regenSt: 0, regenMp: 0,
+        meleeBonus: 0, rangedBonus: 0, magicBonus: 0,
+        defenseBonus: 0,
+        portraitTrait: { skinShift: 0, ears: 'round', beard: false, tusks: false, skinTint: null, heightScale: 1.0 },
+        description: 'Pure elemental energy given form.',
+    },
 };
 
 export const SPECIES_IDS = Object.keys(SPECIES);

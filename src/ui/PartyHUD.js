@@ -7,6 +7,22 @@ import {
     BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL,
+    MONK_KI_UNLOCK_LEVEL,
+    CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL,
+    CLERIC_SPIRITUAL_WEAPON_UPKEEP,
+    CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR,
+    ROGUE_SHADOW_STEP_UNLOCK_LEVEL,
+    ROGUE_SHADOW_STEP_BACKSTAB_MULT,
+    RANGER_HUNTERS_MARK_UNLOCK_LEVEL,
+    RANGER_HUNTERS_MARK_DAMAGE_BONUS,
+    RANGER_HUNTERS_MARK_UPKEEP_MANA,
+    RANGER_HUNTERS_MARK_UPKEEP_STAMINA,
+    RANGER_BEASTLORD_UNLOCK_LEVEL,
+    RANGER_BEASTLORD_MANA_PER_ROUND,
+    RANGER_BEASTLORD_SUMMON_BASE,
+    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL,
+    MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND,
+    MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
 } from '../utils/constants.js';
 
 /**
@@ -651,7 +667,7 @@ export class PartyHUD {
                     lichBadge.style.border = '1px solid #aa44ff';
                     lichBadge.style.color = '#ddaaff';
                     lichBadge.textContent = '\u{1F9B4}LICH';
-                    lichBadge.title = 'Lich Form active: poison & stun immune, partial magic resist, Phylactery on death.';
+                    lichBadge.title = 'Lich Form active: poison, stun, paralysis & mummy rot immune; partial magic resist; Phylactery on death.';
                 }
             } else if (lichBadge) {
                 lichBadge.remove();
@@ -710,6 +726,257 @@ export class PartyHUD {
             } else if (tmpBadge) {
                 tmpBadge.remove();
             }
+        }
+
+        // Ki Charges badge — shown for L30+ monks with active ki charges.
+        if (portraitWrap && member.classId === 'monk' && (member.level || 0) >= MONK_KI_UNLOCK_LEVEL) {
+            let kiBadge = portraitWrap.querySelector('.party-ki-badge');
+            const kiCount = member.kiCharges || 0;
+            if (kiCount > 0) {
+                if (!kiBadge) {
+                    kiBadge = document.createElement('span');
+                    kiBadge.className = 'party-ki-badge';
+                    kiBadge.style.position = 'absolute';
+                    kiBadge.style.bottom = '24px';
+                    kiBadge.style.left = '-4px';
+                    kiBadge.style.background = 'rgba(20,100,180,0.92)';
+                    kiBadge.style.border = '1px solid #44aaff';
+                    kiBadge.style.borderRadius = '6px';
+                    kiBadge.style.color = '#aaddff';
+                    kiBadge.style.fontSize = '10px';
+                    kiBadge.style.padding = '1px 3px';
+                    kiBadge.style.pointerEvents = 'none';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(kiBadge);
+                }
+                kiBadge.textContent = '\u{1F9D8}' + kiCount;
+                kiBadge.title = `Ki Charges: ${kiCount} — use Ki Surge in combat to expend all charges and strike every enemy.`;
+            } else if (kiBadge) {
+                kiBadge.remove();
+            }
+        }
+
+        // Spiritual Weapon badge — shown for L30+ clerics with active weapons.
+        if (portraitWrap && member.classId === 'cleric' && (member.level || 0) >= CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL) {
+            let swBadge = portraitWrap.querySelector('.party-sw-badge');
+            const swCount = (member.spiritualWeapons || []).length;
+            if (swCount > 0) {
+                if (!swBadge) {
+                    swBadge = document.createElement('span');
+                    swBadge.className = 'party-sw-badge';
+                    swBadge.style.position = 'absolute';
+                    swBadge.style.bottom = '24px';
+                    swBadge.style.right = '-4px';
+                    swBadge.style.background = 'rgba(180,140,20,0.92)';
+                    swBadge.style.border = '1px solid #ffe066';
+                    swBadge.style.borderRadius = '6px';
+                    swBadge.style.color = '#fff8cc';
+                    swBadge.style.fontSize = '10px';
+                    swBadge.style.padding = '1px 3px';
+                    swBadge.style.pointerEvents = 'none';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(swBadge);
+                }
+                const swAtks = Math.max(1, Math.floor((member.level || 1) / CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR));
+                const upkeep = swCount * CLERIC_SPIRITUAL_WEAPON_UPKEEP;
+                swBadge.textContent = '⚔️' + swCount;
+                swBadge.title = `Spiritual Weapons: ${swCount} active (${swAtks} atk${swAtks !== 1 ? 's' : ''}/round each, ${upkeep} MP/round upkeep total). Force attacks hit random enemies each round.`;
+            } else if (swBadge) {
+                swBadge.remove();
+            }
+        }
+
+        // Shadow Step badge — shown for L30+ rogues while the effect is active.
+        if (portraitWrap && member.classId === 'rogue' && (member.level || 0) >= ROGUE_SHADOW_STEP_UNLOCK_LEVEL) {
+            let ssBadge = portraitWrap.querySelector('.party-shadow-step-badge');
+            const ssFx = Array.isArray(member.activeEffects)
+                ? member.activeEffects.find(fx => fx.type === 'shadow_step' && (fx.rounds || 0) > 0)
+                : null;
+            if (ssFx) {
+                if (!ssBadge) {
+                    ssBadge = document.createElement('span');
+                    ssBadge.className = 'party-shadow-step-badge';
+                    ssBadge.style.position = 'absolute';
+                    ssBadge.style.bottom = '24px';
+                    ssBadge.style.right = '-4px';
+                    ssBadge.style.background = 'rgba(20,10,40,0.95)';
+                    ssBadge.style.border = '1px solid #8855cc';
+                    ssBadge.style.borderRadius = '6px';
+                    ssBadge.style.color = '#cc99ff';
+                    ssBadge.style.fontSize = '10px';
+                    ssBadge.style.padding = '1px 3px';
+                    ssBadge.style.pointerEvents = 'none';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(ssBadge);
+                }
+                ssBadge.textContent = '\u{1F311}' + ssFx.rounds;
+                ssBadge.title = `Shadow Step: ${ssFx.rounds} round(s) remaining — untargetable, ×${ROGUE_SHADOW_STEP_BACKSTAB_MULT} backstab damage.`;
+            } else if (ssBadge) {
+                ssBadge.remove();
+            }
+        }
+
+        // Hunter's Mark badge — shown for L30+ rangers with an active mark.
+        if (portraitWrap && member.classId === 'ranger' && (member.level || 0) >= RANGER_HUNTERS_MARK_UNLOCK_LEVEL) {
+            let hmBadge = portraitWrap.querySelector('.party-hunters-mark-badge');
+            const hmActive = !!(member.hunterMarkEnemyId);
+            if (hmActive) {
+                if (!hmBadge) {
+                    hmBadge = document.createElement('span');
+                    hmBadge.className = 'party-hunters-mark-badge';
+                    hmBadge.style.position = 'absolute';
+                    hmBadge.style.bottom = '24px';
+                    hmBadge.style.left = '-4px';
+                    hmBadge.style.background = 'rgba(60,30,10,0.95)';
+                    hmBadge.style.border = '1px solid #cc6600';
+                    hmBadge.style.borderRadius = '6px';
+                    hmBadge.style.color = '#ffaa44';
+                    hmBadge.style.fontSize = '10px';
+                    hmBadge.style.padding = '1px 3px';
+                    hmBadge.style.pointerEvents = 'none';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(hmBadge);
+                }
+                hmBadge.textContent = '🎯';
+                hmBadge.title = `Hunter's Mark active (+${Math.round(RANGER_HUNTERS_MARK_DAMAGE_BONUS * 100)}% dmg to target | upkeep ${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP + ${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST/rd).`;
+            } else if (hmBadge) {
+                hmBadge.remove();
+            }
+        }
+
+        // Beastlord badge — shown for L30+ rangers with Beastlord active.
+        if (portraitWrap && member.classId === 'ranger' && (member.level || 0) >= RANGER_BEASTLORD_UNLOCK_LEVEL) {
+            let blBadge = portraitWrap.querySelector('.party-beastlord-badge');
+            if (member.beastlordActive) {
+                if (!blBadge) {
+                    blBadge = document.createElement('span');
+                    blBadge.className = 'party-beastlord-badge';
+                    blBadge.style.position = 'absolute';
+                    blBadge.style.bottom = '8px';
+                    blBadge.style.left = '-4px';
+                    blBadge.style.background = 'rgba(10,40,10,0.95)';
+                    blBadge.style.border = '1px solid #44aa44';
+                    blBadge.style.borderRadius = '6px';
+                    blBadge.style.color = '#88ff88';
+                    blBadge.style.fontSize = '10px';
+                    blBadge.style.padding = '1px 3px';
+                    blBadge.style.pointerEvents = 'none';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(blBadge);
+                }
+                const blPct = Math.floor((member.level || 1) / 2) + RANGER_BEASTLORD_SUMMON_BASE;
+                blBadge.textContent = '🦎';
+                blBadge.title = `Beastlord active (${blPct}% auto-summon/rd | ${RANGER_BEASTLORD_MANA_PER_ROUND} MP/rd base).`;
+            } else if (blBadge) {
+                blBadge.remove();
+            }
+        }
+
+        // Elemental Rift badge — shown for L30+ mages while rift is open
+        if (portraitWrap && member.classId === 'mage' && (member.level || 0) >= MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL) {
+            let riftBadge = portraitWrap.querySelector('.party-rift-badge');
+            if (member.elementalRiftOpen) {
+                if (!riftBadge) {
+                    riftBadge = document.createElement('span');
+                    riftBadge.className = 'party-rift-badge';
+                    riftBadge.style.position = 'absolute';
+                    riftBadge.style.bottom = '8px';
+                    riftBadge.style.left = '-4px';
+                    riftBadge.style.background = 'rgba(10,20,50,0.95)';
+                    riftBadge.style.border = '1px solid #44aaff';
+                    riftBadge.style.borderRadius = '6px';
+                    riftBadge.style.color = '#88ccff';
+                    riftBadge.style.fontSize = '10px';
+                    riftBadge.style.padding = '1px 3px';
+                    riftBadge.style.pointerEvents = 'none';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(riftBadge);
+                }
+                const riftPct = Math.min(100, (member.level || 1) + MAGE_ELEMENTAL_RIFT_SUMMON_BASE);
+                riftBadge.textContent = '\u{1F300}';
+                riftBadge.title = `Elemental Rift open (${riftPct}% summon/rd | ${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP/rd).`;
+            } else if (riftBadge) {
+                riftBadge.remove();
+            }
+        }
+
+        // Corpse Horror badge — shown when this summon is a Corpse Horror (Dark Apotheosis)
+        if (portraitWrap && member.isSummoned && member.summonType === 'corpse_horror') {
+            let horrorBadge = portraitWrap.querySelector('.party-corpse-horror-badge');
+            if (!horrorBadge) {
+                horrorBadge = document.createElement('span');
+                horrorBadge.className = 'party-corpse-horror-badge';
+                horrorBadge.style.position = 'absolute';
+                horrorBadge.style.bottom = '8px';
+                horrorBadge.style.right = '-4px';
+                horrorBadge.style.background = 'rgba(60,0,80,0.92)';
+                horrorBadge.style.border = '1px solid #aa44cc';
+                horrorBadge.style.borderRadius = '6px';
+                horrorBadge.style.color = '#ddaaff';
+                horrorBadge.style.fontSize = '10px';
+                horrorBadge.style.padding = '1px 3px';
+                horrorBadge.style.pointerEvents = 'none';
+                portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                portraitWrap.appendChild(horrorBadge);
+            }
+            const atkCount = (member.summonStats && member.summonStats.attackCount) || 2;
+            horrorBadge.textContent = '🧟' + atkCount;
+            horrorBadge.title = `Corpse Horror: stitched from fallen foes. ${atkCount} melee attacks/round. Grows stronger with each new kill.`;
+        } else if (portraitWrap) {
+            const existing = portraitWrap.querySelector('.party-corpse-horror-badge');
+            if (existing) existing.remove();
+        }
+
+        // Golem Berserk badge — shown when this golem has Berserk Mode active
+        if (portraitWrap && member.isSummoned && GOLEM_PRESETS[member.summonType] && member.golemBerserkActive) {
+            let berserkBadge = portraitWrap.querySelector('.party-golem-berserk-badge');
+            if (!berserkBadge) {
+                berserkBadge = document.createElement('span');
+                berserkBadge.className = 'party-golem-berserk-badge';
+                berserkBadge.style.position = 'absolute';
+                berserkBadge.style.bottom = '24px';
+                berserkBadge.style.right = '-4px';
+                berserkBadge.style.background = 'rgba(180,80,0,0.95)';
+                berserkBadge.style.border = '1px solid #ff8800';
+                berserkBadge.style.borderRadius = '6px';
+                berserkBadge.style.color = '#ffddaa';
+                berserkBadge.style.fontSize = '10px';
+                berserkBadge.style.padding = '1px 3px';
+                berserkBadge.style.pointerEvents = 'none';
+                portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                portraitWrap.appendChild(berserkBadge);
+            }
+            berserkBadge.textContent = '⚡BERSERK';
+            berserkBadge.title = 'Berserk Mode ACTIVE: boosted damage, taking HP overload each round. Auto-exits at critical HP.';
+        } else if (portraitWrap) {
+            const existing = portraitWrap.querySelector('.party-golem-berserk-badge');
+            if (existing) existing.remove();
+        }
+
+        // Thunderous Drums badge — shown on the bard's card when drums are active
+        if (portraitWrap && !member.isSummoned && member.classId === 'bard' && member.thunderousDrumsActive) {
+            let drumsBadge = portraitWrap.querySelector('.party-drums-badge');
+            if (!drumsBadge) {
+                drumsBadge = document.createElement('span');
+                drumsBadge.className = 'party-drums-badge';
+                drumsBadge.style.position = 'absolute';
+                drumsBadge.style.bottom = '8px';
+                drumsBadge.style.left = '-4px';
+                drumsBadge.style.background = 'rgba(80,50,0,0.95)';
+                drumsBadge.style.border = '1px solid #cc8800';
+                drumsBadge.style.borderRadius = '6px';
+                drumsBadge.style.color = '#ffd080';
+                drumsBadge.style.fontSize = '10px';
+                drumsBadge.style.padding = '1px 3px';
+                drumsBadge.style.pointerEvents = 'none';
+                portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                portraitWrap.appendChild(drumsBadge);
+            }
+            drumsBadge.textContent = '🥁';
+            drumsBadge.title = 'Thunderous Drums ACTIVE: sonic/psychic attacks weakened.';
+        } else if (portraitWrap) {
+            const existing = portraitWrap.querySelector('.party-drums-badge');
+            if (existing) existing.remove();
         }
 
         // Summon combat-stats row (damage range + defense, adapts to attack type)

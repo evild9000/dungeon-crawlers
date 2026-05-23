@@ -23,25 +23,49 @@ function buildAbilityList(def) {
 
     // Passive tag-based traits
     if (tags.includes('incorporeal')) {
-        lines.push('Incorporeal: immune to Druid Entangle — physical vines pass harmlessly through this creature');
-        lines.push('Incorporeal: cannot be paralyzed by Ghoul touch or held by Treant');
+        lines.push('Incorporeal: immune to Druid Entangle and Verdant Surge nature DoT — physical vines and nature magic pass harmlessly through this ethereal form');
+        lines.push('Incorporeal: immune to stun, hold, paralysis, and petrification — all CC effects pass through the ethereal form');
+        lines.push('Incorporeal: immune to Artificer Drone Arcane Bindings (already noted above) and Beholder/Medusa Petrify Ray');
+        lines.push('Incorporeal: immune to mummy rot — no living flesh to decay');
         lines.push('Incorporeal: immune to Rogue Backstab Bleed — has no blood to shed');
         lines.push('Incorporeal: immune to Rogue Captured Traps — mechanisms pass through the creature');
         lines.push('Incorporeal: immune to Web and constrict effects — ethereal form cannot be physically ensnared');
         lines.push('Incorporeal: immune to Artificer Drone Arcane Bindings — no physical form to ensnare');
-        lines.push('Incorporeal: immune to stun from all sources — no solid form to disorient');
+        // stun+paralysis already covered in the combined line above
     }
     if (tags.includes('undead')) {
-        lines.push('Undead: immune to stun from all sources — undead physiology resists physical disruption');
+        lines.push('Undead: immune to stun and paralysis — undead physiology resists physical disruption');
+        lines.push('Undead: immune to mummy rot — no living flesh to decay');
+        lines.push('Undead: can be held by treant or faerie queen — hold bypasses stun immunity');
         lines.push('Undead: immune to bleed and poison effects — no living blood or metabolism');
-        lines.push('Undead: immune to Ghoul paralysis');
+        // ghoul paralysis immunity covered by stun+paralysis line above
         lines.push('Undead: immune to Bard Charm Monster — cannot be mind-controlled');
+        lines.push('Undead: immune to all psychic effects — fear, charm, mental enslavement, and psychic stun have no effect on the mindless undead');
+        lines.push('Undead: immune to Necromancer Plague Bringer (L30) — cannot be infected with necrotic plague');
+        lines.push('Undead: cannot be stitched by Necromancer Dark Apotheosis (L30) — already animated; no suitable remains to repurpose');
     }
     if (tags.includes('elemental')) {
         lines.push('Elemental: immune to Bard Charm Monster — pure elemental energy resists mind magic');
+        lines.push('Elemental: immune to stun and paralysis — no nervous system to disrupt');
+        lines.push('Elemental: immune to poison — pure elemental energy has no biology to corrupt');
+        lines.push('Elemental: immune to mummy rot — no living flesh to decay');
+        lines.push('Elemental: vulnerable to Cleric Banishment (L30) — elemental energy can be torn from the mortal plane; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
+    }
+    if (tags.includes('demon')) {
+        lines.push('Demon: vulnerable to Paladin Smite — Smite and AoE Smite deal bonus damage and can destroy demons outright');
+        lines.push('Demon: vulnerable to Cleric Banishment (L30) — divine power can expel demonic entities; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
+    }
+    if (tags.includes('plant')) {
+        lines.push('Plant: fungal or plant-type creature — may have special interactions with fire and nature magic');
     }
     if (tags.includes('construct')) {
         lines.push('Construct: immune to Bard Charm Monster — no mind to enchant');
+        lines.push('Construct: immune to all psychic effects — fear, charm, mental enslavement, and psychic stun cannot affect mechanical or magically-animated beings');
+        lines.push('Construct: immune to stun and paralysis — mechanical body resists physical disruption');
+        lines.push('Construct: immune to poison — no biology to corrupt');
+        lines.push('Construct: immune to mummy rot — no living flesh to decay');
+        lines.push('Construct: vulnerable to Artificer Deconstruct (L30) — Scatter Shot hits deal +200% bonus damage; 50% chance each hit scavenges parts to repair the artificer\'s own golems for 5% max HP');
+        lines.push('Construct: cannot be stitched by Necromancer Dark Apotheosis (L30) — no flesh to animate as a Corpse Horror');
     }
     if (tags.includes('dragon')) {
         lines.push('Dragon: Dragonslayer lets level 25 paladins Smite and AoE Smite dragons');
@@ -122,7 +146,7 @@ function buildAbilityList(def) {
     if (def.hagCurseChance)         lines.push(`Hag's Curse: ${Math.round(def.hagCurseChance * 100)}% chance per turn to hex a random target — reduces all damage dealt (melee/ranged/magic) and defense by level÷8 for several rounds`);
 
     // Undead hostile enemy abilities
-    if (def.isMummyAI)              lines.push('Mummy Rot: every melee strike inflicts Mummy Rot (3 rounds) — completely blocks all healing on the target');
+    if (def.isMummyAI)              lines.push('Mummy Rot: every melee strike inflicts Mummy Rot (3 rounds) — completely blocks all healing on the target; immune: undead, constructs, elementals, incorporeal, and necromancers in Lich Form');
     if (def.isRevenantAI)           lines.push('Death Denied: phase-strikes any party member (ignores armor); when first reduced to 0 HP, rises again at 50% HP in a permanent ENRAGED state (+damage for rest of combat)');
     if (def.isBoneArcherAI)         lines.push('Bone Arrow: ranged attack hits any row; at dungeon level 15+, fires a 3-arrow volley per turn; 25% chance per arrow to inflict Fracture (bleed DoT: 30% arrow damage per round)');
     if (def.isPoltergeistAI)        lines.push('Spectral Assault: 50% hurls invisible debris (ranged, 40% stun chance); 50% phase-strikes any party member through armor (ignores all defenses and armor)');
@@ -152,7 +176,7 @@ function buildAbilityList(def) {
     if (def.isBattleMageAI)         lines.push('Arcane Warrior: alternates — odd turns deliver 2 melee strikes (+20% arcane bonus); even turns unleash an AoE magic blast on the whole party; below 50% HP enters Arcane Overload — performs BOTH attacks in one turn but takes 15% max HP backlash damage');
 
     // Bestiary Expansion — Constructs
-    if (def.isIronGolemAI)          lines.push('Iron Juggernaut: single devastating melee strike (+5 bonus); once per combat releases a Poison Gas Breath cloud (guaranteed poison DoT on ALL party members); takes only half magic damage; triple HP, double defense');
+    if (def.isIronGolemAI)          lines.push('Iron Juggernaut: single devastating melee strike (+25 bonus); 50% chance each round to exhale Poison Gas (can occur the same round as melee — poison DoT on ALL party members); takes only half magic damage; triple HP, double defense');
     if (def.isClockworkHorrorAI)    lines.push('Mechanical Fury: 3 rapid melee strikes per turn (75% damage each) at any party member; FULLY IMMUNE to all magic, AoE, and DoT effects — spells, fire, poison, acid and all elemental damage deal zero; takes DOUBLE damage from acid');
     if (def.isGargoyleSentinelAI)   lines.push('Stone Shell — Phase 1: while above 50% HP takes only 50% damage from ALL sources; regenerates 10% HP per round; Phase 2 (≤50% HP): shell cracks — loses damage reduction, gains +5 melee bonus AND adds AoE Wing Buffet (front-row melee AoE with stun attempt each target)');
     if (def.fullMagicImmune && !def.isGargoyleSentinelAI) lines.push('Total Magic Immunity: completely unaffected by all magical attacks, AoE, and damage-over-time effects');

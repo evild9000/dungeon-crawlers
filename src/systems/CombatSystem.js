@@ -67,6 +67,8 @@ import {
     FAERIE_QUEEN_MAGIC_DMG_RESIST, FAERIE_QUEEN_HP_MULT,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_AOE_CRIT_CHANCE_PER_2LV, MAGE_AOE_CRIT_DAMAGE_BASE, MAGE_AOE_CRIT_DAMAGE_PER_LV,
+    MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
+    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_HP_BASE, NECRO_LICH_REVIVE_HP_PER_2LV, NECRO_LICH_REVIVE_ROUNDS,
     NECRO_LICH_MAGIC_RESIST_BASE, NECRO_LICH_MAGIC_RESIST_PER_4LV,
@@ -83,6 +85,11 @@ import {
     PALADIN_AOE_SMITE_DAMAGE_MULT, PALADIN_AOE_SMITE_INSTAKILL_MULT,
     PALADIN_SMITE_INSTAKILL_CAP, PALADIN_SMITE_BOSS_DAMAGE_MULT,
     PALADIN_DRAGONSLAYER_UNLOCK_LEVEL, PALADIN_DRAGONSLAYER_MANA_PER_ROUND,
+    PALADIN_L30_UNLOCK_LEVEL,
+    PALADIN_AURA_RIGHTEOUSNESS_REDUCTION, PALADIN_AURA_RIGHTEOUSNESS_HEAL_FRAC,
+    PALADIN_DIVINE_JUDGMENT_STAMINA_COST, PALADIN_DIVINE_JUDGMENT_MANA_COST,
+    PALADIN_DIVINE_JUDGMENT_BASE_PCT, PALADIN_DIVINE_JUDGMENT_PER_LEVEL,
+    PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR, PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR,
     CLERIC_MASS_REGEN_UNLOCK_LEVEL, CLERIC_MASS_REGEN_BASE_PCT,
     CLERIC_MASS_REGEN_PER_3_LEVELS, CLERIC_MASS_REGEN_DURATION_PER_4LV,
     CLERIC_MASS_REGEN_MANA_COST,
@@ -102,6 +109,9 @@ import {
     DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST,
     ROGUE_TRAP_UNLOCK_LEVEL, ROGUE_TRAP_DOT_FRACTION, ROGUE_TRAP_DOT_ROUNDS,
     ROGUE_EVASION_STAMINA_COST,
+    ROGUE_TWIN_FANGS_UNLOCK_LEVEL, ROGUE_TWIN_FANGS_OFFHAND_MULT, ROGUE_TWIN_FANGS_INSTAKILL_MULT,
+    ROGUE_SHADOW_STEP_UNLOCK_LEVEL, ROGUE_SHADOW_STEP_STAMINA_COST,
+    ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
     GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT, GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS, BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT,
@@ -127,7 +137,48 @@ import {
     WARRIOR_FORMATION_MIN_MEMBERS, WARRIOR_FORMATION_OPPORTUNITY_OFFSET,
     WARRIOR_FORMATION_CRIT_DIVISOR, WARRIOR_FORMATION_CRIT_BASE,
     WARRIOR_FORMATION_CRIT_PER_LEVEL,
+    ENEMY_STAT_MIN, ENEMY_STAT_MAX,
+    MONSTER_HP_BONUS_THRESHOLD, MONSTER_HP_BONUS_PER_LEVEL,
+    MONSTER_DEFENSE_PER_2_LVL,
+    RANGER_HUNTERS_MARK_UNLOCK_LEVEL, RANGER_HUNTERS_MARK_STAMINA_COST, RANGER_HUNTERS_MARK_MANA_COST,
+    RANGER_HUNTERS_MARK_DAMAGE_BONUS, RANGER_HUNTERS_MARK_UPKEEP_MANA, RANGER_HUNTERS_MARK_UPKEEP_STAMINA,
+    RANGER_BEASTLORD_UNLOCK_LEVEL, RANGER_BEASTLORD_MANA_PER_ROUND,
+    RANGER_BEASTLORD_SUMMON_BASE, RANGER_BEASTLORD_UPKEEP_PER_SUMMON,
+    DRUID_WILD_SHAPE_UNLOCK_LEVEL, DRUID_WILD_SHAPE_MANA_INITIAL, DRUID_WILD_SHAPE_MANA_PER_ROUND,
+    DRUID_WILD_BEAR_ATTACKS_DIVISOR, DRUID_WILD_BEAR_STUN_BASE, DRUID_WILD_BEAR_STUN_PER_LEVEL,
+    DRUID_WILD_BEAR_DEFENSE_DIVISOR,
+    DRUID_WILD_WOLF_ATTACKS_DIVISOR, DRUID_WILD_WOLF_BLEED_BASE, DRUID_WILD_WOLF_BLEED_PER_LEVEL,
+    DRUID_WILD_WOLF_BLEED_FRACTION, DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR, DRUID_WILD_WOLF_DEFENSE_DIVISOR,
+    DRUID_WILD_EAGLE_ATTACKS_DIVISOR, DRUID_WILD_EAGLE_CRIT_BASE, DRUID_WILD_EAGLE_CRIT_PER_LEVEL,
+    DRUID_WILD_EAGLE_CRIT_MULT_BASE, DRUID_WILD_EAGLE_CRIT_MULT_PER_LEVEL, DRUID_WILD_EAGLE_EVASION_PER_LEVEL,
+    DRUID_WILD_PIXIE_MAGIC_RESIST,
+    DRUID_WILD_TREANT_ATTACKS_DIVISOR, DRUID_WILD_TREANT_HOLD_BASE, DRUID_WILD_TREANT_HOLD_PER_LEVEL,
+    DRUID_WILD_TREANT_DEFENSE_DIVISOR,
+    DRUID_WILD_SUMMON_DMG_MULT, DRUID_WILD_SUMMON_DMG_MULT_PIXIE,
+    DRUID_WILD_SUMMON_DEF_BONUS_DIVISOR, DRUID_WILD_SUMMON_DEF_DIVISOR_PIXIE,
+    DRUID_WILD_WOLF_CASCADE_BASE,
+    DRUID_VERDANT_SURGE_UNLOCK_LEVEL, DRUID_VERDANT_SURGE_ACTION_LOSS_CHANCE,
+    MONK_KI_UNLOCK_LEVEL,
+    CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL, CLERIC_SPIRITUAL_WEAPON_SUMMON_COST,
+    CLERIC_SPIRITUAL_WEAPON_UPKEEP, CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR,
+    CLERIC_BANISHMENT_UNLOCK_LEVEL, CLERIC_BANISHMENT_MANA_COST,
+    CLERIC_BANISHMENT_DAMAGE_MULT, CLERIC_BANISHMENT_TAGS,
+    NECRO_DARK_APOTHEOSIS_UNLOCK_LEVEL, NECRO_CORPSE_HORROR_HP_FRACTION,
+    NECRO_CORPSE_HORROR_DEF_DIVISOR, NECRO_CORPSE_HORROR_SKILL_PER_CORPSE,
+    NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
+    NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
+    ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
+    ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
+    ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
+    ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL, ARTIFICER_DECONSTRUCT_BONUS_MULT,
+    ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE, ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT,
+    BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL, BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED,
+    BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL,
+    BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL, BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND,
+    BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
+    BARD_SYMPHONY_UNLOCK_LEVEL, BARD_SYMPHONY_BASE_MANA_COST, BARD_SYMPHONY_BASE_STA_COST,
 } from '../utils/constants.js';
+import { soundManager } from '../utils/SoundManager.js';
 import {
     randomWeaponDrop, randomArmorDrop, randomShieldDrop,
     randomTrinketDrop, getItemDef,
@@ -315,6 +366,48 @@ export class CombatSystem {
         return candidates.sort((a, b) => (b.level || 0) - (a.level || 0))[0];
     }
 
+    /** Returns total incoming damage reduction fraction from all alive L30+ paladins (stacking with halving). */
+    _getPaladinAuraDamageReduction() {
+        const count = this.party.filter(m =>
+            m && m.health > 0 && !m.isSummoned
+            && m.classId === 'paladin'
+            && m.level >= PALADIN_L30_UNLOCK_LEVEL,
+        ).length;
+        let reduction = 0;
+        let step = PALADIN_AURA_RIGHTEOUSNESS_REDUCTION;
+        for (let i = 0; i < count; i++) {
+            reduction += step;
+            step /= 2;
+        }
+        return reduction;
+    }
+
+    /** Returns true if this party member should be healed by the Righteousness aura (alive, not undead, not golem). */
+    _isHealableByRighteousnessAura(member) {
+        if (!member || member.health <= 0) return false;
+        if (member.isLichForm) return false;
+        if (!member.isSummoned) return true;
+        if (UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich' || member.summonType === 'corpse_horror') return false;
+        if (GOLEM_PRESETS[member.summonType]) return false;
+        return true;
+    }
+
+    /** Paladin L30 aura: heal every eligible party member for 5% of damage the paladin just dealt. */
+    _triggerRighteousnessHeal(paladin, dealtDamage) {
+        if (dealtDamage <= 0) return;
+        const healAmt = Math.max(1, Math.floor(dealtDamage * PALADIN_AURA_RIGHTEOUSNESS_HEAL_FRAC));
+        const healedNames = [];
+        for (const member of this.party) {
+            if (!this._isHealableByRighteousnessAura(member)) continue;
+            if (member.health >= member.maxHealth) continue;
+            member.health = Math.min(member.health + healAmt, member.maxHealth);
+            healedNames.push(member.name);
+        }
+        if (healedNames.length > 0) {
+            this._addLog(`✝️ ${paladin.name}'s Righteous Aura mends ${healedNames.join(', ')} for ${healAmt} HP!`);
+        }
+    }
+
     _removeClericHarmfulStates(caster, target) {
         if (!caster || caster.classId !== 'cleric' || !target || target.health <= 0) {
             return { removed: 0, labels: [] };
@@ -415,14 +508,29 @@ export class CombatSystem {
     _isUndeadOrGolemMember(member) {
         if (!member || !member.isSummoned) return false;
         if (member.summonStats && member.summonStats.tierId && GOLEM_PRESETS[member.summonType]) return true;
-        return UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich';
+        return UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich' || member.summonType === 'corpse_horror';
+    }
+
+    _isPsychicImmunePartyMember(target) {
+        if (!target || target.health <= 0) return false;
+        if (!target.isSummoned) return false;
+        // Undead summons have no living mind
+        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
+        // Construct summons (golems, spiritual weapon) — no organic mind
+        if (GOLEM_PRESETS[target.summonType]) return true;
+        if (target.summonType === 'spiritual_weapon') return true;
+        // Rift elementals — pure elemental energy; no mind to charm or enslave
+        if (['rift_fire', 'rift_water', 'rift_earth', 'rift_air'].includes(target.summonType)) return true;
+        // Plant summons — no animal mind; immune to psychic and charm
+        if (['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) return true;
+        return false;
     }
 
     _isPoisonImmunePartyMember(target) {
         if (!target) return false;
         if (target.isLichForm) return true;
         if (!target.isSummoned) return false;
-        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich') return true;
+        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         if (GOLEM_PRESETS[target.summonType]) return true;
         if (Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes('poison')) return true;
         return false;
@@ -430,10 +538,52 @@ export class CombatSystem {
 
     _isFractureImmunePartyMember(target) {
         if (!target || !target.isSummoned) return false;
-        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich') return true;
+        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         if (GOLEM_PRESETS[target.summonType]) return true;
         if (target.summonStats?.incorporeal === true) return true;
+        if (this._isRiftElemental(target)) return true;
+        // Plant summons (treants, shambling mounds) are immune to bleed DoTs
+        if (['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) return true;
         return false;
+    }
+
+    _isRiftElemental(target) {
+        if (!target || !target.isSummoned) return false;
+        return ['rift_fire', 'rift_water', 'rift_earth', 'rift_air'].includes(target.summonType);
+    }
+
+    _isImmuneTo(target, tag) {
+        return target && target.isSummoned
+            && Array.isArray(target.summonStats?.immune)
+            && target.summonStats.immune.includes(tag);
+    }
+
+    _isPetrifyImmunePartyMember(target) {
+        if (!target) return false;
+        if (target.isLichForm) return true;
+        if (!target.isSummoned) return false;
+        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
+        if (GOLEM_PRESETS[target.summonType]) return true;
+        if (target.summonStats?.incorporeal === true) return true;
+        if (this._isRiftElemental(target)) return true;
+        return false;
+    }
+
+    // Returns the active bard who has Thunderous Drums running, or null.
+    _getBardWithDrums() {
+        return (this.party || []).find(p =>
+            p && p.health > 0 && !p.isSummoned && p.classId === 'bard'
+            && p.thunderousDrumsActive && p.level >= BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL
+        ) || null;
+    }
+
+    // Returns extra damage fraction from Blood Frenzy (barbarian L30, raging, bleeds on target).
+    _getBloodFrenzyBonus(barbarian, target) {
+        if (!barbarian.isRaging || barbarian.level < BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL) return 0;
+        const bleeds = (target.activeEffects || []).filter(fx =>
+            fx && (fx.type === 'bleed' || fx.type === 'ranger_totem_bleed')
+        );
+        return bleeds.length * BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED;
     }
 
     _getBarbarianEncourageMultiplier(attacker) {
@@ -470,9 +620,10 @@ export class CombatSystem {
         const immune = Array.isArray(def.immune) ? def.immune : [];
         const tags = Array.isArray(def.tags) ? def.tags : [];
         if (immune.includes(damageType)) return true;
-        if (damageType === 'poison' && tags.includes('undead')) return true;
-        if (damageType === 'bleed' && tags.some(t => ['undead', 'construct', 'elemental', 'incorporeal'].includes(t))) return true;
-        if (damageType === 'stun' && (tags.includes('incorporeal') || tags.includes('undead'))) return true;
+        if (damageType === 'poison' && tags.some(t => ['undead', 'construct', 'elemental'].includes(t))) return true;
+        if (damageType === 'bleed' && tags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant'].includes(t))) return true;
+        if (damageType === 'stun' && tags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant'].includes(t))) return true;
+        if (damageType === 'psychic' && tags.some(t => ['plant', 'undead', 'construct', 'elemental'].includes(t))) return true;
         return false;
     }
 
@@ -499,7 +650,8 @@ export class CombatSystem {
         if (ranger.rangerTotem === 'wolf') {
             if (this._enemyHasImmunity(enemy, 'bleed')) return;
             const damage = Math.max(1, Math.floor(dealt * RANGER_WOLF_TOTEM_BLEED_FRACTION));
-            this._refreshEnemyEffect(enemy, { type: 'ranger_totem_bleed', damage, rounds });
+            enemy.activeEffects = enemy.activeEffects || [];
+            enemy.activeEffects.push({ type: 'ranger_totem_bleed', damage, rounds });
             this._addLog(`🐺 Wolf Totem opens a wound on ${eName}! (${damage}/rd for ${rounds} rds)`);
         } else if (ranger.rangerTotem === 'bear') {
             if (!this._enemyHasImmunity(enemy, 'stun') && Math.random() < RANGER_BEAR_TOTEM_STUN_CHANCE) {
@@ -553,7 +705,13 @@ export class CombatSystem {
             }
         }
         member.activeEffects = kept;
-        if (removed.length) this._addLog(`🧘 ${member.name}'s Avatar shrugs off ${removed.join(', ')}.`);
+        if (removed.length) {
+            this._addLog(`🧘 ${member.name}'s Avatar shrugs off ${removed.join(', ')}.`);
+            if (member.level >= MONK_KI_UNLOCK_LEVEL) {
+                member.kiCharges = (member.kiCharges || 0) + 1;
+                this._addLog(`\u{1F9D8} ${member.name} transmutes the cleansed energy into Ki! (${member.kiCharges} charge${member.kiCharges !== 1 ? 's' : ''})`);
+            }
+        }
     }
 
     /** Members currently eligible for Formation bonus: alive, in formation, front row, warrior class. */
@@ -571,14 +729,16 @@ export class CombatSystem {
         if (!attacker || !attacker.isInFormation) return 1;
         const n = this._getFormationMembers().length;
         if (n < WARRIOR_FORMATION_MIN_MEMBERS) return 1;
-        return 1 + WARRIOR_FORMATION_BASE_BONUS + WARRIOR_FORMATION_BONUS_PER_MEMBER * n;
+        return 1 + WARRIOR_FORMATION_BONUS_PER_MEMBER * n;
     }
 
-    /** Roll a Formation crit. Returns { damage, crit }. Crit multiplier = 2 + level/100. */
+    /** Roll a Formation crit. Returns { damage, crit }. Crit chance = (level/2)%. Crit damage = base + 100% + level% (e.g. L30: +130% → ×2.30). */
     _applyFormationCrit(attacker, damage) {
-        const critChance = (attacker.level || 1) / WARRIOR_FORMATION_CRIT_DIVISOR;
+        const lvl = attacker.level || 1;
+        const critChance = Math.min(lvl / 2 / 100, 0.95);
         if (Math.random() < critChance) {
-            const mult = 1 + WARRIOR_FORMATION_CRIT_BASE + ((attacker.level || 1) * WARRIOR_FORMATION_CRIT_PER_LEVEL);
+            // damage + 100% + level%  →  damage × (1 + 1.00 + level/100)
+            const mult = 1 + WARRIOR_FORMATION_CRIT_BASE + (lvl / 100);
             return { damage: Math.max(1, Math.floor(damage * mult)), crit: true };
         }
         return { damage, crit: false };
@@ -807,11 +967,19 @@ export class CombatSystem {
             }
         }
 
+        // Blood Frenzy (L30 passive): +10% per bleed DoT on target while raging
+        let _bfPct = 0;
+        if (m.classId === 'barbarian') {
+            _bfPct = this._getBloodFrenzyBonus(m, targetEnemy);
+            if (_bfPct > 0) base = Math.max(1, Math.round(base * (1 + _bfPct)));
+        }
+
         const dealt = this._damageEnemy(targetEnemy, base);
 
         const eName = this._eName(targetEnemy);
         const suffix = exhausted ? ' (exhausted!)' : '';
         let meleeLog = `${m.name} strikes ${eName} for ${dealt} damage!${suffix}`;
+        if (_bfPct > 0) meleeLog += ` [🩸 Blood Frenzy +${Math.round(_bfPct * 100)}%]`;
         if (formCrit) meleeLog += ` 💥 FORMATION CRIT!`;
         this._addLog(meleeLog);
 
@@ -832,7 +1000,12 @@ export class CombatSystem {
         this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
         this._applyMonkAvatarOnHit(m, targetEnemy, dealt);
 
-        if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
+        if (targetEnemy.health <= 0) { this._addLog(`${eName} is defeated!`); this._checkHunterMarkKill(targetEnemy); }
+
+        // Paladin L30 Aura of Righteousness: party heal on regular melee hit (once per attack action)
+        if (m.classId === 'paladin' && m.level >= PALADIN_L30_UNLOCK_LEVEL && dealt > 0) {
+            this._triggerRighteousnessHeal(m, dealt);
+        }
 
         if (isMonk) {
             const ww = MONK_WHIRLWIND_CHANCE + m.getWhirlwindBonus();
@@ -882,11 +1055,17 @@ export class CombatSystem {
                     swingFormCrit = critRes.crit;
                 }
             }
+            let _swingBfPct = 0;
+            if (m.classId === 'barbarian') {
+                _swingBfPct = this._getBloodFrenzyBonus(m, curTarget);
+                if (_swingBfPct > 0) sdmg = Math.max(1, Math.round(sdmg * (1 + _swingBfPct)));
+            }
             const swingName = this._eName(curTarget);
             const sDealt = this._damageEnemy(curTarget, sdmg);
             const sSuffix = swingExhausted ? ' (exhausted!)' : '';
             let swingLog = `\u{1F5E1}\uFE0F ${m.name} follows up on ${swingName} for ${sDealt} damage!${sSuffix}`;
             if (swingFormCrit) swingLog += ` \uD83D\uDCA5 FORMATION CRIT!`;
+            if (_swingBfPct > 0) swingLog += ` [\uD83E\uDE78 Blood Frenzy +${Math.round(_swingBfPct * 100)}%]`;
             this._addLog(swingLog);
             const sStunChance = MELEE_STUN_CHANCE + m.getMeleeStunBonus();
             if (sDealt > 0 && curTarget.health > 0 && Math.random() < sStunChance) {
@@ -897,6 +1076,10 @@ export class CombatSystem {
             this._applyWeaponRider(m, curTarget, sDealt, 'offhand');
             this._applyMonkAvatarOnHit(m, curTarget, sDealt);
             if (curTarget.health <= 0) this._addLog(`${swingName} is defeated!`);
+            // Paladin L30 Aura of Righteousness: also heals on iterative attacks
+            if (m.classId === 'paladin' && m.level >= PALADIN_L30_UNLOCK_LEVEL && sDealt > 0) {
+                this._triggerRighteousnessHeal(m, sDealt);
+            }
         }
 
 
@@ -917,9 +1100,12 @@ export class CombatSystem {
                     }
                 }
                 rageDmg = this._applyOutgoingDamageBonuses(m, rageDmg, 'melee');
+                const _rageBfPct = this._getBloodFrenzyBonus(m, targetEnemy);
+                if (_rageBfPct > 0) rageDmg = Math.max(1, Math.round(rageDmg * (1 + _rageBfPct)));
                 const rageDealt = this._damageEnemy(targetEnemy, rageDmg);
                 const rageSfx = !hasStamina ? ' (exhausted!)' : '';
-                this._addLog(`\u{1F534} ${m.name} rage-strikes ${this._eName(targetEnemy)} for ${rageDealt}!${rageSfx}`);
+                const _rageBfSuffix = _rageBfPct > 0 ? ` [🩸 Blood Frenzy +${Math.round(_rageBfPct * 100)}%]` : '';
+                this._addLog(`\u{1F534} ${m.name} rage-strikes ${this._eName(targetEnemy)} for ${rageDealt}!${rageSfx}${_rageBfSuffix}`);
                 this._applyWeaponRider(m, targetEnemy, rageDealt);
                 // Blood Rage: gain temp HP per rage hit (if stamina OK)
                 if (m.level >= BARBARIAN_BLOOD_RAGE_UNLOCK_LEVEL && hasStamina) {
@@ -932,6 +1118,46 @@ export class CombatSystem {
                 }
             }
         }
+
+        // Heroic Deeds — Rapid Assault: second full attack chain on the same target
+        if (m.rapidAssaultPending && targetEnemy.health > 0) {
+            m.rapidAssaultPending = false;
+            this._addLog(`⚡ ${m.name}'s RAPID ASSAULT — second strike!`);
+            const raExhausted = m.stamina < MELEE_STAMINA_COST;
+            m.stamina = Math.max(0, m.stamina - MELEE_STAMINA_COST);
+            let raBase = this._rollPlayerMeleeDamage(m);
+            if (raExhausted) raBase = Math.max(1, Math.floor(raBase / 2));
+            raBase = this._applyOutgoingDamageBonuses(m, raBase, 'melee');
+            const raBfPct = this._getBloodFrenzyBonus(m, targetEnemy);
+            if (raBfPct > 0) raBase = Math.max(1, Math.round(raBase * (1 + raBfPct)));
+            const raDealt = this._damageEnemy(targetEnemy, raBase);
+            const raSuffix = raExhausted ? ' (exhausted!)' : '';
+            let raLog = `${m.name} strikes ${this._eName(targetEnemy)} for ${raDealt}!${raSuffix}`;
+            if (raBfPct > 0) raLog += ` [🩸 Blood Frenzy +${Math.round(raBfPct * 100)}%]`;
+            this._addLog(raLog);
+            this._applyWeaponRider(m, targetEnemy, raDealt);
+            if (targetEnemy.health <= 0) {
+                this._addLog(`${this._eName(targetEnemy)} is defeated!`);
+            } else if (m.isRaging) {
+                // Rage extra attacks for the second pass
+                const raRageCount = Math.floor((m.level || 1) / 3);
+                for (let rr = 0; rr < raRageCount; rr++) {
+                    if (targetEnemy.health <= 0) break;
+                    const rrSta = m.stamina >= BARBARIAN_RAGE_STAMINA_COST;
+                    m.stamina = Math.max(0, m.stamina - BARBARIAN_RAGE_STAMINA_COST);
+                    let rrDmg = this._rollPlayerMeleeDamage(m);
+                    if (!rrSta) rrDmg = Math.max(1, Math.floor(rrDmg / 2));
+                    rrDmg = this._applyOutgoingDamageBonuses(m, rrDmg, 'melee');
+                    const rrBfPct = this._getBloodFrenzyBonus(m, targetEnemy);
+                    if (rrBfPct > 0) rrDmg = Math.max(1, Math.round(rrDmg * (1 + rrBfPct)));
+                    const rrDealt = this._damageEnemy(targetEnemy, rrDmg);
+                    this._addLog(`🔴 ${m.name} rage-strikes ${this._eName(targetEnemy)} for ${rrDealt}!${!rrSta ? ' (exhausted!)' : ''}`);
+                    this._applyWeaponRider(m, targetEnemy, rrDealt);
+                    if (targetEnemy.health <= 0) { this._addLog(`${this._eName(targetEnemy)} is defeated!`); break; }
+                }
+            }
+        }
+
         this._advancePlayerTurn();
     }
 
@@ -970,6 +1196,7 @@ export class CombatSystem {
                     return;
                 }
                 targetEnemy.health = 0;
+                if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
                 this._addLog(`🎯 ${m.name} lands a LETHAL SHOT on the ${this._eName(targetEnemy)}! (Favored enemy instakill!)`);
                 this._advancePlayerTurn();
                 return;
@@ -1002,6 +1229,7 @@ export class CombatSystem {
         this._applyRangerTotemOnHit(m, targetEnemy, dealt, 'ranged');
 
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
+        this._checkHunterMarkKill(targetEnemy);
 
         // Ranger extra shots — +1 per 5 levels. Each shot pays stamina,
         // rolls fresh damage + crit independently. Retargets if dead.
@@ -1035,6 +1263,7 @@ export class CombatSystem {
                         continue;
                     }
                     curT.health = 0;
+                    if (!curT._deathHandled) { curT._deathHandled = true; this._onEnemyDeath(curT); }
                     this._addLog(`🎯 ${m.name} lands a LETHAL SHOT on the ${this._eName(curT)}! (Favored enemy instakill!)`);
                     continue;
                 }
@@ -1055,7 +1284,7 @@ export class CombatSystem {
             this._addLog(`\u{1F3F9} ${m.name} looses another arrow at ${sTargetName} for ${sDealt} damage!${sExhaust}${sCrit}${sFav}`);
             this._applyWeaponRider(m, curT, sDealt);
             this._applyRangerTotemOnHit(m, curT, sDealt, 'ranged');
-            if (curT.health <= 0) this._addLog(`${sTargetName} is defeated!`);
+            if (curT.health <= 0) { this._addLog(`${sTargetName} is defeated!`); this._checkHunterMarkKill(curT); }
         }
 
         this._advancePlayerTurn();
@@ -1099,6 +1328,28 @@ export class CombatSystem {
         this._applyRangerTotemOnHit(m, targetEnemy, dealt, 'ranged');
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
 
+        // L30 Deconstruct — bonus damage vs constructs + scavenge heal on own golems
+        if (m.level >= ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL && targetEnemy.health > 0) {
+            const primaryDef  = ENEMY_TYPES[targetEnemy.type] || {};
+            const primaryTags = Array.isArray(primaryDef.tags) ? primaryDef.tags : [];
+            if (primaryTags.includes('construct')) {
+                const bonusDmg = dealt * ARTIFICER_DECONSTRUCT_BONUS_MULT;
+                this._damageEnemy(targetEnemy, bonusDmg, true);
+                this._addLog(`\u{1F527} DECONSTRUCT! ${m.name} exploits ${eName}'s weak points for ${bonusDmg} bonus damage! [×${ARTIFICER_DECONSTRUCT_BONUS_MULT}, ignores armor]`);
+                if (targetEnemy.health <= 0) this._addLog(`${eName} is torn apart!`);
+                if (Math.random() < ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE) {
+                    const myGolems = (this.party || []).filter(p =>
+                        p && p.isSummoned && p.summonerId === m.id && GOLEM_PRESETS[p.summonType] && p.health > 0 && p.health < p.maxHealth
+                    );
+                    for (const g of myGolems) {
+                        const healAmt = Math.max(1, Math.ceil(g.maxHealth * ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT));
+                        g.health = Math.min(g.maxHealth, g.health + healAmt);
+                        this._addLog(`\u{1F527} ${m.name} scavenges parts — ${g.name} repairs ${healAmt} HP!`);
+                    }
+                }
+            }
+        }
+
         // Splash shots
         const splashCount = SCATTER_SPLASH_BASE + Math.floor(m.level / SCATTER_SPLASH_EVERY);
         // Splash fraction: 50% base + 1% per artificer level, capped at 100%.
@@ -1128,6 +1379,28 @@ export class CombatSystem {
             this._applyWeaponRider(m, t, sDealt);
             this._applyRangerTotemOnHit(m, t, sDealt, 'ranged');
             if (t.health <= 0) this._addLog(`${sName} is defeated!`);
+
+            // L30 Deconstruct — bonus damage vs constructs on splash hits
+            if (m.level >= ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL && t.health > 0) {
+                const sDef  = ENEMY_TYPES[t.type] || {};
+                const sTags = Array.isArray(sDef.tags) ? sDef.tags : [];
+                if (sTags.includes('construct')) {
+                    const sBonusDmg = sDealt * ARTIFICER_DECONSTRUCT_BONUS_MULT;
+                    this._damageEnemy(t, sBonusDmg, true);
+                    this._addLog(`  \u{1F527} DECONSTRUCT! ${m.name} exploits ${sName}'s weak points for ${sBonusDmg} bonus damage! [×${ARTIFICER_DECONSTRUCT_BONUS_MULT}, ignores armor]`);
+                    if (t.health <= 0) this._addLog(`${sName} is torn apart!`);
+                    if (Math.random() < ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE) {
+                        const myGolems = (this.party || []).filter(p =>
+                            p && p.isSummoned && p.summonerId === m.id && GOLEM_PRESETS[p.summonType] && p.health > 0 && p.health < p.maxHealth
+                        );
+                        for (const g of myGolems) {
+                            const sHealAmt = Math.max(1, Math.ceil(g.maxHealth * ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT));
+                            g.health = Math.min(g.maxHealth, g.health + sHealAmt);
+                            this._addLog(`  🔧 ${m.name} scavenges parts — ${g.name} repairs ${sHealAmt} HP!`);
+                        }
+                    }
+                }
+            }
 
             // L25 Enchanted Drone — checked per splash independently
             if (m.level >= ARTIFICER_DRONE_UNLOCK_LEVEL) {
@@ -1231,11 +1504,11 @@ export class CombatSystem {
                 if (t.health <= 0) this._addLog(`${this._eName(t)} is obliterated!`);
                 break;
             }
-            case 6: { // Arcane bindings — reduce target atk & def, incorporeal immune
+            case 6: { // Arcane bindings — reduce target atk & def, incorporeal+boss immune
                 const targets = this.aliveHostileEnemies.filter(e =>
-                    !this._getEnemyTags(e).includes('incorporeal'));
+                    !this._getEnemyTags(e).includes('incorporeal') && !e.isBoss && !e.isMegaBoss);
                 if (targets.length === 0) {
-                    this._addLog(`${ico} Enchanted Drone fires bindings — all targets are incorporeal!`);
+                    this._addLog(`${ico} Enchanted Drone fires bindings — no valid targets!`);
                     break;
                 }
                 const t = targets[Math.floor(Math.random() * targets.length)];
@@ -1316,6 +1589,53 @@ export class CombatSystem {
             if (e.health <= 0) this._addLog(`  ☠️ ${this._eName(e)} is defeated!`);
         }
 
+        // Arcane Overload (Mage L30): cascading bursts; each costs ×1.5 mana, capped at floor(level/6) bursts
+        if (m.classId === 'mage' && m.level >= MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL) {
+            let aoChance = Math.min(1, MAGE_ARCANE_OVERLOAD_BURST_BASE + m.level * 0.01);
+            let aoMult = 1.5;
+            const aoMaxBursts = Math.max(1, Math.floor(m.level / 6));
+            let aoBursts = 0;
+            while (this.aliveHostileEnemies.length > 0 && aoBursts < aoMaxBursts && Math.random() < aoChance) {
+                const aoCost = Math.ceil(manaCost * aoMult);
+                if (m.mana < aoCost) {
+                    this._addLog(`✨ ${m.name}'s Arcane Overload surges — collapses! (needs ${aoCost} MP)`);
+                    break;
+                }
+                m.mana -= aoCost;
+                const aoAlive = this.aliveHostileEnemies.slice().sort(() => Math.random() - 0.5);
+                const aoCount = Math.min(baseTargets, aoAlive.length);
+                this._addLog(`✨✨ ARCANE OVERLOAD — ${m.name} erupts with another burst! (-${aoCost} MP)`);
+                for (let bi = 0; bi < aoCount; bi++) {
+                    const e = aoAlive[bi];
+                    if (e.health <= 0) continue;
+                    let bDmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+                    bDmg += m.getWeaponBonus('magic');
+                    bDmg += m.getClassDamageBonus('magic');
+                    bDmg += this._getPartyMemberDamageMod(m);
+                    bDmg = Math.max(1, Math.round(bDmg * (m.getMagicDamageMultiplier?.() || 1)));
+                    let bCritNote = '';
+                    const bCritChance = Math.floor(m.level / 2) * MAGE_AOE_CRIT_CHANCE_PER_2LV;
+                    if (bCritChance > 0 && Math.random() < bCritChance) {
+                        const bCritMult = MAGE_AOE_CRIT_DAMAGE_BASE + m.level * MAGE_AOE_CRIT_DAMAGE_PER_LV;
+                        bDmg = Math.floor(bDmg * bCritMult);
+                        bCritNote = ' (ARCANE CRIT!)';
+                    }
+                    bDmg = this._applyOutgoingDamageBonuses(m, bDmg, 'magic');
+                    const bDefIgn = Math.min(1, (m.level || 1) / 100);
+                    const bDealt = this._damageEnemy(e, bDmg, false, true, bDefIgn);
+                    this._addLog(`  → ${this._eName(e)} takes ${bDealt} magic damage.${bCritNote}`);
+                    if (e.health > 0 && stunChance > 0 && Math.random() < stunChance) {
+                        if (this._tryStunEnemy(e))
+                            this._addLog(`  ⚡ ${this._eName(e)} is stunned by arcane force!`);
+                    }
+                    if (e.health <= 0) this._addLog(`  ☠️ ${this._eName(e)} is defeated!`);
+                }
+                aoChance -= MAGE_ARCANE_OVERLOAD_BURST_STEP;
+                aoMult *= 1.5;
+                aoBursts++;
+            }
+        }
+
         this._advancePlayerTurn();
     }
 
@@ -1357,6 +1677,174 @@ export class CombatSystem {
         this._notify();
     }
 
+    // ── Barbarian L30: Heroic Deeds ──────────────────────────────────────────
+
+    /** Rapid Assault — free action: doubles attacks this round (second melee chain). */
+    barbarianRapidAssault() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'barbarian') return;
+        if (m.level < BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL) return;
+        if ((m.heroicDeedTokens || 0) < 1) {
+            this._addLog(`${m.name} has no Heroic Deed tokens!`);
+            return;
+        }
+        m.heroicDeedTokens--;
+        m.rapidAssaultPending = true;
+        this._addLog(`⚡ ${m.name} spends a Heroic Deed token — RAPID ASSAULT! Next attack fires twice. (${m.heroicDeedTokens} tokens remaining)`);
+        this._notify();
+    }
+
+    /** Reckless Move — free action: deal melee damage to up to 4 random enemies and knock them back (lose next turn). */
+    barbarianRecklessMove() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'barbarian') return;
+        if (m.level < BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL) return;
+        if ((m.heroicDeedTokens || 0) < 1) {
+            this._addLog(`${m.name} has no Heroic Deed tokens!`);
+            return;
+        }
+        const candidates = [...this.aliveHostileEnemies].sort(() => Math.random() - 0.5).slice(0, 4);
+        if (candidates.length === 0) {
+            this._addLog(`${m.name}: no enemies to knock back!`);
+            return;
+        }
+        m.heroicDeedTokens--;
+        this._addLog(`💥 ${m.name} spends a Heroic Deed token — RECKLESS MOVE! (${m.heroicDeedTokens} tokens remaining)`);
+
+        let dmg = this._rollPlayerMeleeDamage(m);
+        dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
+        const bfPct = this._getBloodFrenzyBonus(m, candidates[0]);
+        if (bfPct > 0) dmg = Math.max(1, Math.round(dmg * (1 + bfPct)));
+
+        for (const enemy of candidates) {
+            if (enemy.health <= 0) continue;
+            const eDef = ENEMY_TYPES[enemy.type] || {};
+            const eTags = Array.isArray(eDef.tags) ? eDef.tags : [];
+            const dealt = this._damageEnemy(enemy, dmg);
+            if (enemy.health <= 0) {
+                this._addLog(`  💥 ${this._eName(enemy)} takes ${dealt} damage and is SLAIN!`);
+                continue;
+            }
+            this._addLog(`  💥 ${this._eName(enemy)} takes ${dealt} damage!`);
+            // Incorporeal and bosses immune to the knock effect (still take damage)
+            if (eTags.includes('incorporeal') || enemy.isBoss || enemy.isMegaBoss) {
+                this._addLog(`  🛡️ ${this._eName(enemy)} cannot be knocked back!`);
+                continue;
+            }
+            // Level-based resist (same chance as stun resist)
+            const levelResist = Math.min(0.90, (enemy.level || 1) * 0.01);
+            if (Math.random() < levelResist) {
+                this._addLog(`  ${this._eName(enemy)} resists the knockback!`);
+                continue;
+            }
+            enemy.knocked = true;
+            this._addLog(`  ${this._eName(enemy)} is knocked back and will lose their next turn!`);
+        }
+        this._notify();
+    }
+
+    /** Refreshing Mead — free action: restore 50% max HP + 50% max stamina, remove all negative effects. */
+    barbarianRefreshingMead() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'barbarian') return;
+        if (m.level < BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL) return;
+        if ((m.heroicDeedTokens || 0) < 1) {
+            this._addLog(`${m.name} has no Heroic Deed tokens!`);
+            return;
+        }
+        m.heroicDeedTokens--;
+        const hpGain = Math.floor(m.maxHealth * 0.5);
+        const stGain = Math.floor(m.maxStamina * 0.5);
+        m.health   = Math.min(m.maxHealth,   m.health   + hpGain);
+        m.stamina  = Math.min(m.maxStamina,  m.stamina  + stGain);
+        // Remove all negative effects and status ailments
+        const negativeTypes = new Set([
+            'burn', 'poison', 'bleed', 'acid', 'wither', 'necrotic_curse',
+            'hag_curse', 'taunted', 'hex', 'quasit_poison', 'entangled', 'held',
+            'charm_dominated', 'ghost_fear', 'battle_horn_fear', 'demi_lich_fear',
+            'petrified', 'held_web',
+        ]);
+        const before = (m.activeEffects || []).length;
+        m.activeEffects = (m.activeEffects || []).filter(e => !e || !negativeTypes.has(e.type));
+        m.stunned     = false;
+        m.webbedRounds = 0;
+        m.proneRounds  = 0;
+        const cleared = before - m.activeEffects.length;
+        const clearedStr = cleared > 0 ? `, cleared ${cleared} effect(s)` : '';
+        this._addLog(`🍺 ${m.name} spends a Heroic Deed token — REFRESHING MEAD! +${hpGain} HP, +${stGain} ST${clearedStr}. (${m.heroicDeedTokens} tokens remaining)`);
+        this._notify();
+    }
+
+    /** Battle Horn — free action: AoE sonic+psychic fear on all enemies (entire combat duration). */
+    barbarianBattleHorn() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'barbarian') return;
+        if (m.level < BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL) return;
+        if ((m.heroicDeedTokens || 0) < 1) {
+            this._addLog(`${m.name} has no Heroic Deed tokens!`);
+            return;
+        }
+        m.heroicDeedTokens--;
+        const penalty = Math.floor(m.level / 3);
+        const immuneTags = ['undead', 'construct', 'elemental', 'plant', 'incorporeal'];
+        this._addLog(`📯 ${m.name} spends a Heroic Deed token — BATTLE HORN! (${m.heroicDeedTokens} tokens remaining)`);
+        let feared = 0;
+        for (const enemy of this.aliveHostileEnemies) {
+            if (enemy.health <= 0) continue;
+            const eDef = ENEMY_TYPES[enemy.type] || {};
+            const eTags = Array.isArray(eDef.tags) ? eDef.tags : [];
+            if (immuneTags.some(t => eTags.includes(t))) continue;
+            if (Math.random() < 0.50) {
+                this._addLog(`  🛡️ ${this._eName(enemy)} shrugs off the horn!`);
+                continue;
+            }
+            const alreadyFeared = (enemy.activeEffects || []).some(x => x && x.type === 'battle_horn_fear');
+            if (alreadyFeared) continue;
+            enemy.activeEffects = enemy.activeEffects || [];
+            enemy.activeEffects.push({
+                type: 'battle_horn_fear',
+                damageBonus:  -penalty,
+                defenseBonus: -penalty,
+                rounds: 9999,
+                permanent: true,
+            });
+            this._addLog(`  😨 ${this._eName(enemy)} is TERRIFIED by the Battle Horn! (-${penalty} atk / -${penalty} def, until combat ends)`);
+            feared++;
+        }
+        if (feared === 0) this._addLog(`  No enemies were affected by the Battle Horn.`);
+        this._notify();
+    }
+
+    /** Bard L30: Thunderous Drums — activate per-round sonic/psychic protection. */
+    bardThunderousDrumsOn() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'bard') return;
+        if (m.level < BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL) return;
+        if (m.thunderousDrumsActive) {
+            this._addLog(`🥁 ${m.name} is already beating the Thunderous Drums!`);
+            return;
+        }
+        if (m.mana < BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND) {
+            this._addLog(`${m.name} needs at least ${BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND} MP to start Thunderous Drums.`);
+            return;
+        }
+        m.thunderousDrumsActive = true;
+        this._addLog(`🥁 ${m.name} begins beating the Thunderous Drums! Sonic and psychic attacks on the party are weakened.`);
+        soundManager.playThunderousDrums();
+        this._advancePlayerTurn();
+    }
+
+    /** Bard L30: Stop Thunderous Drums (free action). */
+    bardThunderousDrumsOff() {
+        const m = this.currentMember;
+        if (!m || m.classId !== 'bard') return;
+        if (!m.thunderousDrumsActive) return;
+        m.thunderousDrumsActive = false;
+        this._addLog(`🥁 ${m.name} stops the Thunderous Drums.`);
+        this._notify();
+    }
+
     /**
      * Rogue backstab — 3× stamina cost, 2× damage then +10%/level,
      * 5% + 1%/level instakill. Can be used from back row too.
@@ -1383,11 +1871,22 @@ export class CombatSystem {
         const cost = MELEE_STAMINA_COST * BACKSTAB_STAMINA_MULT;
         const exhausted = m.stamina < cost;
         m.stamina = Math.max(0, m.stamina - cost);
+
+        // Shadow Step: ×2 backstab damage bonus while vanished
+        const shadowMult = this._hasShadowStep(m) ? ROGUE_SHADOW_STEP_BACKSTAB_MULT : 1;
+        const shadowSuffix = shadowMult > 1 ? ' [Shadow Step ×2]' : '';
+
         const instakillChance = BACKSTAB_INSTAKILL_CHANCE + m.getInstakillBonus();
         const bossImmune = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss);
+        const levelMult = 1 + BACKSTAB_DAMAGE_PER_LEVEL * Math.max(1, m.level);
+        const twinFangsReady = targetEnemy.health > 0
+            && m.level >= ROGUE_TWIN_FANGS_UNLOCK_LEVEL
+            && m.hasOffhandMeleeWeapon();
+
         if (!bossImmune && Math.random() < instakillChance) {
             targetEnemy.health = 0;
-            this._addLog(`\u{1F5E1}\uFE0F ${m.name} BACKSTABS ${this._eName(targetEnemy)} — INSTANT KILL!`);
+            if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
+            this._addLog(`🗡️ ${m.name} BACKSTABS ${this._eName(targetEnemy)} — INSTANT KILL!${shadowSuffix}`);
             this._addLog(`${this._eName(targetEnemy)} is defeated!`);
             this._advancePlayerTurn();
             return;
@@ -1396,53 +1895,143 @@ export class CombatSystem {
             // Boss resists instant death — deal x4 pre-defense damage instead
             let bBase = this._rollPlayerMeleeDamage(m);
             if (exhausted) bBase = Math.max(1, Math.floor(bBase / 2));
-            const bLevelMult = 1 + BACKSTAB_DAMAGE_PER_LEVEL * Math.max(1, m.level);
-            const bBossDmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(bBase * BACKSTAB_DAMAGE_MULT * bLevelMult * 4)), 'melee');
+            const bBossDmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(bBase * BACKSTAB_DAMAGE_MULT * levelMult * 4 * shadowMult)), 'melee');
             const bBossDealt = this._damageEnemy(targetEnemy, bBossDmg);
-            this._addLog(`\u{1F5E1}️ ${m.name} scores a killing blow on ${this._eName(targetEnemy)} — Boss resists instant death! (x4 backstab: ${bBossDealt} damage)`);
+            this._addLog(`🗡️ ${m.name} scores a killing blow on ${this._eName(targetEnemy)} — Boss resists instant death! (×4 backstab: ${bBossDealt} damage)${shadowSuffix}`);
             this._applyWeaponRider(m, targetEnemy, bBossDealt);
             this._applyWeaponRider(m, targetEnemy, bBossDealt, 'offhand');
             if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
+            if (targetEnemy.health > 0 && twinFangsReady) {
+                this._rogueTwinFangsOffhand(m, targetEnemy, levelMult, shadowMult, exhausted);
+            }
             this._advancePlayerTurn();
             return;
         }
 
         let base = this._rollPlayerMeleeDamage(m);
         if (exhausted) base = Math.max(1, Math.floor(base / 2));
-        // base × 2 × (1 + 0.10 × level)
-        const levelMult = 1 + BACKSTAB_DAMAGE_PER_LEVEL * Math.max(1, m.level);
-        const dmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(base * BACKSTAB_DAMAGE_MULT * levelMult)), 'melee');
+        // base × 2 × (1 + 0.10 × level) × shadowMult
+        const dmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(base * BACKSTAB_DAMAGE_MULT * levelMult * shadowMult)), 'melee');
 
         const dealt = this._damageEnemy(targetEnemy, dmg);
-        const suffix = exhausted ? ' (exhausted!)' : '';
-        this._addLog(`\u{1F5E1}\uFE0F ${m.name} BACKSTABS ${this._eName(targetEnemy)} for ${dealt} damage!${suffix}`);
+        const suffix = (exhausted ? ' (exhausted!)' : '') + shadowSuffix;
+        this._addLog(`🗡️ ${m.name} BACKSTABS ${this._eName(targetEnemy)} for ${dealt} damage!${suffix}`);
         this._applyWeaponRider(m, targetEnemy, dealt);
         this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
         if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
 
-        // L20+ Rogue: Backstab applies a bleed DoT (immune: undead, construct, elemental, incorporeal)
+        // L20+ Rogue: Backstab applies a bleed DoT (immune: undead, construct, elemental, incorporeal, plant)
         if (targetEnemy.health > 0 && m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL && dealt > 0) {
             const tDef = ENEMY_TYPES[targetEnemy.type] || {};
             const tTags = tDef.tags || [];
-            const bleedImmune = tTags.some(t => ['undead', 'construct', 'elemental', 'incorporeal'].includes(t));
+            const bleedImmune = tTags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant'].includes(t));
             if (!bleedImmune) {
                 const bleedDmg    = Math.max(1, Math.floor(dealt * ROGUE_BACKSTAB_BLEED_FRAC));
                 const bleedRounds = Math.max(1, Math.floor(m.level / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR));
                 if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
-                const existingIdx = targetEnemy.activeEffects.findIndex(fx => fx.type === 'bleed');
-                const bleedFx = { type: 'bleed', damage: bleedDmg, rounds: bleedRounds };
-                if (existingIdx !== -1) {
-                    if (bleedDmg >= (targetEnemy.activeEffects[existingIdx].damage || 0)) {
-                        targetEnemy.activeEffects[existingIdx] = bleedFx;
-                    }
-                } else {
-                    targetEnemy.activeEffects.push(bleedFx);
-                }
-                this._addLog(`\u{1F7E5} ${this._eName(targetEnemy)} begins to bleed! (${bleedDmg}/rd, ${bleedRounds} rounds)`);
+                targetEnemy.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedRounds });
+                this._addLog(`🟥 ${this._eName(targetEnemy)} bleeds from the backstab wound! (${bleedDmg}/rd, ${bleedRounds} rounds)`);
             }
         }
 
+        // L30 Twin Fangs: second offhand strike
+        if (targetEnemy.health > 0 && twinFangsReady) {
+            this._rogueTwinFangsOffhand(m, targetEnemy, levelMult, shadowMult, exhausted);
+        }
+
         this._advancePlayerTurn();
+    }
+
+    /**
+     * L30 Twin Fangs — offhand follow-up strike.
+     * 1.5× base backstab damage, half instakill chance, independent bleed.
+     */
+    _rogueTwinFangsOffhand(m, targetEnemy, levelMult, shadowMult, exhausted) {
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const eName = this._eName(targetEnemy);
+        this._addLog(`🗡️ ${m.name}'s Twin Fangs: offhand strike!`);
+
+        const bossImmune = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss);
+        const ofInstakill = (BACKSTAB_INSTAKILL_CHANCE + m.getInstakillBonus()) * ROGUE_TWIN_FANGS_INSTAKILL_MULT;
+
+        if (!bossImmune && Math.random() < ofInstakill) {
+            targetEnemy.health = 0;
+            if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
+            this._addLog(`🗡️ Twin Fangs offhand — INSTANT KILL!`);
+            this._addLog(`${eName} is defeated!`);
+            return;
+        }
+        if (bossImmune && Math.random() < ofInstakill) {
+            // Boss resists: offhand ×4 damage (same rule as main hand)
+            let bBase = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX);
+            bBase += m.getOffhandWeaponPower();
+            bBase += m.getClassDamageBonus('melee');
+            bBase += this._getPartyMemberDamageMod(m);
+            if (exhausted) bBase = Math.max(1, Math.floor(bBase / 2));
+            bBase = Math.max(1, bBase);
+            const bDmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(bBase * ROGUE_TWIN_FANGS_OFFHAND_MULT * levelMult * shadowMult * 4)), 'melee');
+            const bDealt = this._damageEnemy(targetEnemy, bDmg);
+            this._addLog(`🗡️ Twin Fangs boss — resists instant death! (×4 offhand: ${bDealt} damage)`);
+            this._applyWeaponRider(m, targetEnemy, bDealt, 'offhand');
+            if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
+            return;
+        }
+
+        // Normal offhand hit
+        let ofBase = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX);
+        ofBase += m.getOffhandWeaponPower();
+        ofBase += m.getClassDamageBonus('melee');
+        ofBase += this._getPartyMemberDamageMod(m);
+        if (exhausted) ofBase = Math.max(1, Math.floor(ofBase / 2));
+        ofBase = Math.max(1, ofBase);
+        const ofDmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(ofBase * ROGUE_TWIN_FANGS_OFFHAND_MULT * levelMult * shadowMult)), 'melee');
+        const ofDealt = this._damageEnemy(targetEnemy, ofDmg);
+        this._addLog(`🗡️ Twin Fangs offhand strikes ${eName} for ${ofDealt} damage!`);
+        this._applyWeaponRider(m, targetEnemy, ofDealt, 'offhand');
+        if (targetEnemy.health <= 0) { this._addLog(`${eName} is defeated!`); return; }
+
+        // Offhand bleed (L20+, independent DoT)
+        if (m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL && ofDealt > 0) {
+            const tDef = ENEMY_TYPES[targetEnemy.type] || {};
+            const tTags = tDef.tags || [];
+            const bleedImmune = tTags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant'].includes(t));
+            if (!bleedImmune) {
+                const bleedDmg    = Math.max(1, Math.floor(ofDealt * ROGUE_BACKSTAB_BLEED_FRAC));
+                const bleedRounds = Math.max(1, Math.floor(m.level / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR));
+                if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
+                targetEnemy.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedRounds });
+                this._addLog(`🟥 ${eName} bleeds from the offhand strike! (${bleedDmg}/rd, ${bleedRounds} rounds)`);
+            }
+        }
+    }
+
+    /**
+     * L30 Rogue: Shadow Step — vanish for ROGUE_SHADOW_STEP_DURATION rounds.
+     * Completely untargetable; backstab damage multiplied by ROGUE_SHADOW_STEP_BACKSTAB_MULT.
+     * 1×/combat.
+     */
+    rogueShadowStep() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'rogue') return;
+        if (m.shadowStepUsed) {
+            this._addLog(`🌑 ${m.name} has already used Shadow Step this combat!`);
+            return;
+        }
+        if (m.stamina < ROGUE_SHADOW_STEP_STAMINA_COST) {
+            this._addLog(`❌ ${m.name} doesn't have enough stamina for Shadow Step! (${ROGUE_SHADOW_STEP_STAMINA_COST} ST required)`);
+            return;
+        }
+        m.stamina -= ROGUE_SHADOW_STEP_STAMINA_COST;
+        m.shadowStepUsed = true;
+        m.activeEffects = (m.activeEffects || []).filter(fx => fx.type !== 'shadow_step');
+        m.activeEffects.push({ type: 'shadow_step', rounds: ROGUE_SHADOW_STEP_DURATION });
+        this._addLog(`🌑 ${m.name} vanishes into the shadows! (untargetable for ${ROGUE_SHADOW_STEP_DURATION} rounds, ×${ROGUE_SHADOW_STEP_BACKSTAB_MULT} backstab — free action)`);
+        this._notify();
+    }
+
+    /** Returns true if the party member is currently in Shadow Step (untargetable). */
+    _hasShadowStep(m) {
+        return !!(m && m.activeEffects && m.activeEffects.some(fx => fx.type === 'shadow_step' && (fx.rounds || 0) > 0));
     }
 
     rogueSetTrap() {
@@ -1476,7 +2065,6 @@ export class CombatSystem {
             this._addLog(`  ↪️ ${this._eName(enemy)} takes ${dealt} melee trap damage!`);
             if (enemy.health > 0 && dealt > 0) {
                 if (!Array.isArray(enemy.activeEffects)) enemy.activeEffects = [];
-                enemy.activeEffects = enemy.activeEffects.filter(fx => !(fx && fx.type === 'rogue_trap_dot'));
                 const dotDamage = Math.max(1, Math.floor(dealt * ROGUE_TRAP_DOT_FRACTION));
                 enemy.activeEffects.push({
                     type: 'rogue_trap_dot',
@@ -1594,8 +2182,8 @@ export class CombatSystem {
         let baseDmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
         baseDmg += m.getWeaponBonus('magic');
         baseDmg += m.getClassDamageBonus('magic');
-        // 2× base damage, then ×(1 + 3% per cleric level)
-        baseDmg = Math.max(1, Math.round(baseDmg * CLERIC_TURN_UNDEAD_DAMAGE_MULT * (1 + 0.03 * m.level)));
+        // 2× base damage, then ×(1 + 5% per cleric level)
+        baseDmg = Math.max(1, Math.round(baseDmg * CLERIC_TURN_UNDEAD_DAMAGE_MULT * (1 + 0.05 * m.level)));
 
         const debuffMag = CLERIC_TURN_UNDEAD_DEBUFF_BASE + Math.floor(m.level / CLERIC_TURN_UNDEAD_DEBUFF_EVERY);
         const debuffRounds = 2 + Math.floor(m.level / CLERIC_TURN_UNDEAD_DEBUFF_EVERY);
@@ -1699,10 +2287,11 @@ export class CombatSystem {
         const healPct  = CLERIC_MASS_REGEN_BASE_PCT + Math.floor(m.level / 3) * CLERIC_MASS_REGEN_PER_3_LEVELS;
         const duration = Math.max(1, Math.floor(m.level / 4));   // floor(level/4) rounds
 
-        const isUndead = (t) => t.isSummoned && (UNDEAD_TIERS.some(u => u.id === t.summonType) || t.summonType === 'demi_lich');
-        const isGolem  = (t) => t.isSummoned && GOLEM_PRESETS[t.summonType];
+        const isUndead    = (t) => t.isSummoned && (UNDEAD_TIERS.some(u => u.id === t.summonType) || t.summonType === 'demi_lich' || t.summonType === 'corpse_horror');
+        const isGolem     = (t) => t.isSummoned && GOLEM_PRESETS[t.summonType];
+        const isRiftElem  = (t) => this._isRiftElemental(t);
         const eligible = this.party.filter(t =>
-            t.health > 0 && !isUndead(t) && !isGolem(t)
+            t.health > 0 && !isUndead(t) && !isGolem(t) && !isRiftElem(t)
         );
 
         for (const t of eligible) {
@@ -1761,6 +2350,134 @@ export class CombatSystem {
 
         const pctStr = Math.round(healFrac * 100);
         this._addLog(`✨ ${m.name} invokes divine mercy — ${toRevive.length} fallen ally/allies revived at ${pctStr}% HP! (${parts.join(', ')})`);
+        this._advancePlayerTurn();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CLERIC L30 SPECIALS — Spiritual Weapon  &  Banishment
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Fire all of m's spiritual weapons: deduct upkeep (3 MP each), fade weapons
+     * that can no longer be afforded, then fire floor(level/8) attacks per weapon.
+     * Called automatically by _advancePlayerTurn() whenever a cleric ends their turn.
+     */
+    _processSpiritualWeapons(cleric) {
+        if (!cleric || cleric.health <= 0 || !cleric.spiritualWeapons || cleric.spiritualWeapons.length === 0) return;
+
+        // Deduct upkeep FIFO — first summoned weapons are maintained first.
+        const surviving = [];
+        for (const w of cleric.spiritualWeapons) {
+            if (cleric.mana >= CLERIC_SPIRITUAL_WEAPON_UPKEEP) {
+                cleric.mana -= CLERIC_SPIRITUAL_WEAPON_UPKEEP;
+                surviving.push(w);
+            } else {
+                this._addLog(`✨ ${cleric.name}'s Spiritual Weapon dissipates — insufficient mana!`);
+            }
+        }
+        cleric.spiritualWeapons = surviving;
+        if (surviving.length === 0) return;
+
+        const attacksPerWeapon = Math.max(1, Math.floor((cleric.level || 1) / CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR));
+        const hostile = this.aliveHostileEnemies;
+        if (hostile.length === 0) return;
+
+        for (const _w of surviving) {
+            for (let i = 0; i < attacksPerWeapon; i++) {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) return;
+                const target = alive[Math.floor(Math.random() * alive.length)];
+
+                // Damage = melee roll + magic class bonus, then outgoing bonuses (hunger, etc.)
+                let dmg = this._rollPlayerMeleeDamage(cleric);
+                dmg += cleric.getClassDamageBonus('magic');
+                dmg = this._applyOutgoingDamageBonuses(cleric, dmg, 'ranged');
+
+                // Force magic: isMagic=true (skips physResist/shieldBlock/displace/remorhaz), isRanged=true
+                const dealt = this._damageEnemy(target, dmg, false, true, 0, true);
+                this._addLog(`⚔️ ${cleric.name}'s Spiritual Weapon strikes ${this._eName(target)} for ${dealt} force damage!`);
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is destroyed by divine force!`);
+            }
+        }
+    }
+
+    /**
+     * Cleric L30: Summon Spiritual Weapon.
+     * Costs CLERIC_SPIRITUAL_WEAPON_SUMMON_COST MP. Adds one weapon to the cleric's
+     * spiritualWeapons array. Multiple weapons may be active simultaneously.
+     * The new weapon fires immediately (via _processSpiritualWeapons in _advancePlayerTurn).
+     * Weapons disappear if the cleric dies or at combat end.
+     */
+    clericSummonSpiritualWeapon() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'cleric') return;
+        if (m.level < CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL} to summon a Spiritual Weapon.`);
+            return;
+        }
+        if (m.mana < CLERIC_SPIRITUAL_WEAPON_SUMMON_COST) {
+            this._addLog(`${m.name} needs ${CLERIC_SPIRITUAL_WEAPON_SUMMON_COST} MP to summon a Spiritual Weapon.`);
+            return;
+        }
+        m.mana -= CLERIC_SPIRITUAL_WEAPON_SUMMON_COST;
+        m.spiritualWeapons = m.spiritualWeapons || [];
+        const weaponId = 'sw_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5);
+        m.spiritualWeapons.push({ id: weaponId });
+        const count = m.spiritualWeapons.length;
+        const atkCount = Math.max(1, Math.floor((m.level || 1) / CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR));
+        this._addLog(`⚔️ ${m.name} summons a Spiritual Weapon! (${count} active, ${atkCount} attack${atkCount !== 1 ? 's' : ''}/round, ${CLERIC_SPIRITUAL_WEAPON_UPKEEP} MP/round upkeep)`);
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Cleric L30: Banishment.
+     * Costs 50 MP. Target must have 'elemental' or 'demon' tag.
+     * Cleric level% chance to instakill outright (immune: bosses/mega-bosses).
+     * On failure: deals magic roll × 20 force damage, ignoring all defense.
+     */
+    clericBanishment(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'cleric') return;
+        if (m.level < CLERIC_BANISHMENT_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${CLERIC_BANISHMENT_UNLOCK_LEVEL} to cast Banishment.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const tTags = this._getEnemyTags(targetEnemy);
+        const isValidTarget = CLERIC_BANISHMENT_TAGS.some(t => tTags.includes(t));
+        if (!isValidTarget) {
+            this._addLog(`${m.name}: Banishment only affects elementals and demons!`);
+            return;
+        }
+        if (m.mana < CLERIC_BANISHMENT_MANA_COST) {
+            this._addLog(`${m.name} needs ${CLERIC_BANISHMENT_MANA_COST} MP to cast Banishment.`);
+            return;
+        }
+        m.mana -= CLERIC_BANISHMENT_MANA_COST;
+        const eName = this._eName(targetEnemy);
+        const isBoss = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss);
+        const banishRoll = !isBoss && Math.random() < (m.level / 100);
+        if (banishRoll) {
+            targetEnemy.health = 0;
+            if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
+            this._addLog(`✨ ${m.name} calls down divine judgment — ${eName} is BANISHED from existence!`);
+        } else {
+            // Magic damage roll × 20, ignoring all defense
+            let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+            dmg += m.getWeaponBonus('magic');
+            dmg += m.getClassDamageBonus('magic');
+            dmg += this._getPartyMemberDamageMod(m);
+            dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1)));
+            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+            const totalDmg = Math.max(1, Math.floor(dmg * CLERIC_BANISHMENT_DAMAGE_MULT));
+            const dealt = this._damageEnemy(targetEnemy, totalDmg, true, true);
+            if (isBoss) {
+                this._addLog(`✨ ${m.name} invokes Banishment! ${eName} resists annihilation but is blasted for ${dealt} holy force damage!`);
+            } else {
+                this._addLog(`✨ ${m.name} invokes Banishment! ${eName} withstands annihilation but suffers ${dealt} holy force damage!`);
+            }
+            if (targetEnemy.health <= 0) this._addLog(`${eName} is obliterated by divine force!`);
+        }
         this._advancePlayerTurn();
     }
 
@@ -1867,6 +2584,7 @@ export class CombatSystem {
                     continue;
                 }
                 target.health = 0;
+                if (!target._deathHandled) { target._deathHandled = true; this._onEnemyDeath(target); }
                 this._addLog(`✨ ${eName} is purged by the holy nova!`);
                 if (this.aliveEnemies.length === 0) break;
                 continue;
@@ -1975,9 +2693,65 @@ export class CombatSystem {
                 });
                 this._addLog(`✋ ${eName} is afflicted by the Quivering Palm! (${base} internal dmg/rd, doubling, ${newDur} rds)`);
             }
+
+            // ── Pressure Points (L30+): -1 defense per QP application; immune: undead/incorporeal/elemental/construct
+            if (m.level >= MONK_KI_UNLOCK_LEVEL) {
+                const ppTags = this._getEnemyTags(targetEnemy);
+                const ppImmune = ['undead', 'incorporeal', 'elemental', 'construct'].some(t => ppTags.includes(t));
+                if (!ppImmune) {
+                    const ppFx = targetEnemy.activeEffects.find(e => e && e.type === 'pressure_points');
+                    if (ppFx) {
+                        ppFx.defenseBonus -= 1;
+                        this._addLog(`✋ Pressure Points deepen on ${eName}! (${ppFx.defenseBonus} defense)`);
+                    } else {
+                        targetEnemy.activeEffects.push({ type: 'pressure_points', sourceId: m.id, defenseBonus: -1 });
+                        this._addLog(`✋ Pressure Points applied to ${eName}! (-1 defense)`);
+                    }
+                }
+            }
         } else {
             this._addLog(`${eName} is defeated!`);
         }
+
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Monk L30: Ki Surge.
+     * Expends all ki charges, striking every alive enemy for melee × kiCharges damage.
+     * Damage bypasses defense (ignoreDefense=true) and counts as magic/AoE for resist purposes.
+     * Drains all ki charges. Replaces the monk's action for the round.
+     */
+    monkKiSurge() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'monk') return;
+        if (m.level < MONK_KI_UNLOCK_LEVEL) return;
+        if (!this.canMelee(m)) {
+            this._addLog(`${m.name} cannot use Ki Surge from the back row!`);
+            return;
+        }
+        const ki = m.kiCharges || 0;
+        if (ki <= 0) {
+            this._addLog(`${m.name} has no Ki Charges to release!`);
+            return;
+        }
+
+        const base = this._rollPlayerMeleeDamage(m);
+        const raw  = this._applyOutgoingDamageBonuses(m, base * ki, 'melee');
+
+        this._addLog(`\u{1F9D8} ${m.name} unleashes a Ki Surge! (${ki} charge${ki !== 1 ? 's' : ''} × ${base} melee = ${raw} raw)`);
+
+        let totalDealt = 0;
+        for (const enemy of [...this.aliveHostileEnemies]) {
+            if (enemy.health <= 0) continue;
+            const dealt = this._damageEnemy(enemy, raw, true, true);
+            totalDealt += dealt;
+            this._addLog(`  \u{1F9D8} ${this._eName(enemy)} takes ${dealt} ki damage!`);
+            if (enemy.health <= 0) this._addLog(`${this._eName(enemy)} is overwhelmed by the ki surge!`);
+        }
+
+        m.kiCharges = 0;
+        if (totalDealt === 0) this._addLog(`The Ki Surge dissipates with no targets remaining.`);
 
         this._advancePlayerTurn();
     }
@@ -2128,7 +2902,7 @@ export class CombatSystem {
         });
         this.party.push(fq);
         this._registerNewSummon(fq);
-        this._addLog(`🌟 The Faerie Queen answers the call! (HP:${maxHp} Def:${defense} Atk:${MAGIC_DAMAGE_MIN+magicBonus}–${MAGIC_DAMAGE_MAX+magicBonus})`);
+        this._addLog(`🌟 The Faerie Queen answers the call!`);
     }
 
     /**
@@ -2268,6 +3042,7 @@ export class CombatSystem {
                         continue;
                     }
                     target.health = 0;
+                    if (!target._deathHandled) { target._deathHandled = true; this._onEnemyDeath(target); }
                     this._addLog(`🎯 Explosive Arrow: ${this._eName(target)} is blown apart! (favored enemy instakill)`);
                     continue;
                 }
@@ -2307,7 +3082,7 @@ export class CombatSystem {
             this._addLog(`  ➡️ ${eName} takes ${dealt} explosion damage!${critStr}${favStr}`);
             this._applyWeaponRider(m, target, dealt);
             this._applyRangerTotemOnHit(m, target, dealt, 'aoe');
-            if (target.health <= 0) this._addLog(`${eName} is destroyed in the blast!`);
+            if (target.health <= 0) { this._addLog(`${eName} is destroyed in the blast!`); this._checkHunterMarkKill(target); }
         }
 
         this._advancePlayerTurn();
@@ -2364,6 +3139,78 @@ export class CombatSystem {
             t.activeEffects = t.activeEffects.filter(e => !(e.type === 'mage_shield' && e.casterId === casterId));
         }
         if (this._mageShieldCasterId === casterId) this._mageShieldCasterId = null;
+    }
+
+    /**
+     * Mage L30 — Elemental Rift (free action, once per combat).
+     * Opens a rift that costs MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND MP/round and
+     * each round has a (mageLevel + MAGE_ELEMENTAL_RIFT_SUMMON_BASE)% chance to
+     * summon a random elemental (fire/water/earth/air) that fights for the party.
+     */
+    mageOpenElementalRift() {
+        const m = this.currentMember;
+        if (!m || m.classId !== 'mage' || m.level < MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL || m.health <= 0) return;
+        if (m.elementalRiftUsed) {
+            this._addLog(`\u{1F300} ${m.name} can only open one Elemental Rift per combat!`);
+            return;
+        }
+        if (m.mana < MAGE_ELEMENTAL_RIFT_MANA_INITIAL) {
+            this._addLog(`${m.name} needs ${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP to open an Elemental Rift.`);
+            return;
+        }
+        m.mana -= MAGE_ELEMENTAL_RIFT_MANA_INITIAL;
+        m.elementalRiftOpen = true;
+        m.elementalRiftUsed = true;
+        this._addLog(`\u{1F300} ${m.name} tears open an Elemental Rift! (-${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP; ${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP/round upkeep)`);
+        this._notify(); // free action — refresh UI without advancing turn
+    }
+
+    /** Internal: summon one random elemental through the active rift. */
+    _riftSummonElemental(mage) {
+        const elemTypes = ['fire', 'water', 'earth', 'air'];
+        const elemType  = elemTypes[Math.floor(Math.random() * elemTypes.length)];
+        const lvl     = mage.level;
+        const skill   = Math.floor(lvl * 1.5);
+        const baseHp  = Math.floor((lvl * lvl) / 3);
+        const defense = Math.floor(lvl * 1.5);
+        const dmgMin  = MAGIC_DAMAGE_MIN + skill;
+        const dmgMax  = MAGIC_DAMAGE_MAX + skill;
+
+        const ELEM_CFG = {
+            fire:  { hp: baseHp,     def: defense,      row: 'back',  immune: ['fire',      'stun', 'poison', 'web', 'hold', 'bleed', 'rot'], icon: '\u{1F525}', name: 'Fire Elemental',  incorporeal: true  },
+            water: { hp: baseHp,     def: defense,      row: 'back',  immune: ['cold',      'stun', 'poison', 'web', 'hold', 'bleed', 'rot'], icon: '\u{1F30A}', name: 'Water Elemental', incorporeal: true  },
+            air:   { hp: baseHp,     def: defense,      row: 'back',  immune: ['lightning', 'stun', 'poison', 'web', 'hold', 'bleed', 'rot'], icon: '\u{1F4A8}', name: 'Air Elemental',   incorporeal: true  },
+            earth: { hp: baseHp * 2, def: defense + 20, row: 'front', immune: [             'stun', 'poison',              'bleed', 'rot'], icon: '\u{1FAA8}', name: 'Earth Elemental', incorporeal: false },
+        };
+        const cfg = ELEM_CFG[elemType];
+
+        const elem = new PartyMember({
+            name: `${mage.name}'s ${cfg.name}`,
+            classId: 'summoned', speciesId: 'elemental',
+            level: lvl,
+            maxHealth:  cfg.hp,
+            maxStamina: 50,
+            maxMana:    999,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned:  true,
+            summonType:  `rift_${elemType}`,
+            summonerId:  mage.id,
+            canBeHealed: false,   // construct/elemental — no potions, cleric, or regen
+            row: cfg.row,
+            summonStats: {
+                meleeMin: dmgMin, meleeMax: dmgMax,
+                magicMin: dmgMin, magicMax: dmgMax,
+                defense: cfg.def,
+                immune:  cfg.immune,
+                beastKind:   `rift_${elemType}`,
+                mageLevel:   lvl,
+                incorporeal: cfg.incorporeal,
+            },
+        });
+        elem.health = cfg.hp;
+        this.party.push(elem);
+        this._registerNewSummon(elem);
+        this._addLog(`\u{1F300}${cfg.icon} A ${cfg.name} surges through the rift!`);
     }
 
     getAvailableNecroTiers(necroLevel) {
@@ -2552,6 +3399,184 @@ export class CombatSystem {
         this._notify();
     }
 
+    /**
+     * Ranger L30 Hunter's Mark — free action (does not consume turn).
+     * Places a mark on a target; marked target takes +15% damage from all sources.
+     * Costs 5 ST + 5 MP to place; 3 MP + 3 ST/round upkeep.
+     * If the ranger kills the marked target, they gain a bonus turn.
+     */
+    rangerHuntersMark(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'ranger') return;
+        if (m.level < RANGER_HUNTERS_MARK_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must reach level ${RANGER_HUNTERS_MARK_UNLOCK_LEVEL} to use Hunter's Mark.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) {
+            this._addLog(`No valid target for Hunter's Mark.`);
+            return;
+        }
+        if (m.stamina < RANGER_HUNTERS_MARK_STAMINA_COST || m.mana < RANGER_HUNTERS_MARK_MANA_COST) {
+            this._addLog(`${m.name} needs ${RANGER_HUNTERS_MARK_STAMINA_COST} ST and ${RANGER_HUNTERS_MARK_MANA_COST} MP to place Hunter's Mark.`);
+            return;
+        }
+        // Remove existing mark from previous target (if any)
+        if (m.hunterMarkEnemyId) {
+            const oldTarget = this.enemies.find(e => e.id === m.hunterMarkEnemyId);
+            if (oldTarget) oldTarget.activeEffects = (oldTarget.activeEffects || []).filter(fx => fx && fx.type !== 'hunters_mark');
+        }
+        m.stamina -= RANGER_HUNTERS_MARK_STAMINA_COST;
+        m.mana    -= RANGER_HUNTERS_MARK_MANA_COST;
+        m.hunterMarkEnemyId = targetEnemy.id;
+        targetEnemy.activeEffects = targetEnemy.activeEffects || [];
+        targetEnemy.activeEffects.push({ type: 'hunters_mark', markerId: m.id });
+        this._addLog(`🎯 ${m.name} places Hunter's Mark on ${this._eName(targetEnemy)}! (+${Math.round(RANGER_HUNTERS_MARK_DAMAGE_BONUS * 100)}% incoming damage)`);
+        this._notify();
+    }
+
+    /**
+     * Ranger L30 Beastlord Toggle — free action (does not consume turn).
+     * When active: each round auto-rolls (level/2+10)% chance to summon a random beast.
+     * Costs 5 MP/round base + 1 MP/round per beastlord-summoned beast alive.
+     */
+    rangerToggleBeastlord() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'ranger') return;
+        if (m.level < RANGER_BEASTLORD_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must reach level ${RANGER_BEASTLORD_UNLOCK_LEVEL} to use Beastlord.`);
+            return;
+        }
+        if (m.beastlordActive) {
+            m.beastlordActive = false;
+            this._addLog(`🦎 ${m.name} releases the Beastlord bond.`);
+            this._notify();
+            return;
+        }
+        if (m.mana < RANGER_BEASTLORD_MANA_PER_ROUND) {
+            this._addLog(`${m.name} needs at least ${RANGER_BEASTLORD_MANA_PER_ROUND} MP to activate Beastlord.`);
+            return;
+        }
+        m.beastlordActive = true;
+        const pct = Math.floor(m.level / 2) + RANGER_BEASTLORD_SUMMON_BASE;
+        this._addLog(`🦎 ${m.name} awakens as Beastlord! (${pct}% auto-summon chance per round, ${RANGER_BEASTLORD_MANA_PER_ROUND} MP/round base)`);
+        this._notify();
+    }
+
+    /**
+     * Internal: auto-summon a random beast for beastlord (no mana cost, no turn advance).
+     */
+    _beastlordAutoSummon(ranger) {
+        const pool = ['wolf', 'bear', 'eagle', 'pixie'];
+        const beastId = pool[Math.floor(Math.random() * pool.length)];
+        const preset = BEAST_TYPES[beastId];
+        if (!preset) return;
+        const stats = rollBeastStats(beastId, ranger.level);
+        // Level-10+ upgrade roll
+        let upgradeName = null;
+        if (ranger.level >= 10) {
+            const upgradeChance = 0.25 + Math.max(0, ranger.level - 10) * 0.02;
+            if (Math.random() < upgradeChance) {
+                if (beastId === 'bear')  {
+                    upgradeName = 'giant_bear';
+                    stats.meleeMin  = (stats.meleeMin  || 0) + ranger.level + Math.floor(ranger.level / 3);
+                    stats.meleeMax  = (stats.meleeMax  || 0) + ranger.level + Math.floor(ranger.level / 3);
+                    stats.maxHealth = Math.round((stats.maxHealth || 0) * 1.25);
+                }
+                if (beastId === 'eagle') {
+                    upgradeName = 'golden_eagle';
+                    stats.rangedMin = (stats.rangedMin || 0) + ranger.level;
+                    stats.rangedMax = (stats.rangedMax || 0) + ranger.level;
+                    stats.defense   = (stats.defense   || 0) + 5;
+                    stats.maxHealth = Math.round((stats.maxHealth || 0) * 1.25);
+                }
+                if (beastId === 'pixie') {
+                    upgradeName = 'pixie_princess';
+                    stats.magicMin = (stats.magicMin || 0) + ranger.level;
+                    stats.magicMax = (stats.magicMax || 0) + ranger.level;
+                    stats.defense  = (stats.defense  || 0) + 3;
+                }
+            }
+        }
+        // Wolf pack for wolves
+        const UPGRADE_LABELS_BL = { giant_bear: 'Giant Bear', golden_eagle: 'Golden Eagle', pixie_princess: 'Pixie Princess' };
+        const displayName = upgradeName ? `${ranger.name}'s ${UPGRADE_LABELS_BL[upgradeName]}` : `${ranger.name}'s ${preset.name}`;
+        const beastNum = this.party.filter(p => p.isSummoned && p.summonType === preset.id && p.summonerId === ranger.id).length + 1;
+        const beast = new PartyMember({
+            name: `${ranger.name}'s ${preset.name} #${beastNum}`,
+            classId:   preset.portraitClass,
+            speciesId: preset.portraitSpecies,
+            level:     ranger.level,
+            maxHealth: stats.maxHealth,
+            maxStamina: stats.maxStamina,
+            maxMana:    stats.maxMana,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            summonType: preset.id,
+            summonerId: ranger.id,
+            canBeHealed: true,
+            row: (beastId === 'bear' || beastId === 'wolf') ? 'front' : 'back',
+            summonStats: {
+                meleeMin: stats.meleeMin, meleeMax: stats.meleeMax,
+                rangedMin: stats.rangedMin, rangedMax: stats.rangedMax,
+                magicMin: stats.magicMin, magicMax: stats.magicMax,
+                defense: stats.defense, baseDefense: stats.baseDefense,
+                baseMaxHealth: stats.baseMaxHealth, stunChance: stats.stunChance,
+                beastKind: beastId, beastlordSummoned: true,
+                stunResistChance: stats.stunResistChance ?? 0,
+                ...(upgradeName ? { upgradeName, upgradeBonus: ranger.level * 0.01 } : {}),
+            },
+        });
+        this.party.push(beast);
+        this._registerNewSummon(beast);
+        if (upgradeName) {
+            this._addLog(`🦎✨ ${preset.icon} Beastlord summons a rare ${UPGRADE_LABELS_BL[upgradeName]}!`);
+        } else {
+            this._addLog(`🦎 ${preset.icon} Beastlord summons ${displayName}!`);
+        }
+        // Wolf pack cascade for beastlord wolves
+        if (beastId === 'wolf' && ranger.level >= 10) {
+            let extraCount = 0;
+            let baseChance = 0.40;
+            const levelBonus = Math.max(0, ranger.level - 9) * 0.01;
+            while (true) {
+                const chance = Math.min(1, baseChance + levelBonus);
+                if (chance <= 0) break;
+                if (Math.random() >= chance) break;
+                const beastNum2 = this.party.filter(p => p.isSummoned && p.summonType === preset.id && p.summonerId === ranger.id).length + 1;
+                const packWolf = new PartyMember({
+                    name: `${ranger.name}'s ${preset.name} #${beastNum2}`,
+                    classId: preset.portraitClass, speciesId: preset.portraitSpecies,
+                    level: ranger.level, maxHealth: stats.maxHealth, maxStamina: stats.maxStamina, maxMana: stats.maxMana,
+                    portraitSeed: Math.floor(Math.random() * 100000),
+                    isSummoned: true, summonType: preset.id, summonerId: ranger.id, canBeHealed: true, row: 'front',
+                    summonStats: { meleeMin: stats.meleeMin, meleeMax: stats.meleeMax, rangedMin: stats.rangedMin, rangedMax: stats.rangedMax,
+                        magicMin: stats.magicMin, magicMax: stats.magicMax, defense: stats.defense, baseDefense: stats.baseDefense,
+                        baseMaxHealth: stats.baseMaxHealth, stunChance: stats.stunChance, beastKind: beastId, beastlordSummoned: true },
+                });
+                this.party.push(packWolf);
+                this._registerNewSummon(packWolf);
+                extraCount++;
+                baseChance -= 0.05;
+            }
+            if (extraCount > 0) this._addLog(`🐺 Beastlord wolf pack: ${1 + extraCount} wolves answer the call!`);
+        }
+    }
+
+    /**
+     * Internal: check if a just-killed enemy was the ranger's Hunter's Mark target.
+     * If so, grant that ranger a bonus turn.
+     */
+    _checkHunterMarkKill(enemy) {
+        if (!enemy || enemy.health > 0) return;
+        const mark = (enemy.activeEffects || []).find(fx => fx && fx.type === 'hunters_mark');
+        if (!mark) return;
+        const ranger = this.party.find(p => p.id === mark.markerId && p.health > 0);
+        if (!ranger) return;
+        // Only grant the bonus turn if the ranger is the current acting member
+        if (this.currentMember !== ranger) return;
+        ranger.bonusTurnPending = true;
+        ranger.hunterMarkEnemyId = null;
+    }
     monkToggleAvatar() {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'monk' || m.level < MONK_AVATAR_UNLOCK_LEVEL) return;
@@ -2659,19 +3684,23 @@ export class CombatSystem {
             const lvl = m.level;
             const upgradeChance = 0.25 + Math.max(0, lvl - 10) * 0.02;
             if (Math.random() < upgradeChance) {
-                upgradeBonus = lvl * 0.01; // +level% to the relevant chance stat
+                upgradeBonus = lvl * 0.01;
                 if (beastId === 'bear') {
                     upgradeName = 'giant_bear';
-                    stats.meleeMin = (stats.meleeMin || 0) + lvl;
-                    stats.meleeMax = (stats.meleeMax || 0) + lvl;
+                    stats.meleeMin  = (stats.meleeMin  || 0) + lvl + Math.floor(lvl / 3);
+                    stats.meleeMax  = (stats.meleeMax  || 0) + lvl + Math.floor(lvl / 3);
+                    stats.maxHealth = Math.round((stats.maxHealth || 0) * 1.25);
                 } else if (beastId === 'eagle') {
                     upgradeName = 'golden_eagle';
                     stats.rangedMin = (stats.rangedMin || 0) + lvl;
                     stats.rangedMax = (stats.rangedMax || 0) + lvl;
+                    stats.defense   = (stats.defense   || 0) + 5;
+                    stats.maxHealth = Math.round((stats.maxHealth || 0) * 1.25);
                 } else if (beastId === 'pixie') {
                     upgradeName = 'pixie_princess';
                     stats.magicMin = (stats.magicMin || 0) + lvl;
                     stats.magicMax = (stats.magicMax || 0) + lvl;
+                    stats.defense  = (stats.defense  || 0) + 3;
                 } else if (beastId === 'treant') {
                     upgradeName = 'elder_treant';
                     stats.meleeMin = (stats.meleeMin || 0) + lvl;
@@ -2719,6 +3748,7 @@ export class CombatSystem {
                     ...(beastId === 'shambling_mound' ? { canSpawnMini: true } : {}),
                     stunChance: stats.stunChance,
                     beastKind: beastId,
+                    stunResistChance: stats.stunResistChance ?? 0,
                     ...(beastId === 'shambling_mound' ? { summonedRound: this.turnNumber } : {}),
                     // Upgrade bonus stored here for use at combat time.
                     ...(upgradeName ? { upgradeName, upgradeBonus } : {}),
@@ -2730,7 +3760,7 @@ export class CombatSystem {
         };
 
         // ── Summon the first beast ────────────────────────────────────────────
-        _spawnOne();
+        const firstBeast = _spawnOne();
 
         if (upgradeName) {
             const label = UPGRADE_LABELS[upgradeName];
@@ -2739,17 +3769,28 @@ export class CombatSystem {
             this._addLog(`${preset.icon} ${m.name} summons a ${preset.name}!`);
         }
 
+        // ── Wild Shape: if druid is in matching form, apply buff to new summon + summon an extra ──
+        if (m.classId === 'druid' && m.wildShapeForm === beastId) {
+            this._applySingleSummonWildShapeBuff(m, firstBeast);
+            const bonusBeast = _spawnOne();
+            this._applySingleSummonWildShapeBuff(m, bonusBeast);
+            this._addLog(`${preset.icon} Wild Shape resonance — an extra ${preset.name} joins the call!`);
+        }
+
         // ── Wolf pack cascade (level 10+): 40% → 35% → … chance for extra wolves ──
+        // In Wolf Form, base cascade chance is 65% instead of 40%.
         if (beastId === 'wolf' && m.level >= 10) {
             let extraCount = 0;
-            let baseChance = 0.40;
+            const inWolfForm = m.classId === 'druid' && m.wildShapeForm === 'wolf';
+            let baseChance = inWolfForm ? DRUID_WILD_WOLF_CASCADE_BASE : 0.40;
             // +1% per level above 9 (so level 10 = +1%, level 20 = +11%, etc.)
             const levelBonus = Math.max(0, m.level - 9) * 0.01;
             while (true) {
                 const chance = Math.min(1, baseChance + levelBonus);
                 if (chance <= 0) break;
                 if (Math.random() >= chance) break;
-                _spawnOne();
+                const extraWolf = _spawnOne();
+                if (inWolfForm) this._applySingleSummonWildShapeBuff(m, extraWolf);
                 extraCount++;
                 baseChance -= 0.05;
             }
@@ -2761,6 +3802,20 @@ export class CombatSystem {
         }
 
         this._advancePlayerTurn();
+    }
+
+    /** Apply Wild Shape buff to a single newly-summoned beast. */
+    _applySingleSummonWildShapeBuff(druid, beast) {
+        if (!druid || !beast || !beast.summonStats) return;
+        const form    = druid.wildShapeForm;
+        const dmgMult = (form === 'pixie') ? DRUID_WILD_SUMMON_DMG_MULT_PIXIE : DRUID_WILD_SUMMON_DMG_MULT;
+        const defDiv  = (form === 'pixie') ? DRUID_WILD_SUMMON_DEF_DIVISOR_PIXIE : DRUID_WILD_SUMMON_DEF_BONUS_DIVISOR;
+        const defBonus = Math.floor((druid.level || 1) / defDiv);
+        const s = beast.summonStats;
+        s.wildShapeDmgMult     = dmgMult;
+        s.wildShapeDefBonus    = defBonus;
+        s.wildShapeExtraAttack = true;
+        s.defense              = (s.defense || 0) + defBonus;
     }
 
     /**
@@ -2849,14 +3904,13 @@ export class CombatSystem {
             this._addLog(`${m.name} is too low-level to forge a ${tier.name} (requires L${tier.unlockLevel}).`);
             return null;
         }
-        // One golem per artificer at a time (persistent — they stack forever otherwise).
-        const existing = (this.party || []).find(p =>
-            p && p.isSummoned && p.summonerId === m.id &&
-            p.summonStats && p.summonStats.tierId && p.health > 0 &&
-            GOLEM_PRESETS[p.summonType]
-        );
-        if (existing) {
-            this._addLog(`${m.name} already commands a ${existing.name.replace(`${m.name}'s `, '')} — dismiss or lose it first.`);
+        // Multi Golem Protocol (L30+): max golems scales with artificer level
+        const activeGolems = (this.party || []).filter(p =>
+            p && p.isSummoned && p.summonerId === m.id && p.summonStats && p.summonStats.tierId && p.health > 0 && GOLEM_PRESETS[p.summonType]
+        ).length;
+        const maxGolems = this._getMaxGolems(m.level);
+        if (activeGolems >= maxGolems) {
+            this._addLog(`${m.name} already commands ${activeGolems} golem${activeGolems > 1 ? 's' : ''} (max: ${maxGolems}). Dismiss or lose one first.`);
             return null;
         }
 
@@ -2996,6 +4050,10 @@ export class CombatSystem {
             this._addLog(`The ${golemMember.name} lies broken — it cannot be repaired.`);
             return false;
         }
+        if (golemMember.golemBerserkActive) {
+            this._addLog(`${m.name} cannot repair a golem in Berserk Mode — disengage first!`);
+            return false;
+        }
 
         const tierId = golemMember.summonStats.tierId;
         const tier = GOLEM_TIERS.find(t => t.id === tierId);
@@ -3017,6 +4075,235 @@ export class CombatSystem {
 
         if (spendTurn && this.party && this.party.length) this._advancePlayerTurn();
         return true;
+    }
+
+    // ── Artificer L30: Multi Golem Protocol ──────────────────────────────────
+    _getMaxGolems(artificerLevel) {
+        if (artificerLevel >= 90) return 5;
+        if (artificerLevel >= 70) return 4;
+        if (artificerLevel >= 50) return 3;
+        if (artificerLevel >= ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL) return 2;
+        return 1;
+    }
+
+    // ── Artificer L30: Golem Berserk Mode ────────────────────────────────────
+    golemBerserkOn(golemMember) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'artificer') return;
+        if (m.level < ARTIFICER_BERSERK_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} needs to reach level ${ARTIFICER_BERSERK_UNLOCK_LEVEL} to use Golem Berserk Mode.`);
+            return;
+        }
+        if (!golemMember || !golemMember.isSummoned || !GOLEM_PRESETS[golemMember.summonType]) {
+            this._addLog(`${m.name}: that is not a valid golem!`);
+            return;
+        }
+        if (golemMember.summonerId !== m.id) {
+            this._addLog(`${m.name} cannot command another artificer's golem.`);
+            return;
+        }
+        if (golemMember.health <= 0) {
+            this._addLog(`${m.name} cannot activate Berserk Mode on a destroyed golem.`);
+            return;
+        }
+        if (golemMember.golemBerserkActive) {
+            this._addLog(`⚡ ${golemMember.name} is already in Berserk Mode!`);
+            return;
+        }
+        if (golemMember.golemBerserkUsed) {
+            this._addLog(`⚙️ ${golemMember.name} has already spent its Berserk charge this combat.`);
+            return;
+        }
+        golemMember.golemBerserkActive = true;
+        this._addLog(`⚡⚙️ ${m.name} overclocks ${golemMember.name} — BERSERK MODE ENGAGED! Damage x(1+level*${ARTIFICER_BERSERK_DMG_PER_LEVEL}) but ${Math.round(ARTIFICER_BERSERK_OVERLOAD_PCT * 100)}% HP overload per round. Auto-exits at ${Math.round(ARTIFICER_BERSERK_MIN_HP_PCT * 100)}% HP.`);
+        // Free action — no _advancePlayerTurn
+    }
+
+    golemBerserkOff(golemMember) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'artificer') return;
+        if (!golemMember || !golemMember.isSummoned || !GOLEM_PRESETS[golemMember.summonType]) {
+            this._addLog(`${m.name}: that is not a valid golem!`);
+            return;
+        }
+        if (golemMember.summonerId !== m.id) {
+            this._addLog(`${m.name} cannot command another artificer's golem.`);
+            return;
+        }
+        if (!golemMember.golemBerserkActive) {
+            this._addLog(`⚙️ ${golemMember.name} is not in Berserk Mode.`);
+            return;
+        }
+        golemMember.golemBerserkActive = false;
+        golemMember.golemBerserkUsed   = true;
+        this._addLog(`⚙️ ${m.name} disengages ${golemMember.name}'s Berserk Mode. (used for this combat)`);
+        // Free action — no _advancePlayerTurn
+    }
+
+    // ── Enemy death hook ─────────────────────────────────────────────────────
+    _onEnemyDeath(enemy) {
+        this._maybeFeedCorpseHorror(enemy);
+        this._triggerPlagueExplosion(enemy);
+        // Heroic Deeds: award token to active L30+ barbarian on each kill
+        const killer = this.currentMember;
+        if (killer && !killer.isSummoned && killer.classId === 'barbarian'
+            && killer.level >= BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL && killer.health > 0) {
+            killer.heroicDeedTokens = (killer.heroicDeedTokens || 0) + 1;
+            this._addLog(`🏆 ${killer.name} earns a Heroic Deed token! (${killer.heroicDeedTokens} total)`);
+        }
+    }
+
+    // ── Necromancer L30: Dark Apotheosis — Corpse Horror ─────────────────────
+    _maybeFeedCorpseHorror(enemy) {
+        // Find L30+ necromancers currently in Lich Form with no phylactery remaining
+        const necros = (this.party || []).filter(p =>
+            p && !p.isSummoned && p.classId === 'necromancer' &&
+            p.isLichForm && !p.lichPhial &&
+            p.level >= NECRO_DARK_APOTHEOSIS_UNLOCK_LEVEL &&
+            p.health > 0
+        );
+        if (necros.length === 0) return;
+
+        const typeDef = ENEMY_TYPES[enemy.type] || {};
+        const tags    = Array.isArray(typeDef.tags) ? typeDef.tags : [];
+
+        // Enemies immune to Dark Apotheosis (can't be stitched into a horror)
+        const immuneTags = ['undead', 'construct', 'elemental', 'incorporeal', 'plant', 'demon'];
+        if (immuneTags.some(t => tags.includes(t))) return;
+
+        for (const necro of necros) {
+            // Find an existing Corpse Horror for this necromancer
+            const existing = (this.party || []).find(p =>
+                p && p.isSummoned && p.summonType === 'corpse_horror' &&
+                p.summonerId === necro.id && p.health > 0
+            );
+
+            // HP added by this corpse = 2% of the slain enemy's max HP
+            const corpseHp = Math.max(1, Math.ceil((enemy.maxHealth || 10) * NECRO_CORPSE_HORROR_HP_FRACTION));
+
+            if (existing) {
+                // Strengthen the existing horror
+                const oldStat    = existing.summonStats || {};
+                const cc         = (oldStat.corpseCount || 1) + 1;
+                const newSkill   = necro.level + cc * NECRO_CORPSE_HORROR_SKILL_PER_CORPSE;
+                const newAttacks = cc * NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE;
+                existing.maxHealth += corpseHp;
+                existing.health     = Math.min(existing.maxHealth, existing.health + corpseHp);
+                existing.summonStats = { ...oldStat, corpseCount: cc, meleeSkill: newSkill, attackCount: newAttacks };
+                this._addLog(`\u{1FA78}\u{1F480} ${necro.name} stitches ${this._eName(enemy)}'s remains into the Corpse Horror — it swells with new flesh! (now ${existing.health}/${existing.maxHealth} HP, ${cc} corpses, ${newAttacks} atk/rd, skill ${newSkill})`);
+            } else {
+                // Spawn a new Corpse Horror — 1 corpse
+                const necroLvl  = necro.level;
+                const baseDef   = Math.max(1, Math.floor(necroLvl / NECRO_CORPSE_HORROR_DEF_DIVISOR));
+                const initSkill = necroLvl + NECRO_CORPSE_HORROR_SKILL_PER_CORPSE; // necroLevel + 5
+                const horror    = new PartyMember({
+                    name:        `${necro.name}'s Corpse Horror`,
+                    classId:     'summoned',
+                    speciesId:   'undead',
+                    level:       necroLvl,
+                    maxHealth:   corpseHp,
+                    maxStamina:  0,
+                    maxMana:     0,
+                    portraitSeed: Math.floor(Math.random() * 100000),
+                    isSummoned:  true,
+                    summonType:  'corpse_horror',
+                    summonerId:  necro.id,
+                    canBeHealed: false,
+                    row:         'front',
+                    summonStats: {
+                        corpseCount: 1,
+                        meleeMin:    Math.max(1, Math.floor(necroLvl / 6)),
+                        meleeMax:    Math.max(2, Math.floor(necroLvl / 3)),
+                        meleeSkill:  initSkill,
+                        defense:     baseDef,
+                        attackCount: NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
+                    },
+                });
+                horror.health = corpseHp;
+                this.party.push(horror);
+                this._registerNewSummon(horror);
+                this._addLog(`\u{1F480}\u{1FA78} ${necro.name}'s Dark Apotheosis tears apart ${this._eName(enemy)} — a CORPSE HORROR lurches into being! (${corpseHp} HP, ${NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE} atk/rd, skill ${initSkill})`);
+            }
+        }
+    }
+
+    // ── Necromancer L30: Plague Bringer — explosion on plague-infected death ──
+    _triggerPlagueExplosion(deadEnemy) {
+        if (!(deadEnemy.activeEffects || []).some(fx => fx && fx.type === 'plague_infection')) return;
+
+        const necro = (this.party || []).find(p =>
+            p && !p.isSummoned && p.classId === 'necromancer' && p.health > 0
+        );
+        if (!necro) return;
+
+        const targets = this.aliveHostileEnemies.filter(e => e !== deadEnemy);
+        if (targets.length === 0) return;
+
+        const plagueMin = Math.max(1, Math.floor(necro.level * 1.6));
+        const plagueMax = Math.max(2, Math.floor(necro.level * 3.2));
+        this._addLog(`💀☣️ ${this._eName(deadEnemy)}'s plague erupts — necrotic bile sprays all enemies!`);
+
+        for (const t of targets) {
+            if (t.health <= 0) continue;
+            const dmg = randomInt(plagueMin, plagueMax);
+            this._damageEnemy(t, dmg, true /* ignoreDefense */);
+            this._addLog(`  ↪️ ☣️ ${this._eName(t)} takes ${dmg} plague damage!`);
+            if (t.health <= 0) {
+                this._addLog(`${this._eName(t)} is consumed by the plague!`);
+                // Chain reaction: if this enemy also had plague_infection, _deathHandled
+                // will have been set by _damageEnemy, so no double-fire.
+            }
+        }
+    }
+
+    // ── Necromancer L30: Plague Bringer spell ────────────────────────────────
+    necroPlagueBringer() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'necromancer') return;
+        if (m.level < NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} needs to reach level ${NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL} to cast Plague Bringer.`);
+            return;
+        }
+        if (m.mana < NECRO_PLAGUE_BRINGER_MANA_COST) {
+            this._addLog(`${m.name} lacks the mana to cast Plague Bringer (needs ${NECRO_PLAGUE_BRINGER_MANA_COST} MP).`);
+            return;
+        }
+
+        m.mana = Math.max(0, m.mana - NECRO_PLAGUE_BRINGER_MANA_COST);
+
+        const immuneTags = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
+        const targets    = this.aliveHostileEnemies.filter(e => {
+            const def  = ENEMY_TYPES[e.type] || {};
+            const tags = Array.isArray(def.tags) ? def.tags : [];
+            return !immuneTags.some(t => tags.includes(t));
+        });
+
+        if (targets.length === 0) {
+            this._addLog(`💀☣️ ${m.name} casts Plague Bringer — but all enemies are immune!`);
+            this._advancePlayerTurn();
+            return;
+        }
+
+        this._addLog(`💀☣️ ${m.name} unleashes Plague Bringer! Necrotic disease spreads to ${targets.length} enemy${targets.length > 1 ? 's' : ''}! (-${NECRO_PLAGUE_BRINGER_MANA_COST} MP)`);
+
+        const rotDmg  = Math.max(1, Math.floor(m.level * 0.4));
+
+        for (const t of targets) {
+            // Apply mummy_rot (permanent DoT)
+            t.activeEffects = (t.activeEffects || []).filter(x => x.type !== 'mummy_rot');
+            t.activeEffects.push({ type: 'mummy_rot', damage: rotDmg, rounds: 9999, permanent: true });
+
+            // Apply plague_infection marker (non-ticking; triggers explosion on death)
+            t.activeEffects = t.activeEffects.filter(x => x.type !== 'plague_infection');
+            t.activeEffects.push({ type: 'plague_infection', rounds: 9999 });
+
+            this._addLog(`  ↪️ 💀 ${this._eName(t)} is infected with Mummy Rot (${rotDmg}/round) and Plague Infection!`);
+        }
+
+        this._advancePlayerTurn();
     }
 
     /**
@@ -3083,6 +4370,7 @@ export class CombatSystem {
                 }
                 const overkill = targetEnemy.health;
                 targetEnemy.health = 0;
+                if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
                 this._addLog(`✨ ${m.name} SMITES ${eName} with holy light! (${overkill} damage — purged!)`);
                 this._addLog(`${eName} is defeated!`);
                 this._advancePlayerTurn();
@@ -3111,6 +4399,67 @@ export class CombatSystem {
         this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
 
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Paladin L30: Divine Judgment — once per combat, 50 ST + 50 MP.
+     * Deals (33% + level/3%) of the target's CURRENT health as holy damage,
+     * ignoring all defense. Bosses take half; mega bosses take one quarter.
+     * Target must be smiteable (undead, demon, or dragon with Dragonslayer active).
+     */
+    paladinDivineJudgment(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'paladin') return;
+        if (m.level < PALADIN_L30_UNLOCK_LEVEL) return;
+        if (!this.canMelee(m)) {
+            this._addLog(`${m.name} cannot call Divine Judgment from the back row!`);
+            return;
+        }
+        if (m.divineJudgmentUsed) {
+            this._addLog(`${m.name} has already called down Divine Judgment this combat.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (!this.canPaladinSmiteTarget(m, targetEnemy)) {
+            this._addLog(`✨ ${m.name}'s Divine Judgment can only strike undead, demons, and Dragonslayer-marked dragons!`);
+            return;
+        }
+        if (m.stamina < PALADIN_DIVINE_JUDGMENT_STAMINA_COST) {
+            this._addLog(`${m.name} needs ${PALADIN_DIVINE_JUDGMENT_STAMINA_COST} stamina for Divine Judgment.`);
+            return;
+        }
+        if (m.mana < PALADIN_DIVINE_JUDGMENT_MANA_COST) {
+            this._addLog(`${m.name} needs ${PALADIN_DIVINE_JUDGMENT_MANA_COST} mana for Divine Judgment.`);
+            return;
+        }
+
+        m.stamina = Math.max(0, m.stamina - PALADIN_DIVINE_JUDGMENT_STAMINA_COST);
+        m.mana    = Math.max(0, m.mana    - PALADIN_DIVINE_JUDGMENT_MANA_COST);
+        m.divineJudgmentUsed = true;
+
+        const eName   = this._eName(targetEnemy);
+        const isMega  = !!(targetEnemy.isMegaBoss);
+        const isBoss  = !!(targetEnemy.isBoss) || isMega;
+        const divisor = isMega ? PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR
+                      : isBoss ? PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR
+                      : 1;
+
+        const basePct = PALADIN_DIVINE_JUDGMENT_BASE_PCT + (m.level || 1) * PALADIN_DIVINE_JUDGMENT_PER_LEVEL;
+        const effPct  = basePct / divisor;
+        const rawDmg  = Math.max(1, Math.floor(targetEnemy.health * effPct));
+
+        // isMagic=true: skips remorhaz burn retaliate, shieldBlock, displaceChance, physResist
+        // ignoreDefense=true: holy wrath bypasses all defense
+        const dealt = this._damageEnemy(targetEnemy, rawDmg, true, true);
+
+        const pctStr = (effPct * 100).toFixed(1);
+        let jLog = `⚡✨ ${m.name} calls down Divine Judgment upon ${eName} — ${pctStr}% of current HP! (${dealt} holy damage)`;
+        if (isMega)      jLog += ' [mega boss: ¼ effect]';
+        else if (isBoss) jLog += ' [boss: ½ effect]';
+        this._addLog(jLog);
+
+        if (targetEnemy.health <= 0) this._addLog(`${eName} is destroyed by holy wrath!`);
         this._advancePlayerTurn();
     }
 
@@ -3266,9 +4615,16 @@ export class CombatSystem {
             return;
         }
 
-        // Exclude summoned undead and golems from healing
+        // Each additional living non-summoned bard in the party (beyond the caster) adds +1% restore
+        const otherBards = (this.party || []).filter(t =>
+            t && t !== m && t.health > 0 && !t.isSummoned && t.classId === 'bard'
+        ).length;
+        const restoreFrac = Math.min(0.15, BARD_RALLYING_MELODY_RESTORE_FRACTION + Math.min(5, otherBards) * 0.01);
+
+        // Caster cannot benefit from their own melody; exclude summoned undead and golems
         const targets = this.party.filter(t => {
             if (!t || t.health <= 0) return false;
+            if (t === m) return false;
             if (!t.isSummoned) return true;  // living party members
             if (BEAST_TYPES[t.summonType]) return true;  // animals & pixie
             return false;  // exclude golems & undead
@@ -3278,16 +4634,123 @@ export class CombatSystem {
         m.mana -= BARD_RALLYING_MELODY_MANA_COST;
         const parts = [];
         for (const t of targets) {
-            const hpGain = Math.min(Math.max(1, Math.floor(t.maxHealth * BARD_RALLYING_MELODY_RESTORE_FRACTION)), Math.max(0, t.maxHealth - t.health));
-            const mpGain = Math.min(Math.max(0, Math.floor(t.maxMana * BARD_RALLYING_MELODY_RESTORE_FRACTION)), Math.max(0, t.maxMana - t.mana));
-            const stGain = Math.min(Math.max(0, Math.floor(t.maxStamina * BARD_RALLYING_MELODY_RESTORE_FRACTION)), Math.max(0, t.maxStamina - t.stamina));
+            const hpGain = Math.min(Math.max(1, Math.floor(t.maxHealth * restoreFrac)), Math.max(0, t.maxHealth - t.health));
+            // Symphony bard cannot benefit from MP/ST restoration while channeling
+            const symphonyBlocked = t.classId === 'bard' && t.symphonyActive;
+            const mpGain = symphonyBlocked ? 0 : Math.min(Math.max(0, Math.floor(t.maxMana * restoreFrac)), Math.max(0, t.maxMana - t.mana));
+            const stGain = symphonyBlocked ? 0 : Math.min(Math.max(0, Math.floor(t.maxStamina * restoreFrac)), Math.max(0, t.maxStamina - t.stamina));
             t.health += hpGain;
             t.mana += mpGain;
             t.stamina += stGain;
-            parts.push(`${t.name} +${hpGain} HP/+${mpGain} MP/+${stGain} ST`);
+            parts.push(`${t.name} +${hpGain} HP/+${mpGain} MP/+${stGain} ST${symphonyBlocked ? ' [symphony]' : ''}`);
         }
-        this._addLog(`🎶 ${m.name} plays a Rallying Melody! (${parts.join(', ')})`);
+        const pct = Math.round(restoreFrac * 100);
+        const bonusNote = otherBards > 0 ? ` (+${otherBards}% from ${otherBards} other bard${otherBards > 1 ? 's' : ''})` : '';
+        this._addLog(`🎶 ${m.name} plays a Rallying Melody! [${pct}% restore${bonusNote}] (${parts.join(', ')})`);
         this._advancePlayerTurn();
+    }
+
+    /**
+     * Bard L30: Symphony of Destruction — 1/combat channeled AoE.
+     * Round 1 fires immediately (×1 damage, costs 10 MP + 10 ST).
+     * Each subsequent round doubles damage and cost.
+     * Ends when resources run dry, bard is incapacitated, or player stops it.
+     */
+    bardStartSymphony() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'bard') return;
+        if (m.level < BARD_SYMPHONY_UNLOCK_LEVEL) return;
+        if (m.symphonyUsedThisCombat) {
+            this._addLog(`♪ ${m.name} can only call the Symphony of Destruction once per combat!`);
+            return;
+        }
+        if (m.mana < BARD_SYMPHONY_BASE_MANA_COST || m.stamina < BARD_SYMPHONY_BASE_STA_COST) {
+            this._addLog(`♪ ${m.name} needs ${BARD_SYMPHONY_BASE_MANA_COST} MP and ${BARD_SYMPHONY_BASE_STA_COST} ST to begin the Symphony.`);
+            return;
+        }
+        m.mana    -= BARD_SYMPHONY_BASE_MANA_COST;
+        m.stamina -= BARD_SYMPHONY_BASE_STA_COST;
+        m.symphonyActive         = true;
+        m.symphonyRound          = 1;
+        m.symphonyManaCost       = BARD_SYMPHONY_BASE_MANA_COST * 2;  // cost for round 2
+        m.symphonyStaCost        = BARD_SYMPHONY_BASE_STA_COST  * 2;
+        m.symphonyUsedThisCombat = true;
+        this._addLog(`♪♪ ${m.name} begins the SYMPHONY OF DESTRUCTION! (Round 1, ×1 damage, -${BARD_SYMPHONY_BASE_MANA_COST} MP/-${BARD_SYMPHONY_BASE_STA_COST} ST)`);
+        this._bardFireSymphony(m, 1);
+        this._advancePlayerTurn();
+    }
+
+    /** Bard continues the symphony this round (regular action, doubles cost each time). */
+    bardContinueSymphony() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || !m.symphonyActive) return;
+        const mc = m.symphonyManaCost;
+        const sc = m.symphonyStaCost;
+        if (m.mana < mc || m.stamina < sc) {
+            this._bardEndSymphony(m, 'exhausted');
+            this._advancePlayerTurn();
+            return;
+        }
+        m.mana    -= mc;
+        m.stamina -= sc;
+        m.symphonyRound++;
+        const mult = Math.pow(2, m.symphonyRound - 1);
+        this._addLog(`♪♪ ${m.name}'s Symphony of Destruction crescendos! (Round ${m.symphonyRound}, ×${mult} damage, -${mc} MP/-${sc} ST)`);
+        this._bardFireSymphony(m, m.symphonyRound);
+        m.symphonyManaCost = mc * 2;
+        m.symphonyStaCost  = sc * 2;
+        this._advancePlayerTurn();
+    }
+
+    /** Bard voluntarily stops the symphony (free action — does not advance turn). */
+    bardStopSymphony() {
+        const m = this.currentMember;
+        if (!m || m.classId !== 'bard' || !m.symphonyActive) return;
+        this._bardEndSymphony(m, 'stopped');
+        this._notify();
+    }
+
+    _bardEndSymphony(m, reason) {
+        m.symphonyActive = false;
+        if (reason === 'stopped') {
+            this._addLog(`♪ ${m.name} brings the Symphony of Destruction to a close.`);
+        } else if (reason === 'exhausted') {
+            this._addLog(`♪ ${m.name}'s Symphony fades — not enough mana and stamina to continue!`);
+        } else {
+            this._addLog(`♪ ${m.name}'s Symphony of Destruction is broken!`);
+        }
+    }
+
+    /** Fire one round of the symphony AoE (all enemies, sonic damage, incorporeal immune). */
+    _bardFireSymphony(m, round) {
+        const damageMult = Math.pow(2, round - 1);
+        let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        dmg += m.getWeaponBonus('magic');
+        dmg += m.getClassDamageBonus('magic');
+        dmg += this._getPartyMemberDamageMod(m);
+        dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1)));
+        dmg = Math.max(1, Math.round(dmg * damageMult));
+        dmg = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+
+        const enemies = this.aliveHostileEnemies.slice();
+        let hit = 0;
+        for (const e of enemies) {
+            if (e.health <= 0) continue;
+            const eDef = ENEMY_TYPES[e.type] || {};
+            const eTags = eDef.tags || [];
+            if (eTags.includes('incorporeal')) {
+                this._addLog(`  ♪ ${this._eName(e)} is incorporeal — immune to the symphony!`);
+                continue;
+            }
+            let eDmg = dmg;
+            if (eDef.sonicResist) eDmg = Math.max(1, Math.floor(eDmg * (1 - eDef.sonicResist)));
+            const dealt = this._damageEnemy(e, eDmg, false, true);
+            this._addLog(`  ♪ ${this._eName(e)} takes ${dealt} sonic damage!`);
+            if (e.health <= 0) this._addLog(`  ♪ ${this._eName(e)} is struck down!`);
+            hit++;
+        }
+        if (hit === 0) this._addLog(`  ♪ The symphony echoes — no enemies can be harmed!`);
     }
 
     /**
@@ -3320,20 +4783,274 @@ export class CombatSystem {
                 e.activeEffects = e.activeEffects || [];
                 // Remove any existing entangle before re-applying
                 e.activeEffects = e.activeEffects.filter(x => x.type !== 'entangle');
-                e.activeEffects.push({
+                const entangleEffect = {
                     type: 'entangle',
                     rounds: POISON_DURATION_ROUNDS,
                     damageBonus:  -debuff,
                     defenseBonus: -debuff,
-                });
+                };
+                // Verdant Surge (L30): add nature DoT + action loss to entangle effect
+                if (m.level >= DRUID_VERDANT_SURGE_UNLOCK_LEVEL) {
+                    const vMin = Math.max(1, MAGIC_DAMAGE_MIN + m.getWeaponBonus('magic') + m.getClassDamageBonus('magic') + this._getPartyMemberDamageMod(m));
+                    const vMax = Math.max(vMin, MAGIC_DAMAGE_MAX + m.getWeaponBonus('magic') + m.getClassDamageBonus('magic') + this._getPartyMemberDamageMod(m));
+                    entangleEffect.verdantSurge = true;
+                    entangleEffect.verdantMin = vMin;
+                    entangleEffect.verdantMax = vMax;
+                }
+                e.activeEffects.push(entangleEffect);
                 affected++;
-                this._addLog(`\u{1F33F} ${this._eName(e)} is entangled! (-${debuff} dmg, -${debuff} def)`);
+                const surgeNote = (m.level >= DRUID_VERDANT_SURGE_UNLOCK_LEVEL) ? ' 🌿 Verdant Surge!' : '';
+                this._addLog(`\u{1F33F} ${this._eName(e)} is entangled! (-${debuff} dmg, -${debuff} def)${surgeNote}`);
             } else {
                 this._addLog(`${this._eName(e)} resists the vines.`);
             }
         }
         if (affected === 0) this._addLog('The vines fail to take hold!');
 
+        this._advancePlayerTurn();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Druid L30: Wild Shape (free-action transformation)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Toggle Wild Shape on (free action — does NOT advance player turn).
+     * form: 'bear' | 'wolf' | 'eagle' | 'pixie' | 'treant'
+     */
+    druidActivateWildShape(form) {
+        const m = this.currentMember;
+        if (!m || m.classId !== 'druid' || m.level < DRUID_WILD_SHAPE_UNLOCK_LEVEL) return;
+        if (m.health <= 0) return;
+        if (m.wildShapeForm) {
+            this._addLog(`\u{1F43E} ${m.name} must exit Wild Shape before changing forms.`);
+            return;
+        }
+        if (m.mana < DRUID_WILD_SHAPE_MANA_INITIAL) {
+            this._addLog(`${m.name} needs ${DRUID_WILD_SHAPE_MANA_INITIAL} MP to enter Wild Shape.`);
+            return;
+        }
+        m.mana -= DRUID_WILD_SHAPE_MANA_INITIAL;
+        m.wildShapeForm = form;
+
+        // Front-row forms: promote row if currently in back
+        const frontForms = ['bear', 'wolf', 'treant'];
+        m.wildShapeOrigRow = m.row;
+        if (frontForms.includes(form) && m.row !== 'front') m.row = 'front';
+
+        // HP doubling for bear and treant
+        if (form === 'bear' || form === 'treant') {
+            m.wildShapeHpBonus = m.maxHealth;
+            m.maxHealth += m.wildShapeHpBonus;
+            m.health   += m.wildShapeHpBonus;
+        }
+
+        // Defense bonus
+        const defDivisor = {
+            bear:   DRUID_WILD_BEAR_DEFENSE_DIVISOR,
+            wolf:   DRUID_WILD_WOLF_DEFENSE_DIVISOR,
+            eagle:  0,
+            pixie:  0,
+            treant: DRUID_WILD_TREANT_DEFENSE_DIVISOR,
+        }[form] || 0;
+        m.wildShapeDefBonus = defDivisor > 0 ? Math.floor(m.level / defDivisor) : 0;
+
+        // Buff all living matching summons immediately
+        this._applyWildShapeSummonBuff(m, form, true);
+
+        const formIcons = { bear: '\u{1F43B}', wolf: '\u{1F43A}', eagle: '\u{1F985}', pixie: '\u{1F9DA}', treant: '\u{1F333}' };
+        const formNames = { bear: 'Bear Form', wolf: 'Wolf Form', eagle: 'Storm Eagle Form', pixie: 'Pixie Form', treant: 'Treant Form' };
+        this._addLog(`\u{1F43E} ${m.name} transforms into ${formIcons[form]} ${formNames[form]}! (-${DRUID_WILD_SHAPE_MANA_INITIAL} MP; ${DRUID_WILD_SHAPE_MANA_PER_ROUND} MP/round)`);
+        this._notify();
+    }
+
+    /**
+     * Toggle Wild Shape off (free action — does NOT advance player turn).
+     */
+    druidDeactivateWildShape() {
+        const m = this.currentMember;
+        if (!m || !m.wildShapeForm) return;
+        this._exitWildShape(m);
+        this._notify();
+    }
+
+    /** Internal: clean up a druid's wild shape state. Called on deactivate, upkeep fail, or death. */
+    _exitWildShape(m) {
+        if (!m || !m.wildShapeForm) return;
+        const form = m.wildShapeForm;
+        // Remove summon buffs
+        this._applyWildShapeSummonBuff(m, form, false);
+        // Undo HP doubling
+        if (m.wildShapeHpBonus > 0) {
+            m.maxHealth = Math.max(1, m.maxHealth - m.wildShapeHpBonus);
+            m.health    = Math.min(m.health, m.maxHealth);
+        }
+        // Restore row
+        if (m.wildShapeOrigRow) m.row = m.wildShapeOrigRow;
+        m.wildShapeForm    = null;
+        m.wildShapeHpBonus  = 0;
+        m.wildShapeDefBonus = 0;
+        m.wildShapeOrigRow  = null;
+        this._addLog(`\u{1F43E} ${m.name} returns to their natural form.`);
+    }
+
+    /**
+     * Apply or remove Wild Shape buff on all living matching beasts owned by druid.
+     * apply=true → add buff; apply=false → remove buff.
+     */
+    _applyWildShapeSummonBuff(druid, form, apply) {
+        const dmgMult   = (form === 'pixie') ? DRUID_WILD_SUMMON_DMG_MULT_PIXIE : DRUID_WILD_SUMMON_DMG_MULT;
+        const defDiv    = (form === 'pixie') ? DRUID_WILD_SUMMON_DEF_DIVISOR_PIXIE : DRUID_WILD_SUMMON_DEF_BONUS_DIVISOR;
+        const defBonus  = Math.floor((druid.level || 1) / defDiv);
+
+        const beasts = this.party.filter(p =>
+            p.isSummoned && p.summonerId === druid.id && p.health > 0
+            && p.summonStats && p.summonStats.beastKind === form,
+        );
+        for (const b of beasts) {
+            const s = b.summonStats;
+            if (apply) {
+                s.wildShapeDmgMult      = dmgMult;
+                s.wildShapeDefBonus     = defBonus;
+                s.wildShapeExtraAttack  = true;
+                s.defense               = (s.defense || 0) + defBonus;
+            } else {
+                s.defense = Math.max(0, (s.defense || 0) - (s.wildShapeDefBonus || 0));
+                delete s.wildShapeDmgMult;
+                delete s.wildShapeDefBonus;
+                delete s.wildShapeExtraAttack;
+            }
+        }
+    }
+
+    /** Compute druid magic-skill attack damage (same formula as magicAttack). */
+    _rollDruidWildShapeDmg(m) {
+        let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        dmg += m.getWeaponBonus('magic');
+        dmg += m.getClassDamageBonus('magic');
+        dmg += this._getPartyMemberDamageMod(m);
+        dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1)));
+        return dmg;
+    }
+
+    /** Bear Form attack — player picks target; floor(level/7) magic-melee hits with stun. */
+    druidBearAttack(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.wildShapeForm !== 'bear' || m.health <= 0) return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const lvl   = m.level;
+        const hits  = Math.max(1, Math.floor(lvl / DRUID_WILD_BEAR_ATTACKS_DIVISOR));
+        const stunC = DRUID_WILD_BEAR_STUN_BASE + lvl * DRUID_WILD_BEAR_STUN_PER_LEVEL;
+        this._addLog(`\u{1F43B} ${m.name} rears up in Bear Form!`);
+        for (let i = 0; i < hits; i++) {
+            if (targetEnemy.health <= 0) break;
+            const dmg  = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 2.0));
+            const out  = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+            const dealt = this._damageEnemy(targetEnemy, out, false, true);
+            this._addLog(`\u{1F43B} ${m.name} mauls ${this._eName(targetEnemy)} for ${dealt}!`);
+            if (targetEnemy.health > 0 && Math.random() < stunC) {
+                if (this._tryStunEnemy(targetEnemy))
+                    this._addLog(`⚡ ${this._eName(targetEnemy)} is stunned by the bear's crushing blow!`);
+            }
+        }
+        if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
+        this._advancePlayerTurn();
+    }
+
+    /** Wolf Form attack — floor(level/5) magic-melee hits on chosen primary target, each bleeds. */
+    druidWolfAttack(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.wildShapeForm !== 'wolf' || m.health <= 0) return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const lvl      = m.level;
+        const hits     = Math.max(1, Math.floor(lvl / DRUID_WILD_WOLF_ATTACKS_DIVISOR));
+        const bleedC   = DRUID_WILD_WOLF_BLEED_BASE + lvl * DRUID_WILD_WOLF_BLEED_PER_LEVEL;
+        const bleedDur = Math.max(1, Math.floor(lvl / DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR));
+        const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
+        this._addLog(`\u{1F43A} ${m.name} lunges in Wolf Form!`);
+        for (let i = 0; i < hits; i++) {
+            if (targetEnemy.health <= 0) break;
+            const target = targetEnemy;
+            const dmg    = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 1.5));
+            const out    = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+            const dealt  = this._damageEnemy(target, out, false, true);
+            this._addLog(`\u{1F43A} ${m.name} bites ${this._eName(target)} for ${dealt}!`);
+            const eTags = (ENEMY_TYPES[target.type] || {}).tags || [];
+            if (target.health > 0 && dealt > 0 && Math.random() < bleedC && !eTags.some(t => bleedImmune.includes(t))) {
+                const bleedDmg = Math.max(1, Math.round(dealt * DRUID_WILD_WOLF_BLEED_FRACTION));
+                target.activeEffects = target.activeEffects || [];
+                target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedDur });
+                this._addLog(`\u{1F7E5} ${this._eName(target)} bleeds! (${bleedDmg}/rd × ${bleedDur} rds)`);
+            }
+            if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** Storm Eagle Form attack — player picks target; floor(level/6) magic-ranged crits. */
+    druidEagleAttack(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.wildShapeForm !== 'eagle' || m.health <= 0) return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const lvl   = m.level;
+        const hits  = Math.max(1, Math.floor(lvl / DRUID_WILD_EAGLE_ATTACKS_DIVISOR));
+        const critC = DRUID_WILD_EAGLE_CRIT_BASE + lvl * DRUID_WILD_EAGLE_CRIT_PER_LEVEL;
+        const critM = DRUID_WILD_EAGLE_CRIT_MULT_BASE + lvl * DRUID_WILD_EAGLE_CRIT_MULT_PER_LEVEL;
+        this._addLog(`\u{1F985} ${m.name} swoops in Storm Eagle Form!`);
+        for (let i = 0; i < hits; i++) {
+            if (targetEnemy.health <= 0) break;
+            let dmg  = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 1.5));
+            const isCrit = Math.random() < critC;
+            if (isCrit) dmg = Math.max(1, Math.round(dmg * critM));
+            const out  = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+            const dealt = this._damageEnemy(targetEnemy, out, false, true);
+            const critNote = isCrit ? ` \u{1F4A5} CRIT! (×${critM.toFixed(1)})` : '';
+            this._addLog(`\u{1F985} ${m.name} strikes ${this._eName(targetEnemy)} for ${dealt}!${critNote}`);
+        }
+        if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
+        this._advancePlayerTurn();
+    }
+
+    /** Pixie Form attack — magic AoE hits ALL enemies; druid takes half magic/AoE damage while active. */
+    druidPixieAttack() {
+        const m = this.currentMember;
+        if (!m || m.wildShapeForm !== 'pixie' || m.health <= 0) return;
+        const enemies = this.aliveHostileEnemies;
+        if (enemies.length === 0) { this._addLog('No enemies to target.'); return; }
+        this._addLog(`\u{1F9DA} ${m.name} unleashes pixie magic in Pixie Form!`);
+        for (const e of enemies) {
+            if (e.health <= 0) continue;
+            const dmg    = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 1.2));
+            const out    = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+            const dealt  = this._damageEnemy(e, out, false, true);
+            this._addLog(`\u{1F9DA} ${m.name} hits ${this._eName(e)} for ${dealt} magic damage!`);
+            if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** Treant Form attack — floor(level/7) magic-melee hits on chosen primary target, hold chance. */
+    druidTreantAttack(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.wildShapeForm !== 'treant' || m.health <= 0) return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const lvl   = m.level;
+        const hits  = Math.max(1, Math.floor(lvl / DRUID_WILD_TREANT_ATTACKS_DIVISOR));
+        const holdC = DRUID_WILD_TREANT_HOLD_BASE + lvl * DRUID_WILD_TREANT_HOLD_PER_LEVEL;
+        this._addLog(`\u{1F333} ${m.name} looms in Treant Form!`);
+        for (let i = 0; i < hits; i++) {
+            if (targetEnemy.health <= 0) break;
+            const target = targetEnemy;
+            const dmg    = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 2.0));
+            const out    = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+            const dealt  = this._damageEnemy(target, out, false, true);
+            this._addLog(`\u{1F333} ${m.name} slams ${this._eName(target)} with ancient branches for ${dealt}!`);
+            if (target.health > 0 && Math.random() < holdC) {
+                if (this._tryHoldEnemy(target))
+                    this._addLog(`\u{1F333} ${this._eName(target)} is held fast by grasping roots!`);
+            }
+            if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+        }
         this._advancePlayerTurn();
     }
 
@@ -3447,7 +5164,7 @@ export class CombatSystem {
         if (m.isInFormation) {
             const n    = this._getFormationMembers().length;
             const mult = n >= WARRIOR_FORMATION_MIN_MEMBERS
-                ? `×${(1 + WARRIOR_FORMATION_BASE_BONUS + WARRIOR_FORMATION_BONUS_PER_MEMBER * n).toFixed(2)}`
+                ? `×${(1 + WARRIOR_FORMATION_BONUS_PER_MEMBER * n).toFixed(2)}`
                 : `none yet (need ≥${WARRIOR_FORMATION_MIN_MEMBERS} members)`;
             this._addLog(`⚔️ ${m.name} enters Formation! Current bonus: ${mult}.`);
         } else {
@@ -3530,7 +5247,10 @@ export class CombatSystem {
         // Identified by summonStats.tierId matching a GOLEM_PRESETS entry.
         if (stats.tierId && GOLEM_PRESETS[m.summonType]) {
             const golemDamageMult = 1 + ((stats.attachments && stats.attachments.limbs) || 0) * GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT;
-            const rollGolemDamage = (min, max) => Math.max(1, Math.round(randomInt(min, max) * golemDamageMult));
+            const berserkMult = m.golemBerserkActive
+                ? (1 + (stats.artificerLevel || 0) * ARTIFICER_BERSERK_DMG_PER_LEVEL)
+                : 1.0;
+            const rollGolemDamage = (min, max) => Math.max(1, Math.round(randomInt(min, max) * golemDamageMult * berserkMult));
             // Flesh Golem — regen at start of own turn.
             if (stats.regenPercent && stats.regenPercent > 0 && m.health < m.maxHealth) {
                 const regen = Math.max(1, Math.floor(m.maxHealth * stats.regenPercent));
@@ -3676,6 +5396,28 @@ export class CombatSystem {
             return;
         }
 
+        // ── Corpse Horror AI (Necromancer L30 Dark Apotheosis) ───────────────────
+        if (m.summonType === 'corpse_horror') {
+            const attackCount = stats.attackCount || 2;
+            let firstHit = true;
+            for (let atk = 0; atk < attackCount; atk++) {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) break;
+                const t = alive[Math.floor(Math.random() * alive.length)];
+                const dmg = Math.max(1, randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 3) + (stats.meleeSkill || 0));
+                const dealt = this._damageSummonEnemy(t, dmg);
+                const enemyName = this._eName(t);
+                if (firstHit) {
+                    this._addLog(`💀🩸 ${m.name} rakes ${enemyName} for ${dealt}! (${attackCount} attacks)`);
+                    firstHit = false;
+                } else {
+                    this._addLog(`  ↪️ ${m.name} claws ${enemyName} for ${dealt}!`);
+                }
+                if (t.health <= 0) this._addLog(`${enemyName} is torn apart!`);
+            }
+            return;
+        }
+
         if (m.summonType === 'demi_lich') {
             const nl = stats.necroLevel || m.level || 1;
             const count = Math.max(1, Math.floor(nl / NECRO_DEMI_LICH_TARGET_DIVISOR));
@@ -3697,7 +5439,7 @@ export class CombatSystem {
             const fqLvl      = stats.druidLevel || m.level || 1;
             const numTargets = Math.max(1, Math.floor(fqLvl / 4));
             const dmgPerHit  = randomInt(stats.magicMin ?? 5, stats.magicMax ?? 15);
-            this._addLog(`\u{1F9DA}‍♀️ ${m.name} unleashes Wrath of Nature! (${numTargets} target${numTargets > 1 ? 's' : ''})`);
+            this._addLog(`\u{1F9DA}‍♀️ ${m.name} unleashes Wrath of Nature on ${numTargets} target${numTargets > 1 ? 's' : ''}!`);
 
             const holdChance  = FAERIE_QUEEN_HOLD_BASE + Math.floor(fqLvl / 3) * FAERIE_QUEEN_HOLD_PER_3LV;
             const poisonFrac  = Math.min(2.0, FAERIE_QUEEN_POISON_FRAC_BASE + fqLvl * FAERIE_QUEEN_POISON_FRAC_PER_LV);
@@ -3708,23 +5450,28 @@ export class CombatSystem {
                 if (!t || t.health <= 0) continue;
                 const dealt   = this._damageSummonEnemy(t, dmgPerHit);
                 const fqEName = this._eName(t);
-                this._addLog(`  ↪️ ${fqEName} struck for ${dealt} magic damage!`);
-                if (t.health <= 0) { this._addLog(`${fqEName} is defeated!`); continue; }
+                const effects = [];
 
-                // Hold (incorporeal immune)
-                const fqTTags = Array.isArray((ENEMY_TYPES[t.type] || {}).tags) ? (ENEMY_TYPES[t.type].tags) : [];
-                if (!fqTTags.includes('incorporeal') && Math.random() < holdChance) {
-                    if (this._tryStunEnemy(t)) {
-                        t.activeEffects = (t.activeEffects || []).filter(x => x.type !== 'fae_hold');
-                        t.activeEffects.push({ type: 'fae_hold', rounds: 1 });
-                        this._addLog(`\u{1F33F} ${fqEName} is held fast by fae magic! (2 rounds)`);
-                    }
+                if (t.health <= 0) {
+                    this._addLog(`  → ${fqEName}: ${dealt} magic damage — defeated!`);
+                    continue;
                 }
-                // Poison DoT: applies/refreshes per hit
-                const poisonDmg = Math.max(1, Math.floor(dealt * poisonFrac));
-                t.activeEffects = (t.activeEffects || []).filter(x => x.type !== 'fae_poison');
-                t.activeEffects.push({ type: 'fae_poison', damage: poisonDmg, rounds: POISON_DURATION_ROUNDS });
-                this._addLog(`\u{1F33F} ${fqEName} is poisoned by fae venom! (${poisonDmg} dmg/rd)`);
+
+                // Hold (incorporeal immune; undead/constructs/elementals CAN be held by fae magic)
+                if (Math.random() < holdChance && this._tryHoldEnemy(t)) {
+                    t.activeEffects = (t.activeEffects || []).filter(x => x.type !== 'fae_hold');
+                    t.activeEffects.push({ type: 'fae_hold', rounds: 1 });
+                    effects.push('HELD (2 rds)');
+                }
+                // Poison DoT: applies/refreshes per hit; respects full immunity list
+                if (!this._enemyHasImmunity(t, 'poison')) {
+                    const poisonDmg = Math.max(1, Math.floor(dealt * poisonFrac));
+                    t.activeEffects = (t.activeEffects || []).filter(x => x.type !== 'fae_poison');
+                    t.activeEffects.push({ type: 'fae_poison', damage: poisonDmg, rounds: POISON_DURATION_ROUNDS });
+                    effects.push(`poisoned (${poisonDmg}/rd)`);
+                }
+                const effectStr = effects.length ? ` — ${effects.join(', ')}` : '';
+                this._addLog(`  → ${fqEName}: ${dealt} magic damage${effectStr}`);
             }
             return;
         }
@@ -3732,28 +5479,54 @@ export class CombatSystem {
         const beastKind = stats.beastKind;
 
         if (beastKind === 'pixie') {
-            const dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 3);
+            const dmgMult    = stats.wildShapeDmgMult || 1;
+            let baseDmg      = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 3);
+            baseDmg          = Math.max(1, Math.round(baseDmg * dmgMult));
             const isPrincess = stats.upgradeName === 'pixie_princess';
-            this._addLog(`\u{1F9DA}${isPrincess ? ' Pixie Princess' : ''} ${m.name} whirls a storm of faerie dust for ${dmg}!`);
-            for (const e of targets) {
-                this._damageSummonEnemy(e, dmg);
+            const wsTag      = dmgMult > 1 ? ' \u2728' : '';
+            this._addLog(`\u{1F9DA}${isPrincess ? ' Pixie Princess' : ''} ${m.name} whirls a storm of faerie dust for ${baseDmg}!${wsTag}`);
+            for (const e of this.aliveHostileEnemies.slice()) {
+                this._damageSummonEnemy(e, baseDmg);
                 if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+            }
+            // Wild Shape extra attack
+            if (stats.wildShapeExtraAttack) {
+                const bonus = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 3);
+                const bonusDmg = Math.max(1, Math.round(bonus * dmgMult));
+                this._addLog(`\u{1F9DA}\u{1F43E} ${m.name} shimmers \u2014 bonus pixie burst!`);
+                for (const e of this.aliveHostileEnemies) {
+                    this._damageSummonEnemy(e, bonusDmg);
+                    if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+                }
             }
             return;
         }
 
         if (beastKind === 'eagle') {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            let dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 6);
-            const ranger = this.party.find(p => p.id === m.summonerId);
-            const baseCrit = ranger ? ranger.getRangedCritBonus() + RANGED_CRIT_CHANCE : RANGED_CRIT_CHANCE;
-            const critChance = baseCrit + (stats.upgradeBonus || 0);
-            const isCrit = Math.random() < critChance;
-            if (isCrit) dmg *= 4;
-            const dealt = this._damageSummonEnemy(t, dmg);
+            const summoner = this.party.find(p => p.id === m.summonerId);
+            const summonerLevel = summoner?.level ?? 1;
+            const critChance = 0.20 + summonerLevel * 0.02;
+            const critMult   = 4 + summonerLevel * 0.02;
+            const dmgMult    = stats.wildShapeDmgMult || 1;
+            let extraAttacks = Math.floor(summonerLevel / 33);
+            if (stats.wildShapeExtraAttack) extraAttacks++;
             const isGolden = stats.upgradeName === 'golden_eagle';
-            this._addLog(`\u{1F985}${isGolden ? ' Golden Eagle' : ''} ${m.name} dives on ${this._eName(t)} for ${dealt}!${isCrit ? ' \u{1F4A5} CRIT! (4\u00D7)' : ''}`);
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            const _eagleDive = (target) => {
+                let dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 6);
+                dmg = Math.max(1, Math.round(dmg * dmgMult));
+                const isCrit = Math.random() < critChance;
+                if (isCrit) dmg = Math.round(dmg * critMult);
+                const dealt = this._damageSummonEnemy(target, dmg);
+                const critLabel = isCrit ? ` \u{1F4A5} CRIT! (\u00D7${critMult.toFixed(1)})` : '';
+                this._addLog(`\u{1F985}${isGolden ? ' Golden Eagle' : ''} ${m.name} dives on ${this._eName(target)} for ${dealt}!${critLabel}`);
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+            };
+            _eagleDive(t);
+            for (let i = 0; i < extraAttacks; i++) {
+                if (t.health <= 0) break;
+                _eagleDive(t);
+            }
             return;
         }
 
@@ -3774,23 +5547,32 @@ export class CombatSystem {
         }
 
         if (beastKind === 'treant') {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.meleeMin ?? 3, stats.meleeMax ?? 10);
-            const dealt = this._damageSummonEnemy(t, dmg);
+            const summoner = this.party.find(p => p.id === m.summonerId);
+            const summonerLevel = summoner?.level ?? 1;
+            const dmgMult    = stats.wildShapeDmgMult || 1;
+            let extraAttacks = Math.floor(summonerLevel / 33);
+            if (stats.wildShapeExtraAttack) extraAttacks++;
             const isElder = stats.upgradeName === 'elder_treant';
-            this._addLog(`\u{1F333}${isElder ? ' Elder Treant' : ''} ${m.name} SLAMS ${this._eName(t)} with ancient branches for ${dealt}!`);
-            if (t.health > 0) {
-                // 33% base hold + any Elder Treant upgrade bonus; undead & incorporeal immune
-                const tDef = ENEMY_TYPES[t.type] || {};
-                const tTags = Array.isArray(tDef.tags) ? tDef.tags : [];
-                const holdImmune = tTags.includes('undead') || tTags.includes('incorporeal');
-                const holdChance = TREANT_HOLD_CHANCE + (stats.upgradeBonus || 0);
-                if (!holdImmune && Math.random() < holdChance) {
-                    if (this._tryStunEnemy(t))
+            const holdChance = TREANT_HOLD_CHANCE + (stats.upgradeBonus || 0);
+            const _treantSlam = () => {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) return;
+                const t = alive[Math.floor(Math.random() * alive.length)];
+                let dmg = randomInt(stats.meleeMin ?? 3, stats.meleeMax ?? 10);
+                dmg = Math.max(1, Math.round(dmg * dmgMult));
+                const dealt = this._damageSummonEnemy(t, dmg);
+                this._addLog(`\u{1F333}${isElder ? ' Elder Treant' : ''} ${m.name} SLAMS ${this._eName(t)} with ancient branches for ${dealt}!`);
+                if (t.health > 0 && Math.random() < holdChance) {
+                    if (this._tryHoldEnemy(t))
                         this._addLog(`\u{1F333} ${this._eName(t)} is held fast by grasping roots!`);
                 }
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            };
+            _treantSlam();
+            for (let i = 0; i < extraAttacks; i++) {
+                if (this.aliveHostileEnemies.length === 0) break;
+                _treantSlam();
             }
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
             return;
         }
 
@@ -3809,38 +5591,155 @@ export class CombatSystem {
         }
 
         if (beastKind === 'wolf') {
+            const summoner = this.party.find(p => p.id === m.summonerId);
+            const summonerLevel = summoner?.level ?? 1;
+            const bleedDuration = Math.floor(3 + summonerLevel / 33);
+            const dmgMult_wolf  = stats.wildShapeDmgMult || 1;
+            let extraAttacks = Math.floor(summonerLevel / 33);
+            if (stats.wildShapeExtraAttack) extraAttacks++;
+            const bleedImmuneTags = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
+            const _wolfBite = (target) => {
+                let dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 7);
+                dmg = Math.max(1, Math.round(dmg * dmgMult_wolf));
+                const dealt = this._damageSummonEnemy(target, dmg);
+                this._addLog(`\u{1F43A} ${m.name} bites ${this._eName(target)} for ${dealt}!`);
+                const tTags = (ENEMY_TYPES[target.type] || {}).tags || [];
+                if (target.health > 0 && dealt > 0 && !tTags.some(t => bleedImmuneTags.includes(t))) {
+                    const bleedDmg = Math.max(1, Math.round(dealt * 1.0));
+                    target.activeEffects = target.activeEffects || [];
+                    target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedDuration });
+                    this._addLog(`\u{1F7E5} ${this._eName(target)} is Bleeding! (${bleedDmg}/round × ${bleedDuration} rds)`);
+                }
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+            };
             const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 7);
-            const dealt = this._damageSummonEnemy(t, dmg);
-            this._addLog(`\u{1F43A} ${m.name} bites ${this._eName(t)} for ${dealt}!`);
-            // Apply bleed: 100% of dealt damage per round for 3 rounds
-            // Undead enemies are immune to bleeding
-            const targetTags = (ENEMY_TYPES[t.type] || {}).tags || [];
-            const isUndeadTarget = targetTags.includes('undead');
-            if (t.health > 0 && dealt > 0 && !isUndeadTarget) {
-                const bleedDmg = Math.max(1, Math.round(dealt * 1.0));
-                t.activeEffects = t.activeEffects || [];
-                t.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: 3 });
-                this._addLog(`\u{1F7E5} ${this._eName(t)} is Bleeding! (${bleedDmg}/round)`);
+            _wolfBite(t);
+            for (let i = 0; i < extraAttacks; i++) {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) break;
+                _wolfBite(alive[Math.floor(Math.random() * alive.length)]);
             }
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
             return;
         }
 
         if (beastKind === 'bear') {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
-            const dealt = this._damageSummonEnemy(t, dmg);
+            const summoner = this.party.find(p => p.id === m.summonerId);
+            const summonerLevel = summoner?.level ?? 1;
+            const stunChance = 0.15 + summonerLevel * 0.02;
+            const dmgMult_bear  = stats.wildShapeDmgMult || 1;
+            let extraAttacks = Math.floor(summonerLevel / 25);
+            if (stats.wildShapeExtraAttack) extraAttacks++;
             const isGiant = stats.upgradeName === 'giant_bear';
-            this._addLog(`\u{1F43B}${isGiant ? ' Giant Bear' : ''} ${m.name} mauls ${this._eName(t)} for ${dealt}!${isGiant ? ' \u{1F4AA}' : ''}`);
-            const ranger = this.party.find(p => p.id === m.summonerId);
-            const baseStun = ranger ? RANGED_CRIT_CHANCE + ranger.getRangedCritBonus() : RANGED_CRIT_CHANCE;
-            const stunChance = baseStun + (stats.upgradeBonus || 0);
-            if (t.health > 0 && Math.random() < stunChance) {
-                if (this._tryStunEnemy(t))
-                    this._addLog(`\u26A1 ${this._eName(t)} is stunned!`);
+            const _bearMaul = (target) => {
+                let dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                dmg = Math.max(1, Math.round(dmg * dmgMult_bear));
+                const dealt = this._damageSummonEnemy(target, dmg);
+                this._addLog(`\u{1F43B}${isGiant ? ' Giant Bear' : ''} ${m.name} mauls ${this._eName(target)} for ${dealt}!${isGiant ? ' \u{1F4AA}' : ''}`);
+                if (target.health > 0 && Math.random() < stunChance) {
+                    if (this._tryStunEnemy(target))
+                        this._addLog(`\u26A1 ${this._eName(target)} is stunned!`);
+                }
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+            };
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            _bearMaul(t);
+            for (let i = 0; i < extraAttacks; i++) {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) break;
+                _bearMaul(alive[Math.floor(Math.random() * alive.length)]);
             }
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        // ── Rift Elementals ──────────────────────────────────────────────────
+        if (beastKind === 'rift_earth') {
+            const mLvl = stats.mageLevel ?? 1;
+            const aoeChance = Math.min(1, (20 + mLvl / 2) / 100);
+            const stunChance_earth = Math.min(1, mLvl / 100);
+            const halfStun = Math.min(1, mLvl / 200);
+            if (Math.random() < aoeChance) {
+                // Earthquake AoE
+                let dmg = randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5);
+                this._addLog(`\u{1FAA8} ${m.name} slams the earth — shockwave ripples through all enemies!`);
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const dealt = this._damageSummonEnemy(e, dmg);
+                    this._addLog(`  → ${this._eName(e)} takes ${dealt} damage.`);
+                    if (e.health > 0 && !this._enemyHasImmunity(e, 'stun') && Math.random() < halfStun)
+                        if (this._tryStunEnemy(e)) this._addLog(`  ⚡ ${this._eName(e)} is stunned!`);
+                    if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+                }
+            } else {
+                // Single melee
+                const t = targets[Math.floor(Math.random() * targets.length)];
+                let dmg = randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5);
+                const dealt = this._damageSummonEnemy(t, dmg);
+                this._addLog(`\u{1FAA8} ${m.name} slams ${this._eName(t)} for ${dealt}!`);
+                if (t.health > 0 && !this._enemyHasImmunity(t, 'stun') && Math.random() < stunChance_earth)
+                    if (this._tryStunEnemy(t)) this._addLog(`  ⚡ ${this._eName(t)} is stunned!`);
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            }
+            return;
+        }
+
+        if (beastKind === 'rift_air') {
+            const mLvl = stats.mageLevel ?? 1;
+            const stunChance_air = Math.min(1, mLvl / 100);
+            let dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            this._addLog(`\u{1F4A8} ${m.name} unleashes a howling gale — all enemies are battered!`);
+            for (const e of this.aliveHostileEnemies.slice()) {
+                const dealt = this._damageSummonEnemy(e, dmg, false, true);
+                this._addLog(`  → ${this._eName(e)} takes ${dealt} magic damage.`);
+                if (e.health > 0 && !this._enemyHasImmunity(e, 'stun') && Math.random() < stunChance_air)
+                    if (this._tryStunEnemy(e)) this._addLog(`  ⚡ ${this._eName(e)} is stunned!`);
+                if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+            }
+            return;
+        }
+
+        if (beastKind === 'rift_water') {
+            const mLvl = stats.mageLevel ?? 1;
+            const drownRounds = Math.max(1, Math.floor(mLvl / 10));
+            const drownImmuneTags = ['undead', 'elemental', 'construct', 'incorporeal', 'demon', 'plant'];
+            let dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            this._addLog(`\u{1F30A} ${m.name} erupts in a surging wave — all enemies are swept under!`);
+            for (const e of this.aliveHostileEnemies.slice()) {
+                const dealt = this._damageSummonEnemy(e, dmg, false, true);
+                this._addLog(`  → ${this._eName(e)} takes ${dealt} magic damage.`);
+                if (e.health > 0 && drownRounds > 0) {
+                    const eTags = Array.isArray((ENEMY_TYPES[e.type] || {}).tags) ? (ENEMY_TYPES[e.type] || {}).tags : [];
+                    if (!drownImmuneTags.some(t => eTags.includes(t))) {
+                        const drownTick = Math.max(1, Math.floor(dmg * 0.5));
+                        e.activeEffects = (e.activeEffects || []).filter(fx => fx.type !== 'rift_drown' && fx.type !== 'rift_drown_def');
+                        e.activeEffects.push({ type: 'rift_drown', damage: drownTick, rounds: drownRounds });
+                        e.activeEffects.push({ type: 'rift_drown_def', defenseBonus: -2, rounds: drownRounds });
+                        this._addLog(`  \u{1F30A} ${this._eName(e)} is drowning! (${drownTick}/rd for ${drownRounds} rds, -2 def)`);
+                    }
+                }
+                if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+            }
+            return;
+        }
+
+        if (beastKind === 'rift_fire') {
+            const mLvl = stats.mageLevel ?? 1;
+            const stunChance_fire = Math.min(1, mLvl / 100);
+            const burnRounds = Math.max(1, Math.floor(mLvl / 10));
+            let dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            this._addLog(`\u{1F525} ${m.name} erupts in a column of fire — all enemies are scorched!`);
+            for (const e of this.aliveHostileEnemies.slice()) {
+                const dealt = this._damageSummonEnemy(e, dmg, false, true);
+                this._addLog(`  → ${this._eName(e)} takes ${dealt} magic damage.`);
+                if (e.health > 0) {
+                    if (!this._enemyHasImmunity(e, 'stun') && Math.random() < stunChance_fire)
+                        if (this._tryStunEnemy(e)) this._addLog(`  ⚡ ${this._eName(e)} is stunned!`);
+                    if (burnRounds > 0 && !this._enemyHasImmunity(e, 'fire')) {
+                        const burnTick = Math.max(1, Math.floor(dmg * 0.5));
+                        this._refreshEnemyEffect(e, { type: 'burn', damage: burnTick, rounds: burnRounds });
+                        this._addLog(`  \u{1F525} ${this._eName(e)} is set ablaze! (${burnTick}/rd for ${burnRounds} rds)`);
+                    }
+                }
+                if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+            }
             return;
         }
 
@@ -3898,11 +5797,9 @@ export class CombatSystem {
 
         // ── Ghoul: 40% paralysis chance ──────────────────────────────────────
         if (t.health > 0 && m.summonType === 'ghoul') {
-            const tDef = ENEMY_TYPES[t.type] || {};
-            const tTags = Array.isArray(tDef.tags) ? tDef.tags : [];
-            const paralyzeImmune = tTags.includes('undead') || tTags.includes('incorporeal');
-            if (!paralyzeImmune && Math.random() < GHOUL_PARALYZE_CHANCE) {
-                if (this._tryStunEnemy(t))
+            // Paralysis: undead/construct/elemental/incorporeal immune (handled by _tryParalyzeEnemy)
+            if (Math.random() < GHOUL_PARALYZE_CHANCE) {
+                if (this._tryParalyzeEnemy(t))
                     this._addLog(`\u{1F9DF}\u200D\u2640\uFE0F ${this._eName(t)} is PARALYZED by the ghoul's touch!`);
             }
         }
@@ -3911,12 +5808,13 @@ export class CombatSystem {
         if (t.health > 0 && m.summonType === 'mummy') {
             const tDef = ENEMY_TYPES[t.type] || {};
             const tTags = Array.isArray(tDef.tags) ? tDef.tags : [];
-            const mummyImmune = tTags.includes('undead') || tTags.includes('incorporeal');
-            if (!mummyImmune) {
-                if (Math.random() < 0.33) {
-                    if (this._tryStunEnemy(t))
-                        this._addLog(`\u{1F9DF}\u200D\u2642\uFE0F ${this._eName(t)} is STUNNED by the mummy's curse!`);
-                }
+            // Stun: undead/construct/elemental/incorporeal immunity handled by _tryStunEnemy
+            if (Math.random() < 0.33) {
+                if (this._tryStunEnemy(t))
+                    this._addLog(`\u{1F9DF}\u200D\u2642\uFE0F ${this._eName(t)} is STUNNED by the mummy's curse!`);
+            }
+            // Mummy Rot: undead/construct/elemental/incorporeal have no living flesh to rot
+            if (!tTags.some(t => ['undead', 'construct', 'elemental', 'incorporeal'].includes(t))) {
                 // Mummy Rot: permanent DoT at half the attack damage per round.
                 // Re-applying refreshes the damage value but does not stack.
                 t.activeEffects = (t.activeEffects || []).filter(x => x.type !== 'mummy_rot');
@@ -3944,12 +5842,12 @@ export class CombatSystem {
             const nl = (m.summonStats && m.summonStats.necroLevel) || m.level || 1;
             const tDef  = ENEMY_TYPES[t.type] || {};
             const tTags = Array.isArray(tDef.tags) ? tDef.tags : [];
-            const dkStunImmune = tTags.includes('undead') || tTags.includes('incorporeal');
-            if (!dkStunImmune && Math.random() < (0.33 + nl * 0.01)) {
+            // Stun: undead/construct/elemental/incorporeal immunity handled by _tryStunEnemy
+            if (Math.random() < (0.33 + nl * 0.01)) {
                 if (this._tryStunEnemy(t))
                     this._addLog(`\u2620\uFE0F ${this._eName(t)} is STUNNED by the Death Knight's strike!`);
             }
-            const dkInstakillRoll = Math.random() < (0.02 + nl * 0.01);
+            const dkInstakillRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.01);
             if (dkInstakillRoll) {
                 if (t.isBoss || t.isMegaBoss) {
                     // Boss/mega-boss immune to instant death — x4 pre-defense damage instead
@@ -3959,6 +5857,7 @@ export class CombatSystem {
                     if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
                 } else {
                     t.health = 0;
+                    if (!t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
                     this._addLog(`\u{1F480} ${m.name} performs a death strike — ${this._eName(t)} is SLAIN INSTANTLY!`);
                 }
             }
@@ -3975,7 +5874,7 @@ export class CombatSystem {
             if (!ft || ft.health <= 0) continue;
             const ftDef = ENEMY_TYPES[ft.type] || {};
             const ftTags = Array.isArray(ftDef.tags) ? ftDef.tags : [];
-            if (ftTags.includes('undead')) continue;
+            if (ftTags.includes('undead') || ftTags.includes('construct')) continue;
             if (Math.random() < 0.50) continue;
             const alreadyFeared = (ft.activeEffects || []).some(x => x.type === 'ghost_fear');
             if (!alreadyFeared) {
@@ -4163,6 +6062,7 @@ export class CombatSystem {
             // Web-skip
             if (m.webbedRounds && m.webbedRounds > 0) {
                 this._addLog(`\u{1F578}\uFE0F ${m.name} struggles against the webbing and cannot act! (${m.webbedRounds} rd left)`);
+                if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
                 m.webbedRounds--;
                 this._initTurnIdx++;
                 continue;
@@ -4171,6 +6071,7 @@ export class CombatSystem {
             // Prone-skip (Zombie Giant stomp)
             if (m.proneRounds && m.proneRounds > 0) {
                 this._addLog(`\u23EC ${m.name} is knocked PRONE and cannot act! (${m.proneRounds} rd left)`);
+                if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
                 m.proneRounds--;
                 this._initTurnIdx++;
                 continue;
@@ -4196,6 +6097,7 @@ export class CombatSystem {
                     }
                 } else {
                     this._addLog(`${m.name} is stunned and cannot act!`);
+                    if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
                     m.stunned = false;
                     this._initTurnIdx++;
                     continue;
@@ -4221,6 +6123,10 @@ export class CombatSystem {
             // Human-controlled: set currentMemberIndex and wait for player input.
             this._logTarget = 'player'; // reset before player acts so all action logs go to the party window
             this.currentMemberIndex = this.party.indexOf(m);
+            // Symphony of Destruction: auto-end if bard can no longer afford the next round
+            if (m.symphonyActive && (m.mana < m.symphonyManaCost || m.stamina < m.symphonyStaCost)) {
+                this._bardEndSymphony(m, 'exhausted');
+            }
             this.phase = 'PLAYER_TURN';
             this._addLog(`--- Turn ${this.turnNumber}: ${m.name}'s turn ---`);
             this._notify();
@@ -4236,6 +6142,27 @@ export class CombatSystem {
         this._logTarget = 'player';
         if (this.aliveHostileEnemies.length === 0) {
             this._finishVictory();
+            return;
+        }
+
+        // ── Spiritual Weapons: fire once per cleric turn, before advancing ──
+        const _sw = this.currentMember;
+        if (_sw && _sw.classId === 'cleric' && _sw.health > 0 && (_sw.spiritualWeapons || []).length > 0) {
+            this._processSpiritualWeapons(_sw);
+        }
+
+        // Re-check victory: weapon strikes might have killed the last enemy.
+        if (this.aliveHostileEnemies.length === 0) {
+            this._finishVictory();
+            return;
+        }
+
+        // Hunter's Mark bonus turn: if the ranger killed the marked enemy, they go again
+        const _cm = this.currentMember;
+        if (_cm && _cm.bonusTurnPending) {
+            _cm.bonusTurnPending = false;
+            this._addLog(`🎯 ${_cm.name}'s Hunter's Mark grants a BONUS TURN!`);
+            this._notify();
             return;
         }
         this._initTurnIdx++;
@@ -4297,6 +6224,13 @@ export class CombatSystem {
                 e.stunImmuneRounds = 2;
                 return;
             }
+        }
+
+        // Reckless Move knock: enemy loses its next turn
+        if (e.knocked) {
+            e.knocked = false;
+            this._addLog(`💥 ${eName} is knocked back and cannot act this turn!`);
+            return;
         }
 
         const dlvl = this.dungeonLevel;
@@ -4391,16 +6325,18 @@ export class CombatSystem {
                     target.addEffect({ type: 'anti_magic_beam', damageBonus: -10, rounds: 2 });
                     this._addLog(`\u{1F52E} Beholder: Anti-Magic Ray hits ${target.name}! (-10 magic dmg for 2 rounds)`);
                 } else if (beam === 'petrify') {
-                    // Stun 3 rounds + +200 defense
+                    // Stun 3 rounds + +200 defense; incorporeal/construct/undead immune
                     target = frontRow.length > 0 ? frontRow[Math.floor(Math.random() * frontRow.length)] : anyAlive[Math.floor(Math.random() * anyAlive.length)];
-                    if (Math.random() < 0.5) {
+                    if (this._isPetrifyImmunePartyMember(target)) {
+                        this._addLog(`\u{1FAA8} Beholder: Petrify Ray hits ${target.name} — immune to petrification!`);
+                    } else if (Math.random() < 0.5) {
                         target.webbedRounds = Math.max(target.webbedRounds || 0, 3);
                         target.addEffect({ type: 'petrified', defenseBonus: 200, rounds: 3 });
                         this._addLog(`\u{1FAA8} Beholder: Petrify Ray hits ${target.name}! (locked 3 rounds, +200 def — turned to stone!)`);
                     } else {
                         this._addLog(`\u{1FAA8} Beholder: Petrify Ray misses ${target ? target.name : 'target'}!`);
                     }
-                } else if (beam === 'slow_ray') {
+                                } else if (beam === 'slow_ray') {
                     // -level/2 melee and defense for front row target
                     target = frontRow.length > 0 ? frontRow[Math.floor(Math.random() * frontRow.length)] : anyAlive[Math.floor(Math.random() * anyAlive.length)];
                     const penalty = Math.max(1, Math.floor(dlvl / 2));
@@ -4504,7 +6440,7 @@ export class CombatSystem {
                 const dealt = Math.max(1, dmg - target.getArmorBlocking() - target.getTotalDefense());
                 this._applyEnemyHit(e, target, dmg, 'ranged');
                 // Ice DoT: 50% of damage dealt
-                if (target.health > 0) {
+                if (target.health > 0 && !this._isImmuneTo(target, 'cold')) {
                     const iceTick = Math.max(1, Math.floor(dealt * 0.5));
                     target.addEffect({ type: 'ice_chill', damageBonus: -2, rounds: 2 });
                     target.health = Math.max(0, target.health - iceTick);
@@ -4580,12 +6516,14 @@ export class CombatSystem {
                     }
                 }
             }
-            // Petrify attempt
+            // Petrify attempt — incorporeal/construct/undead immune
             if (Math.random() < 0.50 && anyAlive.length > 0) {
                 const frontRow = this.aliveFront;
                 const petrifyTarget = frontRow.length > 0 ? frontRow[Math.floor(Math.random() * frontRow.length)] : anyAlive[Math.floor(Math.random() * anyAlive.length)];
-                if (Math.random() < 0.50) {
-                    this._tryApplyStun(petrifyTarget); // stun resist may block the stunned flag only
+                if (this._isPetrifyImmunePartyMember(petrifyTarget)) {
+                    this._addLog(`\u{1FAA8} ${eName} tries to meet ${petrifyTarget.name}'s gaze — immune to petrification!`);
+                } else if (Math.random() < 0.50) {
+                    this._tryApplyStun(petrifyTarget);
                     petrifyTarget.webbedRounds = Math.max(petrifyTarget.webbedRounds || 0, 3);
                     petrifyTarget.addEffect({ type: 'petrified', defenseBonus: 200, rounds: 3 });
                     this._addLog(`\u{1FAA8} ${eName} meets ${petrifyTarget.name}'s gaze — PETRIFIED! (3 rounds, +200 def)`);
@@ -4706,7 +6644,7 @@ export class CombatSystem {
                 const dealt = Math.max(1, dmg - target.getArmorBlocking() - target.getTotalDefense());
                 this._applyEnemyHit(e, target, dmg, 'melee');
                 // Ice DoT on each hit
-                if (target.health > 0) {
+                if (target.health > 0 && !this._isImmuneTo(target, 'cold')) {
                     const iceTick = Math.max(1, Math.floor(dealt * 0.33));
                     target.health = Math.max(0, target.health - iceTick);
                     target.addEffect({ type: 'ice_chill', damageBonus: -2, rounds: 2 });
@@ -4730,7 +6668,7 @@ export class CombatSystem {
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
                 const preDef = Math.max(1, dmg - target.getArmorBlocking() - target.getTotalDefense());
                 this._applyEnemyHit(e, target, dmg, 'melee');
-                if (target.health > 0) {
+                if (target.health > 0 && !this._isImmuneTo(target, 'cold')) {
                     const iceTick = Math.max(1, Math.floor(preDef * 0.30));
                     target.addEffect({ type: 'ice_chill', damageBonus: -2, rounds: 2 });
                     target.health = Math.max(0, target.health - iceTick);
@@ -4936,7 +6874,7 @@ export class CombatSystem {
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
                 this._addLog(`🟤 ${eName} lurches forward with rotting fists at ${target.name}!`);
                 this._applyEnemyHit(e, target, dmg, 'melee');
-                if (target.health > 0) {
+                if (target.health > 0 && !target.isLichForm && !this._isImmuneTo(target, 'rot')) {
                     target.activeEffects = (target.activeEffects || []).filter(x => x.type !== 'mummy_rot');
                     target.activeEffects.push({ type: 'mummy_rot', rounds: 3 });
                     this._addLog(`🟤 ${target.name} is infected with Mummy Rot! (no healing for 3 rounds)`);
@@ -5071,7 +7009,7 @@ export class CombatSystem {
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`\u{1F49C} ${eName} unleashes a psychic shriek — everyone reels!`);
                 for (const target of this.aliveParty.slice()) {
-                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
+                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true, psychic: true });
                     if (this.aliveParty.length === 0) break;
                 }
             } else if (this.aliveParty.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
@@ -5088,10 +7026,21 @@ export class CombatSystem {
                     target.mana = Math.max(0, target.mana - manaDrain);
                     this._addLog(`\u{1F49C} ${target.name} loses ${manaDrain} mana to the succubus!`);
                 }
-                // 35% chance to charm (skip turn via webbedRounds = 1)
+                // 35% chance to charm (skip turn via webbedRounds = 1); psychic — undead/constructs immune
                 if (target.health > 0 && Math.random() < 0.35) {
-                    target.webbedRounds = Math.max(target.webbedRounds || 0, 1);
-                    this._addLog(`\u{1F49C} ${target.name} is charmed — they stand dazed, unable to act!`);
+                    if (this._isPsychicImmunePartyMember(target)) {
+                        this._addLog(`\u{1F49C} ${target.name} is immune to psychic charm!`);
+                    } else {
+                        const _sucDrum = this._getBardWithDrums();
+                        const _sucDrumChance = _sucDrum ? Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _sucDrum.level / 100) : 0;
+                        if (_sucDrum && Math.random() < _sucDrumChance) {
+                            this._addLog(`🥁 ${target.name} resists ${eName}'s charm — Thunderous Drums shields their mind!`);
+                            soundManager.playThunderousDrums();
+                        } else {
+                            target.webbedRounds = Math.max(target.webbedRounds || 0, 1);
+                            this._addLog(`\u{1F49C} ${target.name} is charmed — they stand dazed, unable to act!`);
+                        }
+                    }
                 }
             }
 
@@ -5616,13 +7565,13 @@ export class CombatSystem {
                 }
             }
 
-        // ── Iron Golem: 1 powerful melee; once/combat poison gas AoE; half magic (via halfMagicDamage) ──
+        // ── Iron Golem: 1 powerful melee + 50%/round poison gas AoE; half magic (via halfMagicDamage) ──
         } else if (typeDef.isIronGolemAI) {
-            const bonus = 5;
+            const bonus = 25;
             const dmin = MONSTER_MELEE_DAMAGE_MIN + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
             const dmax = MONSTER_MELEE_DAMAGE_MAX + bonus + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
-            if (!e.ironGolemGasUsed && Math.random() < 0.35 && this.aliveParty.length > 0) {
-                e.ironGolemGasUsed = true;
+            // 50% chance each round to exhale poison gas (can combine with melee in the same round)
+            if (Math.random() < 0.50 && this.aliveParty.length > 0) {
                 this._addLog(`⚙️ ${eName} exhales a choking cloud of POISON GAS!`);
                 for (const target of this.aliveParty.slice()) {
                     if (this._isPoisonImmunePartyMember(target)) {
@@ -5634,7 +7583,8 @@ export class CombatSystem {
                     }
                     if (this.aliveParty.length === 0) break;
                 }
-            } else if (this.aliveFront.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
+            }
+            if (this.aliveFront.length > 0 && e.stamina >= MONSTER_MELEE_STAMINA_COST) {
                 const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
                 e.stamina -= MONSTER_MELEE_STAMINA_COST;
                 let dmg = randomInt(dmin, dmax);
@@ -5772,10 +7722,21 @@ export class CombatSystem {
                 this._addLog(`\u{1F9E0} ${eName} assaults every mind with psychic tendrils!`);
                 const enslaveDuration = Math.max(1, Math.floor(dlvl / 10));
                 for (const target of this.aliveParty.slice()) {
-                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true });
+                    this._applyEnemyHit(e, target, dmg, 'magic', { aoe: true, psychic: true });
                     if (target.health > 0 && Math.random() < 0.40) {
-                        target.webbedRounds = Math.max(target.webbedRounds || 0, enslaveDuration);
-                        this._addLog(`\u{1F9E0} ${target.name} is mentally enslaved — too confused to act! (${enslaveDuration} rds)`);
+                        if (this._isPsychicImmunePartyMember(target)) {
+                            this._addLog(`\u{1F9E0} ${target.name} is immune to psychic enslavement!`);
+                        } else {
+                            const _abolDrum = this._getBardWithDrums();
+                            const _abolDrumChance = _abolDrum ? Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _abolDrum.level / 100) : 0;
+                            if (_abolDrum && Math.random() < _abolDrumChance) {
+                                this._addLog(`🥁 ${target.name} resists ${eName}'s enslavement — Thunderous Drums shields their mind!`);
+                                soundManager.playThunderousDrums();
+                            } else {
+                                target.webbedRounds = Math.max(target.webbedRounds || 0, enslaveDuration);
+                                this._addLog(`\u{1F9E0} ${target.name} is mentally enslaved — too confused to act! (${enslaveDuration} rds)`);
+                            }
+                        }
                     }
                     if (this.aliveParty.length === 0) break;
                 }
@@ -5869,8 +7830,19 @@ export class CombatSystem {
                 const shuffled = this.aliveParty.slice().sort(() => Math.random() - 0.5);
                 this._addLog(`\u{1F9DB} ${eName} fixes the party with a hypnotic gaze!`);
                 for (let gi = 0; gi < Math.min(count, shuffled.length); gi++) {
-                    shuffled[gi].webbedRounds = Math.max(shuffled[gi].webbedRounds || 0, 2);
-                    this._addLog(`\u{1F49C} ${shuffled[gi].name} is hypnotised — cannot act for 2 rounds!`);
+                    if (this._isPsychicImmunePartyMember(shuffled[gi])) {
+                        this._addLog(`\u{1F49C} ${shuffled[gi].name} is immune to the hypnotic gaze!`);
+                    } else {
+                        const _vampDrum = this._getBardWithDrums();
+                        const _vampDrumChance = _vampDrum ? Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _vampDrum.level / 100) : 0;
+                        if (_vampDrum && Math.random() < _vampDrumChance) {
+                            this._addLog(`🥁 ${shuffled[gi].name} resists the hypnotic gaze — Thunderous Drums!`);
+                            soundManager.playThunderousDrums();
+                        } else {
+                            shuffled[gi].webbedRounds = Math.max(shuffled[gi].webbedRounds || 0, 2);
+                            this._addLog(`\u{1F49C} ${shuffled[gi].name} is hypnotised — cannot act for 2 rounds!`);
+                        }
+                    }
                 }
             } else if (roll < 0.40 && this.aliveParty.length > 0) {
                 // Summon Vampire Spawn
@@ -6019,6 +7991,13 @@ export class CombatSystem {
     _applyEnemyHit(e, target, rawDmg, attackKind, opts = {}) {
         const eName = this._eName(e);
         const typeDef = ENEMY_TYPES[e.type] || {};
+
+        // Shadow Step: rogue is completely untargetable — all attacks pass through harmlessly
+        if (this._hasShadowStep(target)) {
+            this._addLog(`\u{1F311} ${eName}'s attack passes harmlessly through ${target.name}'s shadow!`);
+            return;
+        }
+
         // Boss aura: alive boss = +25% dmg, mega boss = +50% (stack; self excluded)
         rawDmg = Math.max(1, Math.round(rawDmg * this._getBossAuraMult(e)));
 
@@ -6060,6 +8039,12 @@ export class CombatSystem {
             rawDmg = Math.max(1, Math.floor(rawDmg * (1 - RANGER_PIXIE_TOTEM_MAGIC_RESIST)));
         }
 
+        // Wild Shape Pixie Form: 50% less magic/AoE damage
+        if (!target.isSummoned && target.classId === 'druid' && target.wildShapeForm === 'pixie'
+            && (attackKind === 'magic' || opts.aoe)) {
+            rawDmg = Math.max(1, Math.floor(rawDmg * (1 - DRUID_WILD_PIXIE_MAGIC_RESIST)));
+        }
+
         if (target.isSummoned && target.summonType === 'demi_lich'
             && (attackKind === 'magic' || opts.aoe)) {
             rawDmg = Math.max(1, Math.floor(rawDmg * (1 - NECRO_DEMI_LICH_MAGIC_RESIST)));
@@ -6084,12 +8069,31 @@ export class CombatSystem {
             return;
         }
 
+        // ── Paladin L30 Aura of Righteousness: reduce rawDmg before any defense ─
+        // Applied before intercept so the warrior who intercepts also benefits.
+        {
+            const _auraPct = this._getPaladinAuraDamageReduction();
+            if (_auraPct > 0) rawDmg = Math.max(1, Math.floor(rawDmg * (1 - _auraPct)));
+        }
+
+        // Wild Shape Storm Eagle Form: ranged evasion (checked before warrior/shambler intercept)
+        if (!target.isSummoned && target.classId === 'druid' && target.wildShapeForm === 'eagle'
+            && attackKind === 'ranged' && !opts.aoe) {
+            const _eagleEvasion = Math.min(0.95, (target.level || 1) * DRUID_WILD_EAGLE_EVASION_PER_LEVEL);
+            if (Math.random() < _eagleEvasion) {
+                this._addLog(`\u{1F985} ${target.name}'s eagle form evades ${eName}'s ranged attack!`);
+                return;
+            }
+        }
+
         // ── Warrior L20 Defend Mode: intercept check ────────────────────────────
         // A warrior in defend mode rolls their augmented shield block chance to
         // intercept any attack aimed at another party member. The warrior takes
         // 10% of post-defense damage; the original target is unharmed.
         if (!opts.skipInterceptors && target.health > 0) {
-            const interceptors = this.party.filter(w => w !== target && w.canIntercept && w.canIntercept());
+            const interceptors = this.party
+                .filter(w => w !== target && w.canIntercept && w.canIntercept())
+                .sort((a, b) => (b.health || 0) - (a.health || 0));
             for (const warrior of interceptors) {
                 const interceptChance = warrior.getAugmentedShieldBlock();
                 if (interceptChance > 0 && Math.random() < interceptChance) {
@@ -6156,6 +8160,10 @@ export class CombatSystem {
             target.stamina -= MONK_DODGE_STAMINA_COST;
             target.mana    -= MONK_DODGE_MANA_COST;
             this._addLog(`\u{1F343} ${target.name} dodges ${eName}'s attack!`);
+            if (target.level >= MONK_KI_UNLOCK_LEVEL) {
+                target.kiCharges = (target.kiCharges || 0) + 1;
+                this._addLog(`\u{1F9D8} ${target.name} channels the evasion into Ki! (${target.kiCharges} charge${target.kiCharges !== 1 ? 's' : ''})`);
+            }
             return;
         }
 
@@ -6196,16 +8204,13 @@ export class CombatSystem {
             return;
         }
 
-        // Pixie / Pixie Princess dodge — chance equals summoner's ranged crit
-        // plus any upgrade bonus stored in summonStats.upgradeBonus.
+        // Pixie / Pixie Princess dodge — 25% + summoner level%, capped at 90%.
         if (target.isSummoned
             && target.summonStats
             && target.summonStats.beastKind === 'pixie') {
             const summoner = this.party.find(p => p.id === target.summonerId);
-            const baseDodge = summoner
-                ? RANGED_CRIT_CHANCE + summoner.getRangedCritBonus()
-                : RANGED_CRIT_CHANCE;
-            const dodgeChance = baseDodge + (target.summonStats.upgradeBonus || 0);
+            const summonerLevel = summoner?.level ?? 1;
+            const dodgeChance = Math.min(0.90, 0.25 + summonerLevel * 0.01);
             if (Math.random() < dodgeChance) {
                 const label = target.summonStats.upgradeName === 'pixie_princess'
                     ? '\u{1F9DA}✨ Pixie Princess'
@@ -6273,6 +8278,26 @@ export class CombatSystem {
             dmg = Math.max(1, Math.floor(dmg * (1 - lichResist)));
         }
 
+        // ── Bard L30 Thunderous Drums: reduce sonic or psychic damage ───────────────
+        if (typeDef.sonic || opts.psychic) {
+            const _drumBard = this._getBardWithDrums();
+            if (_drumBard) {
+                const _drumReduction = Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _drumBard.level / 100);
+                const _dmgBefore = dmg;
+                dmg = Math.max(1, Math.floor(dmg * (1 - _drumReduction)));
+                if (_dmgBefore !== dmg) {
+                    this._addLog(`🥁 Thunderous Drums absorb ${Math.round(_drumReduction * 100)}% of ${eName}'s ${typeDef.sonic ? 'sonic' : 'psychic'} blast on ${target.name}!`);
+                    soundManager.playThunderousDrums();
+                }
+            }
+        }
+
+        // Plant summons (treants, shambling mounds) take half damage from sonic attacks
+        if (typeDef.sonic && target.isSummoned
+            && ['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) {
+            dmg = Math.max(1, Math.floor(dmg * 0.5));
+        }
+
         if (attackKind === 'melee') {
             const details = []
             if (target._defending) details.push('defended');
@@ -6307,6 +8332,11 @@ export class CombatSystem {
         }
 
         target.health = Math.max(0, target.health - dmg);
+
+        // ── Wild Shape: druid falls — exit form immediately ──────────────────
+        if (target.health <= 0 && !target.isSummoned && target.classId === 'druid' && target.wildShapeForm) {
+            this._exitWildShape(target);
+        }
 
         // ── Lich Phial: necromancer in lich form caught at 0 HP ─────────────────
         if (target.health <= 0 && !target.isSummoned && target.isLichForm && !target.lichPhial) {
@@ -6383,10 +8413,13 @@ export class CombatSystem {
         // ── Necromancer undead are immune to poison and stun.
         // ── Incorporeal summons (spectres) are also immune to web, paralysis,
         //    and constrict — physical effects pass right through them.
-        const isNecroUndead   = target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich');
+        const isNecroUndead   = target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror');
         const isIncorporealSummon = target.isSummoned
             && target.summonStats
             && target.summonStats.incorporeal === true;
+        // Plant summons (treants, shambling mounds) are immune to paralysis
+        const isPlantSummon = target.isSummoned
+            && ['treant', 'shambling_mound'].includes(target.summonStats?.beastKind);
 
         // Poison (melee only — matches spider/slime/basilisk behaviour)
         if (attackKind === 'melee'
@@ -6438,6 +8471,8 @@ export class CombatSystem {
             && !isImmune('hold')
             && !isNecroUndead          // undead immune
             && !isIncorporealSummon    // incorporeal immune
+            && !isPlantSummon          // plant summons immune to paralysis
+            && !target.isLichForm      // lich form immune to paralysis
             && typeDef.paralyzingBite) {
             const pRounds = typeDef.paralyzingBite;
             target.webbedRounds = Math.max(target.webbedRounds || 0, pRounds);
@@ -6452,6 +8487,7 @@ export class CombatSystem {
             && !isImmune('hold')
             && !isNecroUndead          // undead immune
             && !isIncorporealSummon    // incorporeal immune
+            && !isPlantSummon          // plant summons immune to paralysis
             && typeDef.constrict
             && Math.random() < 0.35) {
             const cRounds = typeDef.constrict;
@@ -6463,6 +8499,7 @@ export class CombatSystem {
         // output for 2 rounds. Represented as a negative damageBonus effect.
         if (attackKind === 'melee'
             && target.health > 0
+            && !isImmune('cold')
             && typeDef.attackDebuff) {
             const debuffMag = typeof typeDef.attackDebuff === 'number' ? typeDef.attackDebuff : 2;
             const debuffRounds = 2;
@@ -6494,38 +8531,63 @@ export class CombatSystem {
                 }
             }
             if (typeDef.aoeStunChance && Math.random() < typeDef.aoeStunChance) {
-                if (this._tryApplyStun(target)) {
-                    this._addLog(`\u26A1 ${target.name} is dazed by the blast!`);
+                if (typeDef.aoeStunPsychic && this._isPsychicImmunePartyMember(target)) {
+                    this._addLog(`\u{1F9E0} ${target.name} is immune to the psychic blast!`);
+                } else {
+                    const _isStunSonicPsychic = typeDef.sonic || typeDef.aoeStunPsychic;
+                    const _stunDrumBard = _isStunSonicPsychic ? this._getBardWithDrums() : null;
+                    const _stunDrumChance = _stunDrumBard
+                        ? Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _stunDrumBard.level / 100) : 0;
+                    if (_stunDrumBard && Math.random() < _stunDrumChance) {
+                        const _label = typeDef.sonic ? 'sonic' : 'psychic';
+                        this._addLog(`\uD83E\uDD41 ${target.name} resists the ${_label} stun \u2014 Thunderous Drums!`);
+                        soundManager.playThunderousDrums();
+                    } else if (this._tryApplyStun(target)) {
+                        this._addLog(`\u26A1 ${target.name} is dazed by the blast!`);
+                    }
                 }
             }
         }
 
         // Water Elemental drowning — half-damage DoT for 3 rounds + -2 defense for 3 rounds.
+        // Undead, incorporeal, and elemental summons are immune.
         if (opts.drowning && target.health > 0) {
-            const drownTick = Math.max(1, Math.floor((opts.drowningDmg || dmg) * 0.5));
-            target.addEffect({
-                type: 'drowning',
-                rounds: 3,
-                damage: drownTick,
-            });
-            // Armor-weakening effect: -2 defense for 3 rounds (stacks with existing)
-            target.addEffect({
-                type: 'drown_armor_break',
-                defenseBonus: -2,
-                rounds: 3,
-            });
-            this._addLog(`\u{1F30A} ${target.name} is drowning! (${drownTick}/rd for 3 rds, -2 def for 3 rds)`);
+            const isUndeadSummon = target.isSummoned &&
+                (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror');
+            if (isUndeadSummon || isIncorporealSummon || this._isRiftElemental(target)) {
+                this._addLog(`\u{1F30A} ${target.name} is immune to drowning!`);
+            } else {
+                const drownTick = Math.max(1, Math.floor((opts.drowningDmg || dmg) * 0.5));
+                target.addEffect({
+                    type: 'drowning',
+                    rounds: 3,
+                    damage: drownTick,
+                });
+                // Armor-weakening effect: -2 defense for 3 rounds (stacks with existing)
+                target.addEffect({
+                    type: 'drown_armor_break',
+                    defenseBonus: -2,
+                    rounds: 3,
+                });
+                this._addLog(`\u{1F30A} ${target.name} is drowning! (${drownTick}/rd for 3 rds, -2 def for 3 rds)`);
+            }
         }
 
         // Drake fire breath — applies burn DoT to each target hit.
         if (opts.fireBurn && target.health > 0) {
-            const burnTick = Math.max(1, Math.floor(dmg * DRAKE_FIRE_BURN_FRACTION));
-            target.addEffect({
-                type: 'burn',
-                rounds: DRAKE_FIRE_BURN_ROUNDS,
-                damage: burnTick,
-            });
-            this._addLog(`\u{1F525} ${target.name} is set ablaze! (${burnTick}/rd for ${DRAKE_FIRE_BURN_ROUNDS} rds)`);
+            const _riftFireImmune = target.isSummoned && Array.isArray(target.summonStats?.immune)
+                && target.summonStats.immune.includes('fire');
+            if (_riftFireImmune) {
+                this._addLog(`\u{1F525} ${target.name} is immune to fire!`);
+            } else {
+                const burnTick = Math.max(1, Math.floor(dmg * DRAKE_FIRE_BURN_FRACTION));
+                target.addEffect({
+                    type: 'burn',
+                    rounds: DRAKE_FIRE_BURN_ROUNDS,
+                    damage: burnTick,
+                });
+                this._addLog(`\u{1F525} ${target.name} is set ablaze! (${burnTick}/rd for ${DRAKE_FIRE_BURN_ROUNDS} rds)`);
+            }
         }
 
         // Dragon breath weapon rider effects — each breath type applies the
@@ -6534,27 +8596,42 @@ export class CombatSystem {
         if (opts.dragonBreath && target.health > 0) {
             const bType = opts.dragonBreath;
             const perTick = Math.max(1, Math.floor(dmg * 0.33));
+            const _riftSummonImmune = (dmgType) => target.isSummoned
+                && Array.isArray(target.summonStats?.immune)
+                && target.summonStats.immune.includes(dmgType);
             if (bType === 'fire') {
-                // Red dragon: burn DoT (same as fire weapon rider)
-                target.addEffect({ type: 'burn', rounds: 2, damage: perTick });
-                this._addLog(`\u{1F525} ${target.name} is set ablaze by the fire breath! (${perTick}/rd for 2 rds)`);
+                if (_riftSummonImmune('fire')) {
+                    this._addLog(`\u{1F525} ${target.name} is immune to fire!`);
+                } else {
+                    // Red dragon: burn DoT (same as fire weapon rider)
+                    target.addEffect({ type: 'burn', rounds: 2, damage: perTick });
+                    this._addLog(`\u{1F525} ${target.name} is set ablaze by the fire breath! (${perTick}/rd for 2 rds)`);
+                }
             } else if (bType === 'acid') {
                 // Black dragon: acid DoT + defense debuff (same as acid weapon rider)
                 target.addEffect({ type: 'acid_dot', rounds: 2, damage: perTick, defenseBonus: -2 });
                 this._addLog(`\u{1F7E2} ${target.name} is corroded by the acid breath! (${perTick}/rd, -2 def for 2 rds)`);
             } else if (bType === 'lightning') {
-                // Blue dragon: stun + damage debuff (same as lightning weapon rider)
-                this._tryApplyStun(target);
-                target.addEffect({ type: 'shocked', rounds: 2, damageBonus: -3 });
-                this._addLog(`⚡ ${target.name} is shocked by the lightning breath! (stunned 1 rd, -3 dmg for 2 rds)`);
+                if (_riftSummonImmune('lightning')) {
+                    this._addLog(`⚡ ${target.name} is immune to lightning!`);
+                } else {
+                    // Blue dragon: stun + damage debuff (same as lightning weapon rider)
+                    this._tryApplyStun(target);
+                    target.addEffect({ type: 'shocked', rounds: 2, damageBonus: -3 });
+                    this._addLog(`⚡ ${target.name} is shocked by the lightning breath! (stunned 1 rd, -3 dmg for 2 rds)`);
+                }
             } else if (bType === 'cold') {
-                // White dragon: stun + defense debuff (same as ice weapon rider)
-                this._tryApplyStun(target);
-                target.addEffect({ type: 'chilled', rounds: 2, defenseBonus: -3 });
-                this._addLog(`❄️ ${target.name} is frozen by the frost breath! (stunned 1 rd, -3 def for 2 rds)`);
+                if (_riftSummonImmune('cold')) {
+                    this._addLog(`❄️ ${target.name} is immune to cold!`);
+                } else {
+                    // White dragon: stun + defense debuff (same as ice weapon rider)
+                    this._tryApplyStun(target);
+                    target.addEffect({ type: 'chilled', rounds: 2, defenseBonus: -3 });
+                    this._addLog(`❄️ ${target.name} is frozen by the frost breath! (stunned 1 rd, -3 def for 2 rds)`);
+                }
             } else if (bType === 'poison') {
                 // Green dragon: poison DoT (same as poison weapon rider — skip undead & golems)
-                const isNecroUndeadTarget = target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich');
+                const isNecroUndeadTarget = target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror');
                 const isGolemImmune = target.isSummoned
                     && Array.isArray(target.summonStats?.immune)
                     && target.summonStats.immune.includes('poison');
@@ -6591,6 +8668,11 @@ export class CombatSystem {
 
         if (target.health <= 0) {
             this._addLog(`${target.name} has fallen!`);
+            // Cleric death: dismiss all Spiritual Weapons
+            if (target.classId === 'cleric' && (target.spiritualWeapons || []).length > 0) {
+                target.spiritualWeapons = [];
+                this._addLog(`✨ ${target.name}'s Spiritual Weapons fade as their master falls!`);
+            }
         }
     }
 
@@ -6601,11 +8683,18 @@ export class CombatSystem {
     _summonEnemyMinion(summoner, type, icon = '\u{1F47A}') {
         const typeDef = ENEMY_TYPES[type];
         if (!typeDef) return;
-        const lvl    = this.dungeonLevel;
-        const baseHp = Math.max(5, Math.round((10 + lvl * 14) * (typeDef.hpMult || 1) * 0.75));
-        const baseSt = Math.max(5, Math.round(10 + lvl * 4));
-        const baseMp = Math.max(5, Math.round(10 + lvl * 4));
-        const def    = Math.max(0, Math.round((lvl / 2) * (typeDef.defenseMult || 1)));
+        const lvl = this.dungeonLevel;
+
+        // Match Enemy.js stat generation: randomStat() × level + compound HP bonus
+        const rH = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const rS = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const rM = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const hpExtra = Math.max(0, lvl - (MONSTER_HP_BONUS_THRESHOLD - 1));
+        const hpScale = hpExtra > 0 ? Math.pow(1 + MONSTER_HP_BONUS_PER_LEVEL, hpExtra) : 1;
+        const baseHp = Math.max(5, Math.round((hpExtra > 0 ? Math.round(rH * hpScale) : rH) * (typeDef.hpMult || 1)));
+        const baseSt = Math.max(5, rS);
+        const baseMp = Math.max(5, rM);
+        const def    = Math.max(0, Math.round(Math.floor(lvl / 2) * MONSTER_DEFENSE_PER_2_LVL * (typeDef.defenseMult || 1)));
         const minion = {
             id:            'minion_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
             type,
@@ -6742,6 +8831,10 @@ export class CombatSystem {
         // Entangle adds to `defenseBonus` which is negative; so it *lowers* the
         // enemy's effective defense — i.e., player damage goes UP. That matches
         // "victim takes more damage" because defenseBonus comes off the top.
+        // Hunter's Mark: +15% damage to the marked enemy from all sources
+        if ((enemy.activeEffects || []).some(fx => fx && fx.type === 'hunters_mark')) {
+            amount = Math.max(1, Math.round(amount * (1 + RANGER_HUNTERS_MARK_DAMAGE_BONUS)));
+        }
         const effects = enemy.activeEffects || [];
         let defMod = 0;
         for (const x of effects) {
@@ -6761,6 +8854,7 @@ export class CombatSystem {
         enemy.health = Math.max(0, enemy.health - final);
 
         // Revenant: one-time revive at 50% HP when first killed
+        // Must run BEFORE _onEnemyDeath so a reviving enemy is not fed to Corpse Horror
         if (enemy.health <= 0) {
             const rDef = ENEMY_TYPES[enemy?.type] || {};
             if (rDef.isRevenantAI && !enemy.revenantRevived) {
@@ -6771,6 +8865,12 @@ export class CombatSystem {
                 enemy.activeEffects.push({ type: 'revenant_rage', damageBonus: rageBonus, rounds: 9999, permanent: true });
                 this._addLog(`👻 ${this._eName(enemy)} refuses to die — it rises again at 50% HP with UNNATURAL FURY! (+${rageBonus} dmg)`);
             }
+        }
+
+        // Trigger enemy death events AFTER revenant check (revived enemies don't feed the Corpse Horror)
+        if (enemy.health <= 0 && !enemy._deathHandled) {
+            enemy._deathHandled = true;
+            this._onEnemyDeath(enemy);
         }
 
         return final;
@@ -6949,8 +9049,8 @@ export class CombatSystem {
             const effects = m.activeEffects || [];
             if (effects.length === 0) continue;
 
-            // Necromancer undead summons are immune to poison and burn.
-            const isNecroUndead = m.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === m.summonType) || m.summonType === 'demi_lich');
+            // Necromancer undead summons are immune to poison.
+            const isNecroUndead = m.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === m.summonType) || m.summonType === 'demi_lich' || m.summonType === 'corpse_horror');
             const isPoisonImmune = m.isSummoned
                 && Array.isArray(m.summonStats?.immune)
                 && m.summonStats.immune.includes('poison');
@@ -6966,7 +9066,7 @@ export class CombatSystem {
                 }
                 // Burn DoT (drake/red dragon fire breath)
                 if (e.type === 'burn' && e.rounds > 0) {
-                    if (!isNecroUndead) totalBurn += (e.damage || 0);
+                    totalBurn += (e.damage || 0);
                     e.rounds--;
                 }
                 // Acid DoT (black dragon breath)
@@ -7059,6 +9159,13 @@ export class CombatSystem {
                         this._addLog(`\u{1F480} ${m.name} shakes off the Hex!`);
                     }
                 }
+                // Shadow Step — tick down; log when expired
+                if (e.type === 'shadow_step' && e.rounds > 0) {
+                    e.rounds--;
+                    if (e.rounds <= 0) {
+                        this._addLog(`\u{1F311} ${m.name} emerges from the shadows!`);
+                    }
+                }
             }
             // Fracture DoT (Bone Archer — bleed from shattered bone)
             let totalFracture = 0;
@@ -7091,8 +9198,11 @@ export class CombatSystem {
                 if (m.health <= 0) this._addLog(`${m.name} has fallen to the poison!`);
             }
             if (totalBurn > 0 && m.health > 0) {
-                m.health = Math.max(0, m.health - totalBurn);
-                this._addLog(`\u{1F525} ${m.name} takes ${totalBurn} burn damage!`);
+                // Plant summons (treants, shambling mounds) take double fire DoT damage
+                const isPlantSummon = m.isSummoned && ['treant', 'shambling_mound'].includes(m.summonStats?.beastKind);
+                const effectiveBurn = isPlantSummon ? Math.round(totalBurn * 2.0) : totalBurn;
+                m.health = Math.max(0, m.health - effectiveBurn);
+                this._addLog(`\u{1F525} ${m.name} takes ${effectiveBurn} burn damage!${isPlantSummon ? ' \u{1F333} (plant vulnerability!)' : ''}`);
                 if (m.health <= 0) this._addLog(`${m.name} has been consumed by the flames!`);
             }
             if (totalAcid > 0 && m.health > 0) {
@@ -7117,6 +9227,40 @@ export class CombatSystem {
                     this._addLog(`\u{1F534} ${m.name} rages, healing ${healed} HP!`);
                 }
             }
+            // Hunter's Mark: verify target alive, then deduct upkeep
+            if (m.classId === 'ranger' && m.hunterMarkEnemyId && m.health > 0) {
+                const _markedEnemy = this.enemies.find(e => e.id === m.hunterMarkEnemyId);
+                if (!_markedEnemy || _markedEnemy.health <= 0) {
+                    // Target already dead — just clean up the reference
+                    m.hunterMarkEnemyId = null;
+                } else if (m.stamina >= RANGER_HUNTERS_MARK_UPKEEP_STAMINA && m.mana >= RANGER_HUNTERS_MARK_UPKEEP_MANA) {
+                    m.stamina -= RANGER_HUNTERS_MARK_UPKEEP_STAMINA;
+                    m.mana    -= RANGER_HUNTERS_MARK_UPKEEP_MANA;
+                    this._addLog(`🎯 ${m.name}'s Hunter's Mark holds on ${this._eName(_markedEnemy)} (-${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP, -${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST).`);
+                } else {
+                    m.hunterMarkEnemyId = null;
+                    _markedEnemy.activeEffects = (_markedEnemy.activeEffects || []).filter(fx => fx && fx.type !== 'hunters_mark');
+                    this._addLog(`🎯 ${m.name}'s Hunter's Mark fades — insufficient resources!`);
+                }
+            }
+            // Beastlord: base mana upkeep and per-summon upkeep
+            if (m.classId === 'ranger' && m.beastlordActive && m.health > 0) {
+                const _beastlordBeasts = this.party.filter(p => p.isSummoned && p.summonerId === m.id && p.summonStats && p.summonStats.beastlordSummoned && p.health > 0);
+                const _beastlordTotal = RANGER_BEASTLORD_MANA_PER_ROUND + _beastlordBeasts.length * RANGER_BEASTLORD_UPKEEP_PER_SUMMON;
+                if (m.mana >= _beastlordTotal) {
+                    m.mana -= _beastlordTotal;
+                    this._addLog(`🦎 ${m.name}'s Beastlord burns ${_beastlordTotal} MP (-${RANGER_BEASTLORD_MANA_PER_ROUND} base, -${_beastlordBeasts.length * RANGER_BEASTLORD_UPKEEP_PER_SUMMON} upkeep).`);
+                    // Auto-summon roll
+                    const _summonChance = (Math.floor(m.level / 2) + RANGER_BEASTLORD_SUMMON_BASE) / 100;
+                    if (Math.random() < _summonChance) {
+                        this._beastlordAutoSummon(m);
+                    }
+                } else {
+                    m.mana = 0;
+                    m.beastlordActive = false;
+                    this._addLog(`🦎 ${m.name}'s Beastlord fades — no mana left!`);
+                }
+            }
             if (m.classId === 'ranger' && m.rangerTotem && m.health > 0) {
                 if (m.mana >= RANGER_TOTEM_MANA_PER_ROUND) {
                     m.mana -= RANGER_TOTEM_MANA_PER_ROUND;
@@ -7125,6 +9269,33 @@ export class CombatSystem {
                     m.mana = 0;
                     this._addLog(`🪶 ${m.name}'s animal totem fades — no mana left.`);
                     m.rangerTotem = null;
+                }
+            }
+            // Elemental Rift (Mage L30): 10 MP/round upkeep; close rift if out of mana; roll elemental summon
+            if (m.classId === 'mage' && m.elementalRiftOpen && m.health > 0) {
+                if (m.mana >= MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND) {
+                    m.mana -= MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND;
+                    const riftChance = Math.min(1, (m.level + MAGE_ELEMENTAL_RIFT_SUMMON_BASE) / 100);
+                    if (Math.random() < riftChance) {
+                        this._riftSummonElemental(m);
+                    } else {
+                        this._addLog(`\u{1F300} ${m.name}'s Elemental Rift pulses... (-${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP)`);
+                    }
+                } else {
+                    m.mana = 0;
+                    m.elementalRiftOpen = false;
+                    this._addLog(`\u{1F300} ${m.name}'s Elemental Rift collapses — no mana left!`);
+                }
+            }
+            // Druid Wild Shape: 5 MP/round upkeep; exit form if out of mana.
+            if (m.classId === 'druid' && m.wildShapeForm && m.health > 0) {
+                if (m.mana >= DRUID_WILD_SHAPE_MANA_PER_ROUND) {
+                    m.mana -= DRUID_WILD_SHAPE_MANA_PER_ROUND;
+                    this._addLog(`\u{1F43E} ${m.name}'s Wild Shape burns ${DRUID_WILD_SHAPE_MANA_PER_ROUND} MP.`);
+                } else {
+                    m.mana = 0;
+                    this._addLog(`\u{1F43E} ${m.name}'s Wild Shape fades — no mana left!`);
+                    this._exitWildShape(m);
                 }
             }
             if (m.classId === 'monk' && m.avatarActive && m.health > 0) {
@@ -7208,11 +9379,37 @@ export class CombatSystem {
                 }
             }
 
+            // Golem Berserk overload: 5% current HP self-damage per round; auto-exit at 10% max HP
+            if (m.isSummoned && GOLEM_PRESETS[m.summonType] && m.golemBerserkActive && m.health > 0) {
+                const minHp = Math.max(1, Math.ceil(m.maxHealth * ARTIFICER_BERSERK_MIN_HP_PCT));
+                const overload = Math.max(1, Math.ceil(m.health * ARTIFICER_BERSERK_OVERLOAD_PCT));
+                const newHp = Math.max(minHp, m.health - overload);
+                const actual = m.health - newHp;
+                m.health = newHp;
+                if (actual > 0) this._addLog(`⚡⚙️ ${m.name} overloads: ${actual} self-damage from Berserk Mode! (${m.health}/${m.maxHealth} HP)`);
+                if (m.health <= minHp) {
+                    m.golemBerserkActive = false;
+                    m.golemBerserkUsed = true;
+                    this._addLog(`⚙️ ${m.name} hits critical HP threshold — Berserk Mode automatically exits! Cannot re-enter this combat.`);
+                }
+            }
+
+            // Thunderous Drums (Bard L30): 10 MP/round; auto-stop if out of mana.
+            if (m.classId === 'bard' && m.thunderousDrumsActive && m.health > 0) {
+                if (m.mana >= BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND) {
+                    m.mana -= BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND;
+                    this._addLog(`🥁 ${m.name}'s Thunderous Drums beat on (-${BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND} MP).`);
+                } else {
+                    m.mana = 0;
+                    m.thunderousDrumsActive = false;
+                    this._addLog(`🥁 ${m.name}'s Thunderous Drums fade — no mana left!`);
+                }
+            }
             // Necromancer undead upkeep: 1 MP per living undead per round
             if (m.classId === 'necromancer' && m.health > 0) {
                 const myUndead = this.party.filter(p =>
                     p.isSummoned && p.summonerId === m.id &&
-                    UNDEAD_TIERS.some(ut => ut.id === p.summonType) && p.health > 0,
+                    (UNDEAD_TIERS.some(ut => ut.id === p.summonType) || p.summonType === 'corpse_horror') && p.health > 0,
                 );
                 // Also count beasts summoned by this necromancer's vampires
                 const myVampireBeasts = this.party.filter(p =>
@@ -7285,11 +9482,20 @@ export class CombatSystem {
     _megaBossSummonMinion(megaBoss) {
         const typeDef = ENEMY_TYPES[megaBoss.type];
         if (!typeDef) return;
-        const lvl    = Math.max(1, megaBoss.level || this.dungeonLevel || 1);
-        const baseHp = Math.max(5, Math.round((10 + lvl * 14) * (0.75 + Math.random() * 0.5)));
-        const baseSt = Math.max(5, Math.round(10 + lvl * 4));
-        const baseMp = Math.max(5, Math.round(10 + lvl * 4));
-        const def    = Math.floor(lvl / 2);
+        const lvl = Math.max(1, megaBoss.level || this.dungeonLevel || 1);
+
+        // Use the exact same stat generation as Enemy constructor + EnemyManager.
+        const rH = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const rS = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const rM = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const hpExtraLevels = Math.max(0, lvl - (MONSTER_HP_BONUS_THRESHOLD - 1));
+        const hpBonus = hpExtraLevels > 0 ? Math.pow(1 + MONSTER_HP_BONUS_PER_LEVEL, hpExtraLevels) : 1;
+        let baseHp = hpExtraLevels > 0 ? Math.round(rH * hpBonus) : rH;
+        let baseDef = Math.floor(lvl / 2) * MONSTER_DEFENSE_PER_2_LVL;
+        // Apply type-level multipliers (e.g. earth_elemental double HP/defense)
+        if (typeDef.hpMult && typeDef.hpMult !== 1) baseHp = Math.round(baseHp * typeDef.hpMult);
+        if (typeDef.defenseMult && typeDef.defenseMult !== 1) baseDef = Math.round(baseDef * typeDef.defenseMult);
+
         const minion = {
             id:            'mb_minion_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
             type:          megaBoss.type,
@@ -7297,11 +9503,11 @@ export class CombatSystem {
             level:         lvl,
             health:        baseHp,
             maxHealth:     baseHp,
-            stamina:       baseSt,
-            maxStamina:    baseSt,
-            mana:          baseMp,
-            maxMana:       baseMp,
-            defense:       def,
+            stamina:       rS,
+            maxStamina:    rS,
+            mana:          rM,
+            maxMana:       rM,
+            defense:       baseDef,
             activeEffects: [],
             stunned:       false,
             isBoss:        false,
@@ -7385,21 +9591,41 @@ export class CombatSystem {
             // ── Weapon-rider DoTs on enemies (burn, acid_dot, poison_weapon).
             //    Each ticks per player round; damage rolled once per round.
             const effects = e.activeEffects || [];
-            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice' };
+            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning' };
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {
                     let tickDmg = fx.damage;
                     // Mummy takes double fire/burn damage
                     if (fx.type === 'burn' && typeDef.takesDoubleFire) tickDmg *= 2;
+                    // Plant-tagged enemies take double fire DoT damage
+                    if (fx.type === 'burn' && Array.isArray(typeDef.tags) && typeDef.tags.includes('plant')) tickDmg *= 2;
                     // Clockwork Horror: takes double damage from acid (weakness despite full magic immunity)
                     if (fx.type === 'acid_dot' && typeDef.fullMagicImmune) tickDmg *= 2;
                     e.health = Math.max(0, e.health - tickDmg);
                     this._addLog(`${DOT_TYPES[fx.type]}: ${this._eName(e)} suffers ${tickDmg} damage!`);
                     if (e.health <= 0) {
                         this._addLog(`${this._eName(e)} is consumed by the ${fx.type.replace(/_/g, ' ')}!`);
+                        if (!e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
                         break;
                     }
+                }
+            }
+
+            // Verdant Surge — nature DoT + 25% action loss per round for entangled enemies (L30 druid)
+            const verdantEntangle = effects.find(fx => fx && fx.type === 'entangle' && fx.verdantSurge && fx.rounds > 0);
+            if (verdantEntangle && e.health > 0) {
+                const vTags = Array.isArray(typeDef.tags) ? typeDef.tags : [];
+                if (!vTags.includes('incorporeal')) {
+                    const vDotDmg = randomInt(verdantEntangle.verdantMin, verdantEntangle.verdantMax);
+                    e.health = Math.max(0, e.health - vDotDmg);
+                    this._addLog(`\u{1F33F} Verdant Surge: ${this._eName(e)} withers for ${vDotDmg} nature damage!`);
+                    if (e.health <= 0) this._addLog(`${this._eName(e)} is consumed by the verdant surge!`);
+                }
+                if (e.health > 0 && !e.isBoss && !e.isMegaBoss
+                    && Math.random() < DRUID_VERDANT_SURGE_ACTION_LOSS_CHANCE) {
+                    if (this._tryHoldEnemy(e))
+                        this._addLog(`\u{1F33F} ${this._eName(e)}'s movement is seized — loses its action!`);
                 }
             }
 
@@ -7441,6 +9667,17 @@ export class CombatSystem {
             // are never decremented and never expired.
             for (const fx of effects) {
                 if (!fx.permanent && 'rounds' in fx && fx.rounds > 0) fx.rounds--;
+            }
+
+            // Pressure Points: remove when the last Quivering Palm expires
+            const hasExpiredQp = effects.some(fx => fx && fx.type === 'quivering_palm' && 'rounds' in fx && fx.rounds === 0);
+            const hasActiveQp  = effects.some(fx => fx && fx.type === 'quivering_palm' && 'rounds' in fx && fx.rounds > 0);
+            if (hasExpiredQp && !hasActiveQp) {
+                const ppIdx = effects.findIndex(x => x && x.type === 'pressure_points');
+                if (ppIdx !== -1) {
+                    effects.splice(ppIdx, 1);
+                    this._addLog(`✋ Pressure Points on ${this._eName(e)} dissipate as the Quivering Palm fades.`);
+                }
             }
 
             // Stun immunity countdown (granted after losing a turn to stun)
@@ -7604,25 +9841,42 @@ export class CombatSystem {
                         const ex = items.find(i => i.itemId === 'reagent_rare');
                         if (ex) ex.quantity++; else items.push({ itemId: 'reagent_rare', quantity: 1 });
                     }
-                    // Epic: level 15+  (flat 1% — no level bonus)
-                    if (dlvlHere >= REAGENT_TIER_EPIC_MIN && Math.random() < LOOT_REAGENT_EPIC_BASE) {
-                        const ex = items.find(i => i.itemId === 'reagent_epic');
-                        if (ex) ex.quantity++; else items.push({ itemId: 'reagent_epic', quantity: 1 });
+                    // Epic: level 15+ — same level-scaled formula as common/uncommon/rare
+                    // bonus = (dungeonLevel - tierMinLevel) × 1%, capped at 10%
+                    if (dlvlHere >= REAGENT_TIER_EPIC_MIN) {
+                        const epicBonus = Math.min(LOOT_REAGENT_CHANCE_MAX,
+                            Math.max(0, (dlvlHere - REAGENT_TIER_EPIC_MIN) * LOOT_REAGENT_CHANCE_PER_LVL));
+                        if (Math.random() < Math.min(LOOT_REAGENT_CHANCE_MAX, LOOT_REAGENT_EPIC_BASE + epicBonus)) {
+                            const ex = items.find(i => i.itemId === 'reagent_epic');
+                            if (ex) ex.quantity++; else items.push({ itemId: 'reagent_epic', quantity: 1 });
+                        }
                     }
                     // Legendary: level 20+
-                    if (dlvlHere >= REAGENT_TIER_LEGENDARY_MIN && Math.random() < LOOT_REAGENT_LEGENDARY_BASE) {
-                        const ex = items.find(i => i.itemId === 'reagent_legendary');
-                        if (ex) ex.quantity++; else items.push({ itemId: 'reagent_legendary', quantity: 1 });
+                    if (dlvlHere >= REAGENT_TIER_LEGENDARY_MIN) {
+                        const legendBonus = Math.min(LOOT_REAGENT_CHANCE_MAX,
+                            Math.max(0, (dlvlHere - REAGENT_TIER_LEGENDARY_MIN) * LOOT_REAGENT_CHANCE_PER_LVL));
+                        if (Math.random() < Math.min(LOOT_REAGENT_CHANCE_MAX, LOOT_REAGENT_LEGENDARY_BASE + legendBonus)) {
+                            const ex = items.find(i => i.itemId === 'reagent_legendary');
+                            if (ex) ex.quantity++; else items.push({ itemId: 'reagent_legendary', quantity: 1 });
+                        }
                     }
                     // Mythic: level 25+
-                    if (dlvlHere >= REAGENT_TIER_MYTHIC_MIN && Math.random() < LOOT_REAGENT_MYTHIC_BASE) {
-                        const ex = items.find(i => i.itemId === 'reagent_mythic');
-                        if (ex) ex.quantity++; else items.push({ itemId: 'reagent_mythic', quantity: 1 });
+                    if (dlvlHere >= REAGENT_TIER_MYTHIC_MIN) {
+                        const mythicBonus = Math.min(LOOT_REAGENT_CHANCE_MAX,
+                            Math.max(0, (dlvlHere - REAGENT_TIER_MYTHIC_MIN) * LOOT_REAGENT_CHANCE_PER_LVL));
+                        if (Math.random() < Math.min(LOOT_REAGENT_CHANCE_MAX, LOOT_REAGENT_MYTHIC_BASE + mythicBonus)) {
+                            const ex = items.find(i => i.itemId === 'reagent_mythic');
+                            if (ex) ex.quantity++; else items.push({ itemId: 'reagent_mythic', quantity: 1 });
+                        }
                     }
                     // Divine: level 30+
-                    if (dlvlHere >= REAGENT_TIER_DIVINE_MIN && Math.random() < LOOT_REAGENT_DIVINE_BASE) {
-                        const ex = items.find(i => i.itemId === 'reagent_divine');
-                        if (ex) ex.quantity++; else items.push({ itemId: 'reagent_divine', quantity: 1 });
+                    if (dlvlHere >= REAGENT_TIER_DIVINE_MIN) {
+                        const divineBonus = Math.min(LOOT_REAGENT_CHANCE_MAX,
+                            Math.max(0, (dlvlHere - REAGENT_TIER_DIVINE_MIN) * LOOT_REAGENT_CHANCE_PER_LVL));
+                        if (Math.random() < Math.min(LOOT_REAGENT_CHANCE_MAX, LOOT_REAGENT_DIVINE_BASE + divineBonus)) {
+                            const ex = items.find(i => i.itemId === 'reagent_divine');
+                            if (ex) ex.quantity++; else items.push({ itemId: 'reagent_divine', quantity: 1 });
+                        }
                     }
                 }
             }
@@ -7818,6 +10072,68 @@ export class CombatSystem {
         return true;
     }
 
+    /**
+     * Attempt to HOLD an enemy (treant roots, fae binding, physical restraint).
+     * Only incorporeal enemies are immune — undead, constructs, and elementals
+     * all have physical form and CAN be held. Bosses resist holds.
+     */
+    _tryHoldEnemy(enemy) {
+        if (!enemy || enemy.health <= 0) return false;
+        const def = ENEMY_TYPES[enemy.type] || {};
+        const tags = Array.isArray(def.tags) ? def.tags : [];
+        const immune = Array.isArray(def.immune) ? def.immune : [];
+        if (tags.includes('incorporeal') || immune.includes('hold')) {
+            this._addLog(`🌿 ${this._eName(enemy)} is incorporeal — cannot be held!`);
+            return false;
+        }
+        if (enemy.isMegaBoss || enemy.isBoss) {
+            this._addLog(`\u{1F451} ${this._eName(enemy)} is too powerful to be held!`);
+            return false;
+        }
+        if ((enemy.stunImmuneRounds || 0) > 0) {
+            this._addLog(`${this._eName(enemy)} cannot be held again so soon!`);
+            return false;
+        }
+        const levelResist = Math.min(0.90, (enemy.level || 1) * 0.01);
+        if (levelResist > 0 && Math.random() < levelResist) {
+            this._addLog(`${this._eName(enemy)} breaks free — hold resisted!`);
+            return false;
+        }
+        enemy.stunned = true;
+        return true;
+    }
+
+    /**
+     * Attempt to PARALYZE an enemy (ghoul touch, etc.).
+     * Paralysis is a nerve/flesh attack — undead, constructs, elementals, and
+     * incorporeal enemies are all immune (same set as stuns).
+     */
+    _tryParalyzeEnemy(enemy) {
+        if (!enemy || enemy.health <= 0) return false;
+        const def = ENEMY_TYPES[enemy.type] || {};
+        const tags = Array.isArray(def.tags) ? def.tags : [];
+        const immune = Array.isArray(def.immune) ? def.immune : [];
+        if (tags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant'].includes(t)) || immune.includes('paralyze')) {
+            this._addLog(`🛡️ ${this._eName(enemy)} is immune to paralysis!`);
+            return false;
+        }
+        if (enemy.isMegaBoss || enemy.isBoss) {
+            this._addLog(`\u{1F451} ${this._eName(enemy)} cannot be paralyzed!`);
+            return false;
+        }
+        if ((enemy.stunImmuneRounds || 0) > 0) {
+            this._addLog(`${this._eName(enemy)} cannot be paralyzed again so soon!`);
+            return false;
+        }
+        const levelResist = Math.min(0.90, (enemy.level || 1) * 0.01);
+        if (levelResist > 0 && Math.random() < levelResist) {
+            this._addLog(`${this._eName(enemy)} resists the paralysis!`);
+            return false;
+        }
+        enemy.stunned = true;
+        return true;
+    }
+
     _tryApplyStun(target) {
         if (!target || target.health <= 0) return false;
         // Lich form is immune to stun
@@ -7826,7 +10142,7 @@ export class CombatSystem {
             return false;
         }
         // Necromancer undead summons are immune to stun
-        if (target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich')) {
+        if (target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror')) {
             this._addLog(`💀 ${target.name} is undead — immune to stun!`);
             return false;
         }
@@ -7834,6 +10150,18 @@ export class CombatSystem {
         if (target.isSummoned && Array.isArray(target.summonStats?.immune)
             && target.summonStats.immune.includes('stun')) {
             this._addLog(`⚙️ ${target.name} is immune to stun!`);
+            return false;
+        }
+        // Plant summons (treants, shambling mounds) are immune to stun
+        if (target.isSummoned && ['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) {
+            this._addLog(`\u{1F333} ${target.name} is rooted to the earth — immune to stun!`);
+            return false;
+        }
+        // Bears have stun resistance equal to summoner level%
+        if (target.isSummoned && target.summonStats?.beastKind === 'bear'
+            && (target.summonStats?.stunResistChance ?? 0) > 0
+            && Math.random() < target.summonStats.stunResistChance) {
+            this._addLog(`\u{1F43B} ${target.name} shrugs off the stun! (${Math.round(target.summonStats.stunResistChance * 100)}% resist)`);
             return false;
         }
         const resistChance = (typeof target.getStunResistChance === 'function')

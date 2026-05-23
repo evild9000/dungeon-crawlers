@@ -230,6 +230,22 @@ class SoundManager {
     }
 
     /**
+     * Thunderous war-drums: three deep resonant booms, low-pass noise bursts.
+     */
+    playThunderousDrums() {
+        if (this.muted) return;
+        this.ensureContext();
+        const t = this.ctx.currentTime;
+        const hits = [0, 0.18, 0.34];
+        const baseFreqs = [55, 65, 50];
+        for (let i = 0; i < hits.length; i++) {
+            const dt = hits[i];
+            this.playTone(baseFreqs[i], 'sine', 0.22, 0.35 - i * 0.06, this.masterGain, t + dt);
+            this.playNoise(0.06, 0.22 - i * 0.04, 'lowpass', 280, this.masterGain, t + dt);
+        }
+    }
+
+    /**
      * Sharp metallic thud: 400Hz square burst + high noise.
      */
     playShieldBlock() {

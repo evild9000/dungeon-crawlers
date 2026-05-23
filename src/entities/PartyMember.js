@@ -180,6 +180,16 @@ export class PartyMember {
         this.avatarElement = 'fire'; // Monk L25: fire | lightning | acid | ice
         this.isDefendMode = false;  // Warrior L20: Defend Mode toggle (persists turn-to-turn)
 
+        // Druid L30: Wild Shape — combat-only transformation
+        this.wildShapeForm    = null;  // 'bear'|'wolf'|'eagle'|'pixie'|'treant'|null
+        this.wildShapeHpBonus = 0;     // HP added to maxHealth (bear/treant double)
+        this.wildShapeDefBonus = 0;    // Defense bonus from form
+        this.wildShapeOrigRow  = null; // Original row before form promotion
+
+        // Mage L30: Elemental Rift — once-per-combat free-action toggle
+        this.elementalRiftOpen = false;
+        this.elementalRiftUsed = false;
+
         // Persistent bard out-of-combat songs (serialized). Array of song IDs:
         //   'haste' | 'battle' | 'healing'
         // Effects are re-applied to all party members via Game._reapplySongEffects().
@@ -217,6 +227,13 @@ export class PartyMember {
         // travel, and save/load. Non-persistent summons are stripped by
         // Game._onCombatEnd as before.
         this.isPersistent = !!isPersistent;
+
+        // Artificer L30: Golem Berserk Mode
+        this.golemBerserkActive = false;
+        this.golemBerserkUsed   = false;
+
+        // Bard L30: Thunderous Drums
+        this.thunderousDrumsActive = false;
 
         // Per-member equipment enchantments. Keyed by equipment slot
         // ('weapon', 'offhand', 'armor'). Enchants persist on the slot; unequipping
@@ -437,6 +454,7 @@ export class PartyMember {
              + this.getRangerTotemDefenseBonus()
              + this.getTrinketBonus('defense')
              + this.getEffectModifier('defense')
+             + (this.wildShapeDefBonus || 0)
              - hunger;
     }
 
@@ -825,6 +843,24 @@ export class PartyMember {
         return (ench && ench.level) || 0;
     }
 
+    /** Returns true when this member has an offhand melee weapon equipped. */
+    hasOffhandMeleeWeapon() {
+        const offId = this.equipment && this.equipment.offhand;
+        if (!offId) return false;
+        const def = WEAPONS[offId];
+        return !!(def && def.subtype === 'melee');
+    }
+
+    /** Off-hand melee weapon power + enchant level (0 if none / not melee). */
+    getOffhandWeaponPower() {
+        const offId = this.equipment && this.equipment.offhand;
+        if (!offId) return 0;
+        const def = WEAPONS[offId];
+        if (!def || def.subtype !== 'melee') return 0;
+        const offEnch = this.equipmentEnchants && this.equipmentEnchants.offhand;
+        return (def.power || 0) + ((offEnch && offEnch.level) ? offEnch.level : 0);
+    }
+
     /** Off-hand weapon rider (dual-wield only). */
     getOffhandRider() {
         const ench = this.equipmentEnchants && this.equipmentEnchants.offhand;
@@ -935,6 +971,14 @@ export class PartyMember {
      */
     addEffect(effect) {
         if (!effect || !effect.type) return;
+        // Shadow Step: immune to all hostile debuffs while vanished
+        if (this.activeEffects.some(e => e.type === 'shadow_step' && (e.rounds || 0) > 0)) {
+            const _HOSTILE = new Set(['poison','burn','acid_dot','drowning','drown_armor_break',
+                'ice_chill','shocked','chilled','petrified','anti_magic_beam','slow_ray',
+                'mummy_rot','hag_curse','fracture','necrotic_curse','hex','wither',
+                'rust_corrosion','taunted','quasit_poison','rogue_trap_dot']);
+            if (_HOSTILE.has(effect.type)) return;
+        }
         const existingIdx = this.activeEffects.findIndex(e => e.type === effect.type);
         if (existingIdx !== -1) {
             const prev = this.activeEffects[existingIdx];
@@ -1015,13 +1059,42 @@ export class PartyMember {
         this.rangerTotem = null;
         this.avatarActive = false;
         this.avatarElement = 'fire';
-        this.isDefendMode    = false;
-        this.isInFormation   = false;
-        this.squiresSummoned = false;
+        this.isDefendMode        = false;
+        this.isInFormation       = false;
+        this.squiresSummoned     = false;
+        this.divineJudgmentUsed  = false;
+        this.kiCharges           = 0;
+        this.spiritualWeapons    = [];
+        this.shadowStepUsed      = false;
+        this.hunterMarkEnemyId   = null;
+        this.bonusTurnPending    = false;
+        this.beastlordActive     = false;
         // Lich form is a combat-only transformation — always collapse it when
         // leaving combat (flee, defeat, victory all call clearCombatState).
         this.isLichForm = false;
         this.lichPhial  = false;
+        // Wild Shape — undo HP doubling and restore row when leaving combat.
+        if (this.wildShapeHpBonus > 0) {
+            this.maxHealth = Math.max(1, this.maxHealth - this.wildShapeHpBonus);
+            this.health = Math.min(this.health, this.maxHealth);
+        }
+        if (this.wildShapeOrigRow) this.row = this.wildShapeOrigRow;
+        this.wildShapeForm    = null;
+        this.wildShapeHpBonus  = 0;
+        this.wildShapeDefBonus = 0;
+        this.wildShapeOrigRow  = null;
+        this.elementalRiftOpen = false;
+        this.elementalRiftUsed = false;
+        this.golemBerserkActive = false;
+        this.golemBerserkUsed   = false;
+        this.thunderousDrumsActive = false;
+        this.symphonyActive = false;
+        this.symphonyRound = 0;
+        this.symphonyManaCost = 0;
+        this.symphonyStaCost = 0;
+        this.symphonyUsedThisCombat = false;
+        this.heroicDeedTokens = 0;
+        this.rapidAssaultPending = false;
     }
 
     // ──────────────────────────────────────────

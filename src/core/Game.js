@@ -58,6 +58,7 @@ import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON
 import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { LoreBook } from '../ui/LoreBook.js';
+import { syncGolemStats } from '../entities/Summons.js';
 
 /**
  * Game — top-level orchestrator.
@@ -1366,6 +1367,11 @@ export class Game {
             if (m.isPersistent && m.health > 0) return true;
             return false;
         });
+        // If any party member leveled up this combat, re-sync golem stats to the
+        // new artificer level (HP, damage, defense all scale with artificer level).
+        if (this.combatSystem.levelUpLogs && this.combatSystem.levelUpLogs.length > 0) {
+            syncGolemStats(this.gameState.party);
+        }
         for (const m of this.gameState.party) {
             if (typeof m.clearCombatState === 'function') m.clearCombatState();
         }

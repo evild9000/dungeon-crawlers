@@ -27,6 +27,8 @@
 import {
     NECRO_TIER_UPGRADE_EVERY,
     GOLEM_TIERS as GOLEM_TIERS_CONST,
+    GOLEM_ATTACHMENT_TRINKET_HP_MULT,
+    GOLEM_ATTACHMENT_SHIELD_DEFENSE,
 } from '../utils/constants.js';
 
 // ────────────────────────────────────────────
@@ -174,10 +176,11 @@ export const BEAST_TYPES = {
         attackType: 'melee',
         speciesLabel: 'Wolf',
         kind: 'beast',
-        description: 'Swift melee striker. Bite inflicts Bleed (100% of hit damage per round) for 3 rounds. +7 HP and +1 defense per summoner level.',
+        description: 'Swift melee striker. Bite inflicts stacking Bleed (100% of hit/round). Bleed duration = 3+level/33 rounds. Extra attack at level 33+ targets a different enemy.',
         abilities: [
-            'Single-target bite attack.',
-            'Applies Bleed: 100% of initial hit as bonus damage each round for 3 rounds.',
+            'Single-target bite attack. Extra attack at level 33+ (level÷33) targets a separate enemy.',
+            'Applies stacking Bleed per bite: 100% of hit damage per round for 3+⌊level/33⌋ rounds.',
+            'Multiple bleeds from the same or different wolves stack independently on the same target.',
             'Medium HP, faster initiative. +7 HP and +1 defense per summoner level.',
             'Can be healed by potions and Cleric heal.',
         ],
@@ -190,11 +193,13 @@ export const BEAST_TYPES = {
         attackType: 'melee',
         speciesLabel: 'Bear',
         kind: 'beast',
-        description: 'High HP, strong melee, stun chance matches ranger crit. +2 defense per summoner level.',
+        description: 'High HP tank. Stun chance = 15%+level\u00d72%. Extra attack at level 25+. Stun resistance = level%. Giant Bear: +25% HP, +1 dmg/3 levels extra.',
         abilities: [
-            'Single-target melee attack.',
-            'High HP tank. +2 defense per summoner level.',
-            'Stun chance equal to summoner\u2019s ranged crit.',
+            'Single-target melee attack. Extra attack at level 25+ (level\u00f725).',
+            'High HP tank. +2 defense per summoner level, +1 damage per 5 levels.',
+            'Stun chance = 15% + (summoner level \u00d7 2%). Same for Giant Bear.',
+            'Stun resistance: summoner level% chance to shrug off incoming stuns.',
+            'Giant Bear: +25% max HP, bonus damage (+level/3 extra).',
             'Can be healed by potions and Cleric heal.',
         ],
     },
@@ -206,11 +211,12 @@ export const BEAST_TYPES = {
         attackType: 'ranged',
         speciesLabel: 'Eagle',
         kind: 'beast',
-        description: 'Ranged striker, lower HP, crit chance matches ranger crit. +5 HP per summoner level.',
+        description: 'Ranged striker. Crit = 20%+level\u00D72%. Crit mult = \u00D7(4+level\u00D72%). Defense = summoner level. Extra attack at level 33+ (same target). Golden Eagle: +25% HP, +5 def.',
         abilities: [
-            'Single-target ranged attack.',
-            'Lower HP, higher damage. +5 HP per summoner level.',
-            'Crit chance equal to summoner\u2019s ranged crit (4\u00D7 damage on crit).',
+            'Single-target ranged attack. Extra attack at level 33+ (\u230Alevel\u00F733\u230B) targets same enemy.',
+            '+5 HP per summoner level. Defense = summoner level.',
+            'Crit chance = 20% + (summoner level \u00D7 2%). Crit multiplier = \u00D7(4 + summoner level \u00D7 2%).',
+            'Golden Eagle: +25% max HP, +5 defense, bonus ranged damage.',
             'Can be healed by potions and Cleric heal.',
         ],
     },
@@ -241,12 +247,13 @@ export const BEAST_TYPES = {
         attackType: 'magic',
         speciesLabel: 'Pixie',
         kind: 'beast',
-        description: 'Low HP, weak AoE magic, dodge chance matches ranger crit. Takes half damage from AoE magic. +2 HP per summoner level.',
+        description: 'Low HP, AoE magic hits all enemies. Dodge = 25%+level% (cap 90%). Defense = \u230alevel/2\u230b. Pixie Princess: +3 def, bonus magic damage. Takes half damage from AoE magic.',
         abilities: [
-            'AoE faerie-dust magic (hits all enemies).',
+            'AoE faerie-dust magic attack (hits all enemies simultaneously).',
             'Fragile \u2014 lowest HP of all beasts. +2 HP per summoner level.',
             'Fey Nature: takes half damage from AoE magic attacks.',
-            'Dodge chance equal to summoner\u2019s ranged crit.',
+            'Dodge = 25% + summoner level% (capped at 90%). Defense = \u230blevel/2\u230b.',
+            'Pixie Princess upgrade: higher magic damage, +3 defense.',
             'Can be healed by potions and Cleric heal.',
         ],
     },
@@ -259,12 +266,15 @@ export const BEAST_TYPES = {
         speciesLabel: 'Treant',
         kind: 'beast',
         druidOnly: true,
-        description: 'Ancient tree spirit. Heavy front-row melee, 33% chance to hold (stun) per hit. Scales with druid level.',
+        description: 'Ancient tree spirit. Heavy front-row melee. 33% hold per hit. Defense = level×1.5. Extra attack at level 33+. Immune to stun, paralysis, and bleed. Vulnerable to fire DoTs (+50%).',
         abilities: [
-            'Front-row melee: branch slam deals druid-level-scaled damage.',
-            '33% chance per hit to Hold target for 1 round (undead and incorporeal are immune).',
-            'High HP, slow initiative. Can be healed by potions and Cleric heal.',
-            'Druid only. Unlocks at level 5.',
+            'Front-row melee: branch slam. Extra attack at level 33+ (level÷33) targets a different enemy.',
+            '33% chance per hit to Hold target (incorporeal and bosses immune).',
+            'High HP. Defense = ⌊summoner level × 1.5⌋. +12 HP per summoner level.',
+            'Plant — immune to stun, paralysis, and bleed DoTs.',
+            'Weakness: takes 50% extra damage from fire/burn DoTs.',
+            'Elder Treant upgrade: bonus damage (+level).',
+            'Druid only. Unlocks at level 5. Can be healed by potions and Cleric heal.',
         ],
     },
     shambling_mound: {
@@ -277,14 +287,15 @@ export const BEAST_TYPES = {
         kind: 'beast',
         druidOnly: true,
         unlockLevel: 25,
-        description: 'Massive regenerative plant horror. 4× druid max HP, 20+druid level defense, 45% stun on hit, regenerates 20% each turn, and protects its summoner from incoming attacks.',
+        description: 'Massive regenerative plant horror. 4× druid max HP. 45% stun on hit. 20% HP regen. Protects summoner. Plant — immune to stun, paralysis, and bleed.',
         abilities: [
             'Front-row melee summon. Costs 100 mana.',
             'Health = 4× druid max HP. Defense = 20 + druid level.',
-            'Single-target slam: base melee + 2× druid level, 45% chance to stun.',
+            'Single-target slam: base melee + 2× druid level, 45% chance to stun enemies.',
             'Regenerates 20% of max HP at the start of each turn.',
-            'If already full after regenerating, the original mound spawns a Mini Shambler that grows to full size over 3 turns (cannot spawn on the mound\'s summon round). Grown minis cannot spawn more minis.',
+            'If already full after regenerating, the original mound spawns a Mini Shambler (cannot spawn on summon round; grown minis cannot spawn more minis).',
             'Intercepts hits aimed at its summoner after warrior intercept checks.',
+            'Plant — immune to stun, paralysis, and bleed DoTs.',
         ],
     },
 };
@@ -315,6 +326,76 @@ export const FAERIE_QUEEN_PRESET = {
     ],
 };
 
+export const CORPSE_HORROR_PRESET = {
+    id:           'corpse_horror',
+    name:         'Corpse Horror',
+    icon:         '\u{1F9DF}',
+    enemySprite:  'zombie_giant',
+    speciesLabel: 'Undead',
+    kind:         'undead',
+    abilities: [
+        'Front-row melee. Absorbs fallen enemies to grow stronger.',
+        'Each absorbed corpse adds HP, attack, and defense.',
+        'Cannot be healed by potions or Cleric heal.',
+        'Restored only by its summoner\'s Necromancer life-drain.',
+    ],
+};
+
+export const RIFT_ELEMENTAL_PRESETS = {
+    rift_fire: {
+        id: 'rift_fire',
+        name: 'Fire Elemental',
+        icon: '\u{1F525}',
+        enemySprite: 'fire_elemental',
+        speciesLabel: 'Elemental',
+        kind: 'elemental',
+        abilities: [
+            'Summoned through an Elemental Rift.',
+            'Magic melee attack. Incorporeal — immune to stun, hold, web.',
+            'Immune to fire and poison.',
+        ],
+    },
+    rift_water: {
+        id: 'rift_water',
+        name: 'Water Elemental',
+        icon: '\u{1F30A}',
+        enemySprite: 'water_elemental',
+        speciesLabel: 'Elemental',
+        kind: 'elemental',
+        abilities: [
+            'Summoned through an Elemental Rift.',
+            'Magic melee attack. Incorporeal — immune to stun, hold, web.',
+            'Immune to cold and poison.',
+        ],
+    },
+    rift_air: {
+        id: 'rift_air',
+        name: 'Air Elemental',
+        icon: '\u{1F4A8}',
+        enemySprite: 'air_elemental',
+        speciesLabel: 'Elemental',
+        kind: 'elemental',
+        abilities: [
+            'Summoned through an Elemental Rift.',
+            'Magic melee attack. Incorporeal — immune to stun, hold, web.',
+            'Immune to lightning and poison.',
+        ],
+    },
+    rift_earth: {
+        id: 'rift_earth',
+        name: 'Earth Elemental',
+        icon: '\u{1FAA8}',
+        enemySprite: 'earth_elemental',
+        speciesLabel: 'Elemental',
+        kind: 'elemental',
+        abilities: [
+            'Summoned through an Elemental Rift.',
+            'Front-row magic melee attack. High HP and defense.',
+            'Immune to stun and poison.',
+        ],
+    },
+};
+
 export const DEMI_LICH_PRESET = {
     id:            'demi_lich',
     name:          'Demi-Lich',
@@ -339,6 +420,8 @@ export function getSummonPreset(member) {
     if (tier) return tier;
     const golem = GOLEM_PRESETS[member.summonType];
     if (golem) return golem;
+    if (member.summonType === 'corpse_horror') return CORPSE_HORROR_PRESET;
+    if (RIFT_ELEMENTAL_PRESETS[member.summonType]) return RIFT_ELEMENTAL_PRESETS[member.summonType];
     if (member.summonType === 'faerie_queen') return FAERIE_QUEEN_PRESET;
     if (member.summonType === 'demi_lich') return DEMI_LICH_PRESET;
     return null;
@@ -430,6 +513,55 @@ export function rollGolemStats(tierId, artificerLevel = 1) {
 }
 
 /**
+ * Sync every persistent golem in `party` to its owning artificer's current level.
+ * Safe to call unconditionally — skips golems whose stats already match.
+ * @param {import('../entities/PartyMember.js').PartyMember[]} party
+ */
+export function syncGolemStats(party) {
+    for (const golem of party) {
+        if (!golem.isSummoned || !golem.isPersistent) continue;
+        if (!golem.summonStats || !golem.summonStats.tierId) continue;
+        const artificer = party.find(m => m.id === golem.summonerId && !m.isSummoned);
+        if (!artificer) continue;
+        const newLevel = artificer.level;
+        const s = rollGolemStats(golem.summonStats.tierId, newLevel);
+        const att = golem.summonStats.attachments || {};
+        // Re-apply attachment bonuses on top of the new base stats so that
+        // trinket HP sockets and shield defense are not lost after a level-up.
+        const newMaxHp = Math.max(1, Math.floor(
+            s.maxHealth * (1 + (att.trinkets || 0) * GOLEM_ATTACHMENT_TRINKET_HP_MULT)
+        ));
+        const newDefense = s.defense + (att.shield ? GOLEM_ATTACHMENT_SHIELD_DEFENSE : 0);
+        // Skip only when every derived value already matches — guards against
+        // saves that stored a wrong maxHealth from an earlier trinket-unaware sync.
+        if (golem.summonStats.artificerLevel === newLevel
+            && golem.maxHealth === newMaxHp
+            && golem.summonStats.defense === newDefense) continue;
+        golem.maxHealth                   = newMaxHp;
+        if (golem.health > newMaxHp) golem.health = newMaxHp;
+        golem.level                       = newLevel;
+        golem.summonStats.baseMaxHealth   = s.maxHealth;
+        golem.summonStats.baseDefense     = s.defense;
+        golem.summonStats.defense         = newDefense;
+        golem.summonStats.meleeMin        = s.meleeMin;
+        golem.summonStats.meleeMax        = s.meleeMax;
+        golem.summonStats.artificerLevel  = newLevel;
+        golem.summonStats.regenPercent    = s.regenPercent;
+        golem.summonStats.reflectChance   = s.reflectChance;
+        golem.summonStats.reflectFraction = s.reflectFraction;
+        golem.summonStats.slamEvery       = s.slamEvery;
+        golem.summonStats.slamStunChance  = s.slamStunChance;
+        golem.summonStats.cleaveTargets   = s.cleaveTargets;
+        golem.summonStats.drainOnKill     = s.drainOnKill;
+        golem.summonStats.forceAoe        = s.forceAoe;
+        golem.summonStats.adamantineBolts = s.adamantineBolts;
+        golem.summonStats.halfDmgSpecial  = s.halfDmgSpecial;
+        golem.summonStats.divineSoul      = s.divineSoul;
+        golem.summonStats.immune          = s.immune;
+    }
+}
+
+/**
  * Roll stats for a ranger beast.
  * Scaling: per ranger level, +2 HP and +1 to min/max damage.
  */
@@ -452,19 +584,21 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
                 maxHealth:  roll(24, 32) + lvBoost * 10,
                 maxStamina: roll(20, 28),
                 maxMana:    0,
-                meleeMin:   3 + lvBoost * 2,
-                meleeMax:   10 + lvBoost * 2,
-                defense:    1 + lvBoost * 2,               // +2 defense/level (was flat 1)
+                meleeMin:   3 + lvBoost * 2 + Math.floor(rangerLevel / 5),
+                meleeMax:   10 + lvBoost * 2 + Math.floor(rangerLevel / 5),
+                defense:    1 + lvBoost * 2,
+                stunResistChance: rangerLevel * 0.01,
             };
         case 'eagle':
             return {
-                maxHealth:  roll(12, 18) + lvBoost * 5,   // +5 HP/level (was +2)
+                maxHealth:  roll(12, 18) + lvBoost * 5,
                 maxStamina: roll(20, 28),
                 maxMana:    0,
                 rangedMin:  3 + lvBoost * 2,
                 rangedMax:  8 + lvBoost * 2,
-                defense:    0,
-            };        case 'vampire_bat':
+                defense:    rangerLevel,
+            };
+        case 'vampire_bat':
             // Vampire bat uses eagle stats (back row, ranged) but with life drain
             return {
                 maxHealth:  roll(12, 18) + lvBoost * 5,   // +5 HP/level, same as eagle
@@ -476,22 +610,21 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
             };
         case 'pixie':
             return {
-                maxHealth:  roll(8, 14) + lvBoost * 2,    // +2 HP/level (was +1)
+                maxHealth:  roll(8, 14) + lvBoost * 2,
                 maxStamina: 0,
                 maxMana:    roll(15, 22),
                 magicMin:   1 + lvBoost * 2,
                 magicMax:   5 + lvBoost * 2,
-                defense:    0,
+                defense:    Math.floor(rangerLevel / 2),
             };
         case 'treant':
-            // Treant damage scales entirely with druid level; high HP, low init.
             return {
                 maxHealth:  roll(30, 45) + lvBoost * 12,
                 maxStamina: roll(20, 28),
                 maxMana:    0,
                 meleeMin:   rangerLevel + 2,
                 meleeMax:   rangerLevel * 2 + 4,
-                defense:    Math.floor(rangerLevel / 2),
+                defense:    Math.floor(rangerLevel * 1.5),
             };
         case 'shambling_mound':
             return {

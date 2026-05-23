@@ -143,7 +143,14 @@
       "Bash(node --check src/ui/LoreBook.js)",
       "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\systems\\\\CombatSystem.js\")",
       "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\core\\\\Game.js\")",
-      "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\utils\\\\constants.js\")"
+      "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\utils\\\\constants.js\")",
+      "Bash(node --check \"c:/Users/evild/OneDrive/Desktop/Game test/src/utils/constants.js\")",
+      "Bash(node --check \"c:/Users/evild/OneDrive/Desktop/Game test/src/entities/PartyMember.js\")",
+      "Bash(node --check \"c:/Users/evild/OneDrive/Desktop/Game test/src/systems/CombatSystem.js\")",
+      "Bash(node --check \"c:/Users/evild/OneDrive/Desktop/Game test/src/ui/CombatUI.js\")",
+      "Bash(node --check \"c:/Users/evild/OneDrive/Desktop/Game test/src/ui/PartyHUD.js\")",
+      "Bash(node --check \"c:/Users/evild/OneDrive/Desktop/Game test/src/ui/LoreBook.js\")",
+      "Bash(node --check \"c:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\\\\src\\\\entities\\\\PartyMember.js\")"
     ]
   }
 }
