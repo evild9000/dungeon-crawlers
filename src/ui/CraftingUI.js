@@ -277,6 +277,8 @@ export class CraftingUI {
         }
         // Armor panel
         body.appendChild(this._enchantSlotPanel(state, artificer, target, 'armor'));
+        // Shield panel
+        body.appendChild(this._enchantSlotPanel(state, artificer, target, 'shield'));
     }
 
     _enchantSlotPanel(state, artificer, target, slot) {
@@ -287,7 +289,8 @@ export class CraftingUI {
         const equippedId = target.equipment && target.equipment[slot];
         const itemDef = equippedId ? getItemDef(equippedId) : null;
         const enchLvl = isOffhand ? target.getOffhandEnchantLevel() :
-                        slot === 'weapon' ? target.getWeaponEnchantLevel() : target.getArmorEnchantLevel();
+                        slot === 'weapon' ? target.getWeaponEnchantLevel() :
+                        slot === 'shield' ? target.getShieldEnchantLevel() : target.getArmorEnchantLevel();
         const rider = (slot === 'weapon' || isOffhand)
             ? (isOffhand ? target.getOffhandRider() : target.getWeaponRider())
             : null;
@@ -297,7 +300,7 @@ export class CraftingUI {
         const title = document.createElement('div');
         title.className = 'craft-slot-title';
         if (!itemDef) {
-            title.textContent = `${slot === 'armor' ? '\u{1F6E1}\uFE0F' : '\u{1F5E1}\uFE0F'} ${slotLabel}: (none equipped)`;
+            title.textContent = `${slot === 'armor' || slot === 'shield' ? '\u{1F6E1}\uFE0F' : '\u{1F5E1}\uFE0F'} ${slotLabel}: (none equipped)`;
             panel.appendChild(title);
             return panel;
         }
@@ -317,6 +320,8 @@ export class CraftingUI {
             btn.textContent = `Upgrade to +${next} — ${this._formatCost(cost)}`;
             btn.title = (slot === 'weapon' || slot === 'offhand')
                 ? `Adds +1 damage to the weapon's attack type.`
+                : slot === 'shield'
+                ? `Adds +1% block chance and +1 defense per rank.`
                 : `Adds +1 armor to this piece.`;
             btn.addEventListener('click', () => {
                 if (!this._canPay(state, cost)) return;

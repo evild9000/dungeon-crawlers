@@ -1139,8 +1139,9 @@ export class InventoryUI {
         section.appendChild(help);
 
         const FAVORED_TAGS = [
-            { id: 'vermin',      label: '🐛 Vermin',      desc: 'Slimes, spiders, rats, bats, wasps, worms…' },
-            { id: 'beast',       label: '🐾 Beasts',      desc: 'Spiders, bats, rats, basilisks, cave crawlers, yetis…' },
+            { id: 'vermin',      label: '🐛 Vermin',      desc: 'Spiders, rats, bats, wasps, worms…' },
+            { id: 'slime',       label: '🟢 Slimes',      desc: 'Slimes, acid slimes, gelatinous cubes…' },
+            { id: 'beast',       label: '🐾 Beasts',      desc: 'Basilisks, cave crawlers, yetis, nagas…' },
             { id: 'undead',      label: '💀 Undead',      desc: 'Skeletons, zombies, ghosts, wraiths, bone gnashers…' },
             { id: 'humanoid',    label: '👺 Humanoids',   desc: 'Goblins, orcs, trolls, kobolds, giants, stone hags…' },
             { id: 'demon',       label: '😈 Demons',      desc: 'Imps, flame imps, efreeti, dust devils…' },

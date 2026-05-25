@@ -302,6 +302,15 @@ export class EnemyManager {
             const enemy = new Enemy({
                 type, gridX: cell.x, gridZ: cell.z, level: this.dungeonLevel,
             });
+            // Apply type-level stat multipliers (mirrors _trySpawn logic).
+            const fsDef = ENEMY_TYPES[type] || {};
+            if (fsDef.hpMult && fsDef.hpMult !== 1) {
+                enemy.health    = Math.round(enemy.health    * fsDef.hpMult);
+                enemy.maxHealth = Math.round(enemy.maxHealth * fsDef.hpMult);
+            }
+            if (fsDef.defenseMult && fsDef.defenseMult !== 1) {
+                enemy.defense = Math.round((enemy.defense || 0) * fsDef.defenseMult);
+            }
             enemy.createSprite(this.scene);
             this.enemies.push(enemy);
             spawned.push(enemy);

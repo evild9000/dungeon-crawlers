@@ -28,6 +28,7 @@ export class DungeonRenderer {
         this.portals = [];       // { kind:'down'|'up', grid:{x,z}, mesh, light }
         this.fountains = [];     // { grid:{x,z}, basin, water, orb, light, basePhase }
         this.chests = [];        // { grid:{x,z}, base,lid,lock,rune,light,basePhase }
+        this.statues = [];       // { grid:{x,z}, pillar,cap,orb,rune,light,basePhase }
     }
 
     /**
@@ -117,6 +118,13 @@ export class DungeonRenderer {
         if (data.chests) {
             for (const c of data.chests) {
                 if (!c.used) this._addChest(c.x, c.z);
+            }
+        }
+
+        // --- Mystical statues (DL30+) ---
+        if (data.statues) {
+            for (const s of data.statues) {
+                if (!s.used) this._addStatue(s.x, s.z);
             }
         }
 
@@ -300,6 +308,80 @@ export class DungeonRenderer {
             if (obj.material) obj.material.dispose();
         });
         this.chests.splice(idx, 1);
+    }
+
+    /**
+     * Add a tall stone statue with purple arcane glow — marks a DL30+ statue event.
+     */
+    _addStatue(gx, gz) {
+        const CS = CELL_SIZE;
+        const cx = (gx + 0.5) * CS;
+        const cz = (gz + 0.5) * CS;
+        const glow = 0x9900ff; // deep purple
+
+        // Stone base block
+        const baseGeo = new THREE.BoxGeometry(0.55, 0.35, 0.55);
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x5a5060, roughness: 0.85, metalness: 0.1 });
+        const base = new THREE.Mesh(baseGeo, stoneMat);
+        base.position.set(cx, 0.175, cz);
+        this.group.add(base);
+
+        // Tall cylindrical pillar
+        const pillarGeo = new THREE.CylinderGeometry(0.22, 0.26, 2.4, 10);
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x4a4055, roughness: 0.8, metalness: 0.15 });
+        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+        pillar.position.set(cx, 1.55, cz);
+        this.group.add(pillar);
+
+        // Carved cap at top
+        const capGeo = new THREE.BoxGeometry(0.5, 0.3, 0.5);
+        const cap = new THREE.Mesh(capGeo, stoneMat);
+        cap.position.set(cx, 2.9, cz);
+        this.group.add(cap);
+
+        // Glowing arcane orb hovering above the cap
+        const orbGeo = new THREE.SphereGeometry(0.18, 12, 8);
+        const orbMat = new THREE.MeshStandardMaterial({
+            color: 0x000000, emissive: glow, emissiveIntensity: 3.0,
+            transparent: true, opacity: 0.9, depthWrite: false,
+        });
+        const orb = new THREE.Mesh(orbGeo, orbMat);
+        orb.position.set(cx, 3.3, cz);
+        this.group.add(orb);
+
+        // Glowing rune ring at the base of the pillar
+        const runeGeo = new THREE.TorusGeometry(0.32, 0.035, 8, 20);
+        const runeMat = new THREE.MeshStandardMaterial({
+            color: 0x000000, emissive: glow, emissiveIntensity: 2.0,
+            transparent: true, opacity: 0.8, depthWrite: false,
+        });
+        const rune = new THREE.Mesh(runeGeo, runeMat);
+        rune.rotation.x = -Math.PI / 2;
+        rune.position.set(cx, 0.04, cz);
+        this.group.add(rune);
+
+        // Point light — intense purple
+        const light = new THREE.PointLight(glow, 1.4, 8, 2);
+        light.position.set(cx, 3.2, cz);
+        this.group.add(light);
+
+        this.statues.push({
+            grid: { x: gx, z: gz },
+            base, pillar, cap, orb, rune, light,
+            basePhase: Math.random() * Math.PI * 2,
+        });
+    }
+
+    removeStatue(gx, gz) {
+        const idx = this.statues.findIndex(s => s.grid.x === gx && s.grid.z === gz);
+        if (idx === -1) return;
+        const s = this.statues[idx];
+        [s.base, s.pillar, s.cap, s.orb, s.rune, s.light].forEach(obj => {
+            this.group.remove(obj);
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) obj.material.dispose();
+        });
+        this.statues.splice(idx, 1);
     }
 
     /**
@@ -561,6 +643,22 @@ export class DungeonRenderer {
             c.rune.material.emissiveIntensity = 1.1 + 0.9 * pulse;
             c.lock.material.emissiveIntensity = 0.35 + 0.5 * pulse;
             c.light.intensity = 0.45 + 0.55 * pulse;
+        }
+
+        // Statue pulse — orb throb + rune spin + light pulse
+        for (const s of this.statues) {
+            const t = elapsedTime * 1.6 + s.basePhase;
+            const pulse = 0.5 + 0.5 * Math.sin(t);
+            // Orb bobs and brightens
+            s.orb.position.y = 3.25 + 0.12 * Math.sin(elapsedTime * 2.2 + s.basePhase);
+            s.orb.material.emissiveIntensity = 2.5 + 1.5 * pulse;
+            s.orb.material.opacity = 0.75 + 0.2 * pulse;
+            // Rune ring spins
+            s.rune.rotation.z = elapsedTime * 0.8 + s.basePhase;
+            s.rune.material.emissiveIntensity = 1.4 + 1.0 * pulse;
+            s.rune.material.opacity = 0.55 + 0.35 * pulse;
+            // Light breathes
+            s.light.intensity = 1.0 + 1.2 * pulse;
         }
     }
 }

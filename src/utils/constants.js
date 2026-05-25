@@ -72,6 +72,15 @@ export const ENEMY_MIN_SPAWN_DISTANCE = 5; // grid cells from player
 export const ENEMY_COLLISION_RADIUS = 0.9; // world units
 export const ENEMY_INITIAL_COUNT = 43;     // enemies spawned on new game (+33%)
 
+// Wandering monster encounter system — per-round attraction to active combat
+// Each round, every hostile enemy within WANDERER_MAX_DISTANCE grid cells of the
+// encounter centre rolls a chance to join.  Chance = max(0, BASE − dist × PER_CELL).
+// At distance 0 → 50 %, distance 5 → 25 %, distance 10 → 0 % (never joins).
+// Distance is Euclidean: a monster 5E+3S is sqrt(34) ≈ 5.83 cells away.
+export const WANDERER_BASE_CHANCE     = 0.50;  // 50 % base chance at distance 0
+export const WANDERER_CHANCE_PER_CELL = 0.05;  // −5 % per grid cell of distance
+export const WANDERER_MAX_DISTANCE    = 10;    // monsters beyond 10 cells never join
+
 // Enemy stat range (randomised per enemy)
 export const ENEMY_STAT_MIN = 15;
 export const ENEMY_STAT_MAX = 25;
@@ -103,7 +112,7 @@ export const ENEMY_STAT_MAX = 25;
 export const ENEMY_TYPES = {
     // ── Original roster (unbounded dungeon level) ─────────────────────
     skeleton: { name: 'Skeleton', spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['vermin'], immune: ['acid'] },
+    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['slime'], immune: ['acid'] },
     goblin:   { name: 'Goblin',   spriteW: 1.2, spriteH: 1.4, tags: ['humanoid'] },
     // Phase 11: spider gains webChance on top of its existing poison bite.
     // The two effects roll independently — a single hit can poison, web,
@@ -135,7 +144,7 @@ export const ENEMY_TYPES = {
     kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, tags: ['humanoid'] },
     cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, tags: ['beast', 'vermin'] },
     stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, regenPercent: 0.10, tags: ['beast', 'vermin'] },
-    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, tags: ['vermin'], immune: ['acid'] },
+    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, tags: ['slime'], immune: ['acid'] },
     flame_imp:    { name: 'Flame Imp',       spriteW: 1.0, spriteH: 1.2, aoeMagic: true, tags: ['demon'], immune: ['fire'] },
     bone_gnasher: { name: 'Bone Gnasher',    spriteW: 1.4, spriteH: 1.4, stunChance: 0.35, tags: ['undead'] },
     blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, tags: ['beast', 'vermin'] },
@@ -167,7 +176,7 @@ export const ENEMY_TYPES = {
     gnoll:           { name: 'Gnoll',            spriteW: 1.4, spriteH: 1.8, rangedAny: true, poisonChance: 0.20, tags: ['humanoid', 'beast'] },
     demon_knight:    { name: 'Demon Knight',     spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['demon', 'humanoid'] },
     naga:            { name: 'Naga',             spriteW: 1.8, spriteH: 1.6, poisonChance: 0.45, constrict: 3, rangedAny: true, tags: ['monster', 'beast'] },
-    gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['monster', 'vermin'], immune: ['acid'] },
+    gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['slime'], immune: ['acid'] },
 
     // ── Elemental triad ───────────────────────────────────────────────
     // earth_elemental: double HP & defense vs a normal high-level mob.
@@ -469,8 +478,8 @@ export const ENEMY_TYPES = {
         minLevel: 25 },
 
     clockwork_horror: { name: 'Clockwork Horror',    spriteW: 1.8, spriteH: 1.8,
-        isClockworkHorrorAI: true, fullMagicImmune: true, fullDoTImmune: true,
-        tags: ['construct'], immune: ['stun', 'poison', 'bleed'] },
+        isClockworkHorrorAI: true, fullMagicImmune: true, fullDoTImmune: true, acidWeakness: true,
+        tags: ['construct'], immune: ['stun', 'poison', 'bleed', 'fire'] },
 
     gargoyle_sentinel:{ name: 'Gargoyle Sentinel',   spriteW: 1.8, spriteH: 2.2,
         isGargoyleSentinelAI: true, regenPercent: 0.10,
@@ -482,11 +491,11 @@ export const ENEMY_TYPES = {
 
     aboleth:          { name: 'Aboleth',             spriteW: 2.4, spriteH: 1.6,
         isAbolethAI: true, resistPhysical: true,
-        tags: ['aberration'], immune: ['bleed', 'stun'] },
+        tags: ['aberration'], immune: ['stun'] },
 
     star_spawn:       { name: 'Star Spawn',          spriteW: 2.0, spriteH: 2.0,
         isStarSpawnAI: true, fullDoTImmune: true,
-        tags: ['aberration'], immune: ['stun', 'poison', 'bleed'],
+        tags: ['aberration'], immune: ['stun', 'poison'],
         minLevel: 30 },
 
     void_wraith:      { name: 'Void Wraith',         spriteW: 1.6, spriteH: 2.2,
@@ -505,6 +514,63 @@ export const ENEMY_TYPES = {
         hpMult: 1.8, defenseMult: 1.3,
         tags: ['monster', 'plant'],
         minLevel: 20 },
+
+    will_o_wisp:      { name: "Will-o'-Wisp",        spriteW: 1.0, spriteH: 1.2,
+        isWillOWispAI: true,
+        hpMult: 0.7, resistMagic90: true, resistPhysical: true,
+        tags: ['undead', 'incorporeal'],
+        immune: ['psychic', 'sonic', 'poison', 'bleed', 'stun'],
+        minLevel: 30 },
+
+    roper:            { name: 'Roper',               spriteW: 2.2, spriteH: 2.0,
+        isRoperAI: true,
+        hpMult: 2.5, defenseMult: 1.2,
+        tags: ['aberration'],
+        minLevel: 30 },
+
+    invisible_stalker:{ name: 'Invisible Stalker',   spriteW: 1.6, spriteH: 2.0,
+        isInvisibleStalkerAI: true, isInvisible: true,
+        hpMult: 1.3,
+        tags: ['elemental'],
+        immune: ['poison', 'stun', 'bleed'],
+        minLevel: 30 },
+
+    // ── New monsters ─────────────────────────────────────────────────────────
+    evil_wizard:   { name: 'Evil Wizard',    spriteW: 1.4, spriteH: 1.9,
+        aoeMagic: true, halfMagicDamage: true,
+        tags: ['humanoid'] },
+
+    dark_treant:   { name: 'Dark Treant',    spriteW: 2.0, spriteH: 2.4,
+        isDarkTreantAI: true, hpMult: 1.5,
+        tags: ['monster', 'plant'] },
+
+    mandrake_root: { name: 'Mandrake Root',  spriteW: 1.2, spriteH: 1.6,
+        isMandrakeRootAI: true, mandrakeScream: true,
+        tags: ['monster', 'plant'] },
+
+    killer_vine:   { name: 'Killer Vine',    spriteW: 2.0, spriteH: 1.4,
+        isKillerVineAI: true,
+        tags: ['monster', 'plant'] },
+
+    cave_bear:     { name: 'Cave Bear',      spriteW: 2.0, spriteH: 2.0,
+        isCaveBearAI: true, hpMult: 1.4,
+        tags: ['beast'] },
+
+    cave_lion:     { name: 'Cave Lion',      spriteW: 1.8, spriteH: 1.6,
+        isCaveLionAI: true,
+        tags: ['beast'] },
+
+    winter_wolf:   { name: 'Winter Wolf',    spriteW: 1.8, spriteH: 1.4,
+        isWinterWolfAI: true,
+        tags: ['beast'], immune: ['cold'] },
+
+    lizard_folk:   { name: 'Lizard Folk',    spriteW: 1.4, spriteH: 1.8,
+        isLizardFolkAI: true, shieldBlock: 0.25,
+        tags: ['humanoid'] },
+
+    dread_cultist: { name: 'Dread Cultist',  spriteW: 1.4, spriteH: 1.9,
+        isDreadCultistAI: true,
+        tags: ['humanoid'], minLevel: 20 },
 };
 // Only enemy types (excludes tinkerer for spawning purposes)
 export const ENEMY_TYPE_KEYS = Object.keys(ENEMY_TYPES);
@@ -672,7 +738,7 @@ export const WARRIOR_RETALIATION_DAMAGE_MULT    = 0.75; // 75% of a normal melee
 export const RANGER_CRIT_PER_LEVEL = 0.03;    // +3% ranged crit per level
 export const MAGE_STUN_PER_LEVEL = 0.01;      // +1% magic stun per level
 export const ROGUE_INSTAKILL_PER_LEVEL = 0.01;// +1% backstab instakill per level beyond 1
-export const MONK_DODGE_PER_LEVEL = 0.01;     // +1% dodge per level beyond 1
+export const MONK_DODGE_PER_LEVEL = 0.005;    // +0.5% dodge per level beyond 1 (+1% per 2 levels)
 export const MONK_WHIRLWIND_PER_LEVEL = 0.01; // +1% whirlwind per level beyond 1
 export const CLERIC_HEAL_PER_LEVEL = 0.02;    // +2% heal amount per level beyond 1
 export const CLERIC_CLEANSE_UNLOCK_LEVEL       = 25;
@@ -684,7 +750,7 @@ export const NECRO_DRAIN_PER_LEVEL = 1;       // +1 drain per level beyond 1
 export const BARBARIAN_MELEE_PER_LEVEL = 1;   // +1 melee per level beyond 1
 export const BARBARIAN_RAGE_STAMINA_COST = 3; // each rage attack costs 3 ST
 export const BARBARIAN_RAGE_HP_REGEN = 0.05;  // regen 5% max HP per round while raging
-// Extra rage attacks = Math.floor(level / 3)  — baked into barbarianRage() logic
+// Extra rage attacks = Math.floor(level / 4)  — baked into barbarianRage() logic
 // Rage damage bonus = +level to base roll    — baked into _rollPlayerMeleeDamage() logic
 
 // ── Barbarian L20 — Blood Rage (temp HP + wound multiplier) ──────────────────
@@ -1055,18 +1121,21 @@ export const ENCHANT_ARMOR_COSTS = [
 
 // Weapon "rider" enchantments — added on top of a +N weapon. Each costs 1 uncommon + 1 rare.
 // Proc chance = RIDER_PROC_CHANCE on player melee/ranged hits.
-// - fire      : strong burn DoT. DoT deals 50% more base damage and lasts 1 extra round.
-// - acid      : DoT + defense debuff (armor softens).
-// - poison    : DoT + attack (damage) debuff.
-// - lightning : 1-round stun + attack (damage) debuff.
-// - ice       : 1-round stun + defense debuff.
-// DoT lasts (1 + weapon enchant level) rounds; damage = 33% of the original hit.
+// - fire      : stacking burn DoT — 50% more base damage, +1 extra round.
+// - acid      : stacking acid DoT + defense debuff (armor softens).
+// - poison    : stacking venom DoT (same potency as fire) + attack (damage) debuff.
+// - lightning : stacking lightning DoT (75% of base) + 1-round stun + attack debuff.
+// - ice       : stacking frost DoT (75% of base) + 1-round stun + defense debuff.
+// DoT damage = 33% × RIDER_DOT_DAMAGE_MULT of the original hit (fire/poison ×1.5 on top; lightning/ice ×0.75).
+// Each proc pushes a NEW independent DoT instance — multiple DoTs of the same type stack.
+// Debuffs (acid_debuff, poison_debuff, shocked, chilled) do NOT stack: new hits refresh duration/magnitude.
 // Debuff magnitude = 1 + enchant level; debuff duration = 1 + enchant level rounds.
-// Debuffs do NOT stack but REFRESH on new hit. DoTs are tracked per rider type.
 export const RIDER_PROC_CHANCE              = 0.25;
 export const RIDER_DOT_DAMAGE_FRACTION      = 1 / 3;
-export const RIDER_FIRE_DAMAGE_BONUS_MULT   = 1.5;   // fire DoT = 50% more than base
-export const RIDER_FIRE_BONUS_ROUNDS        = 1;     // fire lasts 1 extra round
+export const RIDER_DOT_DAMAGE_MULT          = 0.50;  // global DoT scale — compensates for stacking
+export const RIDER_FIRE_DAMAGE_BONUS_MULT   = 1.5;   // fire & poison DoT = 50% more than base
+export const RIDER_FIRE_BONUS_ROUNDS        = 1;     // fire & poison last 1 extra round
+export const RIDER_STUN_DOT_MULT            = 0.75;  // lightning & ice DoT scale (reduced — they also stun+debuff)
 export const RIDER_DOT_BASE_ROUNDS          = 1;     // + enchant level
 export const RIDER_DEBUFF_BASE_ROUNDS       = 1;     // + enchant level
 export const RIDER_COST = { gold: 300, common: 0, uncommon: 1, rare: 1 };
@@ -1332,7 +1401,7 @@ export const BARD_SYMPHONY_BASE_STA_COST  = 10; // doubles each round
 
 // ── Barbarian L30: Blood Frenzy (passive) ───────────────────────────────────
 export const BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL    = 30;
-export const BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED = 0.10; // +10% per bleed DoT on target
+export const BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED = 0.05; // +5% per bleed DoT on target; cap = level×3%
 
 // ── Barbarian L30: Heroic Deeds ──────────────────────────────────────────────
 export const BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL = 30;
@@ -1360,8 +1429,8 @@ export const RANGER_EXTRA_FAVORED_PER_5_LV     = 5;   // gain one slot every 5 l
 // Duration = floor(rogueLevel / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR) rounds.
 // Tags immune to bleed: 'undead', 'construct', 'elemental', 'incorporeal'.
 export const ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL   = 20;
-export const ROGUE_BACKSTAB_BLEED_FRAC           = 0.50;  // 50% of dealt damage per tick
-export const ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR = 5;   // floor(level/5) rounds; L20 → 4
+export const ROGUE_BACKSTAB_BLEED_FRAC           = 0.33;  // 33% of dealt damage per tick
+export const ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR = 7;   // floor(level/7) rounds; L20 → 2, L30 → 4
 
 // ── Druid L20 — Commune / Faerie Queen ───────────────────────────────────────
 export const DRUID_COMMUNE_UNLOCK_LEVEL      = 20;
@@ -1509,3 +1578,208 @@ export const MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL    = 30;
 export const MAGE_ELEMENTAL_RIFT_MANA_INITIAL    = 100;
 export const MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND  = 10;
 export const MAGE_ELEMENTAL_RIFT_SUMMON_BASE     = 20;    // base% + mageLevel; cap 100
+
+// ── Statue Event System (DL30+) ──────────────────────────────────────────────
+// Mysterious statues spawn at DL30+. Activating one starts a 15-wave gauntlet
+// themed around a random monster tag. Waves clear → next wave spawns;
+// the battle never ends before wave 15.  Wave 5 = boss, 10 = mega boss,
+// 15 = named super mega boss (4 actions, ×20 HP, purple HUD border).
+export const STATUE_MIN_DUNGEON_LEVEL              = 30;
+export const STATUE_SPAWN_CHANCE                   = 0.125;  // half of CHEST_SPAWN_CHANCE
+export const STATUE_PROXIMITY                      = 2.5;    // same trigger radius as chests
+
+// Wave schedule
+export const STATUE_EVENT_ROUND_BOSS               = 5;
+export const STATUE_EVENT_ROUND_MEGA_BOSS          = 10;
+export const STATUE_EVENT_ROUND_SUPER_BOSS         = 15;
+
+// Super boss stat multipliers (stacked on mega boss base)
+export const SUPER_BOSS_HP_MULT                    = 20;    // ×20 base enemy HP
+export const SUPER_BOSS_DEFENSE_PER_DL             = 2.5;   // +DL×2.5 defense
+export const SUPER_BOSS_MELEE_PER_DL               = 4.5;   // +DL×4.5 melee/ranged
+export const SUPER_BOSS_MAGIC_PER_DL               = 3.5;   // +DL×3.5 magic
+export const SUPER_BOSS_ACTIONS_PER_TURN           = 4;
+export const SUPER_BOSS_SUMMON_COUNT               = 2;     // summons 2 at once
+
+// Super boss aura/mechanic overrides
+export const STATUE_BOSS_AURA_MULT                 = 0.66;  // +66% aura from alive super boss
+export const PALADIN_DIVINE_JUDGMENT_SUPERBOSS_DIVISOR = 8; // 1/8 divine judgment cap
+export const SUPER_BOSS_MUMMY_ROT_MULT             = 0.25;  // mummy rot heals only 25% vs super boss
+
+// Statue event loot multipliers
+export const STATUE_GOLD_MULT                      = 10;
+export const STATUE_XP_MULT                        = 2;
+
+// Possible themes for the statue encounter (drawn from monster tag categories)
+export const STATUE_THEMES = [
+    'undead', 'demon', 'beast', 'humanoid', 'construct',
+    'aberration', 'dragon', 'monster', 'vermin',
+];
+
+// Named super bosses — keyed by enemy type id.
+// Each entry is an array of possible names; one is chosen at random on spawn.
+export const SUPERBOSS_NAMES = {
+    // ── Undead ───────────────────────────────────────────────────────────────
+    skeleton:         ['Morvak the Endless', 'Xal\'drath, Bone Sovereign'],
+    zombie:           ['Grothmur the Revived', 'Putrax the Undying'],
+    ghost:            ['Lethias the Hollow', 'Vaelgroth, Echo of Despair'],
+    wraith:           ['Sshareth the Consuming', 'Nilvar the Soulless'],
+    mummy:            ['Amenhotekh the Deathless', 'Khasekhemui, Lord of Rot'],
+    revenant:         ['Valdris the Returned', 'Kael\'morn, Oath of Vengeance'],
+    banshee:          ['Morrigan the Wailing', 'Shrieka, Voice of the Damned'],
+    lich:             ['Arkados the Eternal', 'Zyrathos, Archmage of Bone'],
+    zombie_giant:     ['Grul the Massive', 'Vrothgar, Titan of Decay'],
+    bone_gnasher:     ['Ossric the Crusher', 'Gnathax the Jawbreaker'],
+    death_knight:     ['Sarevoth the Unyielding', 'Malgrath, Knight Eternal'],
+    bone_archer:      ['Skeln the Deadeye', 'Vrakar, Arrow of Night'],
+    poltergeist:      ['Phasix the Unseen', 'Wrex, Chaos Unbound'],
+    shadow:           ['Umbrath the Formless', 'Kelvindras the Shade'],
+    wight:            ['Corthax the Draining', 'Mortheus, Drinker of Life'],
+    void_wraith:      ['Velthrax the Annihilator', 'Zerophis, End of Light'],
+    will_o_wisp:      ['Ixivara the Luring', 'Phosphen the Deceiver'],
+    vampire_spawn:    ['Vorcath the Bloodborn', 'Serafina the Undying'],
+    vampire_lord:     ['Lord Strahvikar the Ageless', 'Countess Lytheria the Ancient'],
+    dracolich:        ['Vyrixas the Dread', 'Necrofang the Immortal'],
+    // ── Demons ───────────────────────────────────────────────────────────────
+    imp:              ['Infernicus the Wicked', 'Pyrax the Hellborn Trickster'],
+    flame_imp:        ['Cindrix the Burning', 'Ashflare the Cackling'],
+    dust_devil:       ['Maelstrix the Whirling', 'Vorticus the Desert Fury'],
+    succubus:         ['Lilythrix the Seductive', 'Vexara the Heartstealer'],
+    chain_devil:      ['Barbakor the Binding', 'Chainlord Vexior'],
+    blood_demon:      ['Gorethax the Crimson', 'Sanguine Destruction Incarnate'],
+    ice_demon:        ['Frostmaw Zerothax', 'Shivrak the Abyssal Glacier'],
+    acid_demon:       ['Corrosivus the Melting', 'Acidrix the Pit of Dissolution'],
+    bloat_demon:      ['Putraxis the Vile', 'Toxifax the Plague Eternal'],
+    efreeti:          ['Sultan Ifraak the Undying', 'Blazemark the Djinn-King'],
+    pit_fiend:        ['Lord Infernus Zak\'rath', 'Tartarian Commander Grael'],
+    quasit:           ['Chaos-Spawn Rix', 'Vexrix the Uncontrollable'],
+    demon_knight:     ['Azgarak the Hellbound', 'Baltheron the Champion of Ruin'],
+    // ── Humanoids ────────────────────────────────────────────────────────────
+    goblin:           ['Grimtooth the Vicious', 'Skrag the King of Filth'],
+    orc:              ['Gruumkar the Warchief', 'Dragmar Ironhide'],
+    troll:            ['Grrlog the Unkillable', 'Borash Stonefist'],
+    ice_troll:        ['Fridrek the Frozen', 'Vorgral Icefang'],
+    minotaur:         ['Arkhoss the Labyrinthine', 'Gorethax Blood-and-Thunder'],
+    ogre:             ['Cragmoor the Enormous', 'Thumdar the Mountain\'s Fist'],
+    kobold:           ['Rixek the Tunnelmaster', 'Spikrix the Cunning'],
+    kobold_shaman:    ['Zizrix the All-Seeing', 'Hexvrak the Voice of Scales'],
+    dark_elf:         ['Syl\'zarrath the Poisoner', 'Drow\'xilvan the Unseen'],
+    gnoll:            ['Fang-Master Greth', 'Hyenax the Pack\'s Fury'],
+    hag:              ['Wyrdlach the Ancient', 'Morass the Withered'],
+    stone_hag:        ['Grannax the Petrifier', 'Lithrix the Stonebound'],
+    bandit:           ['Rorkan the Merciless', 'Shadowblade Jynn'],
+    gladiator:        ['Maxivar the Undefeated', 'Gore-Spit Brandor'],
+    assassin_lord:    ['Umbra the Silent', 'Kythren the Death\'s Shadow'],
+    battle_mage:      ['Arcforce Zelphar', 'Verrikan the Obliterator'],
+    medusa:           ['Gorgorath the Staring', 'Petrix the Queen of Coils'],
+    witch_doctor:     ['Hexmaw the Twisted', 'Zibrix the Bone-Caller'],
+    ettin:            ['Thrug-Druul the Two-Headed', 'Grak-Mak the Bellowing'],
+    fire_giant:       ['Embrar the Scorching', 'Pyrokhan the Lord of Flame'],
+    ice_giant:        ['Glacior the Freezing', 'Hrimthor Winter\'s Wrath'],
+    stone_giant:      ['Rockfall Garumn', 'Petravar the Immovable'],
+    storm_giant:      ['Thunderlord Stormok', 'Cyclonia the Storm\'s Voice'],
+    evil_priest:      ['Malgorum the Defiler', 'Hexrath the Apostate'],
+    evil_necromancer: ['Lich-Caller Varusk', 'Morticus the Unbinder'],
+    evil_berserker:   ['Bloodthirst Garal', 'Wrathborn Ulkarc'],
+    werewolf:         ['Lycavrath the Eternal', 'Bloodmoon the Howling'],
+    // ── Beasts ───────────────────────────────────────────────────────────────
+    spider:           ['Arachnorix the Many-Eyed', 'Venom Mother Lyraxis'],
+    bat:              ['Noctraxis the Swooping', 'Grimbat the Wing of Night'],
+    rat:              ['Gnawmore the Plague-Bringer', 'Ratking Skrix'],
+    basilisk:         ['Stonegaze Petravax', 'Lythrix the Petrifying'],
+    phase_spider:     ['Spectrix the Untouchable', 'Warpfang the Phantom'],
+    giant_scorpion:   ['Skorpathax the Deadly', 'Venomclaw Praxix'],
+    giant_frog:       ['Sludgethax the Enormous', 'Phlogrix the Swallowing'],
+    giant_crocodile:  ['Jaws-of-Iron Mawrix', 'Swampther the Ancient'],
+    displacer_beast:  ['Shiftrix the Unreal', 'Paradox-Fang the Flickering'],
+    manticore:        ['Thorns-of-Ruin Keldrix', 'Vespix the Merciless'],
+    hydra:            ['Nine-Heads Lernathos', 'Hydravax the Regrown'],
+    remorhaz:         ['Permafrost Korrix', 'Deep-Burner the Unyielding'],
+    thunderbird:      ['Stormwing the Thunderous', 'Zaprix the Storm-Caller'],
+    wyvern:           ['Veyrix the Swooping', 'Talonrath the Terrible'],
+    chimera:          ['Chimrix the Triple-Threat', 'Abominus the Fused'],
+    dungeon_ape:      ['Grimfist the Dominant', 'Gorix the Mighty'],
+    yeti:             ['Shiver-Crush the Ancient', 'Glacial Fury Borrix'],
+    hell_hound:       ['Kerberos the Eternal', 'Scorch-Fang the Deathless'],
+    naga:             ['Nagavrath the Coiling', 'Serpent-Queen Sythrix'],
+    harpy:            ['Screech-Queen Harpix', 'Sky-Torment Valkrix'],
+    // ── Vermin ───────────────────────────────────────────────────────────────
+    centipede:        ['Myriapodix the Hundred', 'Venomfang Skarix'],
+    cave_crawler:     ['Gripclaw Korr', 'Thoraxix the Unmovable'],
+    widow:            ['Weaverix the Black', 'Venom-Bride Sylthrix'],
+    blood_wasp:       ['Queen Vespra the Stinging', 'Styxrix the Swarm'],
+    cave_fisher:      ['Tendraxis the Lurking', 'Hookmaster Skalrix'],
+    stirge:           ['Drainix the Blood-Drunk', 'Exsanguia the Feeding'],
+    tunnel_worm:      ['Chthonis the Burrowing', 'Maw-Beast Grumrix'],
+    vampire_bat:      ['Nocfarang the Predator', 'Duskling the Swarm-Lord'],
+    // ── Constructs & Elementals ───────────────────────────────────────────────
+    gargoyle:         ['Stonewrath the Guardian', 'Grimveil the Watcher'],
+    gargoyle_sentinel:['Fortress-Soul Granavax', 'Sentinel Eternal Lithrix'],
+    iron_golem:       ['Ironwall Forgevax', 'Adamant-Eternal Steelrix'],
+    clockwork_horror: ['Tick-Tock Chronovax', 'The Final Machine Gearix'],
+    earth_elemental:  ['Living Mountain Gorrix', 'Tectovax the Unyielding'],
+    air_elemental:    ['Gale-Force Anemorix', 'Cyclotrix the Unbound'],
+    water_elemental:  ['Deep-Tide Hydrix', 'Tidal Ruin Nereivax'],
+    fire_elemental:   ['Conflagrix the Undying', 'Pyrevax the All-Consuming'],
+    invisible_stalker:['Invisible Death Wrex', 'The Shape Between Shapes'],
+    // ── Aberrations ──────────────────────────────────────────────────────────
+    beholder:         ['The All-Seeing Ocuvax', 'Eyerix the Dread Gazer'],
+    mind_flayer:      ['Elder Brain Fragment Psiovax', 'The Mindripper Eternal'],
+    tentacle_horror:  ['Vile-Flesh Cthovrix', 'Deep-One Kraken-Spawn'],
+    gibbering_mouther:['Madrix the Screaming', 'Cacovax the Unhinged'],
+    aboleth:          ['Ancient Memory Abolix', 'Dreamsink the Corrupting'],
+    star_spawn:       ['Outer-Kin Stellrix', 'Void-Touched Astravax'],
+    roper:            ['The Patient Strangler', 'Tendrax the Ceiling Terror'],
+    // ── Dragons ──────────────────────────────────────────────────────────────
+    drake:            ['Embrix the Scorching', 'Wyrmling-Eternal Drakavax'],
+    red_dragon:       ['Inferno-Lord Pyrathos', 'Vulcanus the World-Burner'],
+    black_dragon:     ['Acid-Scale Korrathos', 'Dissolution Eternal Mordrix'],
+    blue_dragon:      ['Storm-King Zephyrax', 'Lightning-Soul Volthos'],
+    green_dragon:     ['Venom-Sage Sylvrix', 'Poison-Ancient Toxathos'],
+    white_dragon:     ['Frostfall Glacovax', 'The Endless Blizzard Frigoth'],
+    // ── Monsters & Plants ────────────────────────────────────────────────────
+    mimic:            ['The Grand Deceiver', 'Morphax the Unmasked'],
+    spore_fungus:     ['Sporifax the Infecting', 'Myceleth the Spreading'],
+    shrieker:         ['Discordrix the Deafening', 'Resonance-Death Vrix'],
+    myconid:          ['Elder Fungus Portifax', 'Hyphavax the Entangling'],
+    myconid_sovereign:['Sovereign Sporix', 'Grand-Mycelium Phrix'],
+    rust_monster:     ['Ironbane Corraxis', 'Tarnisher of Legends'],
+    // ── Slimes ───────────────────────────────────────────────────────────────
+    slime:            ['Oozedrix the Consuming', 'Primordial Slime Lord'],
+    acid_slime:       ['Corrosifax the Spreading', 'Acidflesh the Devouring'],
+    gelatinous_cube:  ['Cube-Eternal Velorix', 'The Consuming Void of Halls'],
+    // ── New Monsters ─────────────────────────────────────────────────────────
+    evil_wizard:    ['Arcanis the Maleficent', 'Vexathor the Spellbinder'],
+    dark_treant:    ['Root-of-Ruin Morbranx', 'Darkwood-Ancient Thraxix'],
+    mandrake_root:  ['The Screaming Harvest', 'Echosoul Morrifax'],
+    killer_vine:    ['Stranglewood Virix', 'Thornmass the Consuming'],
+    cave_bear:      ['Grizzlix the Crushmaster', 'Cave-Lord Ursorath'],
+    cave_lion:      ['Mane-of-Shadows Leonrix', 'Cavefang the Eternal'],
+    winter_wolf:    ['Blizzard-Fang Nivalix', 'Glacial-Pack-Leader Frigorath'],
+    lizard_folk:    ['Scale-King Sibilrix', 'Iron-Hide Lacertis'],
+    dread_cultist:  ['The Abyssal Preacher', 'Dreadlord Veximus'],
+};
+
+// Legendary item IDs — always awarded at the end of a statue event.
+export const LEGENDARY_ITEM_IDS = [
+    'legendary_warblade',
+    'legendary_arbalest',
+    'legendary_archmage_staff',
+    'legendary_cloth_armor',
+    'legendary_leather_armor',
+    'legendary_chainmail_armor',
+    'legendary_plate_armor',
+    'legendary_shield',
+    'legendary_cloak_melee',
+    'legendary_cloak_ranged',
+    'legendary_cloak_magic',
+    'legendary_neck_melee',
+    'legendary_neck_ranged',
+    'legendary_neck_magic',
+    'legendary_ring_melee',
+    'legendary_ring_ranged',
+    'legendary_ring_magic',
+    'legendary_belt_melee',
+    'legendary_belt_ranged',
+    'legendary_belt_magic',
+];

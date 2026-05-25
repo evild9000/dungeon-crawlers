@@ -32,6 +32,9 @@ import {
     TORCH_SPACING_CELLS,
     FOUNTAIN_SPAWN_CHANCE,
     CHEST_SPAWN_CHANCE,
+    STATUE_SPAWN_CHANCE,
+    STATUE_MIN_DUNGEON_LEVEL,
+    STATUE_THEMES,
 } from '../utils/constants.js';
 
 // ──────────────────────────────────────────
@@ -415,6 +418,57 @@ export function getChestPositions(dungeonLevel, portalDown, portalUp, playerStar
     return chests;
 }
 
+/**
+ * Roll for mysterious statue spawns on this dungeon level (DL30+ only).
+ * Each statue has a random theme tag chosen at placement time.
+ * Returns an array of { x, z, used:false, theme:string } objects.
+ */
+export function getStatuePositions(dungeonLevel, portalDown, portalUp, playerStart, occupied = [], rerollSalt = 0) {
+    if (dungeonLevel < STATUE_MIN_DUNGEON_LEVEL) return [];
+
+    const { map } = _getLayout(dungeonLevel);
+    const rows = map.length, cols = map[0].length;
+    const start = playerStart || PLAYER_START;
+
+    const salt = rerollSalt | 0;
+    const rng = _lcg((((dungeonLevel * 1664525) ^ 0xC0FFEE42) + salt) | 0);
+
+    const occupiedSet = new Set((occupied || []).map(p => `${p.x},${p.z}`));
+
+    const eligible = [];
+    for (let z = 0; z < rows; z++) {
+        for (let x = 0; x < cols; x++) {
+            if (map[z][x] !== 0) continue;
+            if (Math.abs(x - start.x) + Math.abs(z - start.z) <= 3) continue;
+            if (portalDown && portalDown.x === x && portalDown.z === z) continue;
+            if (portalUp   && portalUp.x === x   && portalUp.z === z)   continue;
+            if (occupiedSet.has(`${x},${z}`)) continue;
+            eligible.push({ x, z });
+        }
+    }
+    if (eligible.length === 0) return [];
+
+    // Attempt up to min(dungeonLevel-29, 3) statues per level
+    const maxStatues = Math.min(3, dungeonLevel - STATUE_MIN_DUNGEON_LEVEL + 1);
+    const statues = [];
+    const used = new Set();
+
+    for (let i = 0; i < maxStatues; i++) {
+        if (rng() >= STATUE_SPAWN_CHANCE) continue;
+        for (let tries = 0; tries < 30; tries++) {
+            const pick = eligible[Math.floor(rng() * eligible.length)];
+            const key = `${pick.x},${pick.z}`;
+            if (!used.has(key)) {
+                used.add(key);
+                const theme = STATUE_THEMES[Math.floor(rng() * STATUE_THEMES.length)];
+                statues.push({ x: pick.x, z: pick.z, used: false, theme });
+                break;
+            }
+        }
+    }
+    return statues;
+}
+
 export function getDungeonData(dungeonLevel = 1, options = {}) {
     const rerollSalt = (options && options.rerollSalt) ? (options.rerollSalt | 0) : 0;
     const { map, rooms } = _getLayout(dungeonLevel);
@@ -424,6 +478,8 @@ export function getDungeonData(dungeonLevel = 1, options = {}) {
     const traps = getTrapPositions(dungeonLevel, portals.down, portals.up, playerStart);
     const fountains = getFountainPositions(dungeonLevel, portals.down, portals.up, playerStart, rerollSalt);
     const chests = getChestPositions(dungeonLevel, portals.down, portals.up, playerStart, fountains, rerollSalt);
+    const occupied = [...fountains, ...chests];
+    const statues = getStatuePositions(dungeonLevel, portals.down, portals.up, playerStart, occupied, rerollSalt);
 
     return {
         map,
@@ -437,5 +493,6 @@ export function getDungeonData(dungeonLevel = 1, options = {}) {
         traps,
         fountains,
         chests,
+        statues,
     };
 }

@@ -404,10 +404,183 @@ export const TRINKETS = {};
 })();
 
 // ──────────────────────────────────────────
+// Legendary Items — awarded only from Statue Events (DL30+)
+// Weapons: power 11 (base 4 + 7 baked-in enchant), isLegendary stops further enchanting
+// Armor:   blocking = base+7, isLegendary stops further enchanting
+// Trinkets: dual-aspect +7/+7, isLegendary, all 4 slots × 3 secondaries
+// ──────────────────────────────────────────
+
+export const LEGENDARY_ITEMS = {
+    // ── Weapons ──────────────────────────────────────────────────────────────
+    legendary_warblade: {
+        id: 'legendary_warblade',
+        name: '\u{2B50} Warblade of the Eternal Champion',
+        category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MELEE,
+        power: 11, enchantLevel: 7, isLegendary: true,
+        description: 'A supreme melee blade, pre-enchanted to +7. Grants +11 melee damage. Add your own rider enchantment.',
+        icon: '\u{1F5E1}',
+    },
+    legendary_arbalest: {
+        id: 'legendary_arbalest',
+        name: '\u{2B50} Arbalest of the Deadeye Eternal',
+        category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.RANGED,
+        power: 11, enchantLevel: 7, isLegendary: true,
+        description: 'A supreme crossbow, pre-enchanted to +7. Grants +11 ranged damage. Add your own rider enchantment.',
+        icon: '\u{1F3F9}',
+    },
+    legendary_archmage_staff: {
+        id: 'legendary_archmage_staff',
+        name: '\u{2B50} Staff of the Archon Supreme',
+        category: ITEM_CATEGORY.WEAPON, subtype: WEAPON_SUBTYPE.MAGIC,
+        power: 11, enchantLevel: 7, isLegendary: true,
+        description: 'A supreme magic staff, pre-enchanted to +7. Grants +11 magic damage. Add your own rider enchantment.',
+        icon: '\u{1F52E}',
+    },
+    // ── Armor ─────────────────────────────────────────────────────────────────
+    legendary_cloth_armor: {
+        id: 'legendary_cloth_armor',
+        name: '\u{2B50} Robes of the Arcane Sovereign',
+        category: ITEM_CATEGORY.ARMOR, armorType: 'cloth',
+        blocking: 8, enchantLevel: 7, isLegendary: true,
+        description: 'Supreme cloth armor, pre-enchanted to +7. Blocks 8 damage. Add your own wards.',
+        icon: '\u{1F455}',
+    },
+    legendary_leather_armor: {
+        id: 'legendary_leather_armor',
+        name: '\u{2B50} Leathers of the Shadow Eternal',
+        category: ITEM_CATEGORY.ARMOR, armorType: 'leather',
+        blocking: 9, enchantLevel: 7, isLegendary: true,
+        description: 'Supreme leather armor, pre-enchanted to +7. Blocks 9 damage. Add your own wards.',
+        icon: '\u{1F9E5}',
+    },
+    legendary_chainmail_armor: {
+        id: 'legendary_chainmail_armor',
+        name: '\u{2B50} Chainmail of the Ironborn Titan',
+        category: ITEM_CATEGORY.ARMOR, armorType: 'chain',
+        blocking: 10, enchantLevel: 7, isLegendary: true,
+        description: 'Supreme chainmail, pre-enchanted to +7. Blocks 10 damage. Add your own wards.',
+        icon: '\u{26D3}️',
+    },
+    legendary_plate_armor: {
+        id: 'legendary_plate_armor',
+        name: '\u{2B50} Plate of the Undying Champion',
+        category: ITEM_CATEGORY.ARMOR, armorType: 'plate',
+        blocking: 11, enchantLevel: 7, isLegendary: true,
+        description: 'Supreme plate armor, pre-enchanted to +7. Blocks 11 damage. Add your own wards.',
+        icon: '\u{1F9FE}',
+    },
+    legendary_shield: {
+        id: 'legendary_shield',
+        name: '\u{2B50} Aegis of the Eternal Bulwark',
+        category: ITEM_CATEGORY.SHIELD,
+        blockChance: 0.40, blocking: 7, enchantLevel: 7, isLegendary: true,
+        description: 'Supreme shield, pre-enchanted to +7. 40% block chance, adds +7 defense. Add your own ward spikes.',
+        icon: '\u{1F6E1}️',
+    },
+    // ── Trinkets: dual-aspect +7/+7, 4 slots × 3 secondaries = 12 ──────────
+    legendary_cloak_melee: {
+        id: 'legendary_cloak_melee', name: '\u{2B50} Mantle of Boundless Valor',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'cloak', trinketSlots: ['cloak'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'melee', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect cloak. +7 Defense, +7 Melee. (Statue Event loot)',
+        icon: '\u{1F9E3}',
+    },
+    legendary_cloak_ranged: {
+        id: 'legendary_cloak_ranged', name: '\u{2B50} Mantle of the Eternal Hunter',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'cloak', trinketSlots: ['cloak'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'ranged', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect cloak. +7 Defense, +7 Ranged. (Statue Event loot)',
+        icon: '\u{1F9E3}',
+    },
+    legendary_cloak_magic: {
+        id: 'legendary_cloak_magic', name: '\u{2B50} Mantle of the Archmage Eternal',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'cloak', trinketSlots: ['cloak'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'magic', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect cloak. +7 Defense, +7 Magic. (Statue Event loot)',
+        icon: '\u{1F9E3}',
+    },
+    legendary_neck_melee: {
+        id: 'legendary_neck_melee', name: '\u{2B50} Pendant of the Deathbringer',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'neck', trinketSlots: ['neck'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'melee', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect amulet. +7 Defense, +7 Melee. (Statue Event loot)',
+        icon: '\u{1F4FF}',
+    },
+    legendary_neck_ranged: {
+        id: 'legendary_neck_ranged', name: '\u{2B50} Pendant of the Marksman Supreme',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'neck', trinketSlots: ['neck'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'ranged', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect amulet. +7 Defense, +7 Ranged. (Statue Event loot)',
+        icon: '\u{1F4FF}',
+    },
+    legendary_neck_magic: {
+        id: 'legendary_neck_magic', name: '\u{2B50} Pendant of the Void Conduit',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'neck', trinketSlots: ['neck'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'magic', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect amulet. +7 Defense, +7 Magic. (Statue Event loot)',
+        icon: '\u{1F4FF}',
+    },
+    legendary_ring_melee: {
+        id: 'legendary_ring_melee', name: '\u{2B50} Signet of the Worldbreaker',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'ring', trinketSlots: ['ring1', 'ring2'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'melee', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect ring. +7 Defense, +7 Melee. (Statue Event loot)',
+        icon: '\u{1F48D}',
+    },
+    legendary_ring_ranged: {
+        id: 'legendary_ring_ranged', name: '\u{2B50} Signet of the Deadeye God',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'ring', trinketSlots: ['ring1', 'ring2'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'ranged', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect ring. +7 Defense, +7 Ranged. (Statue Event loot)',
+        icon: '\u{1F48D}',
+    },
+    legendary_ring_magic: {
+        id: 'legendary_ring_magic', name: '\u{2B50} Signet of the Arcane Infinite',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'ring', trinketSlots: ['ring1', 'ring2'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'magic', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect ring. +7 Defense, +7 Magic. (Statue Event loot)',
+        icon: '\u{1F48D}',
+    },
+    legendary_belt_melee: {
+        id: 'legendary_belt_melee', name: '\u{2B50} Girdle of the God-Slayer',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'belt', trinketSlots: ['belt'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'melee', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect belt. +7 Defense, +7 Melee. (Statue Event loot)',
+        icon: '\u{1F45D}',
+    },
+    legendary_belt_ranged: {
+        id: 'legendary_belt_ranged', name: '\u{2B50} Girdle of the Starborn Archer',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'belt', trinketSlots: ['belt'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'ranged', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect belt. +7 Defense, +7 Ranged. (Statue Event loot)',
+        icon: '\u{1F45D}',
+    },
+    legendary_belt_magic: {
+        id: 'legendary_belt_magic', name: '\u{2B50} Girdle of the Eternal Mysteries',
+        category: ITEM_CATEGORY.TRINKET, trinketKind: 'belt', trinketSlots: ['belt'],
+        bonusType: 'defense', bonusValue: 7, bonusType2: 'magic', bonusValue2: 7,
+        tier: 7, dualAspect: true, isLegendary: true,
+        description: 'Legendary dual-aspect belt. +7 Defense, +7 Magic. (Statue Event loot)',
+        icon: '\u{1F45D}',
+    },
+};
+
+// ──────────────────────────────────────────
 // Combined lookup
 // ──────────────────────────────────────────
 
-export const ALL_ITEMS = { ...CONSUMABLES, ...WEAPONS, ...ARMOR, ...SHIELDS, ...TRINKETS };
+export const ALL_ITEMS = { ...CONSUMABLES, ...WEAPONS, ...ARMOR, ...SHIELDS, ...TRINKETS, ...LEGENDARY_ITEMS };
 
 export function getItemDef(itemId) {
     return ALL_ITEMS[itemId] || null;

@@ -15,6 +15,7 @@ const TAG_INFO = {
     monster:      { label: '👾 Monster',      color: '#907070' },
     vermin:       { label: '🐛 Vermin',       color: '#708050' },
     dragon:       { label: '🐉 Dragon',       color: '#c06020' },
+    plant:        { label: '🌿 Plant',        color: '#4a8040' },
 };
 
 function buildAbilityList(def) {
@@ -177,7 +178,7 @@ function buildAbilityList(def) {
 
     // Bestiary Expansion — Constructs
     if (def.isIronGolemAI)          lines.push('Iron Juggernaut: single devastating melee strike (+25 bonus); 50% chance each round to exhale Poison Gas (can occur the same round as melee — poison DoT on ALL party members); takes only half magic damage; triple HP, double defense');
-    if (def.isClockworkHorrorAI)    lines.push('Mechanical Fury: 3 rapid melee strikes per turn (75% damage each) at any party member; FULLY IMMUNE to all magic, AoE, and DoT effects — spells, fire, poison, acid and all elemental damage deal zero; takes DOUBLE damage from acid');
+    if (def.isClockworkHorrorAI)    lines.push('Mechanical Fury: 3 rapid melee strikes per turn (75% damage each) at any party member; FULLY IMMUNE to all magic, AoE, DoT effects, and weapon riders — spells, fire, poison, lightning, ice and all elemental damage deal zero; EXCEPTION: acid weapon rider still procs and acid DoT deals DOUBLE damage — corroded gears are the one vulnerability');
     if (def.isGargoyleSentinelAI)   lines.push('Stone Shell — Phase 1: while above 50% HP takes only 50% damage from ALL sources; regenerates 10% HP per round; Phase 2 (≤50% HP): shell cracks — loses damage reduction, gains +5 melee bonus AND adds AoE Wing Buffet (front-row melee AoE with stun attempt each target)');
     if (def.fullMagicImmune && !def.isGargoyleSentinelAI) lines.push('Total Magic Immunity: completely unaffected by all magical attacks, AoE, and damage-over-time effects');
 
@@ -190,6 +191,17 @@ function buildAbilityList(def) {
     if (def.isVoidWraithAI)         lines.push('Void Drain: phase-strikes any party member (ignores ALL armor and defense); drains 25% of damage dealt as both HP AND mana simultaneously from the target; takes only half damage from physical attacks; on each kill gains a permanent stacking +10% damage bonus');
     if (def.isVampireLordAI)        lines.push('Vampire Lord: 40% life drain on melee hits; summons Vampire Spawn (40% per turn); AoE Hypnotic Gaze charms 1-2 party members for 2 rounds (20% per turn); when HP drops below 15% dissolves into Gaseous Form (takes only 1 damage from all sources, regenerates 10% HP per round for 2 rounds, then re-solidifies); Paladin Smite deals triple bonus damage');
     if (def.isMyconidSovereignAI)   lines.push('Spore Sovereign: every turn blasts the ENTIRE party with toxic spore cloud (AoE magic + 40% poison DoT); 60% chance per turn to spawn 1-2 Myconid minions; higher HP, defense, and minimum dungeon level than standard Myconid');
+
+    // New Monsters
+    if (def.mandrakeScream)         lines.push('Retributive Scream: whenever this creature takes any damage it unleashes a piercing sonic scream — AoE magic sonic blast hits the ENTIRE party for 40% of the damage just dealt (triggers on every hit, including AoE)');
+    if (def.isDarkTreantAI)         lines.push('Branch Barrage: lashes out with 4 powerful branch strikes per turn against random front-row targets; each hit has a 35% chance to hold the target in grasping bark for 2 rounds');
+    if (def.isMandrakeRootAI)       lines.push('Gnarled Strike: single melee attack with twisted root fists; see Retributive Scream above — every hit taken triggers an AoE sonic counter-blast');
+    if (def.isKillerVineAI)         lines.push('Vine Grasp: extends crushing vines to ensnare up to (dungeon level ÷ 6) targets simultaneously — each grappled target takes thorn and constriction melee damage with a 45% chance per target to be held fast for 2 rounds');
+    if (def.isCaveBearAI)           lines.push('Bear Assault: attacks with 2 savage claw rakes followed by 1 powerful bite — all 3 strikes target the front row');
+    if (def.isCaveLionAI)           lines.push('Lion Assault: delivers 2 claw swipes followed by 1 fierce bite — all 3 strikes target the front row');
+    if (def.isWinterWolfAI)         lines.push('Frost Predator: bites a front-row target each turn; 50% chance to follow up with an AoE cold breath that hits the ENTIRE party (magic damage) and inflicts a frost DoT (50% of breath damage per round for 3 rounds)');
+    if (def.isLizardFolkAI)         lines.push('Scaled Warrior: single melee attack per turn with 25% shield block — deflects any non-magic attack');
+    if (def.isDreadCultistAI)       lines.push('Abyssal Rites: unleashes AoE dark magic blast hitting the ENTIRE party each turn; 50% chance per turn to tear open a rift and summon a random demon into the fight');
 
     return lines;
 }

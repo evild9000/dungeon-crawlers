@@ -241,8 +241,9 @@ export class PartyMember {
         //   equipmentEnchants.weapon  = { level:1..7, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
         //   equipmentEnchants.offhand = { level:1..7, rider:'fire'|'acid'|'poison'|'lightning'|'ice'|null }
         //   equipmentEnchants.armor   = { level:1..7, spiked:bool, aoeWard:bool }
+        //   equipmentEnchants.shield  = { level:1..7 }  +1% block chance and +1 defense per rank
         //   Both spiked and aoeWard can be true simultaneously (purchased independently).
-        const DEFAULT_ENCHANTS = { weapon: null, offhand: null, armor: null };
+        const DEFAULT_ENCHANTS = { weapon: null, offhand: null, armor: null, shield: null };
         this.equipmentEnchants = equipmentEnchants
             ? { ...DEFAULT_ENCHANTS, ...equipmentEnchants }
             : { ...DEFAULT_ENCHANTS };
@@ -358,8 +359,9 @@ export class PartyMember {
     getEffectModifier(kind) {
         let total = 0;
         for (const e of this.activeEffects) {
-            if (kind === 'damage'  && typeof e.damageBonus  === 'number') total += e.damageBonus;
-            if (kind === 'defense' && typeof e.defenseBonus === 'number') total += e.defenseBonus;
+            if (kind === 'damage'  && typeof e.damageBonus      === 'number') total += e.damageBonus;
+            if (kind === 'melee'   && typeof e.meleeDamageBonus === 'number') total += e.meleeDamageBonus;
+            if (kind === 'defense' && typeof e.defenseBonus     === 'number') total += e.defenseBonus;
         }
         return total;
     }
@@ -382,7 +384,7 @@ export class PartyMember {
         if (type === 'melee') {
             return (c.meleeBonus || 0) + (s.meleeBonus || 0)
                  + (c.meleePerLevel || 0) * bonusBeyondL1
-                 + trinket + effect - hunger;
+                 + trinket + effect + this.getEffectModifier('melee') - hunger;
         }
         if (type === 'ranged') {
             return (c.rangedBonus || 0) + (s.rangedBonus || 0)
@@ -455,6 +457,7 @@ export class PartyMember {
              + this.getTrinketBonus('defense')
              + this.getEffectModifier('defense')
              + (this.wildShapeDefBonus || 0)
+             + this.getShieldDefenseBonus()
              - hunger;
     }
 
@@ -780,7 +783,7 @@ export class PartyMember {
         this.equipment[slot] = null;
         // Unequipping a weapon or armor wipes its enchantment (the artificer
         // "kit-tuned" the item to its wielder; swapping breaks the binding).
-        if (slot === 'weapon' || slot === 'offhand' || slot === 'armor') {
+        if (slot === 'weapon' || slot === 'offhand' || slot === 'armor' || slot === 'shield') {
             if (this.equipmentEnchants) this.equipmentEnchants[slot] = null;
         }
         if (['cloak', 'neck', 'ring1', 'ring2', 'belt'].includes(slot)) {
@@ -837,10 +840,14 @@ export class PartyMember {
         return (ench && ench.rider) || null;
     }
 
-    /** Current weapon enchant level (0-3). */
+    /** Current weapon enchant level (0-7). Legendary items bake in enchantLevel on the def. */
     getWeaponEnchantLevel() {
         const ench = this.equipmentEnchants && this.equipmentEnchants.weapon;
-        return (ench && ench.level) || 0;
+        const slotLevel = (ench && ench.level) || 0;
+        const wpnId = this.equipment && this.equipment.weapon;
+        const def = wpnId ? getItemDef(wpnId) : null;
+        const defLevel = (def && def.enchantLevel) || 0;
+        return Math.max(slotLevel, defLevel);
     }
 
     /** Returns true when this member has an offhand melee weapon equipped. */
@@ -867,10 +874,14 @@ export class PartyMember {
         return (ench && ench.rider) || null;
     }
 
-    /** Off-hand weapon enchant level (0-3, dual-wield only). */
+    /** Off-hand weapon enchant level (0-7, dual-wield only). Legendary items bake in enchantLevel. */
     getOffhandEnchantLevel() {
         const ench = this.equipmentEnchants && this.equipmentEnchants.offhand;
-        return (ench && ench.level) || 0;
+        const slotLevel = (ench && ench.level) || 0;
+        const offId = this.equipment && this.equipment.offhand;
+        const def = offId ? getItemDef(offId) : null;
+        const defLevel = (def && def.enchantLevel) || 0;
+        return Math.max(slotLevel, defLevel);
     }
 
     /** Current armor enchant level (0-3). */
@@ -879,12 +890,35 @@ export class PartyMember {
         return (ench && ench.level) || 0;
     }
 
+    /** Current shield enchant level (0-7). Legendary items bake in enchantLevel on the def. */
+    getShieldEnchantLevel() {
+        const ench = this.equipmentEnchants && this.equipmentEnchants.shield;
+        const slotLevel = (ench && ench.level) || 0;
+        const shieldId = this.equipment && this.equipment.shield;
+        const def = shieldId ? getItemDef(shieldId) : null;
+        const defLevel = (def && def.enchantLevel) || 0;
+        return Math.max(slotLevel, defLevel);
+    }
+
     getShieldBlockChance() {
         const shieldId = this.equipment.shield;
         if (!shieldId) return 0;
         const def = getItemDef(shieldId);
         if (!def || def.category !== ITEM_CATEGORY.SHIELD) return 0;
-        return def.blockChance || 0;
+        const ench = this.equipmentEnchants && this.equipmentEnchants.shield;
+        const slotLevel = (ench && ench.level) || 0;
+        return (def.blockChance || 0) + slotLevel * 0.01;
+    }
+
+    /** Defense bonus from shield: base blocking stat + 1 per enchant rank. */
+    getShieldDefenseBonus() {
+        const shieldId = this.equipment && this.equipment.shield;
+        if (!shieldId) return 0;
+        const def = getItemDef(shieldId);
+        if (!def || def.category !== ITEM_CATEGORY.SHIELD) return 0;
+        const ench = this.equipmentEnchants && this.equipmentEnchants.shield;
+        const slotLevel = (ench && ench.level) || 0;
+        return (def.blocking || 0) + slotLevel;
     }
 
     /**

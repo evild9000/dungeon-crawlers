@@ -122,9 +122,9 @@
             margin-bottom: 24px;
         }
 
-        #save-slots-list::-webkit-scrollbar { width: 6px; }
-        #save-slots-list::-webkit-scrollbar-track { background: #111; }
-        #save-slots-list::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+        #save-slots-list::-webkit-scrollbar { width: 8px; }
+        #save-slots-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #save-slots-list::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         .save-slot {
             display: flex;
@@ -383,7 +383,13 @@
             z-index: 30;
             pointer-events: none;
             flex-wrap: wrap;
+            max-height: 35vh;
+            overflow-y: auto;
         }
+
+        #party-hud::-webkit-scrollbar { width: 8px; }
+        #party-hud::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #party-hud::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         /* ---- HUD top bar (gold, food, buttons) ---- */
 
@@ -439,6 +445,7 @@
             background: rgba(20, 15, 8, 0.8);
             border: 1px solid #332a1a;
             border-radius: 4px;
+            position: relative;
             pointer-events: auto;
         }
 
@@ -521,8 +528,9 @@
             border: 1px solid #3d2a55; border-radius: 6px;
             padding: 20px; color: #d8cde8;
         }
-        .craft-content::-webkit-scrollbar { width: 6px; }
-        .craft-content::-webkit-scrollbar-thumb { background: #3d2a55; border-radius: 3px; }
+        .craft-content::-webkit-scrollbar { width: 8px; }
+        .craft-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .craft-content::-webkit-scrollbar-thumb { background: #4d3a65; border-radius: 4px; }
         .craft-header {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; padding-bottom: 10px;
@@ -638,8 +646,8 @@
             justify-content: flex-start;
             background: rgba(0, 0, 0, 0.88);
             z-index: 25;
-            padding: 24px 16px 130px;
-            overflow-y: auto;
+            padding: 8px 16px 130px;
+            overflow-y: hidden;
         }
 
         /* ---- Enemy cards ---- */
@@ -649,8 +657,17 @@
             justify-content: center;
             gap: 12px;
             flex-wrap: wrap;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 92vw;
+            max-height: 28vh;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
+
+        #combat-enemies::-webkit-scrollbar { width: 8px; }
+        #combat-enemies::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #combat-enemies::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         .combat-enemy-card {
             display: flex;
@@ -662,6 +679,7 @@
             border-radius: 4px;
             width: 110px;
             transition: all 0.2s;
+            position: relative;
         }
 
         .combat-enemy-card.defeated {
@@ -745,7 +763,7 @@
         #combat-log-enemy  .combat-log-label { color: #bb6666; background: rgba(50,20,20,0.6); }
         #combat-log-player-inner,
         #combat-log-enemy-inner {
-            height: 440px;
+            height: min(440px, 32vh);
             overflow-y: auto;
             padding: 8px 10px;
             font-size: 12px;
@@ -754,11 +772,11 @@
         #combat-log-player-inner { color: #a0cc88; }
         #combat-log-enemy-inner  { color: #cc9988; }
         #combat-log-player-inner::-webkit-scrollbar,
-        #combat-log-enemy-inner::-webkit-scrollbar  { width: 4px; }
+        #combat-log-enemy-inner::-webkit-scrollbar  { width: 8px; }
         #combat-log-player-inner::-webkit-scrollbar-track,
-        #combat-log-enemy-inner::-webkit-scrollbar-track  { background: transparent; }
+        #combat-log-enemy-inner::-webkit-scrollbar-track  { background: rgba(0,0,0,0.3); border-radius: 4px; }
         #combat-log-player-inner::-webkit-scrollbar-thumb,
-        #combat-log-enemy-inner::-webkit-scrollbar-thumb  { background: #332a1a; border-radius: 3px; }
+        #combat-log-enemy-inner::-webkit-scrollbar-thumb  { background: #554433; border-radius: 4px; }
         #combat-log-player-inner p,
         #combat-log-enemy-inner  p {
             margin: 0 0 3px;
@@ -796,14 +814,29 @@
             color: #aa9966;
         }
 
-        #combat-log::-webkit-scrollbar { width: 5px; }
-        #combat-log::-webkit-scrollbar-track { background: transparent; }
-        #combat-log::-webkit-scrollbar-thumb { background: #332a1a; border-radius: 3px; }
+        #combat-log::-webkit-scrollbar { width: 8px; }
+        #combat-log::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #combat-log::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         #combat-log p {
             margin: 0 0 4px;
             padding: 2px 0;
             border-bottom: 1px solid rgba(50, 40, 25, 0.25);
+        }
+
+        /* ---- Round counter ---- */
+
+        #combat-round-counter {
+            font-size: 17px;
+            font-weight: bold;
+            color: #e8c060;
+            letter-spacing: 3px;
+            text-align: center;
+            margin-bottom: 6px;
+            padding: 4px 20px;
+            background: rgba(40, 28, 8, 0.80);
+            border: 1px solid #665530;
+            border-radius: 4px;
         }
 
         /* ---- Turn info ---- */
@@ -815,6 +848,12 @@
             min-height: 22px;
             text-align: center;
             letter-spacing: 1px;
+        }
+
+        /* ---- Active-turn pulse animation ---- */
+        @keyframes turn-active-pulse {
+            from { opacity: 1; }
+            to   { opacity: 0.3; }
         }
 
         /* ---- Action buttons ---- */
@@ -869,6 +908,22 @@
         .combat-end-msg.victory { color: #88cc44; text-shadow: 0 0 20px rgba(136,204,68,0.4); }
         .combat-end-msg.defeat  { color: #cc4444; text-shadow: 0 0 20px rgba(204,68,68,0.4); }
         .combat-end-msg.fled    { color: #ccaa44; text-shadow: 0 0 20px rgba(204,170,68,0.4); }
+
+        /* ---- Loot scroll wrapper (post-combat victory screen) ---- */
+
+        .combat-loot-scroll {
+            overflow-y: auto;
+            max-height: min(45vh, 380px);
+            width: 100%;
+            padding: 0 4px;
+            margin-bottom: 12px;
+            scrollbar-width: thin;
+            scrollbar-color: #554430 #1a150e;
+        }
+        .combat-loot-scroll::-webkit-scrollbar { width: 8px; }
+        .combat-loot-scroll::-webkit-scrollbar-track { background: #1a150e; border-radius: 4px; }
+        .combat-loot-scroll::-webkit-scrollbar-thumb { background: #554430; border-radius: 4px; }
+        .combat-loot-scroll::-webkit-scrollbar-thumb:hover { background: #887755; }
 
         /* ---- Loot summary ---- */
 
@@ -950,9 +1005,9 @@
             min-height: 0;
         }
 
-        #log-content::-webkit-scrollbar { width: 5px; }
-        #log-content::-webkit-scrollbar-track { background: transparent; }
-        #log-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+        #log-content::-webkit-scrollbar { width: 8px; }
+        #log-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #log-content::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         .log-entry {
             padding: 3px 0;
@@ -1049,8 +1104,8 @@
         }
 
         #trap-modal-content {
-            width: 460px;
-            max-width: 92vw;
+            width: 640px;
+            max-width: 96vw;
             background: linear-gradient(180deg, #1e1810 0%, #141008 100%);
             border: 2px solid #cc8844;
             border-radius: 6px;
@@ -1079,6 +1134,7 @@
 
         #trap-modal-btns {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             justify-content: center;
         }
@@ -1193,9 +1249,9 @@
             padding: 20px;
         }
 
-        #inventory-content::-webkit-scrollbar { width: 5px; }
-        #inventory-content::-webkit-scrollbar-track { background: transparent; }
-        #inventory-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+        #inventory-content::-webkit-scrollbar { width: 8px; }
+        #inventory-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #inventory-content::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         .inv-gold-row {
             text-align: center;
@@ -1679,9 +1735,9 @@
             padding: 24px 28px;
         }
 
-        #help-content::-webkit-scrollbar { width: 5px; }
-        #help-content::-webkit-scrollbar-track { background: transparent; }
-        #help-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+        #help-content::-webkit-scrollbar { width: 8px; }
+        #help-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #help-content::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         #help-content h2 {
             font-size: 22px;
@@ -1819,6 +1875,95 @@
         }
         .class-help-open-btn:hover { background: #3a2c10; }
 
+        #combat-help-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.88);
+            z-index: 300;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #combat-help-content {
+            background: #1a1408;
+            border: 1px solid #665533;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 960px;
+            margin: 0 auto;
+            color: #c8b472;
+            font-family: monospace;
+        }
+        .combat-help-section {
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #332a1a;
+        }
+        .combat-help-section:last-child { border-bottom: none; }
+        .combat-help-section-title {
+            font-size: 13px;
+            color: #e8d5a8;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .combat-phase-label {
+            display: inline-block;
+            background: #2a1e0a;
+            border: 1px solid #665533;
+            color: #d4b87b;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 1px 7px;
+            border-radius: 3px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .combat-help-row {
+            font-size: 12px;
+            color: #aa9966;
+            line-height: 1.55;
+            margin-bottom: 4px;
+            padding-left: 10px;
+        }
+        .combat-help-row b { color: #d4b87b; }
+        .combat-help-note {
+            font-size: 11px;
+            color: #776644;
+            font-style: italic;
+            padding-left: 10px;
+            margin-bottom: 4px;
+        }
+        .combat-check-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+        .combat-check-table td {
+            font-size: 12px;
+            color: #aa9966;
+            padding: 2px 4px 2px 0;
+            vertical-align: top;
+            line-height: 1.45;
+        }
+        .combat-check-label {
+            color: #d4b87b;
+            font-weight: bold;
+            white-space: nowrap;
+            min-width: 200px;
+            padding-right: 10px !important;
+        }
+        .combat-check-kind {
+            color: #887744;
+            white-space: nowrap;
+            min-width: 130px;
+            padding-right: 10px !important;
+            font-size: 11px;
+        }
+
         #btn-close-help {
             margin-top: 12px;
             width: 100%;
@@ -1911,9 +2056,9 @@
             padding: 20px;
         }
 
-        #shop-content::-webkit-scrollbar { width: 5px; }
-        #shop-content::-webkit-scrollbar-track { background: transparent; }
-        #shop-content::-webkit-scrollbar-thumb { background: #443322; border-radius: 3px; }
+        #shop-content::-webkit-scrollbar { width: 8px; }
+        #shop-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        #shop-content::-webkit-scrollbar-thumb { background: #554433; border-radius: 4px; }
 
         .shop-header {
             display: flex;
@@ -2232,7 +2377,7 @@
                 <div class="help-row"><span class="help-key">F</span> Open the <b>Mage Familiar</b> panel — level 25+ mages can summon, name, and upgrade familiars</div>
                 <div class="help-row"><span class="help-key">L</span> Open the Adventure Log (combat &amp; history). Split combat logs retain 600 lines each and only auto-scroll when you are already near the bottom.</div>
                 <div class="help-row"><span class="help-key">M</span> Open the dungeon Minimap (fog-of-war — only explored cells are shown)</div>
-                <div class="help-row"><span class="help-key">K</span> Open the <b>Crafting</b> menu (requires an Artificer in the party) — enchant weapons/armor, brew potions, forge &amp; repair golems</div>
+                <div class="help-row"><span class="help-key">K</span> Open the <b>Crafting</b> menu (requires an Artificer in the party) — enchant weapons, armor, and shields; brew potions; forge &amp; repair golems</div>
                 <div class="help-row"><span class="help-key">V</span> Open the <b>Party Spells</b> panel out of combat — cast bard songs, Cleric resurrection, or other out-of-combat party abilities</div>
                 <div class="help-row"><span class="help-key">X</span> Open the <b>Lore Book</b> — browse monsters you have encountered, their tags, special abilities, and sprite</div>
                 <div class="help-row"><span class="help-key">H</span> Toggle this help menu</div>
@@ -2279,7 +2424,7 @@
                 <div class="help-section-title">Initiative &amp; Turn Order</div>
                 <div class="help-row">At the start of each combat, every participant — allies and enemies alike — rolls a <b>d12</b> to determine turn order. Higher rolls act first; ties are broken randomly.</div>
                 <div class="help-row"><b>Class bonuses:</b> Rogues, Monks, and Rangers roll at <b>+1</b> initiative.</div>
-                <div class="help-row">The initiative order is <b>fixed for the whole combat</b> — the same sequence repeats every round (dead combatants are simply skipped).</div>
+                <div class="help-row">Initiative is <b>re-rolled every round</b> — all surviving combatants (allies and enemies) roll fresh d12s at the start of each round, so turn order can shift. Dead combatants are skipped. Monsters that join mid-combat as <b>wanderers</b> enter the initiative pool for the next round when they arrive.</div>
                 <div class="help-row">Summons created <b>mid-combat</b> inherit their summoner's initiative and are inserted <b>immediately after the caster's slot</b> — they act <b>this round</b>, not the next.</div>
             </div>
 
@@ -2292,11 +2437,12 @@
                 <div class="help-row"><b>Rogue Backstab</b>: 3× stamina for <b>2× damage plus +10% per rogue level</b> (+100% at L10). Rogues can also attempt to spot and disarm traps. At <b>L25</b>, successful disarms recover a Captured Trap for combat use, and rogues can evade magic/AoE attacks at level% chance for 2 stamina.</div>
                 <div class="help-row"><b>Equipped weapons</b> add their power to matching attack types.</div>
                 <div class="help-row"><b>Equipped armor</b> reduces incoming damage by its blocking value. See Armor Restrictions below.</div>
-                <div class="help-row"><b>Equipped shields</b> have a <b>25% chance to completely block</b> an incoming attack. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers/Artificers cannot use shields at all.</div>
+                <div class="help-row"><b>Equipped shields</b> have a base <b>25% chance to completely block</b> a melee, ranged, or magic/AoE hit (legendary shield: 40%). Each Artificer shield enchant rank (+1 to +7) raises block chance by an additional +1% and adds +1 defense. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers/Artificers cannot use shields at all.</div>
                 <div class="help-row"><b>Warrior Defend Mode (L20)</b> — A warrior in Defend Mode intercepts attacks targeting any party member (melee, ranged, or magic/AoE). The warrior rolls their augmented block chance (shield base + 1%/3 warrior levels); on a hit, the original target takes no damage and the warrior absorbs <b>40% of the post-defense damage</b> instead. Toggling Defend Mode on/off costs the warrior's action that turn. <b>While in Defend Mode, the warrior's own melee, ranged, and magic attack buttons are all disabled</b> — only special/passive abilities remain available.</div>
                 <div class="help-row"><b>Warrior Stun Resistance</b> — Warriors have a passive <b>level × 2% chance to shrug off any stun</b> (caps at 95% at level 47+). A shrugged stun is fully negated and the warrior acts normally that turn.</div>
                 <div class="help-row"><b>Encounter size</b>: combat always pulls in enough adjacent monsters to match your party size (summons included).</div>
                 <div class="help-row">Fallen allies are <b>not</b> auto-revived at the end of combat — use a Resurrection Potion to bring them back.</div>
+                <div class="help-row"><button id="btn-combat-help-open" type="button" class="class-help-open-btn">&#x2694;&#xFE0F; Attack Resolution Order &rarr;</button></div>
             </div>
 
             <div class="help-section">
@@ -2320,7 +2466,7 @@
                 <div class="help-row"><b>&#x271D;&#xFE0F; Turned</b> — applied to undead enemies by cleric Turn Undead. Reduces the target's attack and defense for several rounds. Shown as ✝️ Turned badge.</div>
                 <div class="help-row"><b>&#x1F3B6; Disrupted</b> (Bard Dissonant Chord) — one-use-per-fight AoE: deals magic damage to <b>all enemies</b>, applies a <b>Disrupted</b> debuff (−attack/−defense for 1 round), and gives each a <b>50% stun chance</b>. Scale rises by +1 every 5 bard levels.</div>
                 <div class="help-row"><b>&#x1F3B5; Charmed</b> (Bard Charm Monster) — a successfully charmed enemy switches sides for floor(bard level / 5) rounds, fighting hostile enemies on your behalf. Immune: undead, elementals, constructs, bosses, and mega-bosses.</div>
-                <div class="help-row"><b>&#x270B; Quivering Palm</b> (Monk L20) — a unique internal DoT planted by the monk's Quivering Palm strike. Starts at the base melee roll and <b>doubles every round</b>, bypassing all armor and defense, for up to 10 doublings. Multiple monks can stack separate Quivering Palm effects on the same target.</div>
+                <div class="help-row"><b>&#x270B; Quivering Palm</b> (Monk L20) — a unique internal DoT planted by the monk's Quivering Palm strike. Starts at the base melee roll and multiplies by <b>(2 + level÷100)</b> each round (e.g. L30 = ×2.3, L100 = ×3.0), bypassing all armor and defense, for up to 10 multiplications. Multiple monks can stack separate Quivering Palm effects on the same target.</div>
                 <div class="help-row"><b>&#x1F9D8; Pressure Points</b> (Monk L30 passive) — each application of Quivering Palm by a L30+ monk also stacks a cumulative <b>&minus;1 defense</b> debuff on the target. Expires when that monk's QP expires. Immune: undead, incorporeal, elementals, constructs.</div>
                 <div class="help-row"><b>&#x1F578;&#xFE0F; Webbed / Immobilized</b> — the target cannot act for N rounds; its turn is skipped each round the effect persists. Applied by spider web attacks and naga constrict. Bosses and mega-bosses immediately tear free.</div>
                 <div class="help-row"><b>&#x1FAA8; Petrified</b> (Beholder / Medusa) — the target is turned to stone: immobilized for 3 rounds (turn skipped) <em>and</em> gains +200 defense while petrified, making them nearly impervious to damage during that time. <b>Immune: incorporeal, construct, and elemental party members</b> (golems, spectres, ghosts, and undead summons cannot be petrified).</div>
@@ -2359,7 +2505,7 @@
 
             <div class="help-section">
                 <div class="help-section-title">Exploration</div>
-                <div class="help-row">Walk into enemies — or let them walk into you — to begin combat. Monsters in adjacent cells join the fight, scaled to party size.</div>
+                <div class="help-row">Walk into enemies — or let them walk into you — to begin combat. The enemy you touch sets the <b>encounter theme</b>: fresh monsters of the same type fill the group up to party size, plus one extra per 10 dungeon levels. Nearby monsters on the map do <b>not</b> rush in immediately — but at the start of each new combat round, every hostile enemy within <b>10 grid squares</b> rolls a chance to be drawn in by the sounds of battle (<b>50%</b> base, minus <b>5%</b> per grid square of distance — e.g. a monster 5E+3S away is ~5.8 squares, ~21% chance). Bosses and mega-bosses never wander into an ongoing fight.</div>
                 <div class="help-row">The <b>Wandering Tinkerer</b> roams the dungeon. Bumping into them opens a shop (no combat).</div>
                 <div class="help-row">Rest at any time in safety to recover (<b>R</b>). Resting costs <b>1 food per living party member</b> (golems don't eat). Keep food stocked!</div>
                 <div class="help-row"><b>&#x26A0;&#xFE0F; Traps</b>: invisible pressure plates lurk on some floor tiles. Types are randomised per trap — pit, swinging blade, dart volley, arrow trap, falling rocks, poison spray, acid jet, fire blast, lightning rune, choking gas, ceiling crusher, scything pendulum, snare net, spring spikes. If you have a <b>Rogue</b> in the party, they may spot the trap before you step on it and you can attempt to disarm it — success scales with rogue level. Without a rogue, you trigger the trap and the whole party takes damage. A <b>modal dialog</b> announces every sprung trap, every successful disarm (revealing any hidden treasure), and every failed disarm. <b>Poison-kind traps</b> (darts, poison spray, choking gas) also apply a poison DoT.</div>
@@ -2428,6 +2574,7 @@
                     </ul>
                 </div>
                 <div class="help-row"><b>Armor Enchants</b> — +1 / +2 / +3 to an equipped armor piece (flat bonus defense). Unequipping clears the enchant.</div>
+                <div class="help-row"><b>Shield Enchants</b> — +1 to +7 ranks on an equipped shield (same cost as armor). Each rank adds <b>+1% block chance</b> (stacks with the shield's base chance) and <b>+1 defense</b>. Unequipping clears the enchant.</div>
                 <div class="help-row"><b>Trinket Crafting</b> — Artificers L20+ can upgrade equipped trinkets up to +7; dual-aspect trinkets cost twice as much because both bonuses improve. At <b>Artificer L25</b>, effective level 4+ trinkets can also receive a <b>separate vitality augment</b> with its own level and cost track. Augment levels <b>4/5/6/7</b> add <b>+5%/+10%/+15%/+20%</b> to the wearer's max HP, stamina, and mana.</div>
                 <div class="help-row"><b>Potions &amp; Scrolls</b>:
                     <ul style="margin:4px 0 0 24px;padding:0;">
@@ -2509,6 +2656,386 @@
         <button id="btn-close-help" class="menu-btn">Close</button>
     </div>
 
+    <!-- ======== COMBAT RESOLUTION OVERLAY ======== -->
+    <div id="combat-help-overlay">
+        <div id="combat-help-content">
+            <div class="class-help-header">
+                <button id="btn-back-combat-help" type="button" class="menu-btn">&#x2190; Back</button>
+                <h2>Attack Resolution Order</h2>
+                <button id="btn-close-combat-help" type="button" class="menu-btn">&#x2715; Close</button>
+            </div>
+
+            <div class="combat-help-section">
+                <div class="combat-help-section-title">How an Enemy Attack Is Resolved</div>
+                <div class="combat-help-row">Every enemy attack — melee, ranged, or magic/AoE — passes through a fixed sequence of checks before damage lands. Each check either <b>ends the attack early</b> (no damage) or falls through to the next. Damage reductions that modify the raw number do not end the chain. The phases below are evaluated in strict order.</div>
+            </div>
+
+            <!-- PHASE 1 -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Phase 1 &mdash; Raw Damage Setup</div>
+                <div class="combat-help-row">The monster rolls its base damage, then three global multipliers are applied before any defense is checked.</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">Boss Aura</td>
+                        <td class="combat-check-kind">All types &mdash; multiplier</td>
+                        <td>Each other living boss in the enemy group adds <b>+25%</b> to raw damage; each mega-boss adds <b>+50%</b>. These stack.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Paladin Dragonslayer Aura</td>
+                        <td class="combat-check-kind">Dragon magic/AoE &mdash; reduction</td>
+                        <td>If a paladin has Dragonslayer active and has a shield equipped, dragon magic and AoE damage is reduced by <b>(paladin level + 10)%</b> for the whole party before anything else, capped at 90%.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Per-Level Monster Scaling</td>
+                        <td class="combat-check-kind">Melee / Ranged &mdash; multiplier</td>
+                        <td>Melee attacks gain <b>+2% per monster level</b>; ranged attacks gain <b>+1.5% per monster level</b>. Magic damage is not scaled here.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PHASE 2 -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Phase 2 &mdash; Pre-Defense Reductions</div>
+                <div class="combat-help-row">These checks reduce or deflect damage before the target's armor or defenses are counted. <b>Eagle Totem and Vampire Gaseous Form end the attack entirely</b>; the others only reduce the raw damage value.</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">Shadow Step</td>
+                        <td class="combat-check-kind">All types &mdash; full miss</td>
+                        <td>A rogue in Shadow Step is untargetable. The attack passes through harmlessly — no damage, no riders, no follow-ups.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Eagle Totem Deflect</td>
+                        <td class="combat-check-kind">Ranged only &mdash; full miss + reflect</td>
+                        <td>Any ranger with Eagle Totem rolls <b>level &times; rate%</b> (cap 95%). On success, the shot is reflected back at the attacker for a fraction of the raw damage. Attack ends; target is unharmed.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Ranger Pixie Totem Resist</td>
+                        <td class="combat-check-kind">Magic / AoE &mdash; reduction</td>
+                        <td>If the target is a ranger with Pixie Totem active, incoming magic and AoE damage is reduced by a flat percentage.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Druid Pixie Wild Shape Resist</td>
+                        <td class="combat-check-kind">Magic / AoE &mdash; reduction</td>
+                        <td>A druid in Pixie wild shape takes <b>50% less</b> magic and AoE damage.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Armor AoE Ward</td>
+                        <td class="combat-check-kind">AoE only &mdash; reduction</td>
+                        <td>A non-summoned target with an armor enchant at <b>+4 or higher</b> with the AoE Ward quality reduces AoE damage: +4 = 10%, +5 = 20%, +6 = 30%, +7 = 40%.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Vampire Gaseous Form</td>
+                        <td class="combat-check-kind">All types &mdash; full immunity</td>
+                        <td>A vampire summon already in gaseous form is completely immune to all incoming damage.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Paladin Aura of Righteousness (L30)</td>
+                        <td class="combat-check-kind">All types &mdash; reduction</td>
+                        <td>Reduces raw damage by the paladin's aura percentage. Applied here so that intercepting warriors also benefit from the reduction.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PHASE 3 -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Phase 3 &mdash; Personal Defense Checks</div>
+                <div class="combat-help-row">Checked in strict order. A <b>successful</b> check ends the attack immediately (no damage, no riders). A <b>failed</b> check falls through to the next — all eligible checks are always evaluated regardless of whether prior ones failed. Each check is an independent roll.</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">Druid Eagle Wild Shape Evasion</td>
+                        <td class="combat-check-kind">Ranged only</td>
+                        <td>A druid in Eagle wild shape rolls <b>level &times; rate%</b> (cap 95%) to evade a ranged attack.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Rogue AoE / Magic Evasion (L25)</td>
+                        <td class="combat-check-kind">Magic / AoE only</td>
+                        <td>Costs 2 ST. Roll <b>level%</b> (cap 100%). On success, the rogue sidesteps the spell entirely.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Mirror Image (Mage L20)</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>If the mage has mirror images active, one image absorbs the hit and shatters. Works against any attack type.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Monk Active Dodge</td>
+                        <td class="combat-check-kind">Melee only</td>
+                        <td>Costs ST + MP. Roll dodge%. On success: no damage; if Ki unlocked, generates 1 Ki charge. If this roll fails but the monk still has resources, the <b>Monk Passive Reduction</b> still applies later in damage calculation.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Shield Block</td>
+                        <td class="combat-check-kind">Melee, Ranged, Magic/AoE</td>
+                        <td>Rolls the target's shield block chance against <b>all</b> attack types. Base 25% (legendary shield: 40%); each Artificer enchant rank adds +1% (max +7%, for up to 32% / 47%). Does not apply to phase strikes. Mages, Monks, Necromancers, and Artificers cannot equip shields.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Death Knight Spectral Shield</td>
+                        <td class="combat-check-kind">Melee, Ranged, Magic/AoE</td>
+                        <td>Flat <b>25%</b> block chance for death knight summons against all attack types.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Golem Shield Attachment</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>A golem summon with a shield attachment rolls its block chance against any attack type.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Squire Shield</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>Squire summons have a flat <b>25%</b> block chance against any attack type.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Pixie / Pixie Princess Dodge</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>Pixie summons roll <b>25% + summoner level%</b> (cap 90%) to dodge any attack.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PHASE 4 -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Phase 4 &mdash; Interceptors</div>
+                <div class="combat-help-row">Checked <b>after all personal defenses</b>. This ordering ensures that a target's own dodge, block, or evasion is always tried first — the interceptor only steps in when the target cannot stop the blow themselves. Phase strikes from certain enemies bypass both interceptors entirely.</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">Shambling Mound Intercept</td>
+                        <td class="combat-check-kind">All types &mdash; checked first</td>
+                        <td>A druid's shambling mound summon rolls <b>50% + (druid level / 300)</b> to step in front of its summoner. The mound takes the hit (raw damage minus mound armor and defense). Checked before the warrior because summons are disposable.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Warrior Defend Mode Intercept</td>
+                        <td class="combat-check-kind">All types &mdash; checked second</td>
+                        <td>Each warrior in Defend Mode (not the target) rolls their augmented shield block chance. On success, the warrior steps in front: the target takes no damage; the warrior takes <b>40% of post-defense raw damage</b> (min 1). Multiple warriors are tried highest-HP first. After a successful intercept, the warrior may retaliate (L25+).</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PHASE 5 -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Phase 5 &mdash; Damage Calculation</div>
+                <div class="combat-help-row">If the attack reaches this phase it will deal damage. Reductions are applied in the order listed.</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">Phase Strike Bypass</td>
+                        <td class="combat-check-kind">Certain enemies</td>
+                        <td>Incorporeal or phasing attackers set armor and defense to 0. The attack log reads "phases through defences." Rage, monk passive reduction, and defending-mode halving still apply.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Defending Mode Halving</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>If the target used the Defend action this round, damage is halved before armor and defense are subtracted.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Armor Blocking</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>The target's equipped armor value is subtracted from incoming damage (minimum 1 after all reductions). Bypassed by phase strikes.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Defense</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>The target's total defense (class + species + levels + trinkets + summon bonus) is subtracted from incoming damage. Bypassed by phase strikes.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Barbarian Rage Halving</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>A raging barbarian takes <b>half damage</b> after armor/defense. Cannot be bypassed by phase strikes.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Monk Passive Reduction</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>Even when the active dodge roll failed (or was ineligible), a monk with both ST and MP above 0 reduces damage by their current dodge%. Magic/AoE attacks use <b>2/3</b> of the dodge % for this reduction. Cannot be bypassed by phase strikes.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Lich Form Magic Resist</td>
+                        <td class="combat-check-kind">Magic / AoE only</td>
+                        <td>A necromancer in Lich Form resists magic/AoE damage: base 50%, +1% per 4 levels above L20, capped at 90%.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Faerie Queen Magic Resist</td>
+                        <td class="combat-check-kind">Magic / AoE only</td>
+                        <td>Faerie Queen summons take 50% less damage from magic and AoE hits.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Adamantine / Divine Soul Golem</td>
+                        <td class="combat-check-kind">Magic, AoE, Ranged</td>
+                        <td>These golem types take half damage from magic, AoE, and ranged attacks.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Bard Thunderous Drums (L30)</td>
+                        <td class="combat-check-kind">Sonic / Psychic only</td>
+                        <td>A bard with Thunderous Drums active reduces sonic and psychic attack damage by up to bard level%.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PHASE 6 -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Phase 6 &mdash; Damage Application &amp; Post-Hit Effects</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">Barbarian Temp HP (L20)</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>Battle Fury temp HP absorbs incoming damage first. If fully absorbed, the real health pool is untouched. Remaining damage bleeds through to real HP.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">HP Damage Applied</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>Final damage is subtracted from target HP. Minimum 1 after all reductions. Special on-death effects (Lich Phial, druid wild shape exit, vampire gaseous form) trigger here.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Paladin Fire Aura Counter-Strike</td>
+                        <td class="combat-check-kind">Melee only</td>
+                        <td>If the target is a paladin with Fire Aura active, the attacker takes fire damage equal to the paladin's rolled melee damage, ignoring the attacker's defense.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Armor Spikes Reflect</td>
+                        <td class="combat-check-kind">Melee only</td>
+                        <td>Spiked armor enchant (+4&rarr;25%, +5&rarr;50%, +6&rarr;75%, +7&rarr;100%) reflects the post-mitigation damage value back at the attacker.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Clay Golem Reflect</td>
+                        <td class="combat-check-kind">All types</td>
+                        <td>Clay golem summons have a percentage chance each hit to reflect a fraction of post-mitigation damage back at the attacker.</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Secondary Riders</td>
+                        <td class="combat-check-kind">Melee only (unless noted)</td>
+                        <td>If the target survives: <b>Poison</b> (typeDef poisonChance), <b>Stun</b> (typeDef stunChance), <b>Web / Paralysis</b> (typeDef webChance / paralyzingBite), and other monster-specific melee riders (constrict, life drain, etc.) are each rolled independently. Undead and incorporeal summons are immune to several of these.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- MONSTER FOLLOW-UP ATTACKS -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Monster Follow-Up Attacks (Dungeon Level 25+)</div>
+                <div class="combat-help-row">Starting at dungeon level 25, every primary melee or ranged hit that successfully connects (passes all defense checks and deals damage) rolls up to five additional follow-up attacks. <b>Each tier is rolled independently</b> — a failed roll does not stop the remaining tiers from being attempted.</div>
+                <div class="combat-help-row">Follow-up attacks go through the full Phase 3–6 resolution (target can dodge, block, etc.). They inherit the same attack type (melee follow-ups target the front row; ranged follow-ups target any alive party member) and include boss damage bonuses. Secondary riders (stun, poison, web, etc.) also apply on follow-up hits.</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label">2nd Attack</td>
+                        <td class="combat-check-kind">DL 25+</td>
+                        <td>Chance = <b>dungeon level &divide; 100</b> (e.g. DL 50 = 50%, DL 100 = guaranteed)</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">3rd Attack</td>
+                        <td class="combat-check-kind">DL 25+</td>
+                        <td>Chance = <b>dungeon level &divide; 200</b> (DL 100 = 50%)</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">4th Attack</td>
+                        <td class="combat-check-kind">DL 25+</td>
+                        <td>Chance = <b>dungeon level &divide; 400</b> (DL 100 = 25%)</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">5th Attack</td>
+                        <td class="combat-check-kind">DL 50+</td>
+                        <td>Chance = <b>dungeon level &divide; 800</b> (DL 100 = 12.5%)</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">6th Attack</td>
+                        <td class="combat-check-kind">DL 80+</td>
+                        <td>Chance = <b>dungeon level &divide; 1600</b> (DL 100 = 6.25%)</td>
+                    </tr>
+                </table>
+                <div class="combat-help-row" style="margin-top:8px;"><b>Boss damage bonuses per hit:</b> Regular boss +DL&times;3 (melee/ranged) or +DL&times;2 (magic); Mega-boss +DL&times;4 or +DL&times;3; Super-boss +DL&times;4.5 or +DL&times;3.5.</div>
+                <div class="combat-help-note">Example at DL 100: a monster with 3 base attacks per turn has a guaranteed 2nd follow-up per hit, 50% chance of a 3rd, 25% for a 4th, 12.5% for a 5th, and 6.25% for a 6th. Expected total hits: 3 &times; ~2.94 &asymp; 9 per turn. Maximum possible: 18 hits.</div>
+            </div>
+
+            <!-- QUICK REFERENCE -->
+            <div class="combat-help-section">
+                <div class="combat-phase-label">Quick Reference &mdash; What Applies to What</div>
+                <table class="combat-check-table">
+                    <tr>
+                        <td class="combat-check-label" style="color:#887744;font-weight:normal;">Defense</td>
+                        <td class="combat-check-kind" style="color:#887744;">Melee</td>
+                        <td class="combat-check-kind" style="color:#887744;">Ranged</td>
+                        <td style="font-size:11px;color:#887744;">Magic / AoE</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Shadow Step</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Eagle Totem deflect</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2014;</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Paladin Aura of Righteousness</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Mirror Image</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Monk active dodge</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2014;</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Shield block</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Shambling Mound intercept</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Warrior Defend Mode intercept</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Armor / Defense subtraction</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Barbarian Rage halving</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Monk passive reduction</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Lich Form resist</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">AoE Ward (armor enchant)</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td style="font-size:12px;color:#aa9966;">AoE only</td>
+                    </tr>
+                    <tr>
+                        <td class="combat-check-label">Phase Strike bypass</td>
+                        <td colspan="3" style="font-size:12px;color:#aa9966;">Bypasses armor + defense + all interceptors. Does NOT bypass rage, monk passive, or defending-mode halving.</td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
     <!-- ======== CLASS ABILITIES OVERLAY ======== -->
     <div id="class-help-overlay">
         <div id="class-help-content">
@@ -2528,7 +3055,8 @@
                     <tr><td class="ability-level">L5+</td><td><b>Extra Melee Attacks</b> — +1 additional attack every 5 levels (L5&rarr;+1, L10&rarr;+2, L15&rarr;+3, L20&rarr;+4, &hellip;).</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>Defend Mode</b> (toggle, uses action) — Intercepts attacks aimed at any ally using augmented shield block chance (base + 1%/3 warrior levels). On success: original target takes no damage; warrior takes <b>40% of post-defense damage</b> (min 1). Covers melee, ranged, and magic/AoE. Own attacks disabled while active.</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Retaliatory Strike</b> — After each successful intercept: <b>25% + (level/2)%</b> chance to immediately counter with a <b>75% damage melee strike</b> against the attacker.</td></tr>
-                    <tr><td class="ability-level">L30</td><td><b>Summon Squires</b> (10 ST, once/combat) — Summons squires to the front row: <b>1 at L30, 2 at L60, 3 at L90</b>. Each squire attacks floor(level/15) times using 66% of warrior damage, has 66% warrior defense, and a 25% shield-block chance. &bull; <b>Formation</b> (free action toggle, <b>10 ST/rd</b>) — while squires are alive in formation, all warrior melee, retaliatory strikes, and squire attacks deal <b>&times;(1 + 0.15 &times; formation members)</b> damage (e.g. 2 members: &times;1.30, 4 members: &times;1.60). Each formation hit has a <b>(level&divide;2)%</b> crit chance; a crit deals <b>+100% + level%</b> bonus damage (e.g. L30: 100-pt hit → 230; L60: → 260; L90: → 290). Squires also make an opportunity strike after each warrior <b>Retaliatory Strike</b> (requires Defend Mode + Formation active; triggers independently per squire at (level + 10)% chance).</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Summon Squires</b> (10 ST, once/combat) — Summons squires to the front row: <b>1 at L30, 2 at L60, 3 at L90</b>. Each squire attacks floor(level/15) times using 66% of warrior damage, has 66% warrior defense, and a 25% shield-block chance.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Formation</b> (free action toggle, <b>10 ST/rd</b>) — while squires are alive in formation, all warrior melee, retaliatory strikes, and squire attacks deal <b>&times;(1 + 0.15 &times; formation members)</b> damage (e.g. 2 members: &times;1.30, 4 members: &times;1.60). Each formation hit has a <b>(level&divide;2)%</b> crit chance; a crit deals <b>+100% + level%</b> bonus damage (e.g. L30: 100-pt hit &rarr; 230; L60: &rarr; 260; L90: &rarr; 290). Squires also make an opportunity strike after each warrior <b>Retaliatory Strike</b> (requires Defend Mode + Formation active; triggers independently per squire at (level + 10)% chance).</td></tr>
                 </table>
             </div>
 
@@ -2538,14 +3066,14 @@
                 <div class="class-meta"><b>Stats:</b> +25% HP/ST, &minus;50% mana &nbsp;|&nbsp; +1 ranged &nbsp;|&nbsp; No plate; shield OK (not with bow)</div>
                 <div class="class-meta"><b>Per level:</b> +1 ranged, +3% crit chance</div>
                 <table class="ability-table">
-                    <tr><td class="ability-level">All</td><td><b>Favored Enemy</b> — choose a category; Rangers ignore defense and gain 1%/3 levels instakill chance vs favored type (bosses take &times;4 ranged instead of instant death).</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Favored Enemy</b> — choose a category; Rangers ignore defense, deal <b>+level&times;2% bonus damage</b> (L30 = +60%), and gain 1%/3 levels instakill chance vs favored type (bosses take &times;4 ranged instead of instant death).</td></tr>
                     <tr><td class="ability-level">All</td><td><b>Summon Woodland Beast</b> (7 MP) — calls a beast to fight for the party. Beasts act immediately on summon and can be healed by clerics. Upgrades unlock at L10.<br>
 &#x1F43A; <b>Wolf</b> — front-row melee; every bite inflicts stacking <b>Bleed</b> (100% of hit/round &times; 3+⌊level/33⌋ rounds; bleeds from multiple bites stack independently); +7 HP/level, +1 def/level. Extra attack at L33+ targets a different enemy. <em>L10+: Wolf Pack</em> — one extra wolf summoned per cast.<br>
 &#x1F43B; <b>Bear</b> — front-row high-HP tank; <b>stun chance = 15% + level&times;2%</b>; +10 HP/level, +2 def/level, +1 dmg per 5 levels. Stun resistance = ranger level%. Extra attack at L25+. <em>L10+: Giant Bear</em> — +25% HP, additional +1 dmg per 3 levels (on top of base). Same stun formula.<br>
 &#x1F985; <b>Eagle</b> — back-row ranged striker; <b>crit = 20% + level&times;2%</b>; crits deal &times;(4 + level&times;2%) damage; defense = ranger level; +5 HP/level. Extra attack at L33+ hits same enemy. <em>L10+: Golden Eagle</em> — +25% HP, +5 defense, bonus ranged damage.<br>
 &#x1F9DA; <b>Pixie</b> — back-row AoE magic (hits all enemies); <b>dodge = 25% + ranger level%</b> (cap 90%); defense = ⌊ranger level/2⌋; <b>Fey Nature</b>: takes half damage from AoE magic; +2 HP/level. <em>L10+: Pixie Princess</em> — higher magic damage, +3 defense.</td></tr>
                     <tr><td class="ability-level">L3</td><td><b>Track</b> — reveals all enemies on the Minimap.</td></tr>
-                    <tr><td class="ability-level">L20</td><td><b>Explosive Arrow</b> (6 ST) — detonating arrow hits <em>all</em> hostile enemies for ~67% post-defense ranged damage each; half crit chance and half instakill chance vs favored enemies.</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Explosive Arrow</b> (6 ST) — detonating arrow hits <em>all</em> hostile enemies for ~67% post-defense ranged damage each; half crit chance and half instakill chance vs favored enemies; favored enemy armor ignore and +level&times;2% damage bonus apply.</td></tr>
                     <tr><td class="ability-level">L20+</td><td><b>Extra Favored Enemy slots</b> — +1 slot per 5 levels above L15 (L20&rarr;+1, L25&rarr;+2, L30&rarr;+3&hellip;).</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Animal Totem</b> (free action, 5 MP/round) — <b>Wolf:</b> bleed on ranged/explosive hits + 1 extra ranged attack/round. <b>Bear:</b> +floor(lvl/3) defense, 25% ranged stun. <b>Eagle:</b> level/2% damage bonus; level/2% deflect vs ranged (deflect fires before warrior intercept). <b>Pixie:</b> poison on hits + halves incoming magic/AoE damage.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>&#x1F3AF; Hunter's Mark</b> (free action, 5 ST + 5 MP) — marks a single enemy. The marked target receives <b>+15% damage from ALL sources</b> (all player attacks, summons, DoTs, AoE). Upkeep: 3 MP + 3 ST per round. If the <em>ranger</em> kills the marked target with any attack, the ranger gains a <b>free bonus turn</b>, allowing the mark to be moved to a new target and potentially chaining kills.</td></tr>
@@ -2564,6 +3092,8 @@
                     <tr><td class="ability-level">L20</td><td><b>Mirror Image</b> (35 MP) — creates floor(level/7) illusions (2 at L20). Each absorbs one hit of any type before shattering; all attacks target a random image while active.</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>AoE Crit</b> (passive) — each AoE target has a 1% chance per 2 mage levels to be critically struck for &times;(2.0 + level&times;0.01) damage (10% crit at L20).</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Familiar</b> (F key, out of combat) — permanent companion (10,000g per level). Level capped at mage level&minus;24 (max 20). Grants +10% magic/AoE damage and +1 defense per familiar level.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Arcane Overload</b> (passive) — after every Magic Barrage, a cascade of additional bursts may follow. First extra burst has (40% + level)% chance; each costs &times;1.5 the previous spell's mana; up to &lfloor;level/6&rfloor; extra bursts (5 at L30). Each burst hits the same number of random targets and applies AoE crit rules. Collapses early if mana runs out.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Elemental Rift</b> (free action, 1&times;/combat, 100 MP initial + 10 MP/round) — tears open a planar rift. Each round has (20% + mage level)% chance to summon a random elemental ally (fire, water, earth, or air) that fights for the party. Rift stays open until mana runs dry or the mage falls.</td></tr>
                 </table>
             </div>
 
@@ -2587,11 +3117,11 @@
             <div class="class-entry">
                 <div class="class-name">&#x1F9D8; Monk</div>
                 <div class="class-meta"><b>Stats:</b> Neutral (no modifier) &nbsp;|&nbsp; +1 melee, +1 ST/MP regen &nbsp;|&nbsp; Cloth only, no shield; melee costs both ST &amp; MP</div>
-                <div class="class-meta"><b>Per level:</b> +1 melee, +1% whirlwind, +1% dodge</div>
+                <div class="class-meta"><b>Per level:</b> +1 melee, +1% whirlwind, +0.5% dodge (i.e. +1% per 2 levels)</div>
                 <table class="ability-table">
-                    <tr><td class="ability-level">All</td><td><b>Dodge</b> (40% base, caps 95%) — 2 ST + 2 MP; dodged attacks deal no damage. <em>All</em> incoming damage is also reduced by the dodge% (non-dodge hits still reduced if ST &amp; MP &gt; 0).</td></tr>
-                    <tr><td class="ability-level">All</td><td><b>Whirlwind</b> (50% + 1%/level base) — on each melee strike, chance to also hit every other enemy.</td></tr>
-                    <tr><td class="ability-level">L20</td><td><b>Quivering Palm</b> — front-row strike for 2&times; melee damage, then plants a doubling internal DoT (bypasses all armor/defense). Starts at base melee roll, doubles each round, capped at 10 doublings.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Dodge</b> (40% base + 0.5%/level, caps 95%) — 2 ST + 2 MP; melee only; dodged attacks deal no damage. <em>All</em> incoming damage is also reduced by the dodge% (non-dodge hits still reduced if ST &amp; MP &gt; 0). Magic/AoE attacks use <b>2/3 of the dodge%</b> for this passive reduction.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Whirlwind</b> (50% + 1%/level base) — on each melee strike, chance to also hit every other enemy; Whirlwind hits deal <b>+level/2% bonus damage</b> (L30 = +15%).</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Quivering Palm</b> — front-row strike for <b>(2 + level÷100)&times;</b> melee damage (e.g. L30 = ×2.3), then plants an internal DoT that multiplies by the same factor each round (bypasses all armor/defense), capped at 10 multiplications.</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Avatar</b> (free toggle, 10 MP/round) — regenerates 10% HP/round; shrugs harmful states at turn start (16% + level/2%); adds chosen Fire/Air/Earth/Water elemental DoT to landed attacks.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Ki Charges &amp; Ki Surge</b> — each dodge or Avatar cleanse banks 1 Ki Charge (shown on HUD). Ki Surge (front row) expends all charges: strikes every enemy for melee &times; charges damage, bypassing all defense, counting as magic/AoE. Charges clear at combat end.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Pressure Points</b> (passive, on Quivering Palm) — each QP application stacks a cumulative &minus;1 defense debuff on the target. Expires when the matching QP expires. Immune: undead, incorporeal, elementals, constructs.</td></tr>
@@ -2626,7 +3156,7 @@
                     <tr><td class="ability-level">All</td><td><b>Dark Harvest</b> — sacrifice 10% max HP + 10% max ST &rarr; recover 10% max MP.</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>Lich Form</b> (toggle, 15 MP/round) — poison/stun/paralysis/mummy rot immunity; scaling magic/AoE resistance; extra undead summon slots; stamina-to-mana sustain; Phylactery revival on death.</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Demi-Lich</b> (20 MP, requires Lich Form) — back-row undead caster. HP = necromancer's current HP. Defense = 10 + level&times;2. Attacks floor(level/5) targets with defense-ignoring magic/AoE. Has Ghost Fear, half magic/AoE damage taken, and is immune to stun, web, holds, and poison.</td></tr>
-                    <tr><td class="ability-level">L30</td><td><b>Dark Apotheosis</b> (passive, requires Lich Form without Phylactery) — when a qualifying enemy dies in combat, its remains are stitched into a <b>Corpse Horror</b> undead summon. Only one Horror per necromancer; each additional kill instead strengthens the existing Horror (+5 melee skill, +2 attacks/round, +2% max HP). Immune to stitching: undead, constructs, elementals, incorporeal, demons, divine.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Dark Apotheosis</b> (passive, requires Lich Form without Phylactery) — when a qualifying enemy dies in combat, <b>one</b> necromancer stitches its remains into a <b>Corpse Horror</b> undead summon. Only one Horror can exist; each additional kill instead strengthens the existing Horror (+5 melee skill, +2 attacks/round, +2% max HP). The Horror is a combat-only summon — its accumulated power resets each fight. Immune to stitching: undead, constructs, elementals, incorporeal, demons, divine.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Plague Bringer</b> (35 MP) — inflicts permanent <b>Mummy Rot</b> DoT and <b>Plague Infection</b> on all qualifying enemies. When a plague-infected enemy dies, it <b>explodes</b> — dealing necrotic damage (based on necromancer level) to all other alive enemies, with chain reaction support. Immune: undead, constructs, elementals, incorporeal, divine.</td></tr>
                 </table>
             </div>
@@ -2641,6 +3171,8 @@
                     <tr><td class="ability-level">All</td><td><b>Dissonant Chord</b> (7 MP, <em>once per fight</em>) — magic damage to all enemies, &minus;atk/&minus;def for 1 round, 50% stun chance each. Scales +1 per 5 levels.</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>Charm Monster</b> (50 MP) — charm a single enemy to fight for your party. Chance: 50% + 1%/2 bard levels (max 95%). Duration: floor(level/5) rounds. Immune: undead, elementals, constructs, bosses/mega-bosses.</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Rallying Melody</b> (40 MP) — restores 10% of max HP, mana, and stamina to every living party member. Does NOT affect golems or summoned undead.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Thunderous Drums</b> (active, 10 MP/round) — the bard beats war drums that fill the battlefield with sonic force. Reduces all sonic and psychic attack damage against the party by bard level% (cap 80%). Also grants every party member a bard level% chance (cap 80%) to resist stun, charm, enslave, and other sonic/psychic effects. Toggle off as a free action.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Symphony of Destruction</b> (1&times;/combat, 10 MP + 10 ST to start) — channeled AoE that strikes all enemies with escalating magic damage. Round 1 fires at &times;1 damage; each subsequent round the damage <em>and</em> cost both double (Round 2: 20 MP + 20 ST, Round 3: 40 + 40&hellip;). Stop at any time as a free action, or the symphony ends automatically when MP or ST runs dry or the bard falls.</td></tr>
                 </table>
             </div>
 
@@ -2650,7 +3182,7 @@
                 <div class="class-meta"><b>Stats:</b> &minus;15% HP/ST, +30% MP &nbsp;|&nbsp; +1 MP regen &nbsp;|&nbsp; Cloth/leather only; shield OK</div>
                 <div class="class-meta"><b>Per level:</b> +1 magic damage</div>
                 <table class="ability-table">
-                    <tr><td class="ability-level">All</td><td><b>Entangle</b> (8 MP) — 50% chance per enemy to apply &minus;2 def / &minus;2 dmg (rises +1 every 2 levels beyond 1). Does not affect incorporeal. <b>L30 — Verdant Surge</b>: entangled enemies suffer nature DoT each round (random druid magic damage) and 25% chance to lose their action (not bosses/mega-bosses); incorporeal immune to DoT.</td></tr>
+                    <tr><td class="ability-level">All</td><td><b>Entangle</b> (8 MP) — 50% chance per enemy to apply &minus;2 def / &minus;2 dmg (rises +1 every 2 levels beyond 1). Does not affect incorporeal.</td></tr>
                     <tr><td class="ability-level">All</td><td><b>Summon Woodland Beast</b> (7 MP) — calls a beast to fight for the party. Beasts act immediately on summon and can be healed by clerics. Upgrades unlock at L10.<br>
 &#x1F43A; <b>Wolf</b> — front-row melee; every bite inflicts stacking <b>Bleed</b> (100% of hit/round &times; 3+⌊level/33⌋ rounds; bleeds from multiple bites stack independently); +7 HP/level, +1 def/level. Extra attack at L33+ targets a different enemy. <em>L10+: Wolf Pack</em> — one extra wolf summoned per cast.<br>
 &#x1F43B; <b>Bear</b> — front-row high-HP tank; <b>stun chance = 15% + level&times;2%</b>; +10 HP/level, +2 def/level, +1 dmg per 5 levels. Stun resistance = druid level%. Extra attack at L25+. <em>L10+: Giant Bear</em> — +25% HP, additional +1 dmg per 3 levels (on top of base). Same stun formula.<br>
@@ -2659,6 +3191,7 @@
                     <tr><td class="ability-level">L5</td><td><b>Summon Treant</b> (7 MP) — front-row ancient tree spirit; heavy melee slam + 33% hold per hit (incorporeal and bosses immune). Defense = ⌊druid level &times; 1.5⌋. Extra slam at L33+. <b>Plant</b>: immune to stun, paralysis, and bleed; vulnerable to fire DoTs (+50%). <em>L10+: Elder Treant</em> — bonus damage.</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>Commune</b> (free action) — gain 1 fae token (&star; badge). At 3 tokens, summon the <b>Faerie Queen</b> (back row; 2&times; druid HP, 30+level def, 50% magic/AoE resist). Her <em>Wrath of Nature</em> hits floor(level/4) enemies each turn with fae poison DoT and 33%+ hold chance (incorporeal only immune).</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Shambling Mound</b> (100 MP) — 4&times; druid max HP, 20+level def, heavy slam with 45% stun on enemies, 20% HP regen per round. Grows mini-shamblers over time (original only). Post-warrior intercepts for its druid still apply. <b>Plant</b>: immune to stun, paralysis, and bleed DoTs.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Verdant Surge</b> (passive upgrade to Entangle) — entangled enemies suffer a nature DoT each round equal to a random druid magic roll; each entangled enemy also has a 25% chance per round to lose its action entirely (not bosses or mega-bosses). Incorporeal enemies are immune to the DoT.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Wild Shape</b> (free action, 30 MP initial + 5 MP/round) — shapeshift into an animal form. Toggle ON to activate; must toggle OFF before switching forms. Normal attack buttons are replaced by a form-specific attack. If mana runs out, the form ends automatically. Matching beasts already in the party gain +50% damage, bonus defense, and an extra attack while the form is held. Summoning a matching beast while in form calls a second one for free.<br>
 &#x1F43B; <b>Bear Form</b>: front row; HP doubles (reverts on exit); &lfloor;level/7&rfloor; magic-skill melee hits on one target; stun 25%+level&times;0.5%; defense +&lfloor;level/3&rfloor;.<br>
 &#x1F43A; <b>Wolf Form</b>: front row; &lfloor;level/5&rfloor; magic-skill melee hits, each targeting a random front enemy; bleed 50%+level&times;0.5% (damage/2 per round, &lfloor;level/5&rfloor; rounds); defense +&lfloor;level/4&rfloor;; wolf cascade chance rises to 65%.<br>
@@ -2694,6 +3227,8 @@
                     <tr><td class="ability-level">All</td><td><b>Rage</b> (once per combat, free action) — halves all incoming damage; stun immunity; +5% max HP regen/round; +1 melee dmg/level; +1 bonus strike per 3 levels (each costs 3 ST). Lasts until end of combat.</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>Blood Rage</b> — melee hits while raging generate temporary HP. Without temp HP, <em>Wound Mode</em> scales damage based on HP remaining (75%/50%/25% HP thresholds).</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Encouragement</b> — while raging, other living party members gain +3% damage/round to all attack types, capped at +60% after 20 rounds. One raging barbarian benefit at a time (barbarians can boost each other).</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Blood Frenzy</b> (passive) — while raging, each active bleed DoT on the target grants <b>+5% melee damage</b> for that strike. Stacks additively with multiple bleeds (e.g. 3 bleeds = +15%), capped at <b>level × 3%</b> total (e.g. L30 cap = +90%). Applies to main attacks, rage extra strikes, and Reckless Move.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Heroic Deeds</b> — earn 1 token per enemy kill (tokens vanish at end of combat). Spend 1 token for a <em>free-action</em> deed: &bull; <b>Rapid Assault</b> — fires a second full melee chain on your chosen target immediately. &bull; <b>Reckless Move</b> — charges up to 4 random enemies; each takes melee damage and is knocked back (loses next turn). Incorporeal enemies and bosses are immune to the knockback but still take damage. &bull; <b>Refreshing Mead</b> — restores 50% max HP &amp; 50% max stamina and clears all negative effects and DoTs. &bull; <b>Battle Horn</b> — AoE sonic fear on all eligible enemies: &minus;&lfloor;level&divide;3&rfloor; attack &amp; defense, permanent until combat ends. Immune: undead, constructs, elementals, plants, incorporeal.</td></tr>
                 </table>
             </div>
 
@@ -2709,7 +3244,7 @@
                     <tr><td class="ability-level">L25</td><td><b>Advanced Augments</b> — add vitality augments to effective level 4+ trinkets (+5/10/15/20% HP, ST, MP at augment L4&ndash;L7); install golem attachments (extra limbs, golem shields, golem trinkets).</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Multi Golem Protocol</b> (passive) — command multiple golems simultaneously: <b>L30&rarr;2, L50&rarr;3, L70&rarr;4, L90&rarr;5</b> active golems at once. Each golem still costs the standard forging materials and follows normal permadeath rules.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Golem Berserk Mode</b> (free action, 1 use/combat) — overclock a single golem for massive damage. Damage multiplier = <b>1 + level &times; 2%</b> (e.g. L30 = &times;1.6). Overload: <b>5% current HP self-damage per round</b>. Auto-exits if golem reaches 10% max HP. Cannot repair a berserk golem. Once exited (manually or auto), berserk cannot be re-activated that combat.</td></tr>
-                    <tr><td class="ability-level">L30</td><td><b>Deconstruct</b> (passive) — Scatter Shot's primary and each splash shot deal <b>+200% bonus damage</b> when they hit a <b>construct</b>-tagged enemy. 50% chance each hit triggers <b>Scavenge</b>: all your living golems recover 5% max HP from salvaged parts.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Deconstruct</b> (passive) — when Scatter Shot targets a <b>construct</b>: <b>crit chance +20% + level/2%</b> (L30 = +35%, applies to all shots that volley); primary hit deals <b>+200% bonus damage</b> ignoring armor. 50% chance triggers <b>Scavenge</b>: all living golems recover 5% max HP from salvaged parts.</td></tr>
                 </table>
             </div>
 

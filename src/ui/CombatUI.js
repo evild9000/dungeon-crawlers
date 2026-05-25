@@ -141,6 +141,10 @@ export class CombatUI {
         this.charmedCardsEl = document.getElementById('combat-charmed');
         this.turnInfo     = document.getElementById('combat-turn-info');
         this.actionsEl    = document.getElementById('combat-actions');
+
+        this._manualMode      = false;
+        this._spacebarHandler = null;
+        this._roundCounterEl  = null;
     }
 
     show(onEnd) {
@@ -150,6 +154,23 @@ export class CombatUI {
         this._prevMemberHealth = {}; // track previous health to detect KO events
         this.overlay.style.display = 'flex';
         this._buildEnemyCards();
+
+        // Round counter — inserted just before the turn-info bar
+        if (!this._roundCounterEl) {
+            this._roundCounterEl = document.createElement('div');
+            this._roundCounterEl.id = 'combat-round-counter';
+            this.overlay.insertBefore(this._roundCounterEl, this.turnInfo);
+        }
+
+        // Spacebar handler for manual mode
+        this._spacebarHandler = (e) => {
+            if (e.key === ' ' && this._manualMode && this.combat.phase === 'ENEMY_TURN') {
+                e.preventDefault();
+                this.combat.resumeManualTurn();
+            }
+        };
+        document.addEventListener('keydown', this._spacebarHandler);
+
         this._refresh();
 
         for (const e of this.combat.enemies) {
@@ -161,6 +182,14 @@ export class CombatUI {
         this._active = false;
         this._selectingTarget = false;
         this.overlay.style.display = 'none';
+        if (this._spacebarHandler) {
+            document.removeEventListener('keydown', this._spacebarHandler);
+            this._spacebarHandler = null;
+        }
+        if (this._roundCounterEl) {
+            this._roundCounterEl.remove();
+            this._roundCounterEl = null;
+        }
     }
 
     _refresh() {
@@ -190,6 +219,18 @@ export class CombatUI {
         this._updateEnemyCards();
         this._updateLog();
         this._updateActions();
+        if (this._roundCounterEl) {
+            this._roundCounterEl.textContent = `Round ${this.combat.turnNumber}`;
+        }
+        this._updateTurnIndicators();
+
+        // Keep the overlay scrollable above the party HUD regardless of how
+        // tall the HUD grows (many summons can make it several rows high).
+        const hud = document.getElementById('party-hud');
+        if (hud) {
+            const hudH = hud.offsetHeight;
+            if (hudH > 0) this.overlay.style.paddingBottom = (hudH + 16) + 'px';
+        }
 
         const p = this.combat.phase;
         if (p === 'VICTORY' || p === 'DEFEAT' || p === 'FLED') {
@@ -215,8 +256,11 @@ export class CombatUI {
         card.className = 'combat-enemy-card';
         card.dataset.enemyId = enemy.id;
 
-        // Mega bosses get a gold/crimson border; normal bosses get purple.
-        if (enemy.isMegaBoss) {
+        // Super bosses get a vivid purple border; mega bosses get gold/crimson; normal bosses get muted purple.
+        if (enemy.isSuperBoss) {
+            card.style.border = '2px solid rgba(128,0,200,1)';
+            card.style.boxShadow = '0 0 18px 6px rgba(128,0,200,0.85), 0 0 8px 3px rgba(200,100,255,0.7)';
+        } else if (enemy.isMegaBoss) {
             card.style.border = '2px solid #ff4444';
             card.style.boxShadow = '0 0 12px 4px rgba(255,68,68,0.7), 0 0 6px 2px rgba(255,200,0,0.5)';
         } else if (enemy.isBoss) {
@@ -237,8 +281,8 @@ export class CombatUI {
         // otherwise use the standard base+level format.
         if (enemy.name) {
             name.textContent = enemy.name;
-            name.style.color = enemy.isMegaBoss ? '#ff8888' : '#c39bd3';
-            if (enemy.isMegaBoss) name.style.fontWeight = 'bold';
+            name.style.color = enemy.isSuperBoss ? '#cc44ff' : enemy.isMegaBoss ? '#ff8888' : '#c39bd3';
+            if (enemy.isSuperBoss || enemy.isMegaBoss) name.style.fontWeight = 'bold';
         } else {
             name.textContent = enemy.level > 1 ? `${base} L${enemy.level}` : base;
         }
@@ -268,6 +312,7 @@ export class CombatUI {
 
     _ensureEnemyCards() {
         for (const enemy of this.combat.enemies) {
+            if (enemy.health <= 0) continue;
             const selector = `[data-enemy-id="${enemy.id}"]`;
             const existing = this.enemyCards.querySelector(selector)
                 || (this.charmedCardsEl && this.charmedCardsEl.querySelector(selector));
@@ -292,6 +337,11 @@ export class CombatUI {
                 || (this.charmedCardsEl && this.charmedCardsEl.querySelector(selector));
             if (!card) continue;
 
+            if (enemy.health <= 0) {
+                card.remove();
+                continue;
+            }
+
             const fills = card.querySelectorAll('.combat-stat-fill');
             fills[0].style.width = `${Math.max(0, (enemy.health / enemy.maxHealth) * 100)}%`;
             fills[1].style.width = `${Math.max(0, (enemy.stamina / enemy.maxStamina) * 100)}%`;
@@ -315,8 +365,6 @@ export class CombatUI {
             fills[2].parentElement.title = `${enemy.mana}/${enemy.maxMana} MP (${mpPct}%)`;
             // Also set it on the whole card so any part of the card shows full info.
             card.title = tip.trimEnd();
-
-            card.classList.toggle('defeated', enemy.health <= 0);
 
             const statusRow = card.querySelector('.combat-status-row');
             if (statusRow) {
@@ -351,7 +399,11 @@ export class CombatUI {
                     },
                     acid_dot: {
                         icon: '🟢', label: 'Acid', bg: 'rgba(60,160,0,0.9)',
-                        tip: (fx) => 'Acid: ' + (fx.damage||0) + ' dmg/round, -' + (fx.defenseBonus||0) + ' def — ' + (fx.permanent ? 'permanent' : fx.rounds + ' rds left')
+                        tip: (fx) => 'Acid DoT: ' + (fx.damage||0) + ' dmg/round — ' + (fx.permanent ? 'permanent' : fx.rounds + ' rds left')
+                    },
+                    acid_debuff: {
+                        icon: '🟢', label: 'Corroded', bg: 'rgba(30,110,0,0.9)',
+                        tip: (fx) => 'Acid Corrosion: -' + Math.abs(fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
                     },
                     poison: {
                         icon: '🐢', label: 'Poison', bg: 'rgba(100,140,0,0.9)',
@@ -359,7 +411,19 @@ export class CombatUI {
                     },
                     poison_weapon: {
                         icon: '🐍', label: 'Poisoned', bg: 'rgba(100,0,170,0.9)',
-                        tip: (fx) => 'Venom: ' + (fx.damage||0) + ' dmg/round, -' + Math.abs(fx.damageBonus||0) + ' dmg dealt — ' + (fx.permanent ? 'permanent' : fx.rounds + ' rds left')
+                        tip: (fx) => 'Venom DoT: ' + (fx.damage||0) + ' dmg/round — ' + (fx.permanent ? 'permanent' : fx.rounds + ' rds left')
+                    },
+                    poison_debuff: {
+                        icon: '🐍', label: 'Weakened', bg: 'rgba(60,0,110,0.9)',
+                        tip: (fx) => 'Venom Weakness: -' + Math.abs(fx.damageBonus||0) + ' dmg dealt — ' + fx.rounds + ' rds left'
+                    },
+                    lightning_dot: {
+                        icon: '⚡', label: 'Shocked', bg: 'rgba(60,100,240,0.9)',
+                        tip: (fx) => 'Lightning DoT: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    frost_dot: {
+                        icon: '❄️', label: 'Frostbite', bg: 'rgba(100,180,240,0.9)',
+                        tip: (fx) => 'Frost DoT: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
                     },
                     shocked: {
                         icon: '⚡', label: 'Shocked', bg: 'rgba(40,80,220,0.9)',
@@ -442,9 +506,15 @@ export class CombatUI {
                 }
 
                 // ── Non-DoT status effects ──
-                const fr = efx.find(x => x && x.type === 'ghost_fear');
-                if (fr) mkB('😨', 'Feared', 'rgba(80,0,100,0.9)',
-                    'Ghost Fear: -3 attack, -3 defense (lasts entire combat)');
+                const fearFx = efx.find(x => x && ['ghost_fear', 'battle_horn_fear', 'demi_lich_fear'].includes(x.type));
+                if (fearFx) {
+                    const pen = Math.abs(fearFx.damageBonus || 3);
+                    const src = fearFx.type === 'battle_horn_fear' ? 'Battle Horn'
+                              : fearFx.type === 'demi_lich_fear'   ? 'Demi-Lich'
+                              : 'Ghost';
+                    mkB('😨', 'Feared', 'rgba(80,0,100,0.9)',
+                        `${src} Fear: -${pen} attack, -${pen} defense (lasts entire combat)`);
+                }
                 const tu = efx.find(x => x && x.type === 'turned' && x.rounds > 0);
                 if (tu) mkB('✝️', 'Turned', 'rgba(200,180,0,0.9)',
                     'Turned Undead: -' + Math.abs(tu.defenseBonus||0) + ' def, -' + Math.abs(tu.damageBonus||0) + ' atk — ' + tu.rounds + ' rds left');
@@ -464,9 +534,15 @@ export class CombatUI {
                     });
                 for (const qp of qpEffects) {
                     const source = qp.sourceName || 'Unknown Monk';
-                    mkB('✋', `QP:${source}`, 'rgba(140,30,100,0.9)',
-                        `Quivering Palm (${source}): ${(qp.damage || 0)} internal dmg/round — Level ${(qp.doublings || 0)}/10 doublings — ${qp.rounds} rds left`);
+                    const doublings = qp.doublings || 0;
+                    mkB('✋', `QP ${qp.damage || 0}/rd`, 'rgba(140,30,100,0.9)',
+                        `Quivering Palm (${source}): ${(qp.damage || 0)} dmg/round — ${doublings}/10 doublings — ${qp.rounds} rds left`);
                 }
+
+                // ── Invisible Stalker badge ──
+                if ((ENEMY_TYPES[enemy.type] || {}).isInvisible)
+                    mkB('👁️', 'Invisible', 'rgba(60,60,100,0.9)',
+                        'Invisible: all attacks have a 60% chance to miss.');
 
                 // ── Pressure Points debuff tag ──
                 const ppFx = efx.find(x => x && x.type === 'pressure_points');
@@ -482,25 +558,32 @@ export class CombatUI {
                     mkB('🎵', 'CHARMED ' + enemy.charmedRounds + 'rd', 'rgba(0,160,80,0.95)',
                         'Charmed by Bard! Fighting for your party. ' + enemy.charmedRounds + ' round(s) remaining.');
 
-                // ── Hunter's Mark debuff tag ──
-                const _hmFx = efx.find(x => x && x.type === 'hunters_mark');
-                if (_hmFx) {
+                // ── Hunter's Mark debuff tags — one card per active mark ──
+                const _hmFxAll = efx.filter(x => x && x.type === 'hunters_mark');
+                if (_hmFxAll.length > 0) {
                     const _hmPct = Math.round(RANGER_HUNTERS_MARK_DAMAGE_BONUS * 100);
-                    const _hmRanger = (this.combat.party || []).find(p => p.id === _hmFx.markerId);
-                    const _hmName = _hmRanger ? _hmRanger.name : 'Ranger';
-                    mkB('🎯', `Marked +${_hmPct}%`, 'rgba(180,60,0,0.92)',
-                        `Hunter's Mark (${_hmName}): takes +${_hmPct}% damage from all sources. Upkeep ${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP + ${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST/rd.`);
+                    const _hmTotalPct = _hmPct * _hmFxAll.length;
+                    for (const _hmFx of _hmFxAll) {
+                        const _hmRanger = (this.combat.party || []).find(p => p.id === _hmFx.markerId);
+                        const _hmName = _hmRanger ? _hmRanger.name : 'Ranger';
+                        const _stackNote = _hmFxAll.length > 1 ? `\nTotal from all marks: +${_hmTotalPct}%` : '';
+                        mkB('🎯', `Marked +${_hmPct}%`, 'rgba(180,60,0,0.92)',
+                            `Hunter's Mark (${_hmName}): +${_hmPct}% damage from all sources. Upkeep ${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP + ${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST/rd.${_stackNote}`);
+                    }
                 }
 
-                // ── Boss Aura buff tag — non-boss enemies deal +25% or +50% damage while a boss/mega-boss lives ──
-                if (!enemy.isBoss && !enemy.isMegaBoss && enemy.health > 0) {
-                    let _auraBoss = false, _auraMega = false;
+                // ── Boss Aura buff tag — non-boss enemies deal bonus damage while a boss/mega/super-boss lives ──
+                if (!enemy.isBoss && !enemy.isMegaBoss && !enemy.isSuperBoss && enemy.health > 0) {
+                    let _auraBoss = false, _auraMega = false, _auraSuper = false;
                     for (const _ae of this.combat.enemies) {
                         if (_ae === enemy || _ae.health <= 0) continue;
-                        if (_ae.isMegaBoss) _auraMega = true;
+                        if (_ae.isSuperBoss) _auraSuper = true;
+                        else if (_ae.isMegaBoss) _auraMega = true;
                         else if (_ae.isBoss) _auraBoss = true;
                     }
-                    if (_auraMega) mkB('💀', '+50% dmg', 'rgba(160,0,0,0.95)',
+                    if (_auraSuper) mkB('🟣', '+66% dmg', 'rgba(100,0,160,0.95)',
+                        'Super-Boss Aura: the Super Boss\'s dark power infuses this creature — +66% damage dealt.');
+                    else if (_auraMega) mkB('💀', '+50% dmg', 'rgba(160,0,0,0.95)',
                         'Mega-Boss Aura: the Mega Boss empowers this creature — +50% damage dealt this combat.');
                     else if (_auraBoss) mkB('👑', '+25% dmg', 'rgba(120,30,140,0.85)',
                         'Boss Aura: the Boss\'s presence emboldens this creature — +25% damage dealt this combat.');
@@ -529,7 +612,10 @@ export class CombatUI {
                 // Charm expired — move back to enemy area
                 card.style.border = '';
                 card.style.boxShadow = '';
-                if (enemy.isMegaBoss) {
+                if (enemy.isSuperBoss) {
+                    card.style.border = '2px solid rgba(128,0,200,1)';
+                    card.style.boxShadow = '0 0 18px 6px rgba(128,0,200,0.85), 0 0 8px 3px rgba(200,100,255,0.7)';
+                } else if (enemy.isMegaBoss) {
                     card.style.border = '2px solid #ff4444';
                     card.style.boxShadow = '0 0 12px 4px rgba(255,68,68,0.7)';
                 } else if (enemy.isBoss) {
@@ -604,8 +690,14 @@ export class CombatUI {
         }
 
         if (this.combat.phase !== 'PLAYER_TURN') {
-            this.turnInfo.textContent =
-                this.combat.phase === 'ENEMY_TURN' ? 'Enemies attacking...' : '';
+            if (this.combat.phase === 'ENEMY_TURN' && this._manualMode) {
+                this.turnInfo.textContent = '⏸️ Manual — review the log, then continue...';
+                const contBtn = this._addBtn('▶ Continue [Space]', true, () => this.combat.resumeManualTurn());
+                contBtn.style.cssText += ';border-color:#44aa44;color:#88ee88;font-size:15px;padding:11px 28px;';
+            } else {
+                this.turnInfo.textContent = this.combat.phase === 'ENEMY_TURN' ? 'Enemies attacking...' : '';
+            }
+            this._addModeToggleBtn();
             return;
         }
 
@@ -888,9 +980,17 @@ export class CombatUI {
             const cost = MELEE_STAMINA_COST * BACKSTAB_STAMINA_MULT;
             const exhausted = m.stamina < cost;
             const label = `\u{1F5E1}\uFE0F Backstab (-${cost} ST)${exhausted ? ' [HALF]' : ''}`;
+            const backstabFilter = e => {
+                const def = ENEMY_TYPES[e.type] || {};
+                const tags = def.tags || [];
+                return !tags.includes('incorporeal') && !tags.includes('slime') && !def.noBackstab;
+            };
             const btn = this._addBtn(label, true, () => {
                 soundManager.playMelee();
-                this._pickTarget(e => this.combat.backstab(e));
+                this._pickTarget(e => this.combat.backstab(e), {
+                    filter: backstabFilter,
+                    prompt: '🗡️ Backstab — choose a target!',
+                });
             });
             btn.classList.add('combat-special-btn');
             const instakill = (BACKSTAB_INSTAKILL_CHANCE + m.getInstakillBonus()) * 100;
@@ -907,8 +1007,8 @@ export class CombatUI {
                     ? `L${ROGUE_TRAP_UNLOCK_LEVEL}: successful disarms recover Captured Traps; magic/AoE evasion chance ${m.level}% for ${ROGUE_EVASION_STAMINA_COST} stamina.`
                     : `L${ROGUE_TRAP_UNLOCK_LEVEL}: recover traps and evade magic/AoE attacks.`,
                 m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL
-                    ? `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}+: Backstab Bleed — applies ${Math.round(ROGUE_BACKSTAB_BLEED_FRAC*100)}% bleed DoT for ${Math.floor(m.level/ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR)} rounds (immune: undead, construct, elemental, incorporeal).`
-                    : `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}: Backstab Bleed unlocks — every backstab will apply a stacking bleed DoT.`,
+                    ? `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}+: Backstab Bleed — applies ${Math.round(ROGUE_BACKSTAB_BLEED_FRAC*100)}% of dealt dmg as bleed DoT for ${Math.floor(m.level/ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR)} rounds (immune: undead, construct, elemental, incorporeal, plant, slime).`
+                    : `L${ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL}: Backstab Bleed unlocks — every backstab applies a stacking bleed DoT (${Math.round(ROGUE_BACKSTAB_BLEED_FRAC*100)}% dealt dmg/rd, floor(level/${ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR}) rounds).`,
                 m.level >= ROGUE_TWIN_FANGS_UNLOCK_LEVEL
                     ? hasTwinFangs
                         ? `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL} Twin Fangs ACTIVE: offhand follows up at ${ROGUE_TWIN_FANGS_OFFHAND_MULT}× fresh offhand weapon roll × level scaling (NOT multiplied by the ×${BACKSTAB_DAMAGE_MULT} backstab multiplier); half normal backstab instakill chance; independent bleed DoT.`
@@ -980,6 +1080,9 @@ export class CombatUI {
                 `Regens ${Math.round(5)}% max HP per round while raging.`,
                 `+${m.level} to melee damage rolls while raging.`,
                 `${rageExtraAttacks} extra melee strike(s) per attack (each costs ${BARBARIAN_RAGE_STAMINA_COST} ST).`,
+                m.level >= BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL
+                    ? `L${BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL} Blood Frenzy: +${Math.round(BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED * 100)}% melee damage per bleed DoT on target while raging (cap: level×3%).`
+                    : null,
                 rageDisabled ? 'Already used this combat.' : 'Lasts until end of combat.',
             ].filter(Boolean).join('\n');
 
@@ -1029,6 +1132,13 @@ export class CombatUI {
                         this.combat.barbarianRecklessMove();
                         panel.remove();
                         this._refresh();
+                        const cur = this.combat.currentMember;
+                        if (cur && cur.health > 0) {
+                            const prompt = cur.isRaging
+                                ? '\u{1F534} RAGING — choose your attack target!'
+                                : '💥 Reckless Move done — choose your attack target!';
+                            this._pickTarget(e => this.combat.meleeAttack(e), { prompt });
+                        }
                     };
                     panel.appendChild(rmBtn);
 
@@ -1192,7 +1302,7 @@ export class CombatUI {
             // ── Mass Revive — unlocked at level 20
             const massReviveUnlocked = m.level >= CLERIC_MASS_REVIVE_UNLOCK_LEVEL;
             const massReviveCount    = Math.floor(m.level / CLERIC_MASS_REVIVE_COUNT_DIVISOR);
-            const hasFallenAllies    = (this.combat.party || []).some(pm => !pm.isSummoned && pm.health <= 0);
+            const hasFallenAllies    = (this.combat.party || []).some(pm => !pm.isSummoned && pm.health <= 0 && !pm.lichPhial);
             const canMassRevive = massReviveUnlocked && m.mana >= CLERIC_MASS_REVIVE_MANA_COST && hasFallenAllies;
             const massReviveLabel = massReviveUnlocked
                 ? `🕊️ Mass Revive (-${CLERIC_MASS_REVIVE_MANA_COST} MP)`
@@ -2265,9 +2375,16 @@ export class CombatUI {
         const defendBtn = this._addBtn('Defend', true, () => this.combat.defend());
         defendBtn.title = 'Reduce incoming damage by half this turn.';
 
+        // ── Delay
+        const delayBtn = this._addBtn('⏱️ Delay', true, () => this.combat.delayAction());
+        delayBtn.title = 'Delay your turn until the end of the round. Multiple characters can delay; the most recent delay goes last. Useful for healers who want to act after allies take damage.';
+
         // ── Flee
         const fleeBtn = this._addBtn('Flee', true, () => this.combat.flee());
         fleeBtn.title = '50% chance to escape combat.';
+
+        // ── Manual/Auto mode toggle
+        this._addModeToggleBtn();
     }
 
     _showUndeadPicker(necro) {
@@ -2376,6 +2493,80 @@ export class CombatUI {
         });
         this.actionsEl.appendChild(btn);
         return btn;
+    }
+
+    _addModeToggleBtn() {
+        const btn = document.createElement('button');
+        btn.className = 'combat-action-btn combat-mode-btn';
+        if (this._manualMode) {
+            btn.textContent = '⏸️ Manual';
+            btn.title = 'Manual Mode: each enemy/summon turn pauses for you to review. Press Space or click Continue to advance. Click to switch to Auto.';
+            btn.style.borderColor = '#aa6622';
+            btn.style.color = '#ddaa44';
+        } else {
+            btn.textContent = '▶ Auto';
+            btn.title = 'Auto Mode: enemy and summon turns resolve instantly. Click to switch to Manual.';
+            btn.style.borderColor = '#224466';
+            btn.style.color = '#4488aa';
+        }
+        btn.addEventListener('click', () => {
+            this._manualMode = !this._manualMode;
+            this.combat.pauseAfterEachTurn = this._manualMode;
+            // If we just turned off manual while mid-pause, resume immediately
+            if (!this._manualMode && this.combat.phase === 'ENEMY_TURN') {
+                this.combat.pauseAfterEachTurn = false;
+                this.combat.resumeManualTurn();
+            } else {
+                this._refresh();
+            }
+        });
+        this.actionsEl.appendChild(btn);
+    }
+
+    _updateTurnIndicators() {
+        if (!this._active || !this.combat._initiativeOrder) return;
+        const initOrder = this.combat._initiativeOrder;
+        const initIdx   = this.combat._initTurnIdx;
+
+        const setIndicator = (el, state) => {
+            if (!el) return;
+            let ind = el.querySelector('.turn-indicator');
+            if (state === 'none') { if (ind) ind.remove(); return; }
+            if (!ind) {
+                ind = document.createElement('div');
+                ind.className = 'turn-indicator';
+                el.appendChild(ind);
+            }
+            if (state === 'done') {
+                ind.textContent = '✓';
+                ind.style.cssText = 'position:absolute;top:2px;right:3px;font-size:12px;color:#44dd44;font-weight:bold;z-index:5;pointer-events:none;text-shadow:0 0 4px rgba(0,180,0,0.5);';
+            } else if (state === 'active') {
+                ind.textContent = '▶';
+                ind.style.cssText = 'position:absolute;top:2px;right:3px;font-size:10px;color:#ffcc00;font-weight:bold;z-index:5;pointer-events:none;animation:turn-active-pulse 0.5s infinite alternate;';
+            }
+        };
+
+        // Party HUD cards
+        for (const m of this.combat.party) {
+            const hudCard = document.querySelector(`#party-hud [data-member-id="${m.id}"]`);
+            if (!hudCard) continue;
+            if (m.health <= 0) { setIndicator(hudCard, 'none'); continue; }
+            const isActive = this.combat.phase === 'PLAYER_TURN' && this.combat.currentMember === m;
+            const idx = initOrder.findIndex(s => s.ref === m);
+            const hasDone = idx >= 0 && idx < initIdx;
+            setIndicator(hudCard, isActive ? 'active' : hasDone ? 'done' : 'none');
+        }
+
+        // Enemy cards
+        for (const enemy of this.combat.enemies) {
+            if (enemy.health <= 0) continue;
+            const card = this.enemyCards.querySelector(`[data-enemy-id="${enemy.id}"]`)
+                || (this.charmedCardsEl && this.charmedCardsEl.querySelector(`[data-enemy-id="${enemy.id}"]`));
+            if (!card) continue;
+            const idx = initOrder.findIndex(s => s.ref === enemy);
+            const hasDone = idx >= 0 && idx < initIdx;
+            setIndicator(card, hasDone ? 'done' : 'none');
+        }
     }
 
     // ────────────────────────────────────────────
@@ -2524,6 +2715,9 @@ export class CombatUI {
         this.actionsEl.appendChild(msg);
 
         if (this.combat.phase === 'VICTORY') {
+            const scrollWrap = document.createElement('div');
+            scrollWrap.className = 'combat-loot-scroll';
+
             // XP + level-up summary
             if (this.combat.xpEarned > 0 || this.combat.levelUpLogs.length > 0) {
                 const xpDiv = document.createElement('div');
@@ -2540,7 +2734,7 @@ export class CombatUI {
                     lvl.textContent = `\u2B50 ${r.member} \u2192 Level ${r.toLevel}  (+${r.hpGain} HP / +${r.stGain} ST / +${r.mpGain} MP)`;
                     xpDiv.appendChild(lvl);
                 }
-                this.actionsEl.appendChild(xpDiv);
+                scrollWrap.appendChild(xpDiv);
             }
 
             if (this.combat.loot) {
@@ -2570,8 +2764,10 @@ export class CombatUI {
                     noneEl.textContent = 'No loot found.';
                     lootDiv.appendChild(noneEl);
                 }
-                this.actionsEl.appendChild(lootDiv);
+                scrollWrap.appendChild(lootDiv);
             }
+
+            this.actionsEl.appendChild(scrollWrap);
         }
 
         const btn = document.createElement('button');

@@ -340,6 +340,15 @@ export class PartySpellModal {
         const scale = bardScale(bard.level);
         const isActive = (bard.activeSongs || []).includes('combined');
 
+        // Check if a different bard is already singing
+        const otherSinger = this._party
+            ? this._party.find(m => m !== bard && m.classId === 'bard' && m.health > 0
+                && (m.activeSongs || []).includes('combined'))
+            : null;
+        const blockedByOther = !isActive && !!otherSinger;
+
+        const wrapper = document.createElement('div');
+
         const row = document.createElement('div');
         Object.assign(row.style, {
             display: 'flex', alignItems: 'center',
@@ -348,14 +357,15 @@ export class PartySpellModal {
 
         const btn = document.createElement('button');
         btn.textContent = `${COMBINED_SONG.icon} ${COMBINED_SONG.name}`;
+        btn.disabled = blockedByOther;
         Object.assign(btn.style, {
             flex: '1',
             padding: '6px 10px',
             borderRadius: '5px',
-            cursor: 'pointer',
+            cursor: blockedByOther ? 'not-allowed' : 'pointer',
             border: isActive ? '2px solid #7f7' : '1px solid #555',
-            background: isActive ? '#1a3a1a' : '#2a2a4a',
-            color: isActive ? '#9f9' : '#ccc',
+            background: isActive ? '#1a3a1a' : (blockedByOther ? '#1a1a1a' : '#2a2a4a'),
+            color: isActive ? '#9f9' : (blockedByOther ? '#666' : '#ccc'),
             fontFamily: 'monospace',
             fontSize: '13px',
             textAlign: 'left',
@@ -366,6 +376,9 @@ export class PartySpellModal {
         if (isActive) {
             info.textContent = `Active — ${BARD_SONG_MANA_PER_MIN} MP/min`;
             info.style.color = '#9f9';
+        } else if (blockedByOther) {
+            info.textContent = 'Blocked';
+            info.style.color = '#f88';
         } else {
             info.textContent = `Free to start — ${BARD_SONG_MANA_PER_MIN} MP/min`;
             info.style.color = '#999';
@@ -382,13 +395,22 @@ export class PartySpellModal {
         btn.addEventListener('click', () => {
             if (isActive) {
                 this._deactivateSong(bard, 'combined');
-            } else {
+            } else if (!blockedByOther) {
                 this._activateSong(bard, scale);
             }
         });
 
         row.append(btn, info);
-        return row;
+        wrapper.appendChild(row);
+
+        if (blockedByOther) {
+            const warn = document.createElement('div');
+            warn.style.cssText = 'font-size:11px;color:#f88;margin-bottom:6px;';
+            warn.textContent = `⚠ ${otherSinger.name}'s song is already active — only one bard song at a time.`;
+            wrapper.appendChild(warn);
+        }
+
+        return wrapper;
     }
 
     _activateSong(bard, scale) {

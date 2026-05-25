@@ -4743,6 +4743,433 @@ function drawMyconidSovereign(c, r) {
     c.fillRect(22,56,10,8); c.fillRect(32,56,10,8);
 }
 
+// ── New Monsters ──────────────────────────────────────────────────────────
+
+function drawEvilWizard(c, r) {
+    const robe = `rgb(${r.int(55,85)},${r.int(8,22)},${r.int(90,130)})`;
+    const dark = `rgb(${r.int(25,42)},${r.int(4,12)},${r.int(45,70)})`;
+    const trim = `rgb(${r.int(160,210)},${r.int(90,140)},${r.int(210,250)})`;
+    const skin = `rgb(${r.int(170,200)},${r.int(150,180)},${r.int(135,165)})`;
+    // Robe body
+    c.fillStyle = dark;
+    c.beginPath();
+    c.moveTo(16,24); c.quadraticCurveTo(8,52,4,64);
+    c.lineTo(60,64); c.quadraticCurveTo(56,52,48,24);
+    c.closePath(); c.fill();
+    c.fillStyle = robe;
+    c.beginPath();
+    c.moveTo(18,26); c.lineTo(10,62); c.lineTo(54,62); c.lineTo(46,26);
+    c.closePath(); c.fill();
+    // Arcane sigil on robe
+    c.shadowColor = trim; c.shadowBlur = 6;
+    c.fillStyle = `rgba(${r.int(160,210)},${r.int(90,140)},${r.int(210,250)},0.55)`;
+    c.beginPath(); c.arc(32,44,7,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Staff
+    c.strokeStyle = `rgb(${r.int(90,120)},${r.int(65,85)},${r.int(35,55)})`; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(58,60); c.lineTo(52,10); c.stroke();
+    c.shadowColor = trim; c.shadowBlur = 12;
+    c.fillStyle = trim;
+    c.beginPath(); c.arc(52,8,5,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Pointed hat
+    c.fillStyle = dark;
+    c.beginPath(); c.moveTo(32,0); c.lineTo(12,24); c.lineTo(52,24); c.closePath(); c.fill();
+    c.fillRect(10,21,44,5);
+    // Face
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(30,28,10,9,0,0,Math.PI*2); c.fill();
+    // Glowing purple eyes
+    c.shadowColor = trim; c.shadowBlur = 8;
+    c.fillStyle = trim;
+    c.beginPath(); c.arc(25,26,2.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(34,26,2.5,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Beard wisps
+    c.strokeStyle = `rgb(${r.int(180,210)},${r.int(170,200)},${r.int(160,190)})`; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(28,33); c.lineTo(26,38); c.stroke();
+    c.beginPath(); c.moveTo(32,34); c.lineTo(32,40); c.stroke();
+    c.beginPath(); c.moveTo(35,33); c.lineTo(37,38); c.stroke();
+    // Arms
+    c.fillStyle = robe;
+    c.fillRect(4,30,14,18); c.fillRect(46,30,14,18);
+    c.fillStyle = skin;
+    c.beginPath(); c.ellipse(8,50,5,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(56,50,5,4,0,0,Math.PI*2); c.fill();
+}
+
+function drawDarkTreant(c, r) {
+    const bark = `rgb(${r.int(22,42)},${r.int(14,28)},${r.int(8,18)})`;
+    const mid  = `rgb(${r.int(38,58)},${r.int(24,40)},${r.int(14,26)})`;
+    const eye  = `rgb(${r.int(190,235)},${r.int(70,110)},${r.int(10,30)})`;
+    const lich = `rgb(${r.int(38,65)},${r.int(60,90)},${r.int(18,40)})`;
+    // Trunk body
+    c.fillStyle = bark;
+    c.beginPath(); c.moveTo(18,14); c.lineTo(12,64); c.lineTo(52,64); c.lineTo(46,14); c.closePath(); c.fill();
+    c.fillStyle = mid;
+    c.beginPath(); c.moveTo(22,18); c.lineTo(18,60); c.lineTo(46,60); c.lineTo(42,18); c.closePath(); c.fill();
+    // Bark cracks
+    c.strokeStyle = bark; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(26,22); c.lineTo(24,56); c.stroke();
+    c.beginPath(); c.moveTo(38,20); c.lineTo(40,56); c.stroke();
+    // Left branch arm
+    c.fillStyle = bark;
+    c.beginPath(); c.moveTo(16,22); c.lineTo(0,12); c.lineTo(2,18); c.lineTo(0,26); c.lineTo(6,24); c.lineTo(16,34); c.closePath(); c.fill();
+    // Right branch arm
+    c.beginPath(); c.moveTo(48,22); c.lineTo(64,12); c.lineTo(62,18); c.lineTo(64,26); c.lineTo(58,24); c.lineTo(48,34); c.closePath(); c.fill();
+    // Evil glowing eyes
+    c.shadowColor = eye; c.shadowBlur = 14;
+    c.fillStyle = eye;
+    c.beginPath(); c.ellipse(26,28,5,4,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(38,28,5,4,0,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = '#150000';
+    c.beginPath(); c.arc(26,28,2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(38,28,2,0,Math.PI*2); c.fill();
+    // Snarling mouth with bark teeth
+    c.strokeStyle = bark; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(22,38); c.lineTo(26,40); c.lineTo(32,38); c.lineTo(36,40); c.lineTo(42,38); c.stroke();
+    c.fillStyle = `rgb(${r.int(160,195)},${r.int(140,170)},${r.int(90,120)})`;
+    for (const [x] of [[24],[28],[32],[36],[40]]) {
+        c.fillRect(x,37,3,4);
+    }
+    // Lichen patches
+    c.fillStyle = lich;
+    c.beginPath(); c.ellipse(16,48,5,3,0.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(46,44,4,5,-0.4,0,Math.PI*2); c.fill();
+    // Root feet
+    c.fillStyle = bark;
+    for (const [x,y] of [[14,62],[20,64],[32,64],[44,62],[48,64]]) {
+        c.fillRect(x,y,6,4);
+    }
+}
+
+function drawMandrakeRoot(c, r) {
+    const root  = `rgb(${r.int(155,195)},${r.int(125,160)},${r.int(65,100)})`;
+    const dark  = `rgb(${r.int(85,115)},${r.int(65,90)},${r.int(36,60)})`;
+    const glow  = `rgb(${r.int(220,255)},${r.int(210,240)},${r.int(50,90)})`;
+    const mouth = `rgb(${r.int(170,200)},${r.int(45,70)},${r.int(45,70)})`;
+    // Root mass body
+    c.fillStyle = root;
+    c.beginPath(); c.ellipse(32,40,15,21,0,0,Math.PI*2); c.fill();
+    // Head
+    c.beginPath(); c.ellipse(32,18,13,12,0,0,Math.PI*2); c.fill();
+    // Leaf crown
+    c.fillStyle = `rgb(${r.int(38,68)},${r.int(95,135)},${r.int(28,58)})`;
+    for (const [x,y,rx,ry,rot] of [[32,6,7,4,0],[24,9,6,3,-0.5],[40,9,6,3,0.5],[28,4,5,3,-0.3],[36,4,5,3,0.3]]) {
+        c.save(); c.translate(x,y); c.rotate(rot);
+        c.beginPath(); c.ellipse(0,0,rx,ry,0,0,Math.PI*2); c.fill();
+        c.restore();
+    }
+    // Glowing eyes
+    c.shadowColor = glow; c.shadowBlur = 8;
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(27,16,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,16,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = '#221100';
+    c.beginPath(); c.arc(27,16,1.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,16,1.5,0,Math.PI*2); c.fill();
+    // Screaming mouth (wide open)
+    c.fillStyle = mouth;
+    c.beginPath(); c.ellipse(32,24,9,6,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#330000';
+    c.beginPath(); c.ellipse(32,25,6,4,0,0,Math.PI*2); c.fill();
+    // Root tendrils as arms
+    c.strokeStyle = dark; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(17,32); c.quadraticCurveTo(4,28,2,20); c.stroke();
+    c.beginPath(); c.moveTo(47,32); c.quadraticCurveTo(60,28,62,20); c.stroke();
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(2,20); c.lineTo(0,14); c.stroke();
+    c.beginPath(); c.moveTo(2,20); c.lineTo(6,13); c.stroke();
+    c.beginPath(); c.moveTo(62,20); c.lineTo(64,14); c.stroke();
+    c.beginPath(); c.moveTo(62,20); c.lineTo(58,13); c.stroke();
+    // Root legs
+    c.lineWidth = 6;
+    c.beginPath(); c.moveTo(24,59); c.lineTo(20,64); c.stroke();
+    c.beginPath(); c.moveTo(32,61); c.lineTo(32,64); c.stroke();
+    c.beginPath(); c.moveTo(40,59); c.lineTo(44,64); c.stroke();
+}
+
+function drawKillerVine(c, r) {
+    const vine   = `rgb(${r.int(18,48)},${r.int(85,125)},${r.int(18,48)})`;
+    const dark   = `rgb(${r.int(8,26)},${r.int(42,62)},${r.int(8,24)})`;
+    const thorn  = `rgb(${r.int(115,155)},${r.int(95,125)},${r.int(55,80)})`;
+    // Central mass
+    c.fillStyle = `rgb(${r.int(25,50)},${r.int(95,135)},${r.int(25,50)})`;
+    c.beginPath(); c.ellipse(32,40,13,15,0,0,Math.PI*2); c.fill();
+    // Spreading vines — thick stems
+    c.strokeStyle = vine; c.lineWidth = 6;
+    c.beginPath(); c.moveTo(22,30); c.bezierCurveTo(6,24,2,12,8,4); c.stroke();
+    c.beginPath(); c.moveTo(42,30); c.bezierCurveTo(58,24,62,12,56,4); c.stroke();
+    c.beginPath(); c.moveTo(22,50); c.bezierCurveTo(6,48,2,56,0,64); c.stroke();
+    c.beginPath(); c.moveTo(42,50); c.bezierCurveTo(58,48,62,56,64,64); c.stroke();
+    c.lineWidth = 4;
+    c.beginPath(); c.moveTo(30,26); c.bezierCurveTo(28,10,20,6,16,0); c.stroke();
+    c.beginPath(); c.moveTo(34,26); c.bezierCurveTo(36,10,44,6,48,0); c.stroke();
+    // Thorns
+    c.fillStyle = thorn;
+    for (const [x,y,a] of [[10,8,-0.6],[14,18,0.4],[52,8,0.7],[50,18,-0.4],[4,56,0.9],[60,56,-0.8],[22,6,-0.2],[42,6,0.3]]) {
+        c.save(); c.translate(x,y); c.rotate(a);
+        c.beginPath(); c.moveTo(0,0); c.lineTo(-2,6); c.lineTo(2,6); c.closePath(); c.fill();
+        c.restore();
+    }
+    // Maw / mouth at center
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(32,42,9,6,0,0,Math.PI*2); c.fill();
+    c.fillStyle = thorn;
+    for (const x of [25,28,31,34,37]) {
+        c.beginPath(); c.moveTo(x,44); c.lineTo(x+1,39); c.lineTo(x+2,44); c.fill();
+    }
+    // Glowing eyes
+    c.shadowColor = '#88ff44'; c.shadowBlur = 8;
+    c.fillStyle = '#88ff44';
+    c.beginPath(); c.arc(27,33,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,33,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = '#112200';
+    c.beginPath(); c.arc(27,33,1.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(37,33,1.5,0,Math.PI*2); c.fill();
+}
+
+function drawCaveBear(c, r) {
+    const fur    = `rgb(${r.int(50,85)},${r.int(38,62)},${r.int(22,42)})`;
+    const dark   = `rgb(${r.int(22,40)},${r.int(16,28)},${r.int(8,18)})`;
+    const muzzle = `rgb(${r.int(95,125)},${r.int(75,100)},${r.int(55,76)})`;
+    const claw   = `rgb(${r.int(185,215)},${r.int(165,190)},${r.int(130,158)})`;
+    // Massive body
+    c.fillStyle = fur;
+    c.beginPath(); c.ellipse(32,46,25,17,0,0,Math.PI*2); c.fill();
+    // Shoulder hump
+    c.beginPath(); c.ellipse(24,33,18,15,-0.25,0,Math.PI*2); c.fill();
+    // Head
+    c.beginPath(); c.ellipse(36,20,17,14,0.15,0,Math.PI*2); c.fill();
+    // Muzzle
+    c.fillStyle = muzzle;
+    c.beginPath(); c.ellipse(46,27,10,8,0.25,0,Math.PI*2); c.fill();
+    // Nose
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(52,25,4,3,0,0,Math.PI*2); c.fill();
+    // Eyes
+    c.fillStyle = '#cc4400';
+    c.beginPath(); c.arc(32,16,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(42,15,3,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111';
+    c.beginPath(); c.arc(32,16,1.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(42,15,1.5,0,Math.PI*2); c.fill();
+    // Ears
+    c.fillStyle = fur;
+    c.beginPath(); c.arc(24,8,5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(36,8,5,0,Math.PI*2); c.fill();
+    // Front legs and paws
+    c.fillRect(4,44,14,16); c.fillRect(46,44,14,16);
+    c.fillRect(16,56,10,8); c.fillRect(38,56,10,8);
+    // Claws
+    c.fillStyle = claw;
+    for (const x of [4,8,12,48,52,56]) { c.fillRect(x,62,4,4); }
+    for (const x of [16,20,40,44]) { c.fillRect(x,62,4,3); }
+}
+
+function drawCaveLion(c, r) {
+    const fur    = `rgb(${r.int(125,168)},${r.int(96,130)},${r.int(56,88)})`;
+    const dark   = `rgb(${r.int(64,96)},${r.int(48,72)},${r.int(26,50)})`;
+    const mane   = `rgb(${r.int(52,82)},${r.int(35,56)},${r.int(16,34)})`;
+    const claw   = `rgb(${r.int(200,230)},${r.int(185,210)},${r.int(160,186)})`;
+    // Body
+    c.fillStyle = fur;
+    c.beginPath(); c.ellipse(30,46,26,15,0,0,Math.PI*2); c.fill();
+    // Mane
+    c.fillStyle = mane;
+    c.beginPath(); c.ellipse(44,22,21,19,0,0,Math.PI*2); c.fill();
+    // Head
+    c.fillStyle = fur;
+    c.beginPath(); c.ellipse(44,22,15,13,0,0,Math.PI*2); c.fill();
+    // Muzzle
+    c.fillStyle = `rgb(${r.int(175,208)},${r.int(150,180)},${r.int(105,138)})`;
+    c.beginPath(); c.ellipse(52,27,9,7,0.2,0,Math.PI*2); c.fill();
+    c.fillStyle = '#3a1608';
+    c.beginPath(); c.ellipse(56,24,3,2.5,0,0,Math.PI*2); c.fill();
+    // Eyes
+    c.fillStyle = '#ffcc00';
+    c.beginPath(); c.arc(40,17,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(50,17,3,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111';
+    c.beginPath(); c.arc(40,17,1.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(50,17,1.5,0,Math.PI*2); c.fill();
+    // Ears
+    c.fillStyle = fur;
+    c.beginPath(); c.moveTo(34,11); c.lineTo(30,4); c.lineTo(38,9); c.fill();
+    c.beginPath(); c.moveTo(54,11); c.lineTo(58,4); c.lineTo(60,11); c.fill();
+    // Tail with tuft
+    c.strokeStyle = fur; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(4,42); c.quadraticCurveTo(2,34,6,26); c.stroke();
+    c.fillStyle = dark;
+    c.beginPath(); c.arc(6,24,6,0,Math.PI*2); c.fill();
+    // Legs
+    c.fillStyle = fur;
+    c.fillRect(12,56,10,8); c.fillRect(26,58,10,6);
+    c.fillRect(38,58,10,6); c.fillRect(50,56,10,8);
+    // Claws
+    c.fillStyle = claw;
+    c.fillRect(10,63,4,3); c.fillRect(14,63,4,3);
+    c.fillRect(48,63,4,3); c.fillRect(52,63,4,3);
+}
+
+function drawWinterWolf(c, r) {
+    const fur  = `rgb(${r.int(200,238)},${r.int(218,245)},${r.int(230,255)})`;
+    const grey = `rgb(${r.int(140,175)},${r.int(155,190)},${r.int(175,215)})`;
+    const ice  = `rgb(${r.int(95,145)},${r.int(175,218)},${r.int(220,255)})`;
+    // Body
+    c.fillStyle = fur;
+    c.beginPath(); c.ellipse(32,44,26,16,0,0,Math.PI*2); c.fill();
+    // Neck/shoulder ridge of grey
+    c.fillStyle = grey;
+    c.beginPath(); c.ellipse(42,32,12,10,0.2,0,Math.PI*2); c.fill();
+    // Head
+    c.fillStyle = fur;
+    c.beginPath(); c.ellipse(50,22,14,12,0.3,0,Math.PI*2); c.fill();
+    // Snout
+    c.beginPath(); c.ellipse(60,28,9,7,0.4,0,Math.PI*2); c.fill();
+    // Nose
+    c.fillStyle = '#2a3650';
+    c.beginPath(); c.ellipse(65,26,4,3,0,0,Math.PI*2); c.fill();
+    // Icy blue eyes
+    c.shadowColor = ice; c.shadowBlur = 10;
+    c.fillStyle = ice;
+    c.beginPath(); c.arc(46,17,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(54,17,3,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = '#1a3055';
+    c.beginPath(); c.arc(46,17,1.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(54,17,1.5,0,Math.PI*2); c.fill();
+    // Teeth
+    c.fillStyle = '#eef4ff';
+    for (const [x,y] of [[58,30],[60,32],[62,30],[64,28]]) {
+        c.beginPath(); c.moveTo(x,y); c.lineTo(x+1,y+5); c.lineTo(x+2,y); c.fill();
+    }
+    // Ears
+    c.fillStyle = fur;
+    c.beginPath(); c.moveTo(44,11); c.lineTo(40,3); c.lineTo(50,9); c.fill();
+    // Tail with ice crystal tip
+    c.strokeStyle = fur; c.lineWidth = 6;
+    c.beginPath(); c.moveTo(6,40); c.quadraticCurveTo(2,30,8,22); c.stroke();
+    c.shadowColor = ice; c.shadowBlur = 10;
+    c.fillStyle = ice;
+    c.beginPath(); c.arc(8,20,5,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Legs
+    c.fillStyle = fur;
+    c.fillRect(14,56,8,8); c.fillRect(24,58,8,6);
+    c.fillRect(38,58,8,6); c.fillRect(48,56,8,8);
+    // Frost breath haze
+    c.fillStyle = 'rgba(150,210,255,0.22)';
+    c.beginPath(); c.ellipse(58,33,11,6,0.2,0,Math.PI*2); c.fill();
+}
+
+function drawLizardFolk(c, r) {
+    const scales = `rgb(${r.int(46,88)},${r.int(108,150)},${r.int(55,90)})`;
+    const belly  = `rgb(${r.int(155,198)},${r.int(178,210)},${r.int(135,170)})`;
+    const metal  = `rgb(${r.int(75,108)},${r.int(75,108)},${r.int(75,108)})`;
+    const trim   = `rgb(${r.int(140,178)},${r.int(118,152)},${r.int(55,88)})`;
+    // Bipedal torso
+    c.fillStyle = scales;
+    c.beginPath(); c.ellipse(32,40,14,20,0,0,Math.PI*2); c.fill();
+    c.fillStyle = belly;
+    c.beginPath(); c.ellipse(32,42,8,15,0,0,Math.PI*2); c.fill();
+    // Head
+    c.fillStyle = scales;
+    c.beginPath(); c.ellipse(32,18,12,11,0,0,Math.PI*2); c.fill();
+    // Snout
+    c.beginPath(); c.ellipse(38,24,9,6,0.3,0,Math.PI*2); c.fill();
+    // Slit eyes
+    c.fillStyle = '#ffcc00';
+    c.beginPath(); c.arc(27,14,3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(36,14,3,0,Math.PI*2); c.fill();
+    c.fillStyle = '#1a0000';
+    c.fillRect(26,12,2,4); c.fillRect(35,12,2,4);
+    // Crest
+    c.fillStyle = `rgb(${r.int(22,50)},${r.int(80,120)},${r.int(22,50)})`;
+    for (const [x,y,h] of [[26,8,5],[30,5,7],[34,5,7],[38,8,5]]) {
+        c.fillRect(x,y,4,h);
+    }
+    // Tail
+    c.strokeStyle = scales; c.lineWidth = 7;
+    c.beginPath(); c.moveTo(18,52); c.quadraticCurveTo(8,56,4,64); c.stroke();
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(4,64); c.lineTo(2,64); c.stroke();
+    // Shield arm (left)
+    c.fillStyle = scales;
+    c.fillRect(10,30,9,20);
+    c.fillStyle = metal;
+    c.beginPath(); c.ellipse(5,40,8,13,0,0,Math.PI*2); c.fill();
+    c.fillStyle = trim;
+    c.beginPath(); c.ellipse(5,40,6,11,0,0,Math.PI*2); c.fill();
+    c.fillStyle = `rgb(${r.int(165,200)},${r.int(150,180)},${r.int(75,110)})`;
+    c.beginPath(); c.arc(5,40,3,0,Math.PI*2); c.fill();
+    // Spear arm (right)
+    c.fillStyle = scales;
+    c.fillRect(45,30,9,20);
+    c.strokeStyle = `rgb(${r.int(75,105)},${r.int(58,82)},${r.int(28,52)})`; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(58,62); c.lineTo(54,6); c.stroke();
+    c.fillStyle = `rgb(${r.int(148,178)},${r.int(138,165)},${r.int(108,135)})`;
+    c.beginPath(); c.moveTo(54,6); c.lineTo(50,13); c.lineTo(58,13); c.closePath(); c.fill();
+    // Legs
+    c.fillStyle = scales;
+    c.fillRect(22,58,9,6); c.fillRect(33,58,9,6);
+}
+
+function drawDreadCultist(c, r) {
+    const robe  = `rgb(${r.int(8,22)},${r.int(6,16)},${r.int(22,42)})`;
+    const blood = `rgb(${r.int(125,158)},${r.int(8,22)},${r.int(8,22)})`;
+    const sigil = `rgb(${r.int(180,224)},${r.int(40,82)},${r.int(165,205)})`;
+    const void_ = '#050008';
+    // Dark ragged robe
+    c.fillStyle = robe;
+    c.beginPath();
+    c.moveTo(16,24); c.quadraticCurveTo(6,50,2,64); c.lineTo(12,60);
+    c.lineTo(16,64); c.lineTo(20,58); c.lineTo(24,64); c.lineTo(28,60);
+    c.lineTo(32,64); c.lineTo(36,60); c.lineTo(40,64); c.lineTo(44,58);
+    c.lineTo(48,64); c.lineTo(52,60); c.lineTo(62,64);
+    c.quadraticCurveTo(58,50,48,24); c.closePath(); c.fill();
+    // Abyssal sigil on chest
+    c.fillStyle = blood;
+    c.beginPath(); c.arc(32,42,9,0,Math.PI*2); c.fill();
+    c.shadowColor = sigil; c.shadowBlur = 10;
+    c.fillStyle = sigil;
+    c.beginPath(); c.arc(32,42,5,0,Math.PI*2); c.fill();
+    // Demonic rune lines
+    c.strokeStyle = sigil; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(24,36); c.lineTo(40,36); c.stroke();
+    c.beginPath(); c.moveTo(32,30); c.lineTo(32,42); c.stroke();
+    c.beginPath(); c.moveTo(26,48); c.lineTo(38,48); c.stroke();
+    c.beginPath(); c.moveTo(24,36); c.lineTo(26,48); c.stroke();
+    c.beginPath(); c.moveTo(40,36); c.lineTo(38,48); c.stroke();
+    c.shadowBlur = 0;
+    // Hood
+    c.fillStyle = robe;
+    c.beginPath();
+    c.moveTo(13,28); c.quadraticCurveTo(32,-3,51,28);
+    c.quadraticCurveTo(42,17,32,16); c.quadraticCurveTo(22,17,13,28);
+    c.fill();
+    // Face void
+    c.fillStyle = void_;
+    c.beginPath(); c.ellipse(32,22,10,9,0,0.3,Math.PI-0.3); c.fill();
+    // Malevolent purple eyes
+    c.shadowColor = sigil; c.shadowBlur = 16;
+    c.fillStyle = sigil;
+    c.beginPath(); c.arc(26,21,2.5,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(38,21,2.5,0,Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    // Dark clawed hands
+    c.fillStyle = `rgb(${r.int(8,24)},${r.int(4,14)},${r.int(18,32)})`;
+    c.beginPath(); c.ellipse(6,44,7,5,-0.3,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(58,44,7,5,0.3,0,Math.PI*2); c.fill();
+    c.fillStyle = `rgb(${r.int(38,65)},${r.int(4,14)},${r.int(38,65)})`;
+    for (const [x,y,dx] of [[4,40,-2],[6,37,-1],[8,40,0],[56,40,2],[58,37,1],[60,40,0]]) {
+        c.beginPath(); c.moveTo(x,y); c.lineTo(x+dx,y-5); c.lineTo(x+3,y); c.fill();
+    }
+}
+
 const DRAWERS = {
     skeleton: drawSkeleton, slime: drawSlime, goblin: drawGoblin,
     spider: drawSpider, wraith: drawWraith,
@@ -4839,6 +5266,16 @@ const DRAWERS = {
     void_wraith:       drawVoidWraith,
     vampire_lord:      drawVampireLord,
     myconid_sovereign: drawMyconidSovereign,
+    // New Monsters
+    evil_wizard:   drawEvilWizard,
+    dark_treant:   drawDarkTreant,
+    mandrake_root: drawMandrakeRoot,
+    killer_vine:   drawKillerVine,
+    cave_bear:     drawCaveBear,
+    cave_lion:     drawCaveLion,
+    winter_wolf:   drawWinterWolf,
+    lizard_folk:   drawLizardFolk,
+    dread_cultist: drawDreadCultist,
 };
 
 /**

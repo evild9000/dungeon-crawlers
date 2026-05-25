@@ -135,6 +135,25 @@ export class ShopUI {
             });
             row.appendChild(buyBtn);
 
+            if (def.reagentTier) {
+                const price10 = price * 10;
+                const buy10Btn = document.createElement('button');
+                buy10Btn.className = 'shop-action-btn shop-buy-btn';
+                buy10Btn.textContent = 'Buy 10';
+                buy10Btn.disabled = inv.gold < price10;
+                buy10Btn.title = `Buy 10 for ${price10}g`;
+                buy10Btn.addEventListener('click', () => {
+                    if (inv.gold >= price10) {
+                        inv.removeGold(price10);
+                        for (let i = 0; i < 10; i++) inv.addItem(itemId);
+                        soundManager.playGold();
+                        this._onChanged();
+                        this._render();
+                    }
+                });
+                row.appendChild(buy10Btn);
+            }
+
             this.content.appendChild(row);
         }
     }

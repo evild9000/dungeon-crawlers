@@ -50,6 +50,7 @@ export class PartyHUD {
         this._topBar = null;
         this._goldEl = null;
         this._foodEl = null;
+        this._partyCountEl = null;
         this._lightEl = null;   // Phase 10 light status indicator
     }
 
@@ -92,6 +93,12 @@ export class PartyHUD {
         if (inventory) {
             this._goldEl.textContent = `${inventory.gold}`;
             this._foodEl.textContent = `${inventory.getItemCount('food')}`;
+        }
+
+        // Update party member count (recruitable members only, not golems/summons)
+        if (this._partyCountEl && Array.isArray(party)) {
+            const count = party.filter(m => m && !m.isSummoned).length;
+            this._partyCountEl.textContent = `${count}`;
         }
 
         // Show the Craft button only when a living artificer is in the party.
@@ -158,6 +165,7 @@ export class PartyHUD {
         this._topBar = null;
         this._goldEl = null;
         this._foodEl = null;
+        this._partyCountEl = null;
     }
 
     // ──────────────────────────────────────────
@@ -167,6 +175,17 @@ export class PartyHUD {
     _buildTopBar() {
         this._topBar = document.createElement('div');
         this._topBar.className = 'hud-top-bar';
+
+        // Party count
+        const partyCountWrap = document.createElement('span');
+        partyCountWrap.className = 'hud-resource';
+        partyCountWrap.title = 'Party size (recruitable members; excludes golems and summoned creatures)';
+        partyCountWrap.innerHTML = '<span class="hud-resource-icon">&#x1F465;</span> ';
+        this._partyCountEl = document.createElement('span');
+        this._partyCountEl.className = 'hud-resource-val';
+        this._partyCountEl.textContent = '0';
+        partyCountWrap.appendChild(this._partyCountEl);
+        this._topBar.appendChild(partyCountWrap);
 
         // Gold
         const goldWrap = document.createElement('span');
@@ -270,6 +289,7 @@ export class PartyHUD {
     _createCard(member) {
         const card = document.createElement('div');
         card.className = 'party-card';
+        card.dataset.memberId = member.id;
 
         const cls       = member.classDef;
         const sp        = member.speciesDef;
@@ -1107,6 +1127,10 @@ export class PartyHUD {
             const phc = pefx.find(x => x && x.type === 'hag_curse' && x.rounds > 0);
             if (phc) mkPB('🧙', 'Hexed', 'rgba(80,0,80,0.9)',
                 'Hag\'s Curse: ' + (phc.damageBonus||0) + ' all stats, ' + (phc.defenseBonus||0) + ' def — ' + phc.rounds + ' rds left');
+            // Roper Weakness (roper tentacle — melee debuff)
+            const prw = pefx.find(x => x && x.type === 'roper_weakness' && x.rounds > 0);
+            if (prw) mkPB('🦑', 'Weakened', 'rgba(80,50,10,0.9)',
+                'Roper Grip: ' + (prw.meleeDamageBonus||0) + ' melee damage — ' + prw.rounds + ' rds left');
             // Quasit Venom (armor-ignoring poison DoT)
             const pqv = pefx.find(x => x && x.type === 'quasit_poison' && x.rounds > 0);
             if (pqv) mkPB('\u{1F47F}', 'Venom', 'rgba(60,0,120,0.9)',

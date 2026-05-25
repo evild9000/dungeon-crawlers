@@ -54,11 +54,13 @@ import { LightPickerUI } from '../ui/LightPickerUI.js';
 import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
-import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS, CHEST_PROXIMITY } from '../utils/constants.js';
+import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS, CHEST_PROXIMITY, STATUE_PROXIMITY, STATUE_MIN_DUNGEON_LEVEL } from '../utils/constants.js';
 import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { LoreBook } from '../ui/LoreBook.js';
 import { syncGolemStats } from '../entities/Summons.js';
+import { Enemy } from '../entities/Enemy.js';
+import { ENEMY_TYPES, WANDERER_BASE_CHANCE, WANDERER_CHANCE_PER_CELL, WANDERER_MAX_DISTANCE } from '../utils/constants.js';
 
 /**
  * Game — top-level orchestrator.
@@ -277,6 +279,15 @@ export class Game {
         document.getElementById('btn-close-help')
             .addEventListener('click', () => this._hideHelp());
 
+        // --- Combat resolution overlay ---
+        this._combatHelpOverlay = document.getElementById('combat-help-overlay');
+        document.getElementById('btn-combat-help-open')
+            .addEventListener('click', () => { this._hideHelp(); this._showCombatHelp(); });
+        document.getElementById('btn-back-combat-help')
+            .addEventListener('click', () => { this._hideCombatHelp(); this._showHelp(); });
+        document.getElementById('btn-close-combat-help')
+            .addEventListener('click', () => this._hideCombatHelp());
+
         // --- Class abilities overlay ---
         this._classHelpOverlay = document.getElementById('class-help-overlay');
         document.getElementById('btn-class-help-open')
@@ -318,6 +329,11 @@ export class Game {
         // --- Magical chest modal (built dynamically) ---
         this._chestModal = null;
         this._pendingChest = null;
+
+        // --- Statue event modal (built dynamically, DL30+) ---
+        this._statueModal = null;
+        this._pendingStatue = null;
+        this._statueCooldown = 0;
 
         // --- Bag picker modal (Phase 8 follow-up) ---
         this._bagpickModal  = document.getElementById('bagpick-modal');
@@ -388,6 +404,7 @@ export class Game {
             || (this._trapModal && this._trapModal.style.display === 'flex')
             || (this._fountainModal && this._fountainModal.style.display === 'flex')
             || (this._chestModal && this._chestModal.style.display === 'flex')
+            || (this._statueModal && this._statueModal.style.display === 'flex')
             || (this._bagpickModal && this._bagpickModal.style.display === 'flex')
             || (this.pauseLoadPanel && this.pauseLoadPanel.style.display === 'block')
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
@@ -450,12 +467,14 @@ export class Game {
                 else if (this.inventoryUI.isGroupOpen) this.inventoryUI.hideGroup();
                 else if (this._recruitModal && this._recruitModal.style.display === 'flex') this._hideRecruitModal();
                 else if (this._helpOverlay.style.display === 'flex') this._hideHelp();
+                else if (this._combatHelpOverlay && this._combatHelpOverlay.style.display === 'block') this._hideCombatHelp();
                 else if (this._classHelpOverlay && this._classHelpOverlay.style.display === 'block') this._hideClassHelp();
                 else if (this._logOverlay && this._logOverlay.style.display === 'flex') this._hideLog();
                 else if (this._portalModal && this._portalModal.style.display === 'flex') this._hidePortalModal();
                 else if (this._trapModal && this._trapModal.style.display === 'flex') this._skipTrap();
                 else if (this._fountainModal && this._fountainModal.style.display === 'flex') this._hideFountainModal();
                 else if (this._chestModal && this._chestModal.style.display === 'flex') this._hideChestModal();
+                else if (this._statueModal && this._statueModal.style.display === 'flex') this._hideStatueModal();
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
@@ -713,6 +732,15 @@ export class Game {
     _hideHelp() {
         this._helpOverlay.style.display = 'none';
     }
+    _showCombatHelp() {
+        if (this._combatHelpOverlay) {
+            this._combatHelpOverlay.style.display = 'block';
+            if (document.pointerLockElement) document.exitPointerLock();
+        }
+    }
+    _hideCombatHelp() {
+        if (this._combatHelpOverlay) this._combatHelpOverlay.style.display = 'none';
+    }
     _showClassHelp() {
         if (this._classHelpOverlay) {
             this._classHelpOverlay.style.display = 'block';
@@ -917,6 +945,7 @@ export class Game {
         this.shopUI.hide();
         if (this.craftingUI) this.craftingUI.hide();
         this._hideHelp();
+        this._hideCombatHelp();
         this._hideClassHelp();
         this._hideRecruitModal();
         if (this._onPointerLockChange) {
@@ -1133,6 +1162,7 @@ export class Game {
             if (this._portalCooldown > 0) this._portalCooldown -= dt;
             if (this._fountainCooldown > 0) this._fountainCooldown -= dt;
             if (this._chestCooldown > 0) this._chestCooldown -= dt;
+            if (this._statueCooldown > 0) this._statueCooldown -= dt;
 
             if (this._combatCooldown > 0) {
                 this._combatCooldown -= dt;
@@ -1154,6 +1184,9 @@ export class Game {
 
             // Magical chest proximity check
             if (this._chestCooldown <= 0) this._checkChests();
+
+            // Mystical statue proximity check (DL30+)
+            if (this._statueCooldown <= 0) this._checkStatues();
 
             const playerGX = Math.floor(this.player.container.position.x / CELL_SIZE);
             const playerGZ = Math.floor(this.player.container.position.z / CELL_SIZE);
@@ -1257,6 +1290,11 @@ export class Game {
         const nearby = this._gatherCombatGroup(triggerEnemy);
         if (!nearby.length) return;
 
+        // Store the encounter centre so wandering monster distance checks work
+        // even after the trigger enemy dies mid-combat.
+        this._encounterGridX = triggerEnemy.gridX;
+        this._encounterGridZ = triggerEnemy.gridZ;
+
         // Track monster discovery for the Lore Book
         for (const e of nearby) {
             if (e.type && this.gameState) {
@@ -1284,6 +1322,16 @@ export class Game {
             }
         };
 
+        // Wire the per-round wandering monster attraction check.
+        this.combatSystem.onRoundBegin = () => this._checkWanderingMonsters();
+
+        // Reset any lingering Corpse Horror accumulation so each combat starts fresh.
+        for (const m of this.gameState.party) {
+            if (m.isSummoned && m.summonType === 'corpse_horror' && m.summonStats) {
+                m.summonStats = { ...m.summonStats, corpseCount: 0 };
+            }
+        }
+
         this.combatSystem.startCombat(this.gameState.party, nearby, this.gameState.dungeonLevel || 1, this.gameState.inventory);
         this.combatUI.show((result) => this._onCombatEnd(result));
     }
@@ -1292,43 +1340,74 @@ export class Game {
         if (!trigger || trigger.health <= 0) return [];
         const gx = trigger.gridX;
         const gz = trigger.gridZ;
-        // Phase 8 rule 5: always bring at least N=partySize enemies into the fight
-        // (counting summons is weird — use only non-summoned characters for the size).
-        const partySize = Math.max(1, this.gameState.party.filter(m => !m.isSummoned).length);
-        const group = new Set([trigger]);
 
-        // Step 1 — pull any hostile adjacent to the trigger.
-        for (const e of this.enemyManager.getEnemies()) {
-            if (e.health <= 0 || e.friendly) continue;
-            if (Math.abs(e.gridX - gx) <= 1 && Math.abs(e.gridZ - gz) <= 1) {
-                group.add(e);
-            }
-        }
+        // Encounter size: one enemy per non-summoned party member, plus a depth
+        // bonus (one extra foe per 10 dungeon levels).  The trigger enemy counts
+        // as slot #1, so we spawn (targetSize − 1) thematic adds.
+        const partySize    = Math.max(1, this.gameState.party.filter(m => !m.isSummoned).length);
+        const dungeonLevel = this.gameState.dungeonLevel || 1;
+        const targetSize   = partySize + Math.floor(dungeonLevel / 10);
 
-        // Step 2 — if still short, recruit the nearest living hostiles.
-        if (group.size < partySize) {
-            const allAlive = this.enemyManager.getEnemies()
-                .filter(e => e.health > 0 && !e.friendly && !group.has(e));
-            allAlive.sort((a, b) => {
-                const da = Math.abs(a.gridX - gx) + Math.abs(a.gridZ - gz);
-                const db = Math.abs(b.gridX - gx) + Math.abs(b.gridZ - gz);
-                return da - db;
-            });
-            for (const e of allAlive) {
-                if (group.size >= partySize) break;
-                group.add(e);
-            }
-        }
+        const group = [trigger];
 
-        // Step 3 — still short? Force-spawn fresh enemies near the trigger so
-        // there's always at least one foe per party member (rule 5).
-        if (group.size < partySize) {
-            const need = partySize - group.size;
+        // Existing nearby monsters are no longer pulled in immediately; they
+        // may arrive as wanderers in subsequent rounds.  Instead, spawn fresh
+        // same-tag enemies near the trigger to fill the encounter thematically.
+        const need = targetSize - 1;
+        if (need > 0) {
             const fresh = this.enemyManager.forceSpawnNear(gx, gz, need, trigger.type);
-            for (const e of fresh) group.add(e);
+            for (const e of fresh) group.push(e);
         }
 
-        return [...group];
+        return group;
+    }
+
+    /**
+     * Called at the start of each new combat round (via combatSystem.onRoundBegin).
+     * Checks every non-combat hostile enemy on the dungeon map; those within
+     * WANDERER_MAX_DISTANCE grid cells roll a distance-weighted chance to join.
+     *
+     * Distance is Euclidean (diagonal moves count correctly).
+     * Chance = max(0, WANDERER_BASE_CHANCE − dist × WANDERER_CHANCE_PER_CELL)
+     *   → 50 % at 0 cells, 25 % at 5 cells, 0 % at 10 cells.
+     *
+     * Returns an array of { enemy } objects for CombatSystem to integrate.
+     */
+    _checkWanderingMonsters() {
+        if (!this.enemyManager || !this.combatSystem) return [];
+        const cx = this._encounterGridX ?? 0;
+        const cz = this._encounterGridZ ?? 0;
+        // Build a quick lookup of enemies already in combat.
+        const combatSet = new Set(this.combatSystem.enemies);
+        const newcomers = [];
+
+        for (const enemy of this.enemyManager.getEnemies()) {
+            if (enemy.health <= 0 || enemy.friendly) continue;
+            if (combatSet.has(enemy)) continue;
+            // Bosses and mega-bosses don't wander into fights — they have fixed
+            // encounter logic and would be unbalanced mid-combat additions.
+            if (enemy.isBoss || enemy.isMegaBoss) continue;
+
+            const dx   = enemy.gridX - cx;
+            const dz   = enemy.gridZ - cz;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist > WANDERER_MAX_DISTANCE) continue;
+
+            const chance = Math.max(0, WANDERER_BASE_CHANCE - dist * WANDERER_CHANCE_PER_CELL);
+            if (Math.random() < chance) {
+                newcomers.push({ enemy });
+                // Mark as in-combat immediately to prevent duplicate rolls on the
+                // same pass (multiple wanderers can join in a single round check).
+                combatSet.add(enemy);
+                // Register discovery for the Lore Book.
+                if (enemy.type && this.gameState) {
+                    this.gameState.discoveredMonsters?.add(enemy.type);
+                }
+            }
+        }
+
+        return newcomers;
     }
 
     _onCombatEnd(result) {
@@ -1356,6 +1435,11 @@ export class Game {
                 if (e.health <= 0) this.enemyManager.removeEnemy(e);
             }
         }
+
+        // Clear wandering monster callback and encounter position.
+        this.combatSystem.onRoundBegin = null;
+        this._encounterGridX = null;
+        this._encounterGridZ = null;
 
         // Phase 8: summons only live for the duration of the fight. Strip them
         // from gameState.party (they were pushed in by CombatSystem) and clear
@@ -2625,6 +2709,174 @@ export class Game {
         this._chestModal.style.display = 'flex';
     }
 
+    // ────────────────────────────────────────────
+    // Mystical Statues (DL30+)
+    // ────────────────────────────────────────────
+
+    _checkStatues() {
+        if (!this.dungeonData || !this.player || !this.dungeonData.statues) return;
+        if ((this.gameState.dungeonLevel || 1) < STATUE_MIN_DUNGEON_LEVEL) return;
+        if (this._statueModal && this._statueModal.style.display === 'flex') return;
+
+        const pos = this.player.container.position;
+        for (const s of this.dungeonData.statues) {
+            if (s.used) continue;
+            const sx = (s.x + 0.5) * CELL_SIZE;
+            const sz = (s.z + 0.5) * CELL_SIZE;
+            const dx = pos.x - sx;
+            const dz = pos.z - sz;
+            if (dx * dx + dz * dz <= STATUE_PROXIMITY * STATUE_PROXIMITY) {
+                this._showStatueModal(s);
+                return;
+            }
+        }
+    }
+
+    _showStatueModal(statue) {
+        this._pendingStatue = statue;
+
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+
+        if (!this._statueModal) {
+            const overlay = document.createElement('div');
+            overlay.id = 'statue-modal';
+            Object.assign(overlay.style, {
+                position: 'fixed', inset: '0', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(30,0,50,0.82)', zIndex: '2100',
+            });
+            const box = document.createElement('div');
+            box.id = 'statue-modal-box';
+            Object.assign(box.style, {
+                background: 'linear-gradient(160deg,#1a0030 60%,#3d0066)',
+                border: '2px solid #9900ff',
+                boxShadow: '0 0 32px #9900ff88, 0 0 8px #9900ff44 inset',
+                borderRadius: '10px', padding: '28px 36px', minWidth: '380px', maxWidth: '500px',
+                color: '#e8d0ff', fontFamily: 'monospace',
+            });
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            this._statueModal = overlay;
+        }
+
+        this._renderStatueModal();
+        this._statueModal.style.display = 'flex';
+    }
+
+    _renderStatueModal() {
+        if (!this._statueModal || !this._pendingStatue) return;
+        const s = this._pendingStatue;
+        const box = this._statueModal.querySelector('#statue-modal-box');
+        if (!box) return;
+
+        const theme = s.theme || 'unknown';
+        const themeCap = theme.charAt(0).toUpperCase() + theme.slice(1);
+
+        box.innerHTML = `
+            <div style="font-size:20px;font-weight:bold;color:#cc66ff;margin-bottom:8px;text-align:center;">
+                🗿 Mystical Statue
+            </div>
+            <div style="text-align:center;font-size:13px;color:#bb99ff;margin-bottom:14px;">
+                A towering stone effigy radiates with dark arcane energy.<br>
+                Inscribed runes pulse with a <b style="color:#cc66ff">${themeCap}</b> theme.
+            </div>
+            <div style="font-size:12px;color:#ddbbff;line-height:1.7;margin-bottom:16px;padding:10px;background:rgba(90,0,150,0.3);border-radius:6px;border:1px solid #6600aa;">
+                <b style="color:#ffaa00;">⚠ STATUE GAUNTLET</b> — 15 waves of ${themeCap} enemies.<br>
+                • Waves 1–4, 6–9, 11–14: Normal enemies<br>
+                • Wave 5: Boss enemies<br>
+                • Wave 10: Mega Boss<br>
+                • Wave 15: Named Super Mega Boss<br>
+                <span style="color:#ffcc44;">Rewards: ×10 gold, ×2 XP, <b>Guaranteed Legendary item</b></span>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:center;">
+                <button id="statue-challenge-btn" class="menu-btn" style="background:linear-gradient(135deg,#5500aa,#9900ff);border-color:#cc66ff;color:#fff;">
+                    ⚔️ Accept Challenge
+                </button>
+                <button id="statue-leave-btn" class="menu-btn back-btn">Leave</button>
+            </div>`;
+
+        box.querySelector('#statue-challenge-btn')?.addEventListener('click', () => this._confirmStatueEvent());
+        box.querySelector('#statue-leave-btn')?.addEventListener('click', () => this._hideStatueModal());
+    }
+
+    _hideStatueModal() {
+        if (this._statueModal) this._statueModal.style.display = 'none';
+        this._pendingStatue = null;
+        this._statueCooldown = 3.0;
+    }
+
+    _confirmStatueEvent() {
+        const statue = this._pendingStatue;
+        if (!statue) return;
+        this._hideStatueModal();
+        this._startStatueEvent(statue);
+    }
+
+    _startStatueEvent(statue) {
+        if (!statue || statue.used) return;
+        statue.used = true;
+
+        // Remove the statue mesh from the world immediately
+        if (this.dungeonRenderer) this.dungeonRenderer.removeStatue(statue.x, statue.z);
+        this._saveNow();
+
+        const dl = this.gameState.dungeonLevel || 1;
+        const theme = statue.theme || 'undead';
+
+        // Spawn initial wave: 1 enemy per living recruited (non-summoned) party member
+        const livingCount = Math.max(1, this.gameState.party.filter(m => !m.isSummoned && m.health > 0).length);
+
+        const themePool = Object.keys(ENEMY_TYPES).filter(key => {
+            const def = ENEMY_TYPES[key];
+            return Array.isArray(def.tags) && def.tags.includes(theme)
+                && (dl >= (def.minLevel || 1));
+        });
+        const pool = themePool.length > 0 ? themePool : Object.keys(ENEMY_TYPES).filter(k => dl >= (ENEMY_TYPES[k].minLevel || 1));
+
+        const initialEnemies = [];
+        for (let i = 0; i < livingCount; i++) {
+            const type = pool[Math.floor(Math.random() * pool.length)];
+            const e = new Enemy({ type, gridX: statue.x, gridZ: statue.z, level: dl });
+            const def = ENEMY_TYPES[type] || {};
+            if (def.hpMult && def.hpMult !== 1) {
+                e.health = Math.round(e.health * def.hpMult);
+                e.maxHealth = Math.round(e.maxHealth * def.hpMult);
+            }
+            if (def.defenseMult && def.defenseMult !== 1) {
+                e.defense = Math.round((e.defense || 0) * def.defenseMult);
+            }
+            initialEnemies.push(e);
+        }
+
+        document.exitPointerLock();
+        this.state = STATE.COMBAT;
+        this.pauseOverlay.style.display = 'none';
+        this.crosshair.style.display = 'none';
+        if (this.inventoryUI) this.inventoryUI._inCombat = true;
+        this._minimapWasOpen = !!(this.minimapUI && this.minimapUI.isOpen);
+        if (this.minimapUI && this.minimapUI.isOpen) this.minimapUI.hide();
+
+        this._combatLogCursor = 0;
+        this.combatSystem.onUpdate = () => {
+            this.combatUI._refresh();
+            this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+            const log = this.combatSystem.log;
+            while (this._combatLogCursor < log.length) {
+                this._log(log[this._combatLogCursor++]);
+            }
+        };
+
+        this.combatSystem.startCombat(
+            this.gameState.party,
+            initialEnemies,
+            dl,
+            this.gameState.inventory,
+            { isStatueEvent: true, statueTheme: theme },
+        );
+        this.combatUI.show((result) => this._onCombatEnd(result));
+    }
+
     /**
      * Bard song ongoing mana drain — called once per in-game minute.
      * Each bard with active songs loses BARD_SONG_MANA_PER_MIN mana.
@@ -2909,6 +3161,7 @@ export class Game {
         }
         this._recruitSpecies.innerHTML = '';
         for (const id of SPECIES_IDS) {
+            if (id === 'undead' || id === 'elemental') continue;
             const s = SPECIES[id];
             const opt = document.createElement('option');
             opt.value = id;
