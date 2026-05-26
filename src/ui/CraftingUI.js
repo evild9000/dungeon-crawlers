@@ -488,6 +488,9 @@ export class CraftingUI {
                 if (!this._canPay(state, cost)) return;
                 this._pay(state, cost);
                 state.inventory.addItem(entry.id, 1);
+                if (typeof state.recordPotionCraft === 'function') {
+                    state.recordPotionCraft(artificer, entry.isScroll);
+                }
                 const verb = entry.isScroll ? 'scribes' : 'brews';
                 this._log(`\u{1F4DC} ${artificer.name} ${verb} a ${entry.name}.`);
                 this._onChanged();

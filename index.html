@@ -766,7 +766,7 @@
             height: min(440px, 32vh);
             overflow-y: auto;
             padding: 8px 10px;
-            font-size: 12px;
+            font-size: 13px;
             color: #aa9966;
         }
         #combat-log-player-inner { color: #a0cc88; }
@@ -810,7 +810,7 @@
             border-radius: 4px;
             padding: 10px 14px;
             margin-bottom: 14px;
-            font-size: 13px;
+            font-size: 14px;
             color: #aa9966;
         }
 
@@ -2380,6 +2380,7 @@
                 <div class="help-row"><span class="help-key">K</span> Open the <b>Crafting</b> menu (requires an Artificer in the party) — enchant weapons, armor, and shields; brew potions; forge &amp; repair golems</div>
                 <div class="help-row"><span class="help-key">V</span> Open the <b>Party Spells</b> panel out of combat — cast bard songs, Cleric resurrection, or other out-of-combat party abilities</div>
                 <div class="help-row"><span class="help-key">X</span> Open the <b>Lore Book</b> — browse monsters you have encountered, their tags, special abilities, and sprite</div>
+                <div class="help-row"><span class="help-key">G</span> Open <b>Achievement Badges</b> — track party and individual milestones, tiers, and rewards</div>
                 <div class="help-row"><span class="help-key">H</span> Toggle this help menu</div>
                 <div class="help-row"><span class="help-key">Esc</span> Close any open overlay</div>
             </div>
@@ -2464,7 +2465,7 @@
                 <div class="help-row"><b>&#x1F30A; Drowning</b> (Water Elemental AoE) — the whole party is engulfed in a surging torrent. Applies a drowning DoT for 3 rounds <em>and</em> a separate armor-weakening debuff that reduces defense for 3 rounds.</div>
                 <div class="help-row"><b>&#x1F928; Ghost Fear</b> — applied by Ghost summons and Demi-Liches. Permanently reduces the target's attack and defense by 3 each for the rest of the combat. Shown as &#x1F628; Feared badge.</div>
                 <div class="help-row"><b>&#x271D;&#xFE0F; Turned</b> — applied to undead enemies by cleric Turn Undead. Reduces the target's attack and defense for several rounds. Shown as ✝️ Turned badge.</div>
-                <div class="help-row"><b>&#x1F3B6; Disrupted</b> (Bard Dissonant Chord) — one-use-per-fight AoE: deals magic damage to <b>all enemies</b>, applies a <b>Disrupted</b> debuff (−attack/−defense for 1 round), and gives each a <b>50% stun chance</b>. Scale rises by +1 every 5 bard levels.</div>
+                <div class="help-row"><b>&#x1F3B6; Disrupted</b> (Bard Dissonant Chord) — one-use-per-fight AoE: deals magic damage to <b>all enemies</b> with a <b>+2% damage bonus per bard level</b>, applies a <b>Disrupted</b> debuff (−attack/−defense for 1 round), and gives each a <b>50% stun chance</b>. The debuff scale rises by +1 every 5 bard levels.</div>
                 <div class="help-row"><b>&#x1F3B5; Charmed</b> (Bard Charm Monster) — a successfully charmed enemy switches sides for floor(bard level / 5) rounds, fighting hostile enemies on your behalf. Immune: undead, elementals, constructs, bosses, and mega-bosses.</div>
                 <div class="help-row"><b>&#x270B; Quivering Palm</b> (Monk L20) — a unique internal DoT planted by the monk's Quivering Palm strike. Starts at the base melee roll and multiplies by <b>(2 + level÷100)</b> each round (e.g. L30 = ×2.3, L100 = ×3.0), bypassing all armor and defense, for up to 10 multiplications. Multiple monks can stack separate Quivering Palm effects on the same target.</div>
                 <div class="help-row"><b>&#x1F9D8; Pressure Points</b> (Monk L30 passive) — each application of Quivering Palm by a L30+ monk also stacks a cumulative <b>&minus;1 defense</b> debuff on the target. Expires when that monk's QP expires. Immune: undead, incorporeal, elementals, constructs.</div>
@@ -2624,7 +2625,7 @@
                 <div class="help-row"><b>&#x1F9DA; Pixie</b> — AoE magic, dodge chance = ranger's crit. <b>Fey Nature</b>: takes half damage from AoE magic. Scales: +2 HP/level.</div>
                 <div class="help-row">(Ranger and Druid, 7 MP each. Ranger stun/crit/dodge chances scale with ranged crit.)</div>
                 <div class="help-row"><b>&#x1F333; Treant</b> (Druid only, level 5+, 7 MP): ancient tree spirit joins the front row. Deals heavy slam damage each turn. <b>33% chance to hold</b> the struck target for 1 round (skips their next turn). Only incorporeal foes are immune to the hold — undead, constructs, and elementals can be held.</div>
-                <div class="help-row"><b>&#x1F9DA;&#xFE0F; Faerie Queen</b> (Druid L20, 3 Commune tokens): joins the <b>back row</b>. 2× druid max HP, 30+level defense, 50% magic/AoE resistance. Each turn casts <b>Wrath of Nature</b> — hits floor(druidLevel/4) enemies with magic damage, applying fae poison DoT and a 33%+ hold chance per hit. Can be healed by clerics.</div>
+                <div class="help-row"><b>&#x1F9DA;&#xFE0F; Faerie Queen</b> (Druid L20, Commune tokens: 3 at L20–29, 2 at L30–39, 1 at L40+): joins the <b>back row</b>. 2× druid max HP, 30+level defense, 50% magic/AoE resistance. Each turn casts <b>Wrath of Nature</b> — hits floor(druidLevel/4) enemies with magic damage, applying fae poison DoT and a 33%+ hold chance per hit. Can be healed by clerics.</div>
                 <div class="help-row"><b>&#x1FAB4; Shambling Mound</b> (Druid L25, 100 MP): front-row plant guardian. HP = 4× druid max HP; defense = 20+druid level; slam damage = base melee + 2× druid level with 45% stun. Regenerates 20% max HP each turn; if full after regen, spawns a Mini Shambler that grows to 67%, 84%, then 100% over three turns (no mini spawn on the mound's first round after summoning). Each mound can intercept attacks aimed at its druid after warrior intercepts at 50% + druid level/3 percent.</div>
                 <div class="help-row"><b>&#x1F9B4; Necromancer undead</b> — see Necromancer class description above for full tier details. All undead act immediately on summon. Ranger &amp; Druid beasts can be healed by clerics. Necromancer undead cannot — but the necromancer's drain restores them.</div>
                 <div class="help-row"><b>&#x1F480; Demi-Lich</b> (Necromancer L25, 20 MP, requires Lich Form): back-row undead caster. Defense = 10 + necromancer level × 2; HP equals the necromancer's current HP at summon time. Its magic/AoE attack ignores enemy defense and hits floor(necromancer level/5) targets. It has Ghost Fear, takes half damage from magic/AoE before defense, and is immune to stun, web, holds, and poison.</div>
@@ -3189,7 +3190,7 @@
 &#x1F985; <b>Eagle</b> — back-row ranged striker; <b>crit = 20% + level&times;2%</b>; crits deal &times;(4 + level&times;2%) damage; defense = druid level; +5 HP/level. Extra attack at L33+ hits same enemy. <em>L10+: Golden Eagle</em> — +25% HP, +5 defense, bonus ranged damage.<br>
 &#x1F9DA; <b>Pixie</b> — back-row AoE magic (hits all enemies); <b>dodge = 25% + druid level%</b> (cap 90%); defense = ⌊druid level/2⌋; <b>Fey Nature</b>: takes half damage from AoE magic; +2 HP/level. <em>L10+: Pixie Princess</em> — higher magic damage, +3 defense.</td></tr>
                     <tr><td class="ability-level">L5</td><td><b>Summon Treant</b> (7 MP) — front-row ancient tree spirit; heavy melee slam + 33% hold per hit (incorporeal and bosses immune). Defense = ⌊druid level &times; 1.5⌋. Extra slam at L33+. <b>Plant</b>: immune to stun, paralysis, and bleed; vulnerable to fire DoTs (+50%). <em>L10+: Elder Treant</em> — bonus damage.</td></tr>
-                    <tr><td class="ability-level">L20</td><td><b>Commune</b> (free action) — gain 1 fae token (&star; badge). At 3 tokens, summon the <b>Faerie Queen</b> (back row; 2&times; druid HP, 30+level def, 50% magic/AoE resist). Her <em>Wrath of Nature</em> hits floor(level/4) enemies each turn with fae poison DoT and 33%+ hold chance (incorporeal only immune).</td></tr>
+                    <tr><td class="ability-level">L20</td><td><b>Commune</b> (free action) — gain 1 fae token (&star; badge). Summon the <b>Faerie Queen</b> at 3 tokens (L20–29), 2 tokens (L30–39), or 1 token (L40+). Faerie Queen: back row; 2&times; druid HP, 30+level def, 50% magic/AoE resist. Her <em>Wrath of Nature</em> hits floor(level/4) enemies each turn with fae poison DoT and 33%+ hold chance (incorporeal only immune).</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Shambling Mound</b> (100 MP) — 4&times; druid max HP, 20+level def, heavy slam with 45% stun on enemies, 20% HP regen per round. Grows mini-shamblers over time (original only). Post-warrior intercepts for its druid still apply. <b>Plant</b>: immune to stun, paralysis, and bleed DoTs.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Verdant Surge</b> (passive upgrade to Entangle) — entangled enemies suffer a nature DoT each round equal to a random druid magic roll; each entangled enemy also has a 25% chance per round to lose its action entirely (not bosses or mega-bosses). Incorporeal enemies are immune to the DoT.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Wild Shape</b> (free action, 30 MP initial + 5 MP/round) — shapeshift into an animal form. Toggle ON to activate; must toggle OFF before switching forms. Normal attack buttons are replaced by a form-specific attack. If mana runs out, the form ends automatically. Matching beasts already in the party gain +50% damage, bonus defense, and an extra attack while the form is held. Summoning a matching beast while in form calls a second one for free.<br>

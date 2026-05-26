@@ -698,6 +698,7 @@ export class PartyHUD {
         if (portraitWrap) {
             let faeBadge = portraitWrap.querySelector('.party-fae-badge');
             const faeTokens = member.faeTokens || 0;
+            const faeTokensNeeded = member.level >= 40 ? 1 : (member.level >= 30 ? 2 : 3);
             if (faeTokens > 0) {
                 if (!faeBadge) {
                     faeBadge = document.createElement('span');
@@ -715,7 +716,7 @@ export class PartyHUD {
                     portraitWrap.appendChild(faeBadge);
                 }
                 faeBadge.textContent = '✨' + faeTokens;
-                faeBadge.title = `Fae Tokens: ${faeTokens}/3 — Commune again to summon the Faerie Queen!`;
+                faeBadge.title = `Fae Tokens: ${faeTokens}/${faeTokensNeeded} — Commune again to summon the Faerie Queen!`;
             } else if (faeBadge) {
                 faeBadge.remove();
             }
@@ -1032,6 +1033,14 @@ export class PartyHUD {
                 if (a.shield) parts.push('🛡');
                 if (a.trinkets) parts.push(`💎 ${a.trinkets}`);
             }
+            if (member.summonType === 'corpse_horror') {
+                const corpses = ss.corpseCount || 1;
+                const atkCount = ss.attackCount || 1;
+                const skill = ss.meleeSkill || 0;
+                parts.push(`🧵 ${corpses}`);
+                parts.push(`🗡️x${atkCount}`);
+                parts.push(`🎯 ${skill}`);
+            }
             // Show regen rate if applicable (flesh golem, stirge-type beasts)
             const regen = ss.regenPercent;
             if (regen) parts.push(`\u{1F504} ${Math.round(regen * 100)}%/rd`);
@@ -1042,6 +1051,9 @@ export class PartyHUD {
                     : '') +
                 (ss.tierId && ss.attachments
                     ? `\nGolem attachments: ${ss.attachments.limbs || 0} limb(s), ${ss.attachments.shield ? 'shield' : 'no shield'}, ${ss.attachments.trinkets || 0} trinket(s).`
+                    : '') +
+                (member.summonType === 'corpse_horror'
+                    ? `\nCorpse Horror growth: ${ss.corpseCount || 1} corpses, ${ss.attackCount || 1} attacks/round, melee skill ${ss.meleeSkill || 0}.`
                     : '') +
                 (regen ? `\nRegen: ${Math.round(regen * 100)}% HP/round` : '');
         }

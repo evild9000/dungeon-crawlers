@@ -58,6 +58,7 @@ import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON
 import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { LoreBook } from '../ui/LoreBook.js';
+import { AchievementsUI } from '../ui/AchievementsUI.js';
 import { syncGolemStats } from '../entities/Summons.js';
 import { Enemy } from '../entities/Enemy.js';
 import { ENEMY_TYPES, WANDERER_BASE_CHANCE, WANDERER_CHANCE_PER_CELL, WANDERER_MAX_DISTANCE } from '../utils/constants.js';
@@ -180,6 +181,8 @@ export class Game {
         });
 
         this.loreBook = new LoreBook();
+        this.achievementsUI = new AchievementsUI(() => this.gameState);
+        this.combatSystem.setTelemetry((event, payload) => this._recordCombatTelemetry(event, payload));
 
         // --- Buff indicators panel (upper-right, below dungeon level) ---
         // Shared flex-column container so bard song + scroll buffs never overlap.
@@ -409,7 +412,8 @@ export class Game {
             || (this.pauseLoadPanel && this.pauseLoadPanel.style.display === 'block')
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
             || (this.partySpellModal && this.partySpellModal.isOpen)
-            || (this.loreBook && this.loreBook.isOpen);
+            || (this.loreBook && this.loreBook.isOpen)
+            || (this.achievementsUI && this.achievementsUI.isOpen);
     }
 
     // ────────────────────────────────────────────
@@ -479,6 +483,7 @@ export class Game {
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
                 else if (this.loreBook && this.loreBook.isOpen) this.loreBook.hide();
+                else if (this.achievementsUI && this.achievementsUI.isOpen) this.achievementsUI.hide();
             }
             return;
         }
@@ -493,6 +498,7 @@ export class Game {
             case 'f': e.preventDefault(); this._onOpenFamiliar(); break;
             case 'v': e.preventDefault(); this._onOpenPartySpells(); break;
             case 'x': e.preventDefault(); this._onOpenLoreBook(); break;
+            case 'g': e.preventDefault(); this._onOpenAchievements(); break;
         }
     }
 
@@ -552,6 +558,13 @@ export class Game {
         if (!this.loreBook || !this.gameState) return;
         if (document.pointerLockElement) document.exitPointerLock();
         this.loreBook.show(this.gameState.discoveredMonsters);
+    }
+
+    _onOpenAchievements() {
+        if (!this.achievementsUI || !this.gameState) return;
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+        this.achievementsUI.toggle();
     }
 
     /**
@@ -723,6 +736,52 @@ export class Game {
         if (!Array.isArray(this.gameState.gameLog)) this.gameState.gameLog = [];
         this.gameState.gameLog.push(msg);
         if (this.gameState.gameLog.length > 500) this.gameState.gameLog.shift();
+    }
+
+    _enemyMeta(enemy) {
+        const type = enemy && enemy.type ? enemy.type : null;
+        const def = type ? (ENEMY_TYPES[type] || {}) : {};
+        const tags = Array.isArray(def.tags) ? def.tags : [];
+        return { type, tags };
+    }
+
+    _recordCombatTelemetry(event, payload = {}) {
+        if (!this.gameState) return;
+        this.gameState.ensureAchievementStats?.();
+        const enemy = payload.enemy || null;
+        const meta = this._enemyMeta(enemy);
+
+        if (event === 'damageDealt') {
+            this.gameState.recordDamageDealt?.(payload.member || null, meta.type, meta.tags, payload.amount || 0);
+            return;
+        }
+        if (event === 'damageTaken') {
+            this.gameState.recordDamageTaken?.(payload.target || null, meta.type, meta.tags, payload.amount || 0);
+            return;
+        }
+        if (event === 'kill') {
+            this.gameState.recordKill?.(payload.member || null, meta.type, meta.tags, payload.killSource || 'direct');
+            return;
+        }
+        if (event === 'abilityUsed') {
+            this.gameState.recordAbilityUse?.(payload.member || null, payload.abilityId || null);
+            return;
+        }
+        if (event === 'stunInflicted') {
+            this.gameState.recordStunInflicted?.(payload.member || null);
+            return;
+        }
+        if (event === 'retaliation') {
+            this.gameState.recordRetaliation?.(payload.member || null);
+            return;
+        }
+        if (event === 'intercept') {
+            this.gameState.recordIntercept?.(payload.member || null);
+            return;
+        }
+        if (event === 'golemForged') {
+            this.gameState.recordGolemCraft?.(payload.member || null, payload.tierId || 'unknown');
+        }
     }
 
     _showHelp() {
@@ -1421,9 +1480,13 @@ export class Game {
             }
             if (this.combatSystem.loot) {
                 const loot = this.combatSystem.loot;
-                if (loot.gold > 0) this.gameState.inventory.addGold(loot.gold);
+                if (loot.gold > 0) {
+                    this.gameState.inventory.addGold(loot.gold);
+                    this.gameState.recordGoldCollected?.(loot.gold);
+                }
                 for (const item of loot.items) {
                     this.gameState.inventory.addItem(item.itemId, item.quantity);
+                    this.gameState.recordItemFound?.(item.itemId, item.quantity || 1);
                 }
             }
         } else if (result === 'fled') {
@@ -1786,6 +1849,7 @@ export class Game {
                 const high = TRAP_TREASURE_MAX * dlvl * 2;
                 gold = low + Math.floor(Math.random() * (high - low + 1));
                 this.gameState.inventory.addGold(gold);
+                this.gameState.recordGoldCollected?.(gold, rogue);
                 this._log(`\u{1F48E} A hidden cache reveals ${gold} gold!`);
                 if (this.partyHUD) this.partyHUD.showToast(`+${gold} gold`);
 
@@ -1805,6 +1869,7 @@ export class Game {
                     else                  itemId = randomShieldDrop();
                     if (itemId) {
                         this.gameState.inventory.addItem(itemId, 1);
+                        this.gameState.recordItemFound?.(itemId, 1, rogue);
                         const def2 = getItemDef(itemId);
                         const name = def2 ? def2.name : itemId;
                         this._log(`\u{1F4E6} Found ${name}!`);
@@ -2000,6 +2065,8 @@ export class Game {
         const f = this._pendingFountain;
         if (!f) { this._hideFountainModal(); return; }
 
+        this.gameState.recordFountainDrink?.();
+
         f.used = true;
         if (this._fountainModal) this._fountainModal.style.display = 'none';
         this._pendingFountain = null;
@@ -2163,10 +2230,12 @@ export class Game {
             case 9: {
                 const gold = 500 * dLvl;
                 this.gameState.inventory.gold += gold;
+                this.gameState.recordGoldCollected?.(gold);
                 let msg = `\u{1F48E} The fountain overflows with treasure! +${gold} gold!`;
                 if (Math.random() < 0.33 && TRINKET_IDS.length > 0) {
                     const tid = TRINKET_IDS[Math.floor(Math.random() * TRINKET_IDS.length)];
                     this.gameState.inventory.addItem(tid, 1);
+                    this.gameState.recordItemFound?.(tid, 1);
                     const tDef = getItemDef(tid);
                     msg += `<br>\u{1F48D} A trinket appears: <b>${tDef ? tDef.name : tid}</b>!`;
                 }
@@ -2606,6 +2675,7 @@ export class Game {
             const baseGold = low + Math.floor(Math.random() * (high - low + 1));
             gold = baseGold * 100;
             this.gameState.inventory.addGold(gold);
+            this.gameState.recordGoldCollected?.(gold);
 
             const numRolls = dlvl;
             const reagentId = dlvl < REAGENT_TIER_UNCOMMON_MIN ? 'reagent_common'
@@ -2623,6 +2693,7 @@ export class Game {
                 else itemId = randomShieldDrop();
                 if (itemId) {
                     this.gameState.inventory.addItem(itemId, 1);
+                    this.gameState.recordItemFound?.(itemId, 1);
                     const d = getItemDef(itemId);
                     items.push(d ? d.name : itemId);
                 }
@@ -2633,6 +2704,7 @@ export class Game {
                 if (Math.random() < trinketChance && TRINKET_IDS.length > 0) {
                     const tid = TRINKET_IDS[Math.floor(Math.random() * TRINKET_IDS.length)];
                     this.gameState.inventory.addItem(tid, 1);
+                    this.gameState.recordItemFound?.(tid, 1);
                     const tDef = getItemDef(tid);
                     items.push(tDef ? tDef.name : tid);
                 }
@@ -2646,6 +2718,7 @@ export class Game {
         if (!chest) return;
         const lock = chest.state && chest.state.lock;
         if (!resumeOnly && lock) lock.solved = true;
+        if (!resumeOnly) this.gameState.recordChestSolved?.();
 
         const loot = this._rollChestTreasure(true); // Always generate treasure for magical chests
 
@@ -2657,6 +2730,7 @@ export class Game {
             if (guessesUnder12 > 0) {
                 bonusGold = Math.floor(loot.gold * guessesUnder12 * 0.20);
                 this.gameState.inventory.addGold(bonusGold);
+                this.gameState.recordGoldCollected?.(bonusGold);
                 bonusNote = `⚡ Speed bonus: +${bonusGold} gold (solved in ${12 - guessesUnder12} guess${12 - guessesUnder12 === 1 ? '' : 'es'}!)`;
             }
         }
@@ -3302,6 +3376,9 @@ export class Game {
     _onInventoryChanged() {
         if (this.partyHUD && this.gameState) {
             this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+        }
+        if (this.achievementsUI && this.achievementsUI.isOpen) {
+            this.achievementsUI.refresh();
         }
     }
 

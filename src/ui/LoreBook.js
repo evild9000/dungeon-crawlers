@@ -162,7 +162,7 @@ function buildAbilityList(def) {
     if (def.isQuasitAI)             lines.push('Venom Swarm: 5 rapid ranged attacks per turn at 60% damage each — ANY party member; every hit injects Quasit Venom (DoT = damage dealt per round, duration = dungeon level ÷ 4) which IGNORES armor on each subsequent tick');
 
     // Bestiary Expansion — Beasts
-    if (def.isGiantCrocodileAI)     lines.push('Death Roll: powerful bite at front row (+2 bonus); if the bite connects — immediately follows with a Death Roll that Webs the target for 2 rounds AND applies a bleed DoT (30% bite damage per round)');
+    if (def.isGiantCrocodileAI)     lines.push('Death Roll: powerful bite at front row (+2 bonus); if the bite connects — immediately follows with a Death Roll that holds the target in its jaws for 2 rounds AND applies a bleed DoT (30% bite damage per round)');
     if (def.isChimeraAI)            lines.push('Triple Assault: attacks with ALL THREE heads every round simultaneously — Lion Claws (2 melee hits on front row, each opens a bleed DoT equal to damage dealt); Goat Horns (single massive melee hit at 150% damage with stun attempt); Dragon Breath (fire AoE magic hitting the ENTIRE party with burn DoT)');
     if (def.isWyvernAI)             lines.push('Aerial Predator: each turn delivers all of — Claw (front-row melee); Poison Sting (ranged, any target, double-strength venom DoT); and 25% chance of a Dive-Bomb melee strike on a back-row target normally safe from melee');
     if (def.isDisplacerBeastAI)     lines.push('Displacement: illusory doubles grant a permanent 40% dodge chance against ALL melee and ranged physical attacks — this dodge never deactivates and cannot be disabled');

@@ -181,6 +181,7 @@ export class CombatUI {
     hide() {
         this._active = false;
         this._selectingTarget = false;
+        this._clearTurnIndicators();
         this.overlay.style.display = 'none';
         if (this._spacebarHandler) {
             document.removeEventListener('keydown', this._spacebarHandler);
@@ -189,6 +190,16 @@ export class CombatUI {
         if (this._roundCounterEl) {
             this._roundCounterEl.remove();
             this._roundCounterEl = null;
+        }
+    }
+
+    _clearTurnIndicators() {
+        // Indicators are rendered on both Party HUD cards and combat enemy cards.
+        // Remove them explicitly so no stale "acted" checkmarks persist after combat.
+        const roots = [document.getElementById('party-hud'), this.overlay].filter(Boolean);
+        for (const root of roots) {
+            const indicators = root.querySelectorAll('.turn-indicator');
+            for (const ind of indicators) ind.remove();
         }
     }
 
@@ -1629,9 +1640,9 @@ export class CombatUI {
                 'Bard special: Dissonant Chord (AoE Disruption).',
                 `Costs ${BARD_DISRUPT_MANA_COST} mana. One use per combat.`,
                 `Hits ALL enemies: -${scale} attack, -${scale} defense for 1 round.`,
-                `Deals magic damage (+${scale} bonus) to each enemy.`,
+                `Deals magic damage with +${m.level * 2}% damage per bard level.`,
                 '50% chance to stun each enemy for 1 round.',
-                `Bonus scales +1 per 5 bard levels (currently scale: ${scale}).`,
+                `Debuff scales +1 per 5 bard levels (currently scale: ${scale}).`,
                 m.usedBardSong ? 'Already used this fight.' : '',
                 !can && !m.usedBardSong ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
@@ -1788,27 +1799,29 @@ export class CombatUI {
                 moundUnlocked && !canMound ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
 
-            // ── Commune (L20) — summon Faerie Queen at 3 fae tokens
+            // ── Commune (L20) — summon Faerie Queen at level-scaled fae token thresholds
             const communeUnlocked = m.level >= DRUID_COMMUNE_UNLOCK_LEVEL;
+            const tokensNeeded    = m.level >= 40 ? 1 : (m.level >= 30 ? 2 : DRUID_COMMUNE_FAE_TOKENS_NEEDED);
             const tokens          = m.faeTokens || 0;
             const communeLabel    = communeUnlocked
-                ? `\u{1F9DA} Commune (✨${tokens}/${DRUID_COMMUNE_FAE_TOKENS_NEEDED} fae tokens)`
+                ? `\u{1F9DA} Commune (✨${tokens}/${tokensNeeded} fae tokens)`
                 : `\u{1F9DA} Commune (L${DRUID_COMMUNE_UNLOCK_LEVEL})`;
             // Can always press the button if unlocked (gains a token, or summons at threshold)
             const communeCanAct   = communeUnlocked;
             const communeBtn = this._addBtn(communeLabel, communeCanAct, () => this.combat.druidCommune());
             communeBtn.classList.add('combat-special-btn');
-            if (tokens >= DRUID_COMMUNE_FAE_TOKENS_NEEDED - 1 && communeUnlocked) {
+            if (tokens >= tokensNeeded - 1 && communeUnlocked) {
                 communeBtn.style.boxShadow = '0 0 8px #ffdd44, 0 0 16px #ffaa0066';
             }
             communeBtn.title = [
                 `Druid L${DRUID_COMMUNE_UNLOCK_LEVEL}: Commune with the Fae (free action).`,
-                `Each use grants 1 fae token. At ${DRUID_COMMUNE_FAE_TOKENS_NEEDED} tokens the Faerie Queen is summoned.`,
+                `Each use grants 1 fae token. At ${tokensNeeded} token${tokensNeeded === 1 ? '' : 's'} the Faerie Queen is summoned.`,
+                'Token requirement scales with druid level: 3 (<30), 2 (30+), 1 (40+).',
                 'Faerie Queen: 2× druid HP, 30+level defense. Uses Wrath of Nature (magic attack, 33%+ chance to Hold enemies for 2 rounds).',
                 'Applies fae poison DoT and has 50% magic/AoE damage resistance.',
                 'Tokens carry over between rounds. Summoning consumes all tokens.',
                 !communeUnlocked ? `Requires druid level ${DRUID_COMMUNE_UNLOCK_LEVEL}.` : '',
-                communeUnlocked && tokens >= DRUID_COMMUNE_FAE_TOKENS_NEEDED
+                communeUnlocked && tokens >= tokensNeeded
                     ? '✨ READY — next use will summon the Faerie Queen!' : '',
             ].filter(Boolean).join('\n');
 

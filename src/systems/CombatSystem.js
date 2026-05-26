@@ -255,10 +255,24 @@ export class CombatSystem {
         // Shared reference to the party inventory (artificer golem crafting /
         // healing consumes reagents). Set via startCombat or setInventory.
         this.inventory = null;
+        this.telemetry = null;
+        this._lastDamageByEnemyId = Object.create(null);
     }
 
     /** Game.js can assign the live inventory reference (also set in startCombat). */
     setInventory(inv) { this.inventory = inv || null; }
+    setTelemetry(handler) {
+        this.telemetry = typeof handler === 'function' ? handler : null;
+    }
+
+    _emitTelemetry(event, payload = {}) {
+        if (!this.telemetry) return;
+        try {
+            this.telemetry(event, payload);
+        } catch (err) {
+            // Telemetry failures must never break combat resolution.
+        }
+    }
 
     // ────────────────────────────────────────────
     // Lifecycle
@@ -357,6 +371,23 @@ export class CombatSystem {
 
     _isDragonEnemy(enemy) {
         return this._getEnemyTags(enemy).includes('dragon');
+    }
+
+    _getDragonBreathDamageBonusPct(enemy) {
+        const lvl = Math.max(1, Number(enemy?.level) || 1);
+        return lvl / 3;
+    }
+
+    _applyDragonBreathLevelBonus(baseDamage, enemy) {
+        const bonusPct = this._getDragonBreathDamageBonusPct(enemy);
+        return Math.max(1, Math.round(baseDamage * (1 + bonusPct / 100)));
+    }
+
+    _getFaerieQueenTokensNeeded(druidLevel) {
+        const lvl = Math.max(1, Number(druidLevel) || 1);
+        if (lvl >= 40) return 1;
+        if (lvl >= 30) return 2;
+        return DRUID_COMMUNE_FAE_TOKENS_NEEDED;
     }
 
     canPaladinSmiteTarget(member, enemy) {
@@ -842,6 +873,7 @@ export class CombatSystem {
             }
         }
         const dealt = this._damageEnemy(enemy, retaliateDamage);
+        this._emitTelemetry('retaliation', { member: warrior, enemy, damage: dealt });
         let retLog = `⚔️ ${warrior.name} retaliates against ${enemyName} for ${dealt} damage!`;
         if (retFormCrit) retLog += ` 💥 FORMATION CRIT!`;
         this._addLog(retLog);
@@ -849,6 +881,7 @@ export class CombatSystem {
         const stunChance = MELEE_STUN_CHANCE + warrior.getMeleeStunBonus();
         if (dealt > 0 && enemy.health > 0 && Math.random() < stunChance) {
             if (this._tryStunEnemy(enemy)) {
+                this._emitTelemetry('stunInflicted', { member: warrior, enemy, source: 'retaliation' });
                 this._addLog(`⚡ ${enemyName} is STUNNED by the retaliatory strike!`);
             }
         }
@@ -1028,8 +1061,10 @@ export class CombatSystem {
 
         const stunChance = MELEE_STUN_CHANCE + m.getMeleeStunBonus();
         if (dealt > 0 && targetEnemy.health > 0 && Math.random() < stunChance) {
-            if (this._tryStunEnemy(targetEnemy))
+            if (this._tryStunEnemy(targetEnemy)) {
+                this._emitTelemetry('stunInflicted', { member: m, enemy: targetEnemy, source: 'melee' });
                 this._addLog(`\u26A1 ${eName} is STUNNED and will skip next turn!`);
+            }
         }
 
         // Barbarian L20 Blood Rage: gain temp HP on hit while raging
@@ -1744,6 +1779,7 @@ export class CombatSystem {
         }
         m.heroicDeedTokens--;
         m.rapidAssaultPending = true;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'barbarian_rapid_assault' });
         this._addLog(`⚡ ${m.name} spends a Heroic Deed token — RAPID ASSAULT! Next attack fires twice. (${m.heroicDeedTokens} tokens remaining)`);
         this._notify();
     }
@@ -1763,6 +1799,7 @@ export class CombatSystem {
             return;
         }
         m.heroicDeedTokens--;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'barbarian_reckless_move' });
         this._addLog(`💥 ${m.name} spends a Heroic Deed token — RECKLESS MOVE! (${m.heroicDeedTokens} tokens remaining)`);
 
         let dmg = this._rollPlayerMeleeDamage(m);
@@ -1807,6 +1844,7 @@ export class CombatSystem {
             return;
         }
         m.heroicDeedTokens--;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'barbarian_refreshing_mead' });
         const hpGain = Math.floor(m.maxHealth * 0.5);
         const stGain = Math.floor(m.maxStamina * 0.5);
         m.health   = Math.min(m.maxHealth,   m.health   + hpGain);
@@ -1839,6 +1877,7 @@ export class CombatSystem {
             return;
         }
         m.heroicDeedTokens--;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'barbarian_battle_horn' });
         const penalty = Math.floor(m.level / 3);
         const immuneTags = ['undead', 'construct', 'elemental', 'plant', 'incorporeal'];
         this._addLog(`📯 ${m.name} spends a Heroic Deed token — BATTLE HORN! (${m.heroicDeedTokens} tokens remaining)`);
@@ -1894,6 +1933,7 @@ export class CombatSystem {
             return;
         }
         m.thunderousDrumsActive = true;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'bard_thunderous_drums' });
         this._addLog(`🥁 ${m.name} begins beating the Thunderous Drums! Sonic and psychic attacks on the party are weakened.`);
         soundManager.playThunderousDrums();
         this._advancePlayerTurn();
@@ -1917,6 +1957,7 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m || m.health <= 0) return;
         if (m.classId !== 'rogue') return;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'backstab' });
         // Cannot backstab incorporeal enemies
         if (targetEnemy && targetEnemy.type) {
             const tDef = ENEMY_TYPES[targetEnemy.type] || {};
@@ -2351,6 +2392,7 @@ export class CombatSystem {
         }
 
         m.mana -= CLERIC_MASS_REGEN_MANA_COST;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'cleric_mass_regen' });
 
         const healPct  = CLERIC_MASS_REGEN_BASE_PCT + Math.floor(m.level / 3) * CLERIC_MASS_REGEN_PER_3_LEVELS;
         const duration = Math.max(1, Math.floor(m.level / 4));   // floor(level/4) rounds
@@ -2405,6 +2447,7 @@ export class CombatSystem {
         const toRevive = fallen.slice(0, count);
 
         m.mana -= CLERIC_MASS_REVIVE_MANA_COST;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'cleric_mass_revive' });
 
         const parts = [];
         for (const t of toRevive) {
@@ -2507,6 +2550,7 @@ export class CombatSystem {
     clericBanishment(targetEnemy) {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'cleric') return;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'cleric_banishment' });
         if (m.level < CLERIC_BANISHMENT_UNLOCK_LEVEL) {
             this._addLog(`${m.name} must be level ${CLERIC_BANISHMENT_UNLOCK_LEVEL} to cast Banishment.`);
             return;
@@ -2624,6 +2668,7 @@ export class CombatSystem {
         }
 
         m.mana -= aoeCost;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'paladin_aoe_smite' });
         const dragonslayerNote = m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
             ? ' Dragonslayer widens the nova to dragons as well!'
             : '';
@@ -2694,6 +2739,7 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'monk') return;
         if (m.level < MONK_QUIVERING_PALM_UNLOCK_LEVEL) return;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'monk_quivering_palm' });
         if (!this.canMelee(m)) {
             this._addLog(`${m.name} cannot use Quivering Palm from the back row!`);
             return;
@@ -2913,23 +2959,29 @@ export class CombatSystem {
 
     /**
      * Druid L20: Commune with nature. Grants 1 Fae token.
-     * At 3 tokens, auto-summons the Faerie Queen (only one active at a time).
-     * Tokens cap at 3 so they're ready to immediately resummon when the FQ dies.
+        * Auto-summons the Faerie Queen at the current token threshold
+        * (3 below L30, 2 at L30+, 1 at L40+).
+        * Tokens cap at that threshold so they're ready to immediately resummon when the FQ dies.
      */
     druidCommune() {
         const m = this.currentMember;
         if (!m || m.classId !== 'druid' || m.level < DRUID_COMMUNE_UNLOCK_LEVEL || m.health <= 0) return;
 
-        // Cap tokens at 3 (they're saved for when the active FQ dies)
+        const tokensNeeded = this._getFaerieQueenTokensNeeded(m.level);
+
+        // Cap tokens at the current requirement (they're saved for when the active FQ dies)
         const currentTokens = m.faeTokens || 0;
-        if (currentTokens < DRUID_COMMUNE_FAE_TOKENS_NEEDED) {
+        if (currentTokens < tokensNeeded) {
             m.faeTokens = currentTokens + 1;
+        } else {
+            m.faeTokens = tokensNeeded;
         }
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'druid_commune' });
         const t = m.faeTokens;
-        this._addLog(`🌿 ${m.name} communes with nature! Fae tokens: ${t}/${DRUID_COMMUNE_FAE_TOKENS_NEEDED}`);
+        this._addLog(`🌿 ${m.name} communes with nature! Fae tokens: ${t}/${tokensNeeded}`);
 
         // Attempt summon if tokens are full and no FQ is alive
-        if (t >= DRUID_COMMUNE_FAE_TOKENS_NEEDED) {
+        if (t >= tokensNeeded) {
             const activeFQ = this.party.find(p =>
                 p.isSummoned && p.summonType === 'faerie_queen' && p.summonerId === m.id && p.health > 0);
             if (!activeFQ) {
@@ -2987,7 +3039,8 @@ export class CombatSystem {
             const druid = this.party.find(p =>
                 p.id === fq.summonerId && p.health > 0 && !p.isSummoned);
             if (!druid) continue;
-            if ((druid.faeTokens || 0) >= DRUID_COMMUNE_FAE_TOKENS_NEEDED) {
+            const tokensNeeded = this._getFaerieQueenTokensNeeded(druid.level);
+            if ((druid.faeTokens || 0) >= tokensNeeded) {
                 // Remove the dead FQ from party
                 const idx = this.party.indexOf(fq);
                 if (idx !== -1) this.party.splice(idx, 1);
@@ -4087,6 +4140,7 @@ export class CombatSystem {
         golem.health = golem.maxHealth;
 
         if (Array.isArray(this.party)) this.party.push(golem);
+        this._emitTelemetry('golemForged', { member: m, tierId: tier.id, golem });
         this._addLog(`${tier.icon} ${m.name} forges a ${tier.name}! It thunders into line.`);
 
         if (spendTurn && this.party && this.party.length) {
@@ -4226,6 +4280,13 @@ export class CombatSystem {
         this._checkHunterMarkKill(enemy);
         this._maybeFeedCorpseHorror(enemy);
         this._triggerPlagueExplosion(enemy);
+        const last = enemy && enemy.id ? this._lastDamageByEnemyId[enemy.id] : null;
+        if (enemy && enemy.id) delete this._lastDamageByEnemyId[enemy.id];
+        this._emitTelemetry('kill', {
+            enemy,
+            member: last ? last.member : this.currentMember,
+            killSource: last ? last.killSource : 'direct',
+        });
         // Heroic Deeds: award token to active L30+ barbarian on each kill
         const killer = this.currentMember;
         if (killer && !killer.isSummoned && killer.classId === 'barbarian'
@@ -4270,10 +4331,24 @@ export class CombatSystem {
             const cc         = (oldStat.corpseCount || 1) + 1;
             const newSkill   = necro.level + cc * NECRO_CORPSE_HORROR_SKILL_PER_CORPSE;
             const newAttacks = cc * NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE;
+            const baseDef    = Math.max(1, Math.floor(necro.level / NECRO_CORPSE_HORROR_DEF_DIVISOR));
+            const newDef     = baseDef + Math.max(0, cc - 1);
+            const baseMin    = Math.max(1, Math.floor(necro.level / 6));
+            const baseMax    = Math.max(2, Math.floor(necro.level / 3));
+            const newMin     = baseMin + Math.floor(cc / 2);
+            const newMax     = Math.max(newMin + 1, baseMax + cc);
             existing.maxHealth += corpseHp;
             existing.health     = Math.min(existing.maxHealth, existing.health + corpseHp);
-            existing.summonStats = { ...oldStat, corpseCount: cc, meleeSkill: newSkill, attackCount: newAttacks };
-            this._addLog(`\u{1FA78}\u{1F480} ${necro.name} stitches ${this._eName(enemy)}'s remains into the Corpse Horror — it swells with new flesh! (now ${existing.health}/${existing.maxHealth} HP, ${cc} corpses, ${newAttacks} atk/rd, skill ${newSkill})`);
+            existing.summonStats = {
+                ...oldStat,
+                corpseCount: cc,
+                meleeSkill: newSkill,
+                attackCount: newAttacks,
+                meleeMin: newMin,
+                meleeMax: newMax,
+                defense: newDef,
+            };
+            this._addLog(`\u{1FA78}\u{1F480} ${necro.name} stitches ${this._eName(enemy)}'s remains into the Corpse Horror — it swells with new flesh! (now ${existing.health}/${existing.maxHealth} HP, ${cc} corpses, ${newAttacks} atk/rd, skill ${newSkill}, DEF ${newDef})`);
         } else {
             // Spawn a new Corpse Horror — 1 corpse
             const necroLvl  = necro.level;
@@ -4307,6 +4382,7 @@ export class CombatSystem {
             this._registerNewSummon(horror);
             this._addLog(`\u{1F480}\u{1FA78} ${necro.name}'s Dark Apotheosis tears apart ${this._eName(enemy)} — a CORPSE HORROR lurches into being! (${corpseHp} HP, ${NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE} atk/rd, skill ${initSkill})`);
         }
+        this._notify();
     }
 
     // ── Necromancer L30: Plague Bringer — explosion on plague-infected death ──
@@ -4401,6 +4477,7 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m || m.health <= 0) return;
         if (m.classId !== 'paladin') return;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'paladin_smite' });
         if (!this.canMelee(m)) {
             this._addLog(`${m.name} cannot Smite from the back row!`);
             return;
@@ -4517,6 +4594,7 @@ export class CombatSystem {
         m.stamina = Math.max(0, m.stamina - PALADIN_DIVINE_JUDGMENT_STAMINA_COST);
         m.mana    = Math.max(0, m.mana    - PALADIN_DIVINE_JUDGMENT_MANA_COST);
         m.divineJudgmentUsed = true;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'paladin_divine_judgment' });
 
         const eName      = this._eName(targetEnemy);
         const isSuper    = !!(targetEnemy.isSuperBoss);
@@ -4630,7 +4708,7 @@ export class CombatSystem {
     /**
      * Bard Disrupt — once per combat AoE. Targets all enemies:
      *   - Applies attack/defense debuff (-1 per 5 bard levels)
-     *   - Deals magic damage scaled with bard magic bonus + debuff scale
+        *   - Deals magic damage with +2% damage per bard level
      *   - 50% chance to stun each enemy for 1 round
      * Costs BARD_DISRUPT_MANA_COST mana.
      */
@@ -4652,7 +4730,7 @@ export class CombatSystem {
 
         const scale   = Math.max(1, Math.floor(m.level / 3));
         const debuff  = scale;
-        const dmgBase = m.getClassDamageBonus('magic') + scale;
+        const dmgBonusPct = Math.max(0, m.level * 2);
 
         this._addLog(`\u{1F3B6} ${m.name} unleashes a dissonant chord! AoE disruption!`);
 
@@ -4669,10 +4747,11 @@ export class CombatSystem {
             });
 
             // Magic damage via _damageEnemy (handles entangle/debuff interactions)
-            const dmg = this._applyOutgoingDamageBonuses(m, Math.max(1, dmgBase + randomInt(1, 4)), 'magic');
+            const baseDmg = Math.max(1, randomInt(1, 4) + m.getClassDamageBonus('magic'));
+            const dmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(baseDmg * (1 + (dmgBonusPct / 100)))), 'magic');
             const dealt = this._damageEnemy(e, dmg, false, true);
             const eName = this._eName(e);
-            this._addLog(`  🎵 ${eName} takes ${dealt} magic dmg (-${debuff} atk/-${debuff} def)`);
+            this._addLog(`  🎵 ${eName} takes ${dealt} magic dmg (+${dmgBonusPct}% damage, -${debuff} atk/-${debuff} def)`);
             if (e.health <= 0) this._addLog(`${eName} is defeated!`);
 
             // 50% stun (boss/mega-boss resist applies)
@@ -4693,6 +4772,7 @@ export class CombatSystem {
         if (!m || m.health <= 0) return;
         if (m.classId !== 'bard') return;
         if (m.level < BARD_RALLYING_MELODY_UNLOCK_LEVEL) return;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'bard_rallying_melody' });
         if (m.mana < BARD_RALLYING_MELODY_MANA_COST) {
             this._addLog(`${m.name} needs ${BARD_RALLYING_MELODY_MANA_COST} MP to play Rallying Melody.`);
             return;
@@ -4744,6 +4824,7 @@ export class CombatSystem {
         if (!m || m.health <= 0) return;
         if (m.classId !== 'bard') return;
         if (m.level < BARD_SYMPHONY_UNLOCK_LEVEL) return;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'bard_symphony' });
         if (m.symphonyUsedThisCombat) {
             this._addLog(`♪ ${m.name} can only call the Symphony of Destruction once per combat!`);
             return;
@@ -4915,6 +4996,7 @@ export class CombatSystem {
         }
         m.mana -= DRUID_WILD_SHAPE_MANA_INITIAL;
         m.wildShapeForm = form;
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: `druid_wildshape_${form}` });
 
         // Row management: save original row, then move to the appropriate row for this form.
         const frontForms = ['bear', 'wolf', 'treant'];
@@ -6528,6 +6610,7 @@ export class CombatSystem {
                 const icon = breathIcons[bType] || '\u{1F525}';
                 let dmg = randomInt(dmin, dmax);
                 dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = this._applyDragonBreathLevelBonus(dmg, e);
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 const breathVerbs = { fire: 'fire', acid: 'acid', lightning: 'lightning', cold: 'frost', poison: 'poison' };
                 const breathVerb = breathVerbs[bType] || bType;
@@ -6916,6 +6999,7 @@ export class CombatSystem {
                 this._addLog(`${breathIcons[bType] || '\u{1F480}'} ${eName} exhales ${breathVerbs[bType] || 'dark breath'} from its skeletal maw!`);
                 let dmg = randomInt(dmin, dmax);
                 dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = this._applyDragonBreathLevelBonus(dmg, e);
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 for (const t of this.aliveParty.slice()) {
                     this._applyEnemyHit(e, t, dmg, 'magic', { aoe: true, dragonBreath: bType });
@@ -7332,7 +7416,7 @@ export class CombatSystem {
                 }
             }
 
-        // ── Giant Crocodile: bite; if bite connects, Death Roll (web + bleed DoT) ──
+        // ── Giant Crocodile: bite; if bite connects, Death Roll (held + bleed DoT) ──
         } else if (typeDef.isGiantCrocodileAI) {
             const dmin = MONSTER_MELEE_DAMAGE_MIN + 2 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
             const dmax = MONSTER_MELEE_DAMAGE_MAX + 2 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
@@ -7345,15 +7429,15 @@ export class CombatSystem {
                 this._addLog(`\u{1F40A} ${eName} lunges with a crushing bite at ${target.name}!`);
                 const _crocHit = this._applyEnemyHit(e, target, dmg, 'melee');
                 if (_crocHit && _crocHit.health > 0) {
-                    // Death Roll: web + bleed DoT
+                    // Death Roll: held + bleed DoT
                     _crocHit.webbedRounds = Math.max(_crocHit.webbedRounds || 0, 2);
                     const bleedDuration = Math.max(2, Math.floor(dlvl / 5));
                     if (this._isFractureImmunePartyMember(_crocHit)) {
-                        this._addLog(`\u{1F40A} ${eName} DEATH ROLLS ${_crocHit.name}! (webbed 2 rds — immune to bleed)`);
+                        this._addLog(`\u{1F40A} ${eName} DEATH ROLLS ${_crocHit.name}! (held in its jaws 2 rds — immune to bleed)`);
                     } else {
                         const bleedTick = Math.max(1, Math.floor(dmg * 0.30));
                         _crocHit.addEffect({ type: 'fracture', damage: bleedTick, rounds: bleedDuration });
-                        this._addLog(`\u{1F40A} ${eName} DEATH ROLLS ${_crocHit.name}! (webbed 2 rds, bleed ${bleedTick}/rd ${bleedDuration} rds)`);
+                        this._addLog(`\u{1F40A} ${eName} DEATH ROLLS ${_crocHit.name}! (held in its jaws 2 rds, bleed ${bleedTick}/rd ${bleedDuration} rds)`);
                     }
                 }
             }
@@ -8659,6 +8743,8 @@ export class CombatSystem {
                         + this._getSummonDefenseBonus(mound);
                     const dmg = Math.max(1, rawDmg - moundArmor - moundDef);
                     mound.health = Math.max(0, mound.health - dmg);
+                    this._emitTelemetry('intercept', { member: mound, enemy: e, damage: dmg, interceptorType: 'shambling_mound' });
+                    this._emitTelemetry('damageTaken', { target: mound, enemy: e, amount: dmg, attackKind, intercepted: true });
                     this._addLog(`🪴 ${mound.name} intercepts the attack aimed at ${target.name} and takes ${dmg} damage!`);
                     if (mound.health <= 0) this._addLog(`${mound.name} collapses into torn vines!`);
                     return null;
@@ -8682,6 +8768,8 @@ export class CombatSystem {
                     const postDef      = Math.max(1, rawDmg - warriorArmor - warriorDef);
                     const interceptDmg = Math.max(1, Math.floor(postDef * WARRIOR_INTERCEPT_DAMAGE_MULT));
                     warrior.health = Math.max(0, warrior.health - interceptDmg);
+                    this._emitTelemetry('intercept', { member: warrior, enemy: e, damage: interceptDmg, interceptorType: 'warrior_defend' });
+                    this._emitTelemetry('damageTaken', { target: warrior, enemy: e, amount: interceptDmg, attackKind, intercepted: true });
                     this._addLog(`\u{1F6E1}\uFE0F ${warrior.name} intercepts the blow aimed at ${target.name} and absorbs ${interceptDmg} damage!`);
                     if (e && e.health > 0) this._performWarriorRetaliation(warrior, e);
                     if (warrior.health <= 0) {
@@ -8808,6 +8896,7 @@ export class CombatSystem {
         }
 
         target.health = Math.max(0, target.health - dmg);
+        this._emitTelemetry('damageTaken', { target, enemy: e, amount: dmg, attackKind, intercepted: false });
 
         // ── Wild Shape: druid falls — exit form immediately ──────────────────
         if (target.health <= 0 && !target.isSummoned && target.classId === 'druid' && target.wildShapeForm) {
@@ -9383,6 +9472,20 @@ export class CombatSystem {
         }
         final = Math.max(1, Math.round(final));
         enemy.health = Math.max(0, enemy.health - final);
+        const src = this.currentMember || null;
+        if (enemy && enemy.id) {
+            this._lastDamageByEnemyId[enemy.id] = {
+                member: src,
+                killSource: src && src.isSummoned ? 'summon' : 'direct',
+            };
+        }
+        this._emitTelemetry('damageDealt', {
+            member: src,
+            enemy,
+            amount: final,
+            isMagic,
+            isRanged,
+        });
 
         // Revenant: one-time revive at 50% HP when first killed
         // Must run BEFORE _onEnemyDeath so a reviving enemy is not fed to Corpse Horror
@@ -9567,6 +9670,9 @@ export class CombatSystem {
                 const lightningTick = Math.max(1, Math.floor(baseDotTick * RIDER_STUN_DOT_MULT));
                 pushDoT({ type: 'lightning_dot', rounds: dotRounds, damage: lightningTick });
                 const _lightningStunLanded = !isEnemyImmuneTo('stun') && this._tryStunEnemy(enemy);
+                if (_lightningStunLanded) {
+                    this._emitTelemetry('stunInflicted', { member: attacker, enemy, source: 'weapon_rider_lightning' });
+                }
                 refreshDebuff({ type: 'shocked', rounds: debuffRounds, damageBonus: -debuffMag });
                 const stunNote = _lightningStunLanded ? ', stunned 1 rd' : '';
                 this._addLog(`⚡ ${eName} is shocked! (${lightningTick}/rd for ${dotRounds} rds, -${debuffMag} dmg for ${debuffRounds} rds${stunNote})`);
@@ -9580,6 +9686,9 @@ export class CombatSystem {
                 const frostTick = Math.max(1, Math.floor(baseDotTick * RIDER_STUN_DOT_MULT));
                 pushDoT({ type: 'frost_dot', rounds: dotRounds, damage: frostTick });
                 const _iceStunLanded = !isEnemyImmuneTo('stun') && this._tryStunEnemy(enemy);
+                if (_iceStunLanded) {
+                    this._emitTelemetry('stunInflicted', { member: attacker, enemy, source: 'weapon_rider_ice' });
+                }
                 refreshDebuff({ type: 'chilled', rounds: debuffRounds, defenseBonus: -debuffMag });
                 const stunNoteIce = _iceStunLanded ? ', stunned 1 rd' : '';
                 this._addLog(`❄️ ${eName} is frozen! (${frostTick}/rd for ${dotRounds} rds, -${debuffMag} def for ${debuffRounds} rds${stunNoteIce})`);
@@ -10163,6 +10272,7 @@ export class CombatSystem {
             if (Math.random() < 0.50 && e.mana >= MONSTER_MAGIC_MANA_COST) {
                 e.mana -= MONSTER_MAGIC_MANA_COST;
                 let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = this._applyDragonBreathLevelBonus(dmg, e);
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`🎵${breathIcons[bType]||'🔥'} ${eName} (charmed) exhales ${bType} breath at the enemy group!`);
                 for (const t of hostile()) cHit(t, dmg, true);
@@ -10357,6 +10467,7 @@ export class CombatSystem {
             if (Math.random() < 0.50 && e.mana >= MONSTER_MAGIC_MANA_COST) {
                 e.mana -= MONSTER_MAGIC_MANA_COST;
                 let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = this._applyDragonBreathLevelBonus(dmg, e);
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`🎵💀 ${eName} (charmed) exhales ${bType} breath at its former allies!`);
                 for (const t of hostile()) cHit(t, dmg, true);
@@ -10579,7 +10690,7 @@ export class CombatSystem {
                     t.webbedRounds = Math.max(t.webbedRounds || 0, 2);
                     const bleedDur = Math.max(2, Math.floor(dlvl / 5));
                     t.addEffect({ type: 'fracture', damage: Math.max(1, Math.floor(dmg * 0.30)), rounds: bleedDur });
-                    this._addLog(`🐊 ${eN(t)} is DEATH ROLLED! (webbed, bleed)`);
+                    this._addLog(`🐊 ${eN(t)} is DEATH ROLLED! (held in its jaws, bleed)`);
                 }
             }
 
