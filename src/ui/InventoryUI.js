@@ -324,9 +324,14 @@ export class InventoryUI {
                         const useBtn = document.createElement('button');
                         useBtn.className = 'inv-transfer-btn';
                         useBtn.textContent = 'Revive...';
-                        useBtn.addEventListener('click', () => {
-                            this._showRevivePicker(itemId, row, /*fromGroup*/ true);
-                        });
+                        if (this._inCombat) {
+                            useBtn.disabled = true;
+                            useBtn.title = 'Use items via the Use Item button during combat.';
+                        } else {
+                            useBtn.addEventListener('click', () => {
+                                this._showRevivePicker(itemId, row, /*fromGroup*/ true);
+                            });
+                        }
                         row.appendChild(useBtn);
                     }
                     // Read button for party-wide scrolls from group bag
@@ -338,17 +343,22 @@ export class InventoryUI {
                         const scrollBonusVal = calcScrollBonus(scrollAL);
                         const scrollDurMin = 5 + Math.floor(scrollAL / 2);
                         const scrollBonusKind = itemId === 'elixir_warding' ? 'defense' : 'all damage';
-                        readBtn.title = `Grants all living party members +${scrollBonusVal} ${scrollBonusKind} for ${scrollDurMin} min.\n(Bonus = +2 base +1 per 5 AL; AL ${scrollAL} → +${scrollBonusVal})`;
-                        readBtn.addEventListener('click', () => {
-                            const anyone = party.find(m => !m.isSummoned && m.health > 0);
-                            if (!anyone) return;
-                            const applied = _applyPotion(anyone, itemId, party);
-                            if (applied && state.inventory.removeItem(itemId)) {
-                                soundManager.playPotion();
-                                this._onChanged();
-                                this._renderGroup();
-                            }
-                        });
+                        if (this._inCombat) {
+                            readBtn.disabled = true;
+                            readBtn.title = 'Use items via the Use Item button during combat.';
+                        } else {
+                            readBtn.title = `Grants all living party members +${scrollBonusVal} ${scrollBonusKind} for ${scrollDurMin} min.\n(Bonus = +2 base +1 per 5 AL; AL ${scrollAL} → +${scrollBonusVal})`;
+                            readBtn.addEventListener('click', () => {
+                                const anyone = party.find(m => !m.isSummoned && m.health > 0);
+                                if (!anyone) return;
+                                const applied = _applyPotion(anyone, itemId, party);
+                                if (applied && state.inventory.removeItem(itemId)) {
+                                    soundManager.playPotion();
+                                    this._onChanged();
+                                    this._renderGroup();
+                                }
+                            });
+                        }
                         row.appendChild(readBtn);
                     }
                 }
@@ -637,7 +647,7 @@ export class InventoryUI {
                     }
                 }
 
-                // Use button (consumables)
+                // Use button (consumables) — disabled during combat
                 if (def.category === ITEM_CATEGORY.CONSUMABLE) {
                     const USABLE_POTIONS = [
                         'healing_potion',
@@ -650,30 +660,40 @@ export class InventoryUI {
                         const useBtn = document.createElement('button');
                         useBtn.className = 'pinv-action-btn pinv-use-btn';
                         useBtn.textContent = 'Use';
-                        // Scrolls: show dynamic bonus in tooltip
-                        if (entry.itemId === 'elixir_warding' || entry.itemId === 'elixir_wrath') {
-                            const sAL = _artificerLevel(state.party);
-                            const sBonusVal = calcScrollBonus(sAL);
-                            const sDurMin = 5 + Math.floor(sAL / 2);
-                            const sBonusKind = entry.itemId === 'elixir_warding' ? 'defense' : 'all damage';
-                            useBtn.title = `Grants all living party members +${sBonusVal} ${sBonusKind} for ${sDurMin} min.\n(+2 base +1 per 5 AL; AL ${sAL} → +${sBonusVal})`;
-                        }
-                        useBtn.addEventListener('click', () => {
-                            const applied = _applyPotion(member, entry.itemId, state.party);
-                            if (applied && member.removeItem(entry.itemId)) {
-                                soundManager.playPotion();
-                                this._onChanged();
-                                this._renderPersonal();
+                        if (this._inCombat) {
+                            useBtn.disabled = true;
+                            useBtn.title = 'Use items via the Use Item button during combat.';
+                        } else {
+                            // Scrolls: show dynamic bonus in tooltip
+                            if (entry.itemId === 'elixir_warding' || entry.itemId === 'elixir_wrath') {
+                                const sAL = _artificerLevel(state.party);
+                                const sBonusVal = calcScrollBonus(sAL);
+                                const sDurMin = 5 + Math.floor(sAL / 2);
+                                const sBonusKind = entry.itemId === 'elixir_warding' ? 'defense' : 'all damage';
+                                useBtn.title = `Grants all living party members +${sBonusVal} ${sBonusKind} for ${sDurMin} min.\n(+2 base +1 per 5 AL; AL ${sAL} → +${sBonusVal})`;
                             }
-                        });
+                            useBtn.addEventListener('click', () => {
+                                const applied = _applyPotion(member, entry.itemId, state.party);
+                                if (applied && member.removeItem(entry.itemId)) {
+                                    soundManager.playPotion();
+                                    this._onChanged();
+                                    this._renderPersonal();
+                                }
+                            });
+                        }
                         btnGroup.appendChild(useBtn);
                     } else if (entry.itemId === 'resurrection_potion') {
                         const useBtn = document.createElement('button');
                         useBtn.className = 'pinv-action-btn pinv-use-btn';
                         useBtn.textContent = 'Revive...';
-                        useBtn.addEventListener('click', () => {
-                            this._showRevivePicker(entry.itemId, row, /*fromGroup*/ false, member.id);
-                        });
+                        if (this._inCombat) {
+                            useBtn.disabled = true;
+                            useBtn.title = 'Use items via the Use Item button during combat.';
+                        } else {
+                            useBtn.addEventListener('click', () => {
+                                this._showRevivePicker(entry.itemId, row, /*fromGroup*/ false, member.id);
+                            });
+                        }
                         btnGroup.appendChild(useBtn);
                     }
                 }

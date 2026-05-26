@@ -2619,6 +2619,14 @@ export class CombatUI {
             repoBtn.title = 'Move any of your living summons between front and back row. Free action — does not end your turn.';
         }
 
+        // ── Use Item
+        const usableItems = this._getUsableCombatItems(m);
+        const useItemBtn = this._addBtn(`\u{1F9EA} Use Item${usableItems.length > 0 ? ` (${usableItems.length})` : ' (none)'}`, usableItems.length > 0, () => this._showUseItemPanel(m));
+        useItemBtn.classList.add('combat-special-btn');
+        useItemBtn.title = usableItems.length > 0
+            ? `Use a potion or scroll from your personal or group inventory.\nAvailable: ${usableItems.map(i => i.def.name).join(', ')}`
+            : 'No usable items available (potions and scrolls only).';
+
         // ── Defend
         const defendBtn = this._addBtn('Defend', true, () => this.combat.defend());
         defendBtn.title = 'Reduce incoming damage by half this turn.';
@@ -2741,6 +2749,167 @@ export class CombatUI {
         });
         this.actionsEl.appendChild(btn);
         return btn;
+    }
+
+    /** Returns array of { itemId, source:'personal'|'group', def, qty } for usable combat items. */
+    _getUsableCombatItems(member) {
+        const results = [];
+        const seen = new Set();
+
+        const addEntry = (itemId, source, qty) => {
+            const def = getItemDef(itemId);
+            if (!def || !def.combatUsable) return;
+            const key = `${source}:${itemId}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            results.push({ itemId, source, def, qty });
+        };
+
+        // Personal inventory
+        for (const entry of (member.inventory || [])) {
+            if (entry.quantity > 0) addEntry(entry.itemId, 'personal', entry.quantity);
+        }
+        // Group inventory
+        for (const entry of (this.combat.inventory?.items || [])) {
+            if (entry.quantity > 0) addEntry(entry.itemId, 'group', entry.quantity);
+        }
+
+        return results;
+    }
+
+    /** Replaces the actions panel with a Use Item picker. */
+    _showUseItemPanel(member) {
+        this.actionsEl.innerHTML = '';
+
+        const title = document.createElement('div');
+        title.style.cssText = 'color:#ffcc66;font-size:13px;font-weight:bold;margin-bottom:6px;padding:4px 0;border-bottom:1px solid #444;';
+        title.textContent = '\u{1F9EA} Use Item — select from inventory:';
+        this.actionsEl.appendChild(title);
+
+        const usable = this._getUsableCombatItems(member);
+
+        // Item dropdown
+        const sel = document.createElement('select');
+        sel.style.cssText = 'width:100%;padding:5px 6px;background:#1a1a2e;color:#eee;border:1px solid #556;border-radius:4px;font-size:13px;margin-bottom:6px;';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '— select an item —';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        sel.appendChild(placeholder);
+        for (const entry of usable) {
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify({ itemId: entry.itemId, source: entry.source });
+            const srcLabel = entry.source === 'personal' ? 'Personal' : 'Group';
+            opt.textContent = `${entry.def.icon || ''} ${entry.def.name}  ×${entry.qty}  [${srcLabel}]`;
+            sel.appendChild(opt);
+        }
+        this.actionsEl.appendChild(sel);
+
+        // Target selector — shown for healing/resurrection items
+        const targetRow = document.createElement('div');
+        targetRow.style.cssText = 'display:none;margin-bottom:6px;';
+        const targetLabel = document.createElement('span');
+        targetLabel.style.cssText = 'color:#aaa;font-size:12px;margin-right:6px;';
+        targetLabel.textContent = 'Target:';
+        const targetSel = document.createElement('select');
+        targetSel.style.cssText = 'padding:4px 6px;background:#1a1a2e;color:#eee;border:1px solid #556;border-radius:4px;font-size:12px;flex:1;';
+        targetRow.appendChild(targetLabel);
+        targetRow.appendChild(targetSel);
+        targetRow.style.display = 'flex';
+        targetRow.style.alignItems = 'center';
+        this.actionsEl.appendChild(targetRow);
+
+        const _rebuildTargets = (def) => {
+            targetSel.innerHTML = '';
+            const needsDead = def && def.targetDead;
+            const isParty = def && def.targetParty;
+            if (isParty) {
+                // Party-wide scrolls — no target needed
+                targetRow.style.display = 'none';
+                return;
+            }
+            targetRow.style.display = 'flex';
+            const candidates = this.combat.party.filter(p => {
+                if (p.isSummoned) return false;
+                return needsDead ? p.health <= 0 : p.health > 0;
+            });
+            if (candidates.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = needsDead ? '(no fallen allies)' : '(no living allies)';
+                opt.disabled = true;
+                targetSel.appendChild(opt);
+            }
+            for (const p of candidates) {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                const hpStr = needsDead ? '(down)' : `HP ${p.health}/${p.maxHealth}`;
+                opt.textContent = `${p.name}  ${hpStr}`;
+                if (p.id === member.id) opt.selected = true;
+                targetSel.appendChild(opt);
+            }
+        };
+        // Initially hide target row
+        targetRow.style.display = 'none';
+
+        // Confirm button — greyed until item selected
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'combat-action-btn combat-special-btn';
+        confirmBtn.textContent = '✅ Use Item';
+        confirmBtn.disabled = true;
+        confirmBtn.style.cssText += ';flex:1;opacity:0.45;cursor:not-allowed;';
+        confirmBtn.title = 'Select an item first.';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'combat-action-btn';
+        cancelBtn.textContent = '✖ Cancel';
+        cancelBtn.style.flex = '1';
+        cancelBtn.addEventListener('click', () => this._refresh());
+
+        sel.addEventListener('change', () => {
+            const val = sel.value;
+            if (!val) {
+                confirmBtn.disabled = true;
+                confirmBtn.style.opacity = '0.45';
+                confirmBtn.style.cursor = 'not-allowed';
+                targetRow.style.display = 'none';
+                return;
+            }
+            const parsed = JSON.parse(val);
+            const def = getItemDef(parsed.itemId);
+            _rebuildTargets(def);
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+            confirmBtn.style.cursor = 'pointer';
+            confirmBtn.title = `Use ${def?.name || parsed.itemId}. Ends your turn.`;
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (confirmBtn.disabled) return;
+            const val = sel.value;
+            if (!val) return;
+            const { itemId, source } = JSON.parse(val);
+            const def = getItemDef(itemId);
+            const targetId = (def && (def.targetDead || (!def.targetParty)))
+                ? (targetSel.value || member.id)
+                : undefined;
+            this.combat.useItemInCombat(itemId, source, targetId);
+        });
+
+        btnRow.appendChild(confirmBtn);
+        btnRow.appendChild(cancelBtn);
+        this.actionsEl.appendChild(btnRow);
+
+        if (usable.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'color:#888;font-size:12px;margin-top:4px;';
+            empty.textContent = 'No usable items in personal or group inventory.';
+            this.actionsEl.appendChild(empty);
+        }
     }
 
     _addModeToggleBtn() {

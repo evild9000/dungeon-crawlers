@@ -205,6 +205,8 @@ import {
     VK_SWARM_PROTECT_BASE_CHANCE, VK_SWARM_PROTECT_LEVEL_DIV, VK_SWARM_PROTECT_MANA_COST,
     VK_RESIST_PER_LEVEL,
     VK_INSECT_PLAGUE_LEVEL_DMG_BONUS,
+    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
+    calcScrollBonus,
 } from '../utils/constants.js';
 import { soundManager } from '../utils/SoundManager.js';
 import {
@@ -5294,6 +5296,112 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m) return;
         this._addLog(`\u{1F6E1}️ ${m.name} stands guard.`);
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Use a combat-usable item from personal or group inventory.
+     * @param {string} itemId      — item to use
+     * @param {string} source      — 'personal' | 'group'
+     * @param {string} [targetId]  — party member id to receive the effect (defaults to current member)
+     */
+    useItemInCombat(itemId, source, targetId) {
+        const actor = this.currentMember;
+        if (!actor || actor.health <= 0) return;
+        if (this.phase !== 'PLAYER_TURN') return;
+
+        const def = getItemDef(itemId);
+        if (!def || !def.combatUsable) return;
+
+        // Determine target party member
+        const target = targetId
+            ? this.party.find(p => p.id === targetId)
+            : actor;
+        if (!target) return;
+
+        // Apply the effect
+        let applied = false;
+        switch (itemId) {
+            case 'healing_potion': {
+                if (target.health <= 0) {
+                    // resurrection_potion handles dead targets; healing_potion requires alive
+                    this._addLog(`\u{1F9EA} ${target.name} is unconscious — use a Resurrection Potion instead.`);
+                    return;
+                }
+                if (target.health >= target.maxHealth) {
+                    this._addLog(`\u{1F9EA} ${target.name} is already at full health.`);
+                    return;
+                }
+                target.health = target.maxHealth;
+                this._addLog(`\u{1F9EA} ${actor.name} uses a Healing Potion on ${target.name} — fully restored to ${target.maxHealth} HP!`);
+                applied = true;
+                break;
+            }
+            case 'resurrection_potion': {
+                if (target.health > 0) {
+                    this._addLog(`\u{1F56F}️ ${target.name} is still alive — Resurrection Potion is for fallen allies.`);
+                    return;
+                }
+                target.health = target.maxHealth;
+                target.stamina = target.maxStamina;
+                this._addLog(`\u{1F56F}️ ${actor.name} uses a Resurrection Potion on ${target.name} — they rise to full health!`);
+                applied = true;
+                break;
+            }
+            case 'minor_healing_potion': {
+                if (target.health <= 0) { this._addLog(`Cannot heal an unconscious ally with this potion.`); return; }
+                if (target.health >= target.maxHealth) { this._addLog(`${target.name} is already at full health.`); return; }
+                const minAmt = Math.max(1, Math.ceil(target.maxHealth * POTION_MINOR_HEAL_PCT));
+                target.health = Math.min(target.maxHealth, target.health + minAmt);
+                this._addLog(`\u{2695}️ ${actor.name} uses a Minor Healing Potion on ${target.name} — restored ${minAmt} HP (now ${target.health}/${target.maxHealth}).`);
+                applied = true;
+                break;
+            }
+            case 'greater_healing_potion': {
+                if (target.health <= 0) { this._addLog(`Cannot heal an unconscious ally with this potion.`); return; }
+                if (target.health >= target.maxHealth) { this._addLog(`${target.name} is already at full health.`); return; }
+                const gtAmt = Math.max(1, Math.ceil(target.maxHealth * POTION_GREATER_HEAL_PCT));
+                target.health = Math.min(target.maxHealth, target.health + gtAmt);
+                this._addLog(`\u{1F489} ${actor.name} uses a Greater Healing Potion on ${target.name} — restored ${gtAmt} HP (now ${target.health}/${target.maxHealth}).`);
+                applied = true;
+                break;
+            }
+            case 'elixir_warding': {
+                const alLevel = this.party.reduce((max, p) => (!p.isSummoned && p.classId === 'artificer' && p.health > 0 ? Math.max(max, p.level || 1) : max), 0);
+                const wBonus = calcScrollBonus(alLevel);
+                const wDurMs = (5 + Math.floor(alLevel / 2)) * 60 * 1000;
+                const wTargets = this.party.filter(p => !p.isSummoned && p.health > 0);
+                for (const t of wTargets) t.addEffect({ type: 'elixir_warding', defenseBonus: wBonus, expiresAt: Date.now() + wDurMs });
+                this._addLog(`\u{1F6E1}️ ${actor.name} reads the Scroll of Warding — +${wBonus} defense to all ${wTargets.length} living allies!`);
+                applied = true;
+                break;
+            }
+            case 'elixir_wrath': {
+                const alLevel = this.party.reduce((max, p) => (!p.isSummoned && p.classId === 'artificer' && p.health > 0 ? Math.max(max, p.level || 1) : max), 0);
+                const rBonus = calcScrollBonus(alLevel);
+                const rDurMs = (5 + Math.floor(alLevel / 2)) * 60 * 1000;
+                const rTargets = this.party.filter(p => !p.isSummoned && p.health > 0);
+                for (const t of rTargets) t.addEffect({ type: 'elixir_wrath', damageBonus: rBonus, expiresAt: Date.now() + rDurMs });
+                this._addLog(`\u{1F525} ${actor.name} reads the Scroll of Wrath — +${rBonus} damage to all ${rTargets.length} living allies!`);
+                applied = true;
+                break;
+            }
+            default:
+                this._addLog(`${itemId} cannot be used in combat.`);
+                return;
+        }
+
+        if (!applied) return;
+
+        // Consume the item
+        if (source === 'personal') {
+            actor.removeItem(itemId, 1);
+        } else {
+            this.inventory.removeItem(itemId, 1);
+        }
+
+        soundManager.playPotion?.();
+        this._notify();
         this._advancePlayerTurn();
     }
 

@@ -72,6 +72,7 @@ export const CONSUMABLES = {
         description: "Fully restores one character's health.",
         icon: '\u{1F9EA}',
         stackable: true,
+        combatUsable: true,
     },
     resurrection_potion: {
         id: 'resurrection_potion',
@@ -80,6 +81,8 @@ export const CONSUMABLES = {
         description: 'Revives a fallen party member to full health. Sold by the Tinkerer.',
         icon: '\u{1F56F}\uFE0F', // candle
         stackable: true,
+        combatUsable: true,
+        targetDead: true,
     },
     // ── Light sources ─────────────────────────────────────────────
     torch: {
@@ -196,6 +199,7 @@ export const CONSUMABLES = {
         icon: '\u{2695}\uFE0F', // ⚕️
         stackable: true,
         potionKind: 'heal_minor',
+        combatUsable: true,
     },
     greater_healing_potion: {
         id: 'greater_healing_potion',
@@ -205,6 +209,7 @@ export const CONSUMABLES = {
         icon: '\u{1F489}', // 💉
         stackable: true,
         potionKind: 'heal_greater',
+        combatUsable: true,
     },
     elixir_warding: {
         id: 'elixir_warding',
@@ -214,6 +219,8 @@ export const CONSUMABLES = {
         icon: '\u{1F6E1}️', // 🛡️
         stackable: true,
         potionKind: 'buff_warding',
+        combatUsable: true,
+        targetParty: true,
     },
     elixir_wrath: {
         id: 'elixir_wrath',
@@ -223,6 +230,8 @@ export const CONSUMABLES = {
         icon: '\u{1F525}', // 🔥
         stackable: true,
         potionKind: 'buff_wrath',
+        combatUsable: true,
+        targetParty: true,
     },
     captured_trap: {
         id: 'captured_trap',
