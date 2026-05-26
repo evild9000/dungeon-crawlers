@@ -193,7 +193,7 @@ import {
     VK_SUMMON_CASCADE_BASE, VK_SUMMON_CASCADE_DROP, VK_SUMMON_CASCADE_LEVEL_BONUS,
     VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
-    VK_INSECT_PLAGUE_DOT_FRAC, VK_INSECT_PLAGUE_DOT_ROUNDS,
+    VK_INSECT_PLAGUE_DOT_FRAC,
     VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
     VK_SWARM_DEFENSE_PER_LEVEL,
     VK_VSWARM_MELEE_RESIST, VK_VSWARM_MAGIC_WEAKNESS, VK_VSWARM_FIRE_WEAKNESS,
@@ -203,6 +203,8 @@ import {
     VK_ASWARM_ACID_DOT_FRAC, VK_ASWARM_ACID_DOT_ROUNDS,
     VK_ASWARM_DEBUFF_DIV, VK_ASWARM_DEBUFF_ROUNDS,
     VK_SWARM_PROTECT_BASE_CHANCE, VK_SWARM_PROTECT_LEVEL_DIV, VK_SWARM_PROTECT_MANA_COST,
+    VK_RESIST_PER_LEVEL,
+    VK_INSECT_PLAGUE_LEVEL_DMG_BONUS,
 } from '../utils/constants.js';
 import { soundManager } from '../utils/SoundManager.js';
 import {
@@ -2522,9 +2524,10 @@ export class CombatSystem {
                 if (alive.length === 0) return;
                 const target = alive[Math.floor(Math.random() * alive.length)];
 
-                // Damage = melee roll + magic class bonus, then outgoing bonuses (hunger, etc.)
+                // Damage = melee roll + magic class bonus + cleric level% bonus, then outgoing bonuses
                 let dmg = this._rollPlayerMeleeDamage(cleric);
                 dmg += cleric.getClassDamageBonus('magic');
+                dmg = Math.max(1, Math.round(dmg * (1 + (cleric.level || 1) / 100)));
                 dmg = this._applyOutgoingDamageBonuses(cleric, dmg, 'ranged');
 
                 // Force magic: isMagic=true (skips physResist/shieldBlock/displace/remorhaz), isRanged=true
@@ -5965,21 +5968,253 @@ export class CombatSystem {
 
         // ── Vermin Keeper: vermin summon attack ─────────────────────────────────
         if (beastKind === 'vermin' || (m.isSummoned && VERMIN_PRESETS[m.summonType])) {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
-            const dealt = this._damageSummonEnemy(t, dmg);
-            this._addLog(`\u{1F577}️ ${m.name} strikes ${this._eName(t)} for ${dealt}!`);
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            const sType = m.summonType;
+            const _vHit = (tgt, ignoreArmor = false) => {
+                const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+                return this._damageSummonEnemy(tgt, dmg, ignoreArmor);
+            };
+            const _vPoison = (tgt, dealt, mult = 1) => {
+                if (dealt > 0 && tgt.health > 0 && !this._enemyHasImmunity(tgt, 'poison')) {
+                    const dot = Math.max(1, Math.floor(dealt * POISON_DAMAGE_FRACTION * mult));
+                    if (!Array.isArray(tgt.activeEffects)) tgt.activeEffects = [];
+                    tgt.activeEffects.push({ type: 'vk_poison', damage: dot, rounds: POISON_DURATION_ROUNDS });
+                    this._addLog(`  ☠️ ${this._eName(tgt)} poisoned! (${dot}/rd \xd7${POISON_DURATION_ROUNDS} rds)`);
+                }
+            };
+            const _vWeb = (tgt) => {
+                if (tgt.health <= 0 || tgt.isBoss || tgt.isMegaBoss || tgt.isSuperBoss) return;
+                tgt.webbedRounds = Math.max(tgt.webbedRounds || 0, WEB_DURATION_ROUNDS);
+                this._addLog(`  \u{1F578}️ ${this._eName(tgt)} is WEBBED! (${WEB_DURATION_ROUNDS} rds)`);
+            };
+            const _vBleed = (tgt, dealt) => {
+                if (dealt > 0 && tgt.health > 0 && !this._enemyHasImmunity(tgt, 'bleed')) {
+                    const dot = Math.max(1, Math.floor(dealt * 0.5));
+                    if (!Array.isArray(tgt.activeEffects)) tgt.activeEffects = [];
+                    tgt.activeEffects.push({ type: 'bleed', damage: dot, rounds: 2 });
+                    this._addLog(`  \u{1F7E5} ${this._eName(tgt)} bleeds! (${dot}/rd \xd72 rds)`);
+                }
+            };
+            const _vDrain = (tgt, dealt) => {
+                if (dealt > 0) {
+                    const before = m.health;
+                    m.health = Math.min(m.maxHealth, m.health + dealt);
+                    const healed = m.health - before;
+                    if (healed > 0) this._addLog(`  \u{1F987} ${m.name} drains ${healed} HP!`);
+                }
+            };
+            const _vKill = (tgt) => { if (tgt.health <= 0) this._addLog(`${this._eName(tgt)} is defeated!`); };
+
+            let t = targets[Math.floor(Math.random() * targets.length)];
+            switch (sType) {
+                case 'spider': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F577}️ ${m.name} bites ${this._eName(t)} for ${d}!`);
+                    if (t.health > 0 && Math.random() < 0.35) _vPoison(t, d);
+                    if (t.health > 0 && Math.random() < 0.25) _vWeb(t);
+                    _vKill(t); break;
+                }
+                case 'bat': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F987} ${m.name} bites ${this._eName(t)} for ${d}!`);
+                    if (t.health > 0 && Math.random() < 0.30) _vBleed(t, d);
+                    _vKill(t); break;
+                }
+                case 'giant_bat': {
+                    // 2 attacks
+                    for (let i = 0; i < 2; i++) {
+                        if (targets.length === 0) break;
+                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const d = _vHit(tgt);
+                        this._addLog(`\u{1F987} ${m.name} slams ${this._eName(tgt)} for ${d}!`);
+                        if (d > 0 && tgt.health > 0 && Math.random() < 0.20) {
+                            if (this._tryStunEnemy(tgt)) this._addLog(`  ⚡ ${this._eName(tgt)} is stunned by the sonic screech!`);
+                        }
+                        _vKill(tgt);
+                        if (tgt.health <= 0) targets.splice(targets.indexOf(tgt), 1);
+                    }
+                    break;
+                }
+                case 'giant_centipede': {
+                    // 3 attacks
+                    for (let i = 0; i < 3; i++) {
+                        if (targets.length === 0) break;
+                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const d = _vHit(tgt);
+                        this._addLog(`\u{1F41E} ${m.name} bites ${this._eName(tgt)} for ${d}!`);
+                        if (d > 0 && Math.random() < 0.45) _vPoison(tgt, d);
+                        _vKill(tgt);
+                        if (tgt.health <= 0) targets.splice(targets.indexOf(tgt), 1);
+                    }
+                    break;
+                }
+                case 'cave_crawler': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F41B} ${m.name} slams ${this._eName(t)} for ${d}!`);
+                    if (d > 0 && t.health > 0 && Math.random() < 0.30) {
+                        if (this._tryHoldEnemy(t)) this._addLog(`  \u{1F9B5} ${this._eName(t)} is HELD!`);
+                    }
+                    _vKill(t); break;
+                }
+                case 'black_widow': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F577}️ ${m.name} bites ${this._eName(t)} for ${d}!`);
+                    if (t.health > 0 && Math.random() < 0.40) _vPoison(t, d, 2);
+                    if (t.health > 0 && Math.random() < 0.35) _vWeb(t);
+                    _vKill(t); break;
+                }
+                case 'cave_fisher': {
+                    const held = (t.stunned || (t.webbedRounds || 0) > 0);
+                    const d = _vHit(t);
+                    const bonus = held ? Math.max(0, Math.floor(d * 0.5)) : 0;
+                    const total = d + bonus;
+                    if (bonus > 0) {
+                        t.health = Math.max(0, t.health - bonus);
+                        this._addLog(`\u{1F99E} ${m.name} snares ${this._eName(t)} for ${d} (+${bonus} vs held) = ${total}!`);
+                    } else {
+                        this._addLog(`\u{1F99E} ${m.name} hooks ${this._eName(t)} for ${d}!`);
+                    }
+                    if (t.health > 0 && Math.random() < 0.50) _vWeb(t);
+                    _vKill(t); break;
+                }
+                case 'stirge': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F987} ${m.name} latches onto ${this._eName(t)} for ${d}!`);
+                    _vDrain(t, d);
+                    _vKill(t); break;
+                }
+                case 'blood_wasp': {
+                    // 2 attacks
+                    for (let i = 0; i < 2; i++) {
+                        if (targets.length === 0) break;
+                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const d = _vHit(tgt);
+                        this._addLog(`\u{1F41D} ${m.name} stings ${this._eName(tgt)} for ${d}!`);
+                        if (tgt.health > 0 && Math.random() < 0.40) _vPoison(tgt, d);
+                        if (tgt.health > 0 && Math.random() < 0.30) _vBleed(tgt, d);
+                        if (d > 0 && tgt.health > 0 && Math.random() < 0.20) {
+                            if (this._tryStunEnemy(tgt)) this._addLog(`  ⚡ ${this._eName(tgt)} is stunned!`);
+                        }
+                        _vKill(tgt);
+                        if (tgt.health <= 0) targets.splice(targets.indexOf(tgt), 1);
+                    }
+                    break;
+                }
+                case 'vampire_bat': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F987} ${m.name} bites ${this._eName(t)} for ${d}!`);
+                    _vDrain(t, d);
+                    if (t.health > 0 && Math.random() < 0.30) _vBleed(t, d);
+                    _vKill(t); break;
+                }
+                case 'tunnel_worm': {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F40D} ${m.name} constricts ${this._eName(t)} for ${d}!`);
+                    if (t.health > 0 && Math.random() < 0.40) _vPoison(t, d);
+                    if (t.health > 0 && Math.random() < 0.15) _vWeb(t);
+                    _vKill(t); break;
+                }
+                case 'giant_scorpion': {
+                    // 2 claw attacks + stinger
+                    for (let i = 0; i < 2; i++) {
+                        if (targets.length === 0) break;
+                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const d = _vHit(tgt);
+                        this._addLog(`\u{1F982} ${m.name} claws ${this._eName(tgt)} for ${d}!`);
+                        _vKill(tgt);
+                        if (tgt.health <= 0) targets.splice(targets.indexOf(tgt), 1);
+                    }
+                    if (targets.length > 0) {
+                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const d = _vHit(tgt);
+                        this._addLog(`\u{1F982} ${m.name}'s stinger strikes ${this._eName(tgt)} for ${d}!`);
+                        if (d > 0 && tgt.health > 0 && Math.random() < 0.50) _vPoison(tgt, d, 1.5);
+                        _vKill(tgt);
+                    }
+                    break;
+                }
+                case 'phase_spider': {
+                    const d = _vHit(t, true); // ignores armor
+                    this._addLog(`\u{1F577}️ ${m.name} phases through ${this._eName(t)} for ${d}!`);
+                    if (d > 0 && t.health > 0 && Math.random() < 0.35) {
+                        if (this._tryHoldEnemy(t)) this._addLog(`  \u{1F9EA} ${this._eName(t)} is PARALYZED by phase venom!`);
+                    }
+                    _vKill(t); break;
+                }
+                case 'rust_monster': {
+                    const d = _vHit(t, true); // ignores armor
+                    this._addLog(`\u{1F9A7} ${m.name} corrodes ${this._eName(t)} for ${d}!`);
+                    if (d > 0 && t.health > 0) {
+                        if (!Array.isArray(t.activeEffects)) t.activeEffects = [];
+                        t.activeEffects.push({ type: 'rust_corrosion', defenseBonus: -1, permanent: true });
+                        this._addLog(`  \u{1F7E4} ${this._eName(t)}'s armor is corroded! (-1 defense)`);
+                    }
+                    _vKill(t); break;
+                }
+                default: {
+                    const d = _vHit(t);
+                    this._addLog(`\u{1F577}️ ${m.name} strikes ${this._eName(t)} for ${d}!`);
+                    _vKill(t);
+                }
+            }
             return;
         }
 
         // ── Vermin Keeper: slime summon attack ──────────────────────────────────
         if (beastKind === 'slime' || (m.isSummoned && SLIME_PRESETS[m.summonType])) {
+            const sType = m.summonType;
+            const _sHit = (tgt) => {
+                const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+                return this._damageSummonEnemy(tgt, dmg);
+            };
+            const _sHold = (tgt) => {
+                if (tgt.isBoss || tgt.isMegaBoss || tgt.isSuperBoss) return false;
+                return this._tryHoldEnemy(tgt);
+            };
+            const _sKill = (tgt) => { if (tgt.health <= 0) this._addLog(`${this._eName(tgt)} is defeated!`); };
+
             const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
-            const dealt = this._damageSummonEnemy(t, dmg);
-            this._addLog(`\u{1FAA1} ${m.name} engulfs ${this._eName(t)} for ${dealt}!`);
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            switch (sType) {
+                case 'slime': {
+                    const d = _sHit(t);
+                    this._addLog(`\u{1FAA1} ${m.name} engulfs ${this._eName(t)} for ${d}!`);
+                    if (d > 0 && t.health > 0 && Math.random() < 0.25) {
+                        if (_sHold(t)) this._addLog(`  \u{1F9B7} ${this._eName(t)} is HELD by the slime!`);
+                    }
+                    _sKill(t); break;
+                }
+                case 'acid_slime': {
+                    const d = _sHit(t);
+                    this._addLog(`\u{1FAA1} ${m.name} splashes ${this._eName(t)} for ${d}!`);
+                    if (d > 0 && t.health > 0) {
+                        const dot = Math.max(1, Math.floor(d * 0.20));
+                        if (!Array.isArray(t.activeEffects)) t.activeEffects = [];
+                        t.activeEffects.push({ type: 'acid_dot', damage: dot, rounds: 2 });
+                        this._addLog(`  \u{1F7E2} ${this._eName(t)} is corroded! (${dot}/rd \xd72 rds)`);
+                    }
+                    if (d > 0 && t.health > 0 && Math.random() < 0.25) {
+                        if (_sHold(t)) this._addLog(`  \u{1F9B7} ${this._eName(t)} is HELD!`);
+                    }
+                    _sKill(t); break;
+                }
+                case 'gelatinous_cube': {
+                    const d = _sHit(t);
+                    this._addLog(`\u{1FAA1} ${m.name} engulfs ${this._eName(t)} for ${d}!`);
+                    if (d > 0 && t.health > 0 && Math.random() < 0.50) {
+                        if (_sHold(t)) {
+                            this._addLog(`  \u{1F9B7} ${this._eName(t)} is ENGULFED and held!`);
+                            if (Math.random() < 0.40) {
+                                this._addLog(`  \u{1F9EA} ${this._eName(t)} is PARALYZED by the cube's acid!`);
+                            }
+                        }
+                    }
+                    _sKill(t); break;
+                }
+                default: {
+                    const d = _sHit(t);
+                    this._addLog(`\u{1FAA1} ${m.name} engulfs ${this._eName(t)} for ${d}!`);
+                    _sKill(t);
+                }
+            }
             return;
         }
 
@@ -6261,7 +6496,7 @@ export class CombatSystem {
         // objects; we initialize each for combat and push them into this.enemies
         // so _buildInitiativeOrder picks them up in the new round.
         if (typeof this.onRoundBegin === 'function') {
-            const newcomers = this.onRoundBegin();
+            const newcomers = this.onRoundBegin(this.turnNumber);
             if (Array.isArray(newcomers) && newcomers.length > 0) {
                 for (const { enemy } of newcomers) {
                     if (!enemy || enemy.health <= 0) continue;
@@ -6502,10 +6737,15 @@ export class CombatSystem {
             return;
         }
 
-        // webbedRounds immunity for boss/mega-boss/super-boss
+        // webbedRounds: bosses break free instantly; regular enemies lose their turn
         if (e.webbedRounds > 0 && (e.isBoss || e.isMegaBoss || e.isSuperBoss)) {
             this._addLog(`\u{1F451} ${eName} tears free from the immobilization!`);
             e.webbedRounds = 0;
+        }
+        if (e.webbedRounds > 0) {
+            this._addLog(`\u{1F578}️ ${eName} is webbed and cannot act! (${e.webbedRounds} rd left)`);
+            e.webbedRounds--;
+            return;
         }
 
         // Stun resistance:
@@ -8792,6 +9032,24 @@ export class CombatSystem {
                     this._emitTelemetry('intercept', { member: swarm, enemy: e, damage: dmg, interceptorType: 'vk_swarm' });
                     this._addLog(`\u{1F41C} ${swarm.name} intercepts the blow aimed at ${target.name} and absorbs ${dmg} damage!`);
                     if (swarm.health <= 0) this._addLog(`${swarm.name} is scattered!`);
+                    // Counter-attack: swarm erupts outward and hits all enemies for half normal damage
+                    if (swarm.health > 0) {
+                        const st2 = swarm.summonStats || {};
+                        const counterBase = Math.max(1, Math.floor(randomInt(st2.magicMin || 1, st2.magicMax || 5) * 0.5));
+                        const isAcid = swarm.summonType === 'acid_swarm';
+                        this._addLog(`\u{1F41C} ${swarm.name} erupts outward — ${isAcid ? 'acid' : 'stinging'} AoE counter-attack!`);
+                        for (const ce of this.aliveHostileEnemies.slice()) {
+                            if (ce.health <= 0) continue;
+                            const cDealt = this._damageSummonEnemy(ce, counterBase);
+                            if (cDealt > 0) this._addLog(`  → ${this._eName(ce)} takes ${cDealt} damage!`);
+                            if (isAcid && cDealt > 0 && ce.health > 0) {
+                                const aDot = Math.max(1, Math.floor(cDealt * 0.20));
+                                if (!Array.isArray(ce.activeEffects)) ce.activeEffects = [];
+                                ce.activeEffects.push({ type: 'vk_swarm_acid', damage: aDot, rounds: 2 });
+                            }
+                            if (ce.health <= 0 && !ce._deathHandled) { ce._deathHandled = true; this._onEnemyDeath(ce); }
+                        }
+                    }
                     return null;
                 }
             }
@@ -9002,6 +9260,19 @@ export class CombatSystem {
             const reflected = this._damageEnemy(e, reflect);
             this._addLog(`\u{1F9F1} ${target.name}'s hardened shell reflects ${reflected} damage back at ${eName}!`);
             if (e.health <= 0) this._addLog(`${eName} is defeated by their own blow!`);
+        }
+
+        // ── Gelatinous Cube acid body: any melee hit on the cube splashes the
+        //    attacker with acid DoT (25% of post-mitigation damage for 2 rounds).
+        if (attackKind === 'melee'
+            && target.isSummoned
+            && target.summonType === 'gelatinous_cube'
+            && dmg > 0
+            && e && e.health > 0) {
+            const acidTick = Math.max(1, Math.floor(dmg * 0.25));
+            if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
+            e.activeEffects.push({ type: 'acid_dot', damage: acidTick, rounds: 2 });
+            this._addLog(`\u{1FAA1} ${eName} is splashed by the cube's acid body! (${acidTick}/rd for 2 rds)`);
         }
 
         // ── Paladin Fire Aura: melee hits on an aura-active paladin trigger a
@@ -9929,6 +10200,11 @@ export class CombatSystem {
                 if (m.health <= 0) this._addLog(`${m.name} has succumbed to quasit venom!`);
             }
             if (totalPoison > 0) {
+                if (!m.isSummoned && m.classId === 'verminkeeper') {
+                    const resist = Math.min(0.75, (m.level || 1) * VK_RESIST_PER_LEVEL);
+                    totalPoison = Math.max(1, Math.floor(totalPoison * (1 - resist)));
+                    this._addLog(`\u{1F577}️ ${m.name}'s toxin affinity reduces the poison! (${Math.round(resist * 100)}% resist)`);
+                }
                 m.health = Math.max(0, m.health - totalPoison);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalPoison} poison damage!`);
                 if (m.health <= 0) this._addLog(`${m.name} has fallen to the poison!`);
@@ -9942,6 +10218,11 @@ export class CombatSystem {
                 if (m.health <= 0) this._addLog(`${m.name} has been consumed by the flames!`);
             }
             if (totalAcid > 0 && m.health > 0) {
+                if (!m.isSummoned && m.classId === 'verminkeeper') {
+                    const resist = Math.min(0.75, (m.level || 1) * VK_RESIST_PER_LEVEL);
+                    totalAcid = Math.max(1, Math.floor(totalAcid * (1 - resist)));
+                    this._addLog(`\u{1F577}️ ${m.name}'s corrosion resistance blunts the acid! (${Math.round(resist * 100)}% resist)`);
+                }
                 m.health = Math.max(0, m.health - totalAcid);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalAcid} acid damage!`);
                 if (m.health <= 0) this._addLog(`${m.name} has been dissolved by the acid!`);
@@ -11848,6 +12129,29 @@ export class CombatSystem {
                 && m.summonStats
                 && m.summonStats.gaseousForm;
             if (isGaseousVampire) continue;
+            // Slime split: generation-0 slimes spawn a mini at 50% HP on death
+            if (SLIME_PRESETS[m.summonType]
+                && m.summonStats
+                && !m.summonStats.isMiniSlime) {
+                const miniHP = Math.max(1, Math.floor(m.maxHealth * 0.5));
+                const miniNum = this.party.filter(p => p.isSummoned && p.summonType === m.summonType && p.summonerId === m.summonerId).length;
+                const mini = new PartyMember({
+                    name: `${m.name.replace(/ #\d+$/, '')} #${miniNum + 1} (Mini)`,
+                    classId: 'summoned', speciesId: 'human',
+                    level: m.level,
+                    maxHealth: miniHP, maxStamina: 0, maxMana: 0,
+                    portraitSeed: Math.floor(Math.random() * 100000),
+                    isSummoned: true, summonType: m.summonType, summonerId: m.summonerId,
+                    canBeHealed: true, row: 'front',
+                    summonStats: {
+                        ...m.summonStats,
+                        isMiniSlime: true,
+                    },
+                });
+                mini.health = miniHP;
+                this.party.push(mini);
+                this._addLog(`\u{1FAA1} ${m.name} splits into ${mini.name}!`);
+            }
             this.party.splice(i, 1);
         }
     }
@@ -12113,25 +12417,26 @@ export class CombatSystem {
             return;
         }
         m.mana -= VK_SUMMON_VERMIN_MANA_COST;
-        const typeId = VK_VERMIN_TYPES[Math.floor(Math.random() * VK_VERMIN_TYPES.length)];
-        const preset = VERMIN_PRESETS[typeId] || VERMIN_PRESETS.spider;
+        const firstTypeId = VK_VERMIN_TYPES[Math.floor(Math.random() * VK_VERMIN_TYPES.length)];
+        const firstPreset = VERMIN_PRESETS[firstTypeId] || VERMIN_PRESETS.spider;
         const spawnedThisAction = [];
-        const _spawnOne = () => {
+        const _spawnOne = (pset) => {
             const stats = rollVerminStats(m.level, m.maxHealth);
-            const summonNum = this.party.filter(p => p.isSummoned && p.summonType === preset.id && p.summonerId === m.id).length + 1;
+            const summonNum = this.party.filter(p => p.isSummoned && p.summonType === pset.id && p.summonerId === m.id).length + 1;
             const u = new PartyMember({
-                name: `${m.name}'s ${preset.name} #${summonNum}`,
+                name: `${m.name}'s ${pset.name} #${summonNum}`,
                 classId: 'summoned', speciesId: 'human',
                 level: m.level,
                 maxHealth: stats.maxHealth, maxStamina: 0, maxMana: 0,
                 portraitSeed: Math.floor(Math.random() * 100000),
-                isSummoned: true, summonType: preset.id, summonerId: m.id,
+                isSummoned: true, summonType: pset.id, summonerId: m.id,
                 canBeHealed: true, row: 'front',
                 summonStats: {
                     meleeMin: stats.meleeMin, meleeMax: stats.meleeMax,
                     defense: stats.defense, keeperLevel: m.level,
                     beastKind: 'vermin',
-                    incorporeal: !!preset.incorporeal,
+                    incorporeal: !!pset.incorporeal,
+                    immune: pset.immune ? pset.immune.slice() : [],
                 },
             });
             this.party.push(u);
@@ -12139,8 +12444,8 @@ export class CombatSystem {
             spawnedThisAction.push(u);
             return u;
         };
-        _spawnOne();
-        this._addLog(`\u{1F577}️ ${m.name} calls forth a ${preset.name}!`);
+        _spawnOne(firstPreset);
+        this._addLog(`\u{1F577}️ ${m.name} calls forth a ${firstPreset.name}!`);
         // Cascade
         let baseChance = VK_SUMMON_CASCADE_BASE;
         const lvBonus = (m.level || 1) * VK_SUMMON_CASCADE_LEVEL_BONUS;
@@ -12148,11 +12453,12 @@ export class CombatSystem {
             const chance = Math.min(1, baseChance + lvBonus);
             if (chance <= 0) break;
             if (Math.random() >= chance) break;
-            _spawnOne();
+            const cascadeTypeId = VK_VERMIN_TYPES[Math.floor(Math.random() * VK_VERMIN_TYPES.length)];
+            _spawnOne(VERMIN_PRESETS[cascadeTypeId] || VERMIN_PRESETS.spider);
             baseChance -= VK_SUMMON_CASCADE_DROP;
         }
         if (spawnedThisAction.length > 1)
-            this._addLog(`\u{1F577}️ A swarm answers the call! ${spawnedThisAction.length} ${preset.name}s summoned!`);
+            this._addLog(`\u{1F577}️ A vermin swarm answers the call! ${spawnedThisAction.length} creatures summoned!`);
         if (this._initiativeOrder.length > 0) {
             const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
             for (let si = spawnedThisAction.length - 1; si >= 0; si--) {
@@ -12177,24 +12483,25 @@ export class CombatSystem {
             return;
         }
         m.mana -= VK_SUMMON_SLIME_MANA_COST;
-        const typeId = VK_SLIME_TYPES[Math.floor(Math.random() * VK_SLIME_TYPES.length)];
-        const preset = SLIME_PRESETS[typeId] || SLIME_PRESETS.slime;
+        const firstSlimeTypeId = VK_SLIME_TYPES[Math.floor(Math.random() * VK_SLIME_TYPES.length)];
+        const firstSlimePreset = SLIME_PRESETS[firstSlimeTypeId] || SLIME_PRESETS.slime;
         const spawnedThisAction = [];
-        const _spawnOne = () => {
+        const _spawnOne = (pset) => {
             const stats = rollVerminStats(m.level, m.maxHealth);
-            const summonNum = this.party.filter(p => p.isSummoned && p.summonType === preset.id && p.summonerId === m.id).length + 1;
+            const summonNum = this.party.filter(p => p.isSummoned && p.summonType === pset.id && p.summonerId === m.id).length + 1;
             const u = new PartyMember({
-                name: `${m.name}'s ${preset.name} #${summonNum}`,
+                name: `${m.name}'s ${pset.name} #${summonNum}`,
                 classId: 'summoned', speciesId: 'human',
                 level: m.level,
                 maxHealth: stats.maxHealth, maxStamina: 0, maxMana: 0,
                 portraitSeed: Math.floor(Math.random() * 100000),
-                isSummoned: true, summonType: preset.id, summonerId: m.id,
+                isSummoned: true, summonType: pset.id, summonerId: m.id,
                 canBeHealed: true, row: 'front',
                 summonStats: {
                     meleeMin: stats.meleeMin, meleeMax: stats.meleeMax,
                     defense: stats.defense, keeperLevel: m.level,
                     beastKind: 'slime',
+                    immune: pset.immune ? pset.immune.slice() : [],
                 },
             });
             this.party.push(u);
@@ -12202,19 +12509,20 @@ export class CombatSystem {
             spawnedThisAction.push(u);
             return u;
         };
-        _spawnOne();
-        this._addLog(`\u{1FAA1} ${m.name} conjures a ${preset.name}!`);
+        _spawnOne(firstSlimePreset);
+        this._addLog(`\u{1FAA1} ${m.name} conjures a ${firstSlimePreset.name}!`);
         let baseChance = VK_SUMMON_CASCADE_BASE;
         const lvBonus = (m.level || 1) * VK_SUMMON_CASCADE_LEVEL_BONUS;
         while (true) {
             const chance = Math.min(1, baseChance + lvBonus);
             if (chance <= 0) break;
             if (Math.random() >= chance) break;
-            _spawnOne();
+            const cascadeSlimeTypeId = VK_SLIME_TYPES[Math.floor(Math.random() * VK_SLIME_TYPES.length)];
+            _spawnOne(SLIME_PRESETS[cascadeSlimeTypeId] || SLIME_PRESETS.slime);
             baseChance -= VK_SUMMON_CASCADE_DROP;
         }
         if (spawnedThisAction.length > 1)
-            this._addLog(`\u{1FAA1} More slimes bubble up! ${spawnedThisAction.length} ${preset.name}s summoned!`);
+            this._addLog(`\u{1FAA1} More ooze rises! ${spawnedThisAction.length} slimes summoned!`);
         if (this._initiativeOrder.length > 0) {
             const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
             for (let si = spawnedThisAction.length - 1; si >= 0; si--) {
@@ -12295,8 +12603,10 @@ export class CombatSystem {
         raw += m.getWeaponBonus?.('magic') || 0;
         raw += m.getClassDamageBonus?.('magic') || 0;
         raw += this._getPartyMemberDamageMod(m);
+        raw = Math.max(1, Math.round(raw * (1 + (m.level || 1) * VK_INSECT_PLAGUE_LEVEL_DMG_BONUS)));
         raw = this._applyOutgoingDamageBonuses(m, raw, 'magic');
-        this._addLog(`\u{1F41C} ${m.name} unleashes an Insect Plague on all enemies!`);
+        const dotRounds = Math.max(1, Math.floor((m.level || 1) / 4));
+        this._addLog(`\u{1F41C} ${m.name} unleashes an Insect Plague on all enemies! (+${(m.level || 1) * 2}% dmg, DoT ${dotRounds} rds)`);
         for (const e of alive) {
             if (e.health <= 0) continue;
             const dealt = this._damageEnemy(e, raw, false, true);
@@ -12304,8 +12614,8 @@ export class CombatSystem {
             if (e.health > 0 && !this._enemyHasImmunity(e, 'poison')) {
                 const dotDmg = Math.max(1, Math.floor(dealt * VK_INSECT_PLAGUE_DOT_FRAC));
                 if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
-                e.activeEffects.push({ type: 'insect_plague_poison', damage: dotDmg, rounds: VK_INSECT_PLAGUE_DOT_ROUNDS });
-                this._addLog(`  \u{1F41C} ${this._eName(e)} is swarmed by insects! (${dotDmg}/rd × ${VK_INSECT_PLAGUE_DOT_ROUNDS} rds)`);
+                e.activeEffects.push({ type: 'insect_plague_poison', damage: dotDmg, rounds: dotRounds });
+                this._addLog(`  \u{1F41C} ${this._eName(e)} is swarmed by insects! (${dotDmg}/rd × ${dotRounds} rds)`);
             }
             if (e.health <= 0 && !e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
         }
@@ -12427,18 +12737,22 @@ export class CombatSystem {
         if (targets.length === 0) return;
         const keeperLv = st.keeperLevel || 1;
         const debuffAmt = Math.floor(keeperLv / (isVermin ? VK_VSWARM_DEBUFF_DIV : VK_ASWARM_DEBUFF_DIV));
+        this._addLog(`\u{1F41C} ${swarm.name} ${isVermin ? 'swarms' : 'dissolves'} all enemies with ${attackCount} AoE attack(s)!`);
         for (let atk = 0; atk < attackCount; atk++) {
             if (this.aliveHostileEnemies.length === 0) break;
+            if (attackCount > 1) this._addLog(`  ⚔️ Strike ${atk + 1}:`);
             const rawBase = randomInt(st.magicMin || 1, st.magicMax || 5);
             for (const e of this.aliveHostileEnemies.slice()) {
                 if (e.health <= 0) continue;
-                const dealt = this._damageEnemy(e, rawBase, false, false); // melee-type, not magic
+                const dealt = this._damageSummonEnemy(e, rawBase);
+                if (dealt > 0) this._addLog(`  → ${this._eName(e)} takes ${dealt} damage!`);
                 if (isVermin) {
                     // Vermin swarm: poison DoT
                     if (dealt > 0 && !this._enemyHasImmunity(e, 'poison')) {
                         const dotDmg = Math.max(1, Math.floor(dealt * VK_VSWARM_POISON_DOT_FRAC));
                         if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
                         e.activeEffects.push({ type: 'vk_swarm_poison', damage: dotDmg, rounds: VK_VSWARM_POISON_DOT_ROUNDS });
+                        this._addLog(`    ☠️ Poisoned! (${dotDmg}/rd \xd7${VK_VSWARM_POISON_DOT_ROUNDS} rds)`);
                     }
                     // Unique debuff: refresh vermin swarm debuff
                     if (debuffAmt > 0) {
@@ -12455,6 +12769,7 @@ export class CombatSystem {
                         const dotDmg = Math.max(1, Math.floor(dealt * VK_ASWARM_ACID_DOT_FRAC));
                         if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
                         e.activeEffects.push({ type: 'vk_swarm_acid', damage: dotDmg, rounds: VK_ASWARM_ACID_DOT_ROUNDS });
+                        this._addLog(`    \u{1F7E2} Acid DoT! (${dotDmg}/rd \xd7${VK_ASWARM_ACID_DOT_ROUNDS} rds)`);
                     }
                     // Unique debuff: refresh acid swarm debuff
                     if (debuffAmt > 0) {
@@ -12466,11 +12781,10 @@ export class CombatSystem {
                         }
                     }
                 }
+                if (e.health <= 0) this._addLog(`  ${this._eName(e)} is defeated!`);
                 if (e.health <= 0 && !e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
             }
         }
-        const swarmName = isVermin ? 'Vermin Swarm' : 'Acid Swarm';
-        this._addLog(`\u{1F41C} ${swarm.name} ${isVermin ? 'swarms' : 'dissolves'} all enemies with ${attackCount} AoE attack(s)!`);
     }
 
     _addLog(msg) {

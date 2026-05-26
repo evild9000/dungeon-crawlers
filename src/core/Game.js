@@ -61,7 +61,7 @@ import { LoreBook } from '../ui/LoreBook.js';
 import { AchievementsUI } from '../ui/AchievementsUI.js';
 import { syncGolemStats } from '../entities/Summons.js';
 import { Enemy } from '../entities/Enemy.js';
-import { ENEMY_TYPES, WANDERER_BASE_CHANCE, WANDERER_CHANCE_PER_CELL, WANDERER_MAX_DISTANCE } from '../utils/constants.js';
+import { ENEMY_TYPES, WANDERER_BASE_CHANCE, WANDERER_CHANCE_PER_CELL, WANDERER_MAX_DISTANCE, WANDERER_ROUND_CHANCE_BONUS, WANDERER_ROUND_DIST_BONUS } from '../utils/constants.js';
 
 /**
  * Game — top-level orchestrator.
@@ -1382,7 +1382,7 @@ export class Game {
         };
 
         // Wire the per-round wandering monster attraction check.
-        this.combatSystem.onRoundBegin = () => this._checkWanderingMonsters();
+        this.combatSystem.onRoundBegin = (round) => this._checkWanderingMonsters(round);
 
         // Reset any lingering Corpse Horror accumulation so each combat starts fresh.
         for (const m of this.gameState.party) {
@@ -1427,18 +1427,24 @@ export class Game {
      * WANDERER_MAX_DISTANCE grid cells roll a distance-weighted chance to join.
      *
      * Distance is Euclidean (diagonal moves count correctly).
-     * Chance = max(0, WANDERER_BASE_CHANCE − dist × WANDERER_CHANCE_PER_CELL)
-     *   → 50 % at 0 cells, 25 % at 5 cells, 0 % at 10 cells.
+     * Chance = max(0, (WANDERER_BASE_CHANCE + escalation) − dist × WANDERER_CHANCE_PER_CELL)
+     *   Round 2: 55 % at 0 cells, max range 11 cells.
+     *   Round 3: 60 % at 0 cells, max range 12 cells. Etc.
      *
      * Returns an array of { enemy } objects for CombatSystem to integrate.
      */
-    _checkWanderingMonsters() {
+    _checkWanderingMonsters(round = 2) {
         if (!this.enemyManager || !this.combatSystem) return [];
         const cx = this._encounterGridX ?? 0;
         const cz = this._encounterGridZ ?? 0;
         // Build a quick lookup of enemies already in combat.
         const combatSet = new Set(this.combatSystem.enemies);
         const newcomers = [];
+
+        // Each round beyond the first the noise spreads further and the chance rises.
+        const escalation = Math.max(0, round - 1);
+        const baseChance = WANDERER_BASE_CHANCE + escalation * WANDERER_ROUND_CHANCE_BONUS;
+        const maxDist    = WANDERER_MAX_DISTANCE + escalation * WANDERER_ROUND_DIST_BONUS;
 
         for (const enemy of this.enemyManager.getEnemies()) {
             if (enemy.health <= 0 || enemy.friendly) continue;
@@ -1451,9 +1457,9 @@ export class Game {
             const dz   = enemy.gridZ - cz;
             const dist = Math.sqrt(dx * dx + dz * dz);
 
-            if (dist > WANDERER_MAX_DISTANCE) continue;
+            if (dist > maxDist) continue;
 
-            const chance = Math.max(0, WANDERER_BASE_CHANCE - dist * WANDERER_CHANCE_PER_CELL);
+            const chance = Math.max(0, baseChance - dist * WANDERER_CHANCE_PER_CELL);
             if (Math.random() < chance) {
                 newcomers.push({ enemy });
                 // Mark as in-combat immediately to prevent duplicate rolls on the

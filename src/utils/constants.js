@@ -77,9 +77,11 @@ export const ENEMY_INITIAL_COUNT = 43;     // enemies spawned on new game (+33%)
 // encounter centre rolls a chance to join.  Chance = max(0, BASE − dist × PER_CELL).
 // At distance 0 → 50 %, distance 5 → 25 %, distance 10 → 0 % (never joins).
 // Distance is Euclidean: a monster 5E+3S is sqrt(34) ≈ 5.83 cells away.
-export const WANDERER_BASE_CHANCE     = 0.50;  // 50 % base chance at distance 0
-export const WANDERER_CHANCE_PER_CELL = 0.05;  // −5 % per grid cell of distance
-export const WANDERER_MAX_DISTANCE    = 10;    // monsters beyond 10 cells never join
+export const WANDERER_BASE_CHANCE        = 0.50;  // 50 % base chance at distance 0
+export const WANDERER_CHANCE_PER_CELL    = 0.05;  // −5 % per grid cell of distance
+export const WANDERER_MAX_DISTANCE       = 10;    // monsters beyond 10 cells never join (round 1)
+export const WANDERER_ROUND_CHANCE_BONUS = 0.05;  // +5 % base chance per round elapsed
+export const WANDERER_ROUND_DIST_BONUS   = 1;     // +1 cell max distance per round elapsed
 
 // Enemy stat range (randomised per enemy)
 export const ENEMY_STAT_MIN = 15;
@@ -788,7 +790,7 @@ export const MONK_AVATAR_MANA_PER_ROUND = 10;
 export const MONK_AVATAR_HP_REGEN = 0.10;
 export const MONK_AVATAR_CLEANSE_BASE = 0.16;
 export const MONK_AVATAR_CLEANSE_PER_LEVEL = 0.005; // level / 2 percent
-export const MONK_AVATAR_DOT_FRACTION = 0.50;
+export const MONK_AVATAR_DOT_FRACTION = 0.75;
 export const MONK_AVATAR_DOT_DURATION_DIVISOR = 8;
 
 // ── Necromancer L25 — Demi-Lich ────────────────────────────────────────────
@@ -1815,6 +1817,9 @@ export const VK_SUMMON_CASCADE_BASE    = 0.40;  // 40% chance for 2nd summon
 export const VK_SUMMON_CASCADE_DROP    = 0.05;  // -5% per additional summon
 export const VK_SUMMON_CASCADE_LEVEL_BONUS = 0.01; // +1% per keeper level
 
+// Passive: Poison/acid resistance — 1% per level, always active
+export const VK_RESIST_PER_LEVEL = 0.01; // 1% damage reduction per VK level for poison & acid DoTs
+
 // L20: Charm Vermin
 export const VK_CHARM_VERMIN_UNLOCK_LEVEL = 20;
 export const VK_CHARM_VERMIN_MANA_COST    = 50;
@@ -1824,8 +1829,9 @@ export const VK_CHARM_VERMIN_TAGS         = ['vermin', 'slime', 'insect'];  // t
 // L25: Insect Plague
 export const VK_INSECT_PLAGUE_UNLOCK_LEVEL = 25;
 export const VK_INSECT_PLAGUE_MANA_COST    = 50;
-export const VK_INSECT_PLAGUE_DOT_FRAC     = 0.50; // DoT per round = half of initial hit damage
-export const VK_INSECT_PLAGUE_DOT_ROUNDS   = 3;    // duration: 3 rounds
+export const VK_INSECT_PLAGUE_DOT_FRAC     = 0.75; // DoT per round = 75% of initial hit damage
+export const VK_INSECT_PLAGUE_LEVEL_DMG_BONUS = 0.02; // +2% damage per VK level (× level = level*2%)
+// Duration is dynamic: floor(VK level / 4), minimum 1 round
 
 // L30: Summon Swarm
 export const VK_SWARM_UNLOCK_LEVEL        = 30;
