@@ -36,6 +36,8 @@ import {
     BARBARIAN_MELEE_PER_LEVEL,
 } from '../utils/constants.js';
 
+
+
 export const CLASSES = {
     warrior: {
         id: 'warrior',
@@ -222,6 +224,20 @@ export const CLASSES = {
         meleePerLevel: BARBARIAN_MELEE_PER_LEVEL,
         special: 'rage',
         description: 'Berserker. +60% HP, +40% ST, no mana. +2 melee, +1 HP/+2 ST regen. Cloth or leather only; no shields. Rage (once per combat, free action): halves all incoming damage, grants stun immunity, regens 5% max HP per round, adds +1 melee per barbarian level, and grants 1 extra attack per 3 levels (each costs 3 ST). Per level: +1 melee. L20: Blood Rage — while raging, gain temporary HP (1% max HP per hit landed) until rage ends or stamina depletes; also gain wound multipliers: at 75% HP ×2 damage, at 50% HP ×4 damage, at 25% HP ×6 damage. L25: while raging, encourages other living party members for +3% damage per round, max +60%; multiple barbarians do not stack on the same recipient. L30: Blood Frenzy (passive) — each active bleed DoT on the target adds +10% to all melee damage dealt to that target. L30: Heroic Deeds (free action token system) — earn one Heroic Deed token per kill (tokens vanish at end of combat); spend tokens at any time during combat without using your turn. 1. Rapid Assault (1 token) — perform twice as many attacks this round. 2. Reckless Move (1 token) — knock back up to 4 random enemies while attacking; knocked enemies lose their next turn and take single-melee damage (incorporeal/boss/mega-boss immune to the knock; all targets take damage). 3. Refreshing Mead (1 token) — restore 50% max HP and max stamina and cleanse all negative effects. 4. Battle Horn (1 token) — blow a war horn to fear all living non-undead/non-construct/non-elemental/non-plant/non-incorporeal enemies (50% resist roll per target); feared enemies suffer reduced attack and defense (−floor(level/3)) for the remainder of combat.',
+    },
+    verminkeeper: {
+        id: 'verminkeeper',
+        name: 'Vermin Keeper',
+        icon: '\u{1F577}️',
+        hpMod: 0.25, stMod: -0.5, mpMod: 0.25,
+        regenHp: 0, regenSt: 0, regenMp: 2,
+        meleeBonus: 0, rangedBonus: 0, magicBonus: 0,
+        defenseBonus: 0,
+        armorAllowed: ['cloth', 'leather'],
+        canUseShield: false,
+        magicPerLevel: 1,
+        special: 'verminkeeper',
+        description: 'Vermin master. +25% HP, -50% ST, +25% mana. +2 MP regen. Cloth/leather only; no shields. New recruits join the back row. Per level: +1 magic damage. L1: Poison Attack and Acid Attack (1 MP each) — single-target magic attacks; +1 attack per 5 levels (all to same target). Each hit applies a DoT (20% of dealt damage per round, 1 round per attack). Additional hits in the same turn stack the DoT damage and extend duration. New attacks in later turns start a fresh DoT. Poison attacks gain +15% damage. Acid attacks also debuff enemy defense by -1 for the entire combat (once per turn). L3: Summon Vermin (5 MP) — random vermin type summoned to front row; HP = keeper max HP, melee = level×2, defense = level×1.5; mimics monster abilities; cascade like necromancer. L6: Summon Slime (10 MP) — random slime type; same stat scaling; cascade. L20: Charm Vermin (50 MP) — charm a vermin/slime/insect enemy using bard-equivalent mechanics. L25: Insect Plague (50 MP) — magic AoE hits all enemies; applies poison DoT = half initial damage per round for 3 rounds. L30: Summon Vermin Swarm or Acid Swarm (75 MP) — grows existing swarm\'s HP each cast (+keeper HP); swarm gains one extra AoE attack per growth; once type is chosen the other button is locked until swarm dies. Vermin swarm: 10% physical resist, ×1.5 magic, ×2 fire; AoE melee + stacking poison DoT (2/3 base for 2 rds); unique debuff (-level/4 atk/rng/magic, 2 rds); immune to poison, psychic, charms, holds, stuns, paralysis; incorporeal. Acid swarm: 10% physical resist, ×1.5 magic, ×3 lightning; AoE melee + stacking acid DoT (40% base for 2 rds); unique debuff (-level/4 def/rng/magic, 2 rds); immune to acid, psychic, charms, holds, stuns, paralysis; slime tag. L30: Swarm Protect (25 MP toggle) — swarm intercepts attacks aimed at its keeper (50% + level/300 chance), identical to Shambling Mound mechanics.',
     },
     summoned: {
         // Pseudo-class used by all summoned creatures (undead, beasts, golems).

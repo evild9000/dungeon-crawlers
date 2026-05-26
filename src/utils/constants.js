@@ -1784,72 +1784,73 @@ export const LEGENDARY_ITEM_IDS = [
     'legendary_belt_magic',
 ];
 
-    // ── Vermin Keeper ───────────────────────────────────────────────────────────
-    // L1: Single-target magic attack (poison or acid) + DoT.
-    export const VK_ATTACK_MANA_COST_BASE = 3;      // base MP cost (scales: +1 per 3 levels, same as getMagicManaCost)
-    export const VK_ATTACK_EXTRA_PER_5LV  = 5;      // +1 attack per this many levels
-    export const VK_DOT_DAMAGE_FRAC       = 0.20;   // each attack adds 20% of its dmg to the round's DoT
-    export const VK_DOT_ROUNDS_PER_ATTACK = 1;      // each attack in the same round extends DoT by 1 round
-    export const VK_POISON_DAMAGE_BONUS   = 0.15;   // poison variant: +15% damage bonus
-    export const VK_ACID_DEF_DEBUFF       = -1;     // acid variant: -1 defense debuff per round of attacks
+// ── Vermin Keeper ───────────────────────────────────────────────────────────
+// L1: Single-target magic attack (poison or acid) + DoT.
+export const VK_ATTACK_MANA_COST_BASE = 1;      // 1 MP per attack
+export const VK_ATTACK_EXTRA_PER_5LV  = 5;      // +1 attack per this many levels
+export const VK_DOT_DAMAGE_FRAC       = 0.20;   // each attack adds 20% of its dmg to the round's DoT
+export const VK_DOT_ROUNDS_PER_ATTACK = 1;      // each attack in the same round extends DoT by 1 round
+export const VK_POISON_DAMAGE_BONUS   = 0.15;   // poison variant: +15% damage bonus
+export const VK_ACID_DEF_DEBUFF       = -1;     // acid variant: -1 defense debuff per round of attacks
 
-    // L3: Summon Vermin
-    export const VK_SUMMON_VERMIN_MANA_COST  = 7;   // MP cost to summon a vermin
-    export const VK_SUMMON_VERMIN_UNLOCK_LEVEL = 3; // unlock level
-    export const VK_VERMIN_HP_MULT           = 1.0; // summon HP = keeper maxHealth × this
-    export const VK_VERMIN_MELEE_PER_LEVEL   = 2;   // melee skill = keeper level × this
-    export const VK_VERMIN_DEFENSE_PER_LEVEL = 1.5; // defense = keeper level × this
-    export const VK_VERMIN_TYPES = [
-        'spider', 'bat', 'centipede', 'cave_crawler', 'widow',
-        'cave_fisher', 'stirge', 'blood_wasp', 'vampire_bat',
-        'tunnel_worm', 'giant_scorpion', 'phase_spider', 'rust_monster',
-    ];
+// L3: Summon Vermin
+export const VK_SUMMON_VERMIN_MANA_COST  = 5;   // MP cost to summon a vermin
+export const VK_SUMMON_VERMIN_UNLOCK_LEVEL = 3; // unlock level
+export const VK_VERMIN_HP_MULT           = 1.0; // summon HP = keeper maxHealth × this
+export const VK_VERMIN_MELEE_PER_LEVEL   = 2;   // melee skill = keeper level × this
+export const VK_VERMIN_DEFENSE_PER_LEVEL = 1.5; // defense = keeper level × this
+export const VK_VERMIN_TYPES = [
+    'spider', 'bat', 'giant_bat', 'giant_centipede', 'cave_crawler', 'black_widow',
+    'cave_fisher', 'stirge', 'blood_wasp', 'vampire_bat',
+    'tunnel_worm', 'giant_scorpion', 'phase_spider', 'rust_monster',
+];
 
-    // L6: Summon Slime
-    export const VK_SUMMON_SLIME_MANA_COST    = 10; // MP cost to summon a slime
-    export const VK_SUMMON_SLIME_UNLOCK_LEVEL = 6;  // unlock level
-    export const VK_SLIME_TYPES = ['slime', 'acid_slime', 'gelatinous_cube'];
+// L6: Summon Slime
+export const VK_SUMMON_SLIME_MANA_COST    = 10; // MP cost to summon a slime
+export const VK_SUMMON_SLIME_UNLOCK_LEVEL = 6;  // unlock level
+export const VK_SLIME_TYPES = ['slime', 'acid_slime', 'gelatinous_cube'];
 
-    // Cascade (shared by both vermin and slime summons — same as necromancer pattern)
-    export const VK_SUMMON_CASCADE_BASE    = 0.40;  // 40% chance for 2nd summon
-    export const VK_SUMMON_CASCADE_DROP    = 0.05;  // -5% per additional summon
-    export const VK_SUMMON_CASCADE_LEVEL_BONUS = 0.01; // +1% per keeper level
+// Cascade (shared by both vermin and slime summons — same as necromancer pattern)
+export const VK_SUMMON_CASCADE_BASE    = 0.40;  // 40% chance for 2nd summon
+export const VK_SUMMON_CASCADE_DROP    = 0.05;  // -5% per additional summon
+export const VK_SUMMON_CASCADE_LEVEL_BONUS = 0.01; // +1% per keeper level
 
-    // L20: Charm Vermin
-    export const VK_CHARM_VERMIN_UNLOCK_LEVEL = 20;
-    export const VK_CHARM_VERMIN_MANA_COST    = 50;
-    export const VK_CHARM_VERMIN_TAGS         = ['vermin', 'slime', 'insect'];  // target must have one of these tags
-    // reuses BARD_CHARM_BASE_CHANCE, BARD_CHARM_CHANCE_PER_2_LV, BARD_CHARM_DURATION_DIVISOR
+// L20: Charm Vermin
+export const VK_CHARM_VERMIN_UNLOCK_LEVEL = 20;
+export const VK_CHARM_VERMIN_MANA_COST    = 50;
+export const VK_CHARM_VERMIN_TAGS         = ['vermin', 'slime', 'insect'];  // target must have one of these tags
+// reuses BARD_CHARM_BASE_CHANCE, BARD_CHARM_CHANCE_PER_2_LV, BARD_CHARM_DURATION_DIVISOR
 
-    // L25: Insect Plague
-    export const VK_INSECT_PLAGUE_UNLOCK_LEVEL = 25;
-    export const VK_INSECT_PLAGUE_MANA_COST    = 30;
-    export const VK_INSECT_PLAGUE_DOT_FRAC     = 0.50; // DoT per round = half of initial hit damage
-    export const VK_INSECT_PLAGUE_DOT_ROUNDS   = 3;    // duration: 3 rounds
+// L25: Insect Plague
+export const VK_INSECT_PLAGUE_UNLOCK_LEVEL = 25;
+export const VK_INSECT_PLAGUE_MANA_COST    = 50;
+export const VK_INSECT_PLAGUE_DOT_FRAC     = 0.50; // DoT per round = half of initial hit damage
+export const VK_INSECT_PLAGUE_DOT_ROUNDS   = 3;    // duration: 3 rounds
 
-    // L30: Summon Swarm
-    export const VK_SWARM_UNLOCK_LEVEL        = 30;
-    export const VK_SWARM_SUMMON_MANA_COST    = 20;  // initial summon/growth MP cost
-    export const VK_SWARM_GROWTH_MANA_COST    = 10;  // MP cost to grow existing swarm
-    export const VK_SWARM_HP_MULT             = 1.0; // swarm HP = keeper health × this
-    export const VK_SWARM_DEFENSE_PER_LEVEL   = 2;   // swarm defense = keeper level × 2
-    // Vermin Swarm resistances/vulnerabilities
-    export const VK_VSWARM_MELEE_RESIST       = 0.10; // takes only 10% from melee/ranged
-    export const VK_VSWARM_MAGIC_WEAKNESS     = 1.50; // ×1.5 damage from magic/AoE
-    export const VK_VSWARM_FIRE_WEAKNESS      = 2.00; // ×2 damage from fire
-    export const VK_VSWARM_POISON_DOT_FRAC    = 0.667; // poison DoT = 2/3 base damage
-    export const VK_VSWARM_POISON_DOT_ROUNDS  = 2;    // DoT lasts 2 rounds
-    export const VK_VSWARM_DEBUFF_DIV         = 4;    // swarm debuff = keeper level / 4
-    export const VK_VSWARM_DEBUFF_ROUNDS      = 2;    // debuff duration
-    // Acid Swarm resistances/vulnerabilities
-    export const VK_ASWARM_MELEE_RESIST       = 0.10; // takes only 10% from melee/ranged
-    export const VK_ASWARM_MAGIC_WEAKNESS     = 1.50; // ×1.5 damage from magic/AoE
-    export const VK_ASWARM_LIGHTNING_WEAKNESS = 3.00; // ×3 damage from lightning
-    export const VK_ASWARM_ACID_DOT_FRAC      = 0.40; // acid DoT = 40% base damage
-    export const VK_ASWARM_ACID_DOT_ROUNDS    = 2;    // DoT lasts 2 rounds
-    export const VK_ASWARM_DEBUFF_DIV         = 4;    // acid debuff = keeper level / 4
-    export const VK_ASWARM_DEBUFF_ROUNDS      = 2;    // debuff duration
+// L30: Summon Swarm
+export const VK_SWARM_UNLOCK_LEVEL        = 30;
+export const VK_SWARM_SUMMON_MANA_COST    = 75;  // initial summon/growth MP cost
+export const VK_SWARM_GROWTH_MANA_COST    = 75;  // MP cost to grow existing swarm (same as summon)
+export const VK_SWARM_HP_MULT             = 1.0; // swarm HP = keeper health × this
+export const VK_SWARM_DEFENSE_PER_LEVEL   = 2;   // swarm defense = keeper level × 2
+// Vermin Swarm resistances/vulnerabilities
+export const VK_VSWARM_MELEE_RESIST       = 0.10; // takes only 10% from melee/ranged
+export const VK_VSWARM_MAGIC_WEAKNESS     = 1.50; // ×1.5 damage from magic/AoE
+export const VK_VSWARM_FIRE_WEAKNESS      = 2.00; // ×2 damage from fire
+export const VK_VSWARM_POISON_DOT_FRAC    = 0.667; // poison DoT = 2/3 base damage
+export const VK_VSWARM_POISON_DOT_ROUNDS  = 2;    // DoT lasts 2 rounds
+export const VK_VSWARM_DEBUFF_DIV         = 4;    // swarm debuff = keeper level / 4
+export const VK_VSWARM_DEBUFF_ROUNDS      = 2;    // debuff duration
+// Acid Swarm resistances/vulnerabilities
+export const VK_ASWARM_MELEE_RESIST       = 0.10; // takes only 10% from melee/ranged
+export const VK_ASWARM_MAGIC_WEAKNESS     = 1.50; // ×1.5 damage from magic/AoE
+export const VK_ASWARM_LIGHTNING_WEAKNESS = 3.00; // ×3 damage from lightning
+export const VK_ASWARM_ACID_DOT_FRAC      = 0.40; // acid DoT = 40% base damage
+export const VK_ASWARM_ACID_DOT_ROUNDS    = 2;    // DoT lasts 2 rounds
+export const VK_ASWARM_DEBUFF_DIV         = 4;    // acid debuff = keeper level / 4
+export const VK_ASWARM_DEBUFF_ROUNDS      = 2;    // debuff duration
 
-    // L30: Swarm Protect  — same intercept formula as Shambling Mound (50% + keeperLevel/300)
-    export const VK_SWARM_PROTECT_BASE_CHANCE = 0.50;
-    export const VK_SWARM_PROTECT_LEVEL_DIV   = 300;
+// L30: Swarm Protect  — same intercept formula as Shambling Mound (50% + keeperLevel/300)
+export const VK_SWARM_PROTECT_BASE_CHANCE = 0.50;
+export const VK_SWARM_PROTECT_LEVEL_DIV   = 300;
+export const VK_SWARM_PROTECT_MANA_COST   = 25;  // MP to toggle swarm protect

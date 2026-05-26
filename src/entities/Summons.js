@@ -29,6 +29,9 @@ import {
     GOLEM_TIERS as GOLEM_TIERS_CONST,
     GOLEM_ATTACHMENT_TRINKET_HP_MULT,
     GOLEM_ATTACHMENT_SHIELD_DEFENSE,
+    VK_VERMIN_TYPES, VK_SLIME_TYPES,
+    VK_VERMIN_HP_MULT, VK_VERMIN_MELEE_PER_LEVEL, VK_VERMIN_DEFENSE_PER_LEVEL,
+    VK_SWARM_HP_MULT, VK_SWARM_DEFENSE_PER_LEVEL,
 } from '../utils/constants.js';
 
 // ────────────────────────────────────────────
@@ -413,6 +416,195 @@ export const DEMI_LICH_PRESET = {
     ],
 };
 
+// ────────────────────────────────────────────
+// Vermin Keeper — vermin summons (L3)
+// ────────────────────────────────────────────
+
+export const VERMIN_PRESETS = {
+    spider: {
+        id: 'spider', name: 'Spider', icon: '\u{1F577}️',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Spider', kind: 'vermin',
+        abilities: ['Front-row melee. 25% chance to poison on hit (bypasses immunity for vermin targets). Web: 20% chance to hold target for 1 round.', 'Can be healed by potions and Cleric heal.'],
+    },
+    bat: {
+        id: 'bat', name: 'Bat', icon: '\u{1F987}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Bat', kind: 'vermin',
+        abilities: ['Front-row melee. High dodge (30%). Applies bleed on hit (30%).', 'Can be healed by potions and Cleric heal.'],
+    },
+    giant_bat: {
+        id: 'giant_bat', name: 'Giant Bat', icon: '\u{1F987}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Giant Bat', kind: 'vermin',
+        abilities: ['Front-row melee. Sonic screech stuns enemies (20% per hit). High HP.', 'Can be healed by potions and Cleric heal.'],
+    },
+    giant_centipede: {
+        id: 'giant_centipede', name: 'Giant Centipede', icon: '\u{1F41E}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Giant Centipede', kind: 'vermin',
+        abilities: ['Front-row melee. Applies strong poison on every hit. Multiple attacks per round.', 'Can be healed by potions and Cleric heal.'],
+    },
+    cave_crawler: {
+        id: 'cave_crawler', name: 'Cave Crawler', icon: '\u{1F41B}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Cave Crawler', kind: 'vermin',
+        abilities: ['Front-row melee. 30% chance to Hold target (not bosses/incorporeal). High defense.', 'Can be healed by potions and Cleric heal.'],
+    },
+    black_widow: {
+        id: 'black_widow', name: 'Black Widow', icon: '\u{1F577}️',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Black Widow', kind: 'vermin',
+        abilities: ['Front-row melee. Powerful neurotoxin: 40% chance to apply strong poison (×2 normal DoT damage). Web: 25% hold chance.', 'Can be healed by potions and Cleric heal.'],
+    },
+    cave_fisher: {
+        id: 'cave_fisher', name: 'Cave Fisher', icon: '\u{1F99E}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Cave Fisher', kind: 'vermin',
+        abilities: ['Front-row melee. Adhesive filament: 35% chance to hold target. Deals extra damage to held targets.', 'Can be healed by potions and Cleric heal.'],
+    },
+    stirge: {
+        id: 'stirge', name: 'Stirge', icon: '\u{1F987}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Stirge', kind: 'vermin',
+        abilities: ['Front-row melee. Blood drain: heals itself for every point of damage dealt.', 'Can be healed by potions and Cleric heal.'],
+    },
+    blood_wasp: {
+        id: 'blood_wasp', name: 'Blood Wasp', icon: '\u{1F41D}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Blood Wasp', kind: 'vermin',
+        abilities: ['Front-row melee. Sting applies bleed and poison simultaneously. 20% stun chance.', 'Can be healed by potions and Cleric heal.'],
+    },
+    vampire_bat: {
+        id: 'vampire_bat', name: 'Vampire Bat', icon: '\u{1F987}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Vampire Bat', kind: 'vermin',
+        abilities: ['Front-row melee. Blood drain: heals for damage dealt. Applies bleed on hit.', 'Can be healed by potions and Cleric heal.'],
+    },
+    tunnel_worm: {
+        id: 'tunnel_worm', name: 'Tunnel Worm', icon: '\u{1F40D}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Tunnel Worm', kind: 'vermin',
+        abilities: ['Front-row melee. Constrict: 30% chance to hold target. High HP pool.', 'Can be healed by potions and Cleric heal.'],
+    },
+    giant_scorpion: {
+        id: 'giant_scorpion', name: 'Giant Scorpion', icon: '\u{1F982}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Giant Scorpion', kind: 'vermin',
+        abilities: ['Front-row melee. Two claw attacks + stinger: poison on sting (50% chance, strong DoT). High armor.', 'Can be healed by potions and Cleric heal.'],
+    },
+    phase_spider: {
+        id: 'phase_spider', name: 'Phase Spider', icon: '\u{1F577}️',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Phase Spider', kind: 'vermin',
+        incorporeal: true,
+        abilities: ['Front-row melee. Incorporeal: attacks ignore all enemy armor and defense. Immune to stun, hold, web.', 'Phase venom: 35% chance to apply paralyzing poison on hit.', 'Can be healed by potions and Cleric heal.'],
+    },
+    rust_monster: {
+        id: 'rust_monster', name: 'Rust Monster', icon: '\u{1F9A7}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Rust Monster', kind: 'vermin',
+        abilities: ['Front-row melee. Rust corrosion: reduces enemy defense by 1 permanently per hit (stacks). Attacks ignore armor.', 'Can be healed by potions and Cleric heal.'],
+    },
+};
+
+// ────────────────────────────────────────────
+// Vermin Keeper — slime summons (L6)
+// ────────────────────────────────────────────
+
+export const SLIME_PRESETS = {
+    slime: {
+        id: 'slime', name: 'Slime', icon: '\u{1FAA1}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Slime', kind: 'slime',
+        abilities: ['Front-row melee. Engulf: 25% chance to hold target. Immune to bleed and physical stun. Splits: on death spawns a Mini Slime at 50% HP.', 'Can be healed by potions and Cleric heal.'],
+    },
+    acid_slime: {
+        id: 'acid_slime', name: 'Acid Slime', icon: '\u{1FAA1}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Acid Slime', kind: 'slime',
+        abilities: ['Front-row melee. Every hit applies an acid DoT (20% dealt/round for 2 rounds). Immune to acid and bleed. Engulf: 25% hold.', 'Can be healed by potions and Cleric heal.'],
+    },
+    gelatinous_cube: {
+        id: 'gelatinous_cube', name: 'Gelatinous Cube', icon: '\u{1FAA1}',
+        portraitClass: 'summoned', portraitSpecies: 'human',
+        speciesLabel: 'Gelatinous Cube', kind: 'slime',
+        abilities: ['Front-row melee. Engulf (50% hold chance). Paralysis on engulf (40%). Acid body: each melee hit on the cube deals acid DoT back to attacker. High HP. Immune to bleed, stun, hold, and poison.', 'Can be healed by potions and Cleric heal.'],
+    },
+};
+
+// ────────────────────────────────────────────
+// Vermin Keeper — swarm summons (L30)
+// ────────────────────────────────────────────
+
+export const VERMIN_SWARM_PRESET = {
+    id: 'vermin_swarm', name: 'Vermin Swarm', icon: '\u{1F41C}',
+    portraitClass: 'summoned', portraitSpecies: 'human',
+    speciesLabel: 'Vermin Swarm', kind: 'vermin',
+    isSwarm: true, swarmType: 'vermin',
+    abilities: [
+        'Front-row AoE melee (incorporeal). Attacks ALL enemies each turn.',
+        'Each attack: poison DoT (2/3 base dmg for 2 rds, stacks independently).',
+        'Unique debuff: -⌊keeper level/4⌋ attack/ranged/magic for 2 rds (refreshed by any vermin swarm).',
+        'Takes only 10% damage from melee/ranged. ×1.5 from magic/AoE. ×2 from fire.',
+        'Grows each cast: +keeper max HP added to its current HP pool; gains an extra AoE attack.',
+        'Immune to poison, psychic damage/DoTs, charms, holds, stuns, and paralysis.',
+        'Incorporeal tag. Once summoned, Acid Swarm button is locked until this swarm dies.',
+    ],
+};
+
+export const ACID_SWARM_PRESET = {
+    id: 'acid_swarm', name: 'Acid Swarm', icon: '\u{1FAA1}',
+    portraitClass: 'summoned', portraitSpecies: 'human',
+    speciesLabel: 'Acid Swarm', kind: 'slime',
+    isSwarm: true, swarmType: 'acid',
+    abilities: [
+        'Front-row AoE melee. Attacks ALL enemies each turn.',
+        'Each attack: acid DoT (40% base dmg for 2 rds, stacks independently).',
+        'Unique debuff: -⌊keeper level/4⌋ defense/ranged/magic for 2 rds (refreshed by any acid swarm).',
+        'Takes only 10% damage from melee/ranged. ×1.5 from magic/AoE. ×3 from lightning.',
+        'Grows each cast: +keeper max HP added to its current HP pool; gains an extra AoE attack.',
+        'Immune to acid and acid DoTs.',
+        'Immune to psychic damage/DoTs, charms, holds, stuns, and paralysis.',
+        'Slime tag. Once summoned, Vermin Swarm button is locked until this swarm dies.',
+    ],
+};
+
+/**
+ * Roll stats for a Vermin Keeper summon (vermin or slime).
+ * HP = keeper maxHealth, melee = keeperLevel×2, defense = keeperLevel×1.5
+ */
+export function rollVerminStats(keeperLevel = 1, keeperMaxHealth = 20) {
+    const lv = Math.max(1, keeperLevel | 0);
+    return {
+        maxHealth:  Math.max(1, Math.floor(keeperMaxHealth * VK_VERMIN_HP_MULT)),
+        maxStamina: 0,
+        maxMana:    0,
+        meleeMin:   Math.max(1, lv * VK_VERMIN_MELEE_PER_LEVEL - 2),
+        meleeMax:   Math.max(1, lv * VK_VERMIN_MELEE_PER_LEVEL + 2),
+        defense:    Math.floor(lv * VK_VERMIN_DEFENSE_PER_LEVEL),
+        keeperLevel: lv,
+    };
+}
+
+/**
+ * Roll stats for a Vermin Keeper swarm.
+ * HP = keeper maxHealth, magic = keeper magic skill, defense = keeperLevel×2
+ */
+export function rollSwarmStats(keeperLevel = 1, keeperMaxHealth = 20, keeperMagicBonus = 0) {
+    const lv = Math.max(1, keeperLevel | 0);
+    return {
+        maxHealth:  Math.max(1, Math.floor(keeperMaxHealth * VK_SWARM_HP_MULT)),
+        maxStamina: 0,
+        maxMana:    0,
+        magicMin:   Math.max(1, keeperMagicBonus + lv - 2),
+        magicMax:   Math.max(1, keeperMagicBonus + lv + 2),
+        defense:    Math.floor(lv * VK_SWARM_DEFENSE_PER_LEVEL),
+        keeperLevel: lv,
+        attackCount: 1,
+    };
+}
+
 export function getSummonPreset(member) {
     if (!member || !member.isSummoned || !member.summonType) return null;
     if (BEAST_TYPES[member.summonType]) return BEAST_TYPES[member.summonType];
@@ -424,6 +616,10 @@ export function getSummonPreset(member) {
     if (RIFT_ELEMENTAL_PRESETS[member.summonType]) return RIFT_ELEMENTAL_PRESETS[member.summonType];
     if (member.summonType === 'faerie_queen') return FAERIE_QUEEN_PRESET;
     if (member.summonType === 'demi_lich') return DEMI_LICH_PRESET;
+    if (VERMIN_PRESETS[member.summonType]) return VERMIN_PRESETS[member.summonType];
+    if (SLIME_PRESETS[member.summonType]) return SLIME_PRESETS[member.summonType];
+    if (member.summonType === 'vermin_swarm') return VERMIN_SWARM_PRESET;
+    if (member.summonType === 'acid_swarm') return ACID_SWARM_PRESET;
     return null;
 }
 

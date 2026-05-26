@@ -109,6 +109,14 @@ import {
     RANGER_HUNTERS_MARK_UPKEEP_MANA, RANGER_HUNTERS_MARK_UPKEEP_STAMINA,
     RANGER_BEASTLORD_UNLOCK_LEVEL, RANGER_BEASTLORD_MANA_PER_ROUND,
     RANGER_BEASTLORD_SUMMON_BASE, RANGER_BEASTLORD_UPKEEP_PER_SUMMON,
+    VK_ATTACK_MANA_COST_BASE, VK_ATTACK_EXTRA_PER_5LV,
+    VK_POISON_DAMAGE_BONUS,
+    VK_SUMMON_VERMIN_MANA_COST, VK_SUMMON_VERMIN_UNLOCK_LEVEL,
+    VK_SUMMON_SLIME_MANA_COST, VK_SUMMON_SLIME_UNLOCK_LEVEL,
+    VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
+    VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
+    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
+    VK_SWARM_PROTECT_MANA_COST,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -1901,6 +1909,205 @@ export class CombatUI {
                         'Must exit current form before entering a different one.',
                         'HP bonus from Bear/Treant form is removed on exit (HP clamped to new max).',
                     ].join('\n');
+                }
+            }
+        }
+
+        // ── Vermin Keeper ───────────────────────────────────────────────────────
+        if (m.classId === 'verminkeeper') {
+            const attackCount = 1 + Math.floor(m.level / VK_ATTACK_EXTRA_PER_5LV);
+            const attackMana  = attackCount * VK_ATTACK_MANA_COST_BASE;
+            const canAttack   = m.mana >= attackMana;
+
+            // Poison Attack (L1)
+            const poisonLabel = `\u{1F577}️ Poison Attack (-${attackMana} MP)`;
+            const poisonBtn = this._addBtn(poisonLabel, canAttack, () => {
+                this._pickTarget(e => this.combat.vkPoisonAttack(e), {
+                    prompt: '\u{1F577}️ Choose a target for Poison Attack...',
+                });
+            });
+            poisonBtn.classList.add('combat-special-btn');
+            poisonBtn.title = [
+                'Vermin Keeper: Poison Attack.',
+                `Costs ${attackMana} MP (${attackCount} attack${attackCount > 1 ? 's' : ''} × ${VK_ATTACK_MANA_COST_BASE} MP each).`,
+                `Deals magic damage with +${Math.round(VK_POISON_DAMAGE_BONUS * 100)}% bonus. Stacks 1 attack per ${VK_ATTACK_EXTRA_PER_5LV} levels.`,
+                `Adds a poison DoT: 20% of total dealt damage per round for ${attackCount} round(s).`,
+                !canAttack ? `Not enough mana (need ${attackMana} MP).` : '',
+            ].filter(Boolean).join('\n');
+
+            // Acid Attack (L1)
+            const acidLabel = `\u{1F7E2} Acid Attack (-${attackMana} MP)`;
+            const acidBtn = this._addBtn(acidLabel, canAttack, () => {
+                this._pickTarget(e => this.combat.vkAcidAttack(e), {
+                    prompt: '\u{1F7E2} Choose a target for Acid Attack...',
+                });
+            });
+            acidBtn.classList.add('combat-special-btn');
+            acidBtn.title = [
+                'Vermin Keeper: Acid Attack.',
+                `Costs ${attackMana} MP (${attackCount} attack${attackCount > 1 ? 's' : ''} × ${VK_ATTACK_MANA_COST_BASE} MP each).`,
+                `Deals magic damage. Stacks 1 attack per ${VK_ATTACK_EXTRA_PER_5LV} levels.`,
+                'Adds an acid DoT (20% of dealt damage per round) and a permanent -1 defense debuff per attack this turn.',
+                !canAttack ? `Not enough mana (need ${attackMana} MP).` : '',
+            ].filter(Boolean).join('\n');
+
+            // Summon Vermin (L3)
+            {
+                const unlocked = m.level >= VK_SUMMON_VERMIN_UNLOCK_LEVEL;
+                const canSummon = unlocked && m.mana >= VK_SUMMON_VERMIN_MANA_COST;
+                const label = unlocked
+                    ? `\u{1F577}️ Summon Vermin (-${VK_SUMMON_VERMIN_MANA_COST} MP)`
+                    : `\u{1F577}️ Summon Vermin (L${VK_SUMMON_VERMIN_UNLOCK_LEVEL})`;
+                const btn = this._addBtn(label, canSummon, () => this.combat.vkSummonVermin());
+                btn.classList.add('combat-special-btn');
+                btn.title = [
+                    `Vermin Keeper L${VK_SUMMON_VERMIN_UNLOCK_LEVEL}: Summon Vermin.`,
+                    `Costs ${VK_SUMMON_VERMIN_MANA_COST} MP. Randomly summons one of 14 vermin types.`,
+                    'HP = keeper max HP. Melee = level × 2. Defense = level × 1.5.',
+                    'Cascade: 40% chance to summon additional vermin (-5% each, +1% per level).',
+                    !unlocked ? `Requires level ${VK_SUMMON_VERMIN_UNLOCK_LEVEL}.` : '',
+                    unlocked && !canSummon ? `Not enough mana (need ${VK_SUMMON_VERMIN_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // Summon Slime (L6)
+            {
+                const unlocked = m.level >= VK_SUMMON_SLIME_UNLOCK_LEVEL;
+                const canSummon = unlocked && m.mana >= VK_SUMMON_SLIME_MANA_COST;
+                const label = unlocked
+                    ? `\u{1FAA1} Summon Slime (-${VK_SUMMON_SLIME_MANA_COST} MP)`
+                    : `\u{1FAA1} Summon Slime (L${VK_SUMMON_SLIME_UNLOCK_LEVEL})`;
+                const btn = this._addBtn(label, canSummon, () => this.combat.vkSummonSlime());
+                btn.classList.add('combat-special-btn');
+                btn.title = [
+                    `Vermin Keeper L${VK_SUMMON_SLIME_UNLOCK_LEVEL}: Summon Slime.`,
+                    `Costs ${VK_SUMMON_SLIME_MANA_COST} MP. Randomly summons a slime, acid slime, or gelatinous cube.`,
+                    'HP = keeper max HP. Melee = level × 2. Defense = level × 1.5.',
+                    'Cascade: 40% chance to summon additional slimes (-5% each, +1% per level).',
+                    !unlocked ? `Requires level ${VK_SUMMON_SLIME_UNLOCK_LEVEL}.` : '',
+                    unlocked && !canSummon ? `Not enough mana (need ${VK_SUMMON_SLIME_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // Charm Vermin (L20)
+            if (m.level >= VK_CHARM_VERMIN_UNLOCK_LEVEL) {
+                const validTargets = (this.combat.aliveHostileEnemies || []).filter(e =>
+                    !e.charmedRounds &&
+                    !e.isBoss &&
+                    VK_CHARM_VERMIN_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)));
+                const hasTarget = validTargets.length > 0;
+                const canCharm  = m.mana >= VK_CHARM_VERMIN_MANA_COST && hasTarget;
+                const charmChancePct = Math.round(Math.min(95, (BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * m.level) * 100));
+                const charmDur  = Math.max(1, Math.floor(m.level / BARD_CHARM_DURATION_DIVISOR));
+                const label = hasTarget
+                    ? `\u{1F577}️ Charm Vermin (-${VK_CHARM_VERMIN_MANA_COST} MP)`
+                    : `\u{1F577}️ Charm Vermin [no valid targets]`;
+                const btn = this._addBtn(label, canCharm, () => {
+                    this._pickTarget(e => this.combat.vkCharmVermin(e), {
+                        prompt: '\u{1F577}️ Choose a vermin/slime/insect to charm...',
+                        filter: e => !e.charmedRounds && !e.isBoss &&
+                            VK_CHARM_VERMIN_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)),
+                    });
+                });
+                btn.classList.add('combat-special-btn');
+                btn.title = [
+                    `Vermin Keeper L${VK_CHARM_VERMIN_UNLOCK_LEVEL}: Charm Vermin.`,
+                    `Costs ${VK_CHARM_VERMIN_MANA_COST} MP. Target must have vermin, slime, or insect tag.`,
+                    `${charmChancePct}% charm chance. Duration: ${charmDur} round(s).`,
+                    'Bosses cannot be charmed.',
+                    `Valid targets: ${validTargets.length > 0 ? validTargets.map(e => this.combat._eName(e)).join(', ') : 'none'}.`,
+                    !hasTarget ? 'No vermin/slime/insect targets available.' : '',
+                    hasTarget && !canCharm ? `Not enough mana (need ${VK_CHARM_VERMIN_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // Insect Plague (L25)
+            if (m.level >= VK_INSECT_PLAGUE_UNLOCK_LEVEL) {
+                const canPlague = m.mana >= VK_INSECT_PLAGUE_MANA_COST;
+                const label = `\u{1F41C} Insect Plague (-${VK_INSECT_PLAGUE_MANA_COST} MP)`;
+                const btn = this._addBtn(label, canPlague, () => this.combat.vkInsectPlague());
+                btn.classList.add('combat-special-btn');
+                btn.title = [
+                    `Vermin Keeper L${VK_INSECT_PLAGUE_UNLOCK_LEVEL}: Insect Plague.`,
+                    `Costs ${VK_INSECT_PLAGUE_MANA_COST} MP. Hits ALL enemies with magic damage.`,
+                    'Applies a poison DoT to each enemy: 50% of hit damage per round for 3 rounds.',
+                    !canPlague ? `Not enough mana (need ${VK_INSECT_PLAGUE_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // Summon Vermin Swarm / Acid Swarm + Swarm Protect (L30)
+            if (m.level >= VK_SWARM_UNLOCK_LEVEL) {
+                const party     = this.combat.party || [];
+                const vSwarm    = party.find(p => p.summonType === 'vermin_swarm' && p.health > 0);
+                const aSwarm    = party.find(p => p.summonType === 'acid_swarm'   && p.health > 0);
+                const hasVSwarm = !!vSwarm;
+                const hasASwarm = !!aSwarm;
+
+                // Vermin Swarm button — greyed if acid swarm alive
+                {
+                    const blocked = hasASwarm;
+                    const cost    = hasVSwarm ? VK_SWARM_GROWTH_MANA_COST : VK_SWARM_SUMMON_MANA_COST;
+                    const canSwarm = !blocked && m.mana >= cost;
+                    const label = blocked
+                        ? `\u{1F577}️ Vermin Swarm [acid swarm active]`
+                        : hasVSwarm
+                            ? `\u{1F577}️ Grow Vermin Swarm (-${cost} MP)`
+                            : `\u{1F577}️ Summon Vermin Swarm (-${cost} MP)`;
+                    const btn = this._addBtn(label, canSwarm, () => this.combat.vkSummonSwarm('vermin'));
+                    btn.classList.add('combat-special-btn');
+                    if (hasVSwarm) btn.style.background = 'linear-gradient(135deg,#1a2a0a,#3a5a0a)';
+                    btn.title = [
+                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon/Grow Vermin Swarm.`,
+                        `Costs ${cost} MP. Cannot have both swarm types at once.`,
+                        hasVSwarm ? 'Swarm is ACTIVE — casting again grows it (+keeper HP, +1 attack).' : '',
+                        'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/stuns.',
+                        'AoE attack hits all enemies; applies poison DoT and attack/range/magic debuff.',
+                        blocked ? 'Cannot summon while Acid Swarm is alive.' : '',
+                        !blocked && !canSwarm ? `Not enough mana (need ${cost} MP).` : '',
+                    ].filter(Boolean).join('\n');
+                }
+
+                // Acid Swarm button — greyed if vermin swarm alive
+                {
+                    const blocked = hasVSwarm;
+                    const cost    = hasASwarm ? VK_SWARM_GROWTH_MANA_COST : VK_SWARM_SUMMON_MANA_COST;
+                    const canSwarm = !blocked && m.mana >= cost;
+                    const label = blocked
+                        ? `\u{1FAA1} Acid Swarm [vermin swarm active]`
+                        : hasASwarm
+                            ? `\u{1FAA1} Grow Acid Swarm (-${cost} MP)`
+                            : `\u{1FAA1} Summon Acid Swarm (-${cost} MP)`;
+                    const btn = this._addBtn(label, canSwarm, () => this.combat.vkSummonSwarm('acid'));
+                    btn.classList.add('combat-special-btn');
+                    if (hasASwarm) btn.style.background = 'linear-gradient(135deg,#0a2a1a,#0a5a3a)';
+                    btn.title = [
+                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon/Grow Acid Swarm.`,
+                        `Costs ${cost} MP. Cannot have both swarm types at once.`,
+                        hasASwarm ? 'Swarm is ACTIVE — casting again grows it (+keeper HP, +1 attack).' : '',
+                        'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/stuns.',
+                        'AoE attack hits all enemies; applies acid DoT and defense/range/magic debuff.',
+                        blocked ? 'Cannot summon while Vermin Swarm is alive.' : '',
+                        !blocked && !canSwarm ? `Not enough mana (need ${cost} MP).` : '',
+                    ].filter(Boolean).join('\n');
+                }
+
+                // Swarm Protect toggle — only if a swarm is alive
+                if (hasVSwarm || hasASwarm) {
+                    const active  = !!m.vkSwarmProtectActive;
+                    const canProt = active || m.mana >= VK_SWARM_PROTECT_MANA_COST;
+                    const label   = active
+                        ? `\u{1F6E1}️ Swarm Protect: ON`
+                        : `\u{1F6E1}️ Swarm Protect (-${VK_SWARM_PROTECT_MANA_COST} MP)`;
+                    const btn = this._addBtn(label, canProt, () => this.combat.vkSwarmProtect());
+                    btn.classList.add('combat-special-btn');
+                    if (active) btn.style.background = 'linear-gradient(135deg,#1a1a40,#3a3a80)';
+                    btn.title = [
+                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Swarm Protect (toggle).`,
+                        `Costs ${VK_SWARM_PROTECT_MANA_COST} MP to activate. Works like Shambling Mound intercept.`,
+                        'While active: the swarm intercepts hits aimed at you (50% + level/300 chance per hit).',
+                        active ? 'ACTIVE — swarm is intercepting attacks for you.' : 'Inactive.',
+                        !active && !canProt ? `Not enough mana (need ${VK_SWARM_PROTECT_MANA_COST} MP).` : '',
+                    ].filter(Boolean).join('\n');
                 }
             }
         }

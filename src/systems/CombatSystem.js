@@ -183,6 +183,27 @@ import {
     STATUE_BOSS_AURA_MULT, PALADIN_DIVINE_JUDGMENT_SUPERBOSS_DIVISOR,
     SUPER_BOSS_MUMMY_ROT_MULT, STATUE_GOLD_MULT, STATUE_XP_MULT,
     SUPERBOSS_NAMES, LEGENDARY_ITEM_IDS,
+    VK_ATTACK_MANA_COST_BASE, VK_ATTACK_EXTRA_PER_5LV,
+    VK_DOT_DAMAGE_FRAC, VK_DOT_ROUNDS_PER_ATTACK,
+    VK_POISON_DAMAGE_BONUS, VK_ACID_DEF_DEBUFF,
+    VK_SUMMON_VERMIN_MANA_COST, VK_SUMMON_VERMIN_UNLOCK_LEVEL,
+    VK_VERMIN_TYPES,
+    VK_SUMMON_SLIME_MANA_COST, VK_SUMMON_SLIME_UNLOCK_LEVEL,
+    VK_SLIME_TYPES,
+    VK_SUMMON_CASCADE_BASE, VK_SUMMON_CASCADE_DROP, VK_SUMMON_CASCADE_LEVEL_BONUS,
+    VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
+    VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
+    VK_INSECT_PLAGUE_DOT_FRAC, VK_INSECT_PLAGUE_DOT_ROUNDS,
+    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
+    VK_SWARM_DEFENSE_PER_LEVEL,
+    VK_VSWARM_MELEE_RESIST, VK_VSWARM_MAGIC_WEAKNESS, VK_VSWARM_FIRE_WEAKNESS,
+    VK_VSWARM_POISON_DOT_FRAC, VK_VSWARM_POISON_DOT_ROUNDS,
+    VK_VSWARM_DEBUFF_DIV, VK_VSWARM_DEBUFF_ROUNDS,
+    VK_ASWARM_MELEE_RESIST, VK_ASWARM_MAGIC_WEAKNESS, VK_ASWARM_LIGHTNING_WEAKNESS,
+    VK_ASWARM_ACID_DOT_FRAC, VK_ASWARM_ACID_DOT_ROUNDS,
+    VK_ASWARM_DEBUFF_DIV, VK_ASWARM_DEBUFF_ROUNDS,
+    VK_SWARM_PROTECT_BASE_CHANCE, VK_SWARM_PROTECT_LEVEL_DIV, VK_SWARM_PROTECT_MANA_COST,
+    BARD_CHARM_BASE_CHANCE, BARD_CHARM_CHANCE_PER_2_LV, BARD_CHARM_DURATION_DIVISOR,
 } from '../utils/constants.js';
 import { soundManager } from '../utils/SoundManager.js';
 import {
@@ -195,6 +216,8 @@ import {
     UNDEAD_TIERS, getNecromancerUnlocked, rollUndeadStats,
     BEAST_TYPES, rollBeastStats,
     GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems, rollGolemStats,
+    VERMIN_PRESETS, SLIME_PRESETS, VERMIN_SWARM_PRESET, ACID_SWARM_PRESET,
+    rollVerminStats, rollSwarmStats,
 } from '../entities/Summons.js';
 
 function randomInt(min, max) {
@@ -5941,6 +5964,32 @@ export class CombatSystem {
             return;
         }
 
+        // ── Vermin Keeper: vermin summon attack ─────────────────────────────────
+        if (beastKind === 'vermin' || (m.isSummoned && VERMIN_PRESETS[m.summonType])) {
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+            const dealt = this._damageSummonEnemy(t, dmg);
+            this._addLog(`\u{1F577}️ ${m.name} strikes ${this._eName(t)} for ${dealt}!`);
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        // ── Vermin Keeper: slime summon attack ──────────────────────────────────
+        if (beastKind === 'slime' || (m.isSummoned && SLIME_PRESETS[m.summonType])) {
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+            const dealt = this._damageSummonEnemy(t, dmg);
+            this._addLog(`\u{1FAA1} ${m.name} engulfs ${this._eName(t)} for ${dealt}!`);
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        // ── Vermin Keeper: vermin/acid swarm attack ─────────────────────────────
+        if (beastKind === 'vermin_swarm' || beastKind === 'acid_swarm') {
+            this._processVKSwarmAttack(m);
+            return;
+        }
+
         // ── Death Knight: 5% HP regen at start of own turn ──────────────────
         if (m.summonType === 'death_knight' && m.health < m.maxHealth) {
             const regen = Math.max(1, Math.floor(m.maxHealth * 0.05));
@@ -8732,6 +8781,23 @@ export class CombatSystem {
             }
         }
 
+        // ── Vermin/Acid Swarm protect intercept (checked before shambling mound) ─
+        if (!opts.skipInterceptors && target.health > 0) {
+            const swarmProtectors = this._getVKSwarmInterceptors(target);
+            for (const swarm of swarmProtectors) {
+                const chance = Math.min(1, VK_SWARM_PROTECT_BASE_CHANCE + Math.max(0, target.level || 1) / VK_SWARM_PROTECT_LEVEL_DIV);
+                if (Math.random() < chance) {
+                    const swarmDef = (typeof swarm.getTotalDefense === 'function' ? swarm.getTotalDefense() : 0) + this._getSummonDefenseBonus(swarm);
+                    const dmg = Math.max(1, rawDmg - swarmDef);
+                    swarm.health = Math.max(0, swarm.health - dmg);
+                    this._emitTelemetry('intercept', { member: swarm, enemy: e, damage: dmg, interceptorType: 'vk_swarm' });
+                    this._addLog(`\u{1F41C} ${swarm.name} intercepts the blow aimed at ${target.name} and absorbs ${dmg} damage!`);
+                    if (swarm.health <= 0) this._addLog(`${swarm.name} is scattered!`);
+                    return null;
+                }
+            }
+        }
+
         // ── Shambling Mound intercept (checked before warrior — disposable plant) ─
         if (!opts.skipInterceptors && target.health > 0) {
             const mounds = this._getShamblingMoundInterceptors(target);
@@ -11224,7 +11290,7 @@ export class CombatSystem {
             // ── Weapon-rider DoTs on enemies (burn, acid_dot, poison_weapon).
             //    Each ticks per player round; damage rolled once per round.
             const effects = e.activeEffects || [];
-            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning' };
+            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', vk_acid_dot: '\u{1F7E2} acid corrosion', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid' };
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {
@@ -11949,6 +12015,463 @@ export class CombatSystem {
         }
         target.stunned = true;
         return true;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Vermin Keeper abilities
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /** L1: Poison attack — single-target magic, +15% dmg, poison DoT stacks in same turn */
+    vkPoisonAttack(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+
+        const attackCount = 1 + Math.floor((m.level || 1) / VK_ATTACK_EXTRA_PER_5LV);
+        const totalManaCost = VK_ATTACK_MANA_COST_BASE * attackCount;
+        if (m.mana < VK_ATTACK_MANA_COST_BASE) {
+            this._addLog(`${m.name} has no mana for Poison Attack (needs ${VK_ATTACK_MANA_COST_BASE} MP).`);
+            return;
+        }
+        const eName = this._eName(targetEnemy);
+        let dotDamage = 0;
+        const dotRounds = attackCount;
+        for (let i = 0; i < attackCount; i++) {
+            if (m.mana < VK_ATTACK_MANA_COST_BASE) break;
+            if (targetEnemy.health <= 0) break;
+            m.mana = Math.max(0, m.mana - VK_ATTACK_MANA_COST_BASE);
+            let raw = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+            raw += m.getWeaponBonus?.('magic') || 0;
+            raw += m.getClassDamageBonus?.('magic') || 0;
+            raw += this._getPartyMemberDamageMod(m);
+            raw = Math.max(1, Math.round(raw * (1 + VK_POISON_DAMAGE_BONUS)));
+            raw = this._applyOutgoingDamageBonuses(m, raw, 'magic');
+            const dealt = this._damageEnemy(targetEnemy, raw, false, true);
+            dotDamage += Math.max(1, Math.floor(dealt * VK_DOT_DAMAGE_FRAC));
+            this._addLog(`\u{1F7E2} ${m.name} venom bolt hits ${eName} for ${dealt}!`);
+            if (targetEnemy.health <= 0) { this._addLog(`${eName} is slain!`); break; }
+        }
+        if (dotDamage > 0 && targetEnemy.health > 0 && !this._enemyHasImmunity(targetEnemy, 'poison')) {
+            if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
+            targetEnemy.activeEffects.push({ type: 'vk_poison', damage: dotDamage, rounds: dotRounds });
+            this._addLog(`\u{1F7E2} ${eName} is poisoned! (${dotDamage}/rd × ${dotRounds} rds)`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L1: Acid attack — single-target magic, acid DoT, -1 defense debuff once per turn */
+    vkAcidAttack(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+
+        const attackCount = 1 + Math.floor((m.level || 1) / VK_ATTACK_EXTRA_PER_5LV);
+        if (m.mana < VK_ATTACK_MANA_COST_BASE) {
+            this._addLog(`${m.name} has no mana for Acid Attack (needs ${VK_ATTACK_MANA_COST_BASE} MP).`);
+            return;
+        }
+        const eName = this._eName(targetEnemy);
+        let dotDamage = 0;
+        const dotRounds = attackCount;
+        for (let i = 0; i < attackCount; i++) {
+            if (m.mana < VK_ATTACK_MANA_COST_BASE) break;
+            if (targetEnemy.health <= 0) break;
+            m.mana = Math.max(0, m.mana - VK_ATTACK_MANA_COST_BASE);
+            let raw = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+            raw += m.getWeaponBonus?.('magic') || 0;
+            raw += m.getClassDamageBonus?.('magic') || 0;
+            raw += this._getPartyMemberDamageMod(m);
+            raw = this._applyOutgoingDamageBonuses(m, raw, 'magic');
+            const dealt = this._damageEnemy(targetEnemy, raw, false, true);
+            dotDamage += Math.max(1, Math.floor(dealt * VK_DOT_DAMAGE_FRAC));
+            this._addLog(`\u{1F7E2} ${m.name} acid bolt hits ${eName} for ${dealt}!`);
+            if (targetEnemy.health <= 0) { this._addLog(`${eName} is dissolved!`); break; }
+        }
+        if (dotDamage > 0 && targetEnemy.health > 0) {
+            if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
+            targetEnemy.activeEffects.push({ type: 'vk_acid_dot', damage: dotDamage, rounds: dotRounds });
+            this._addLog(`\u{1F7E2} ${eName} corrodes from acid! (${dotDamage}/rd × ${dotRounds} rds)`);
+        }
+        // Apply one -1 defense debuff stack (entire combat) per turn of acid attacks
+        if (targetEnemy.health > 0) {
+            if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
+            targetEnemy.activeEffects.push({ type: 'vk_acid_debuff', defenseBonus: VK_ACID_DEF_DEBUFF, rounds: 9999 });
+            this._addLog(`\u{1F7E2} ${eName}'s defenses corrode! (-1 defense, permanent)`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L3: Summon Vermin — random type, cascade like necromancer */
+    vkSummonVermin() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_SUMMON_VERMIN_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_SUMMON_VERMIN_UNLOCK_LEVEL} to summon vermin.`);
+            return;
+        }
+        if (m.mana < VK_SUMMON_VERMIN_MANA_COST) {
+            this._addLog(`${m.name} needs ${VK_SUMMON_VERMIN_MANA_COST} MP to summon a vermin.`);
+            return;
+        }
+        m.mana -= VK_SUMMON_VERMIN_MANA_COST;
+        const typeId = VK_VERMIN_TYPES[Math.floor(Math.random() * VK_VERMIN_TYPES.length)];
+        const preset = VERMIN_PRESETS[typeId] || VERMIN_PRESETS.spider;
+        const spawnedThisAction = [];
+        const _spawnOne = () => {
+            const stats = rollVerminStats(m.level, m.maxHealth);
+            const summonNum = this.party.filter(p => p.isSummoned && p.summonType === preset.id && p.summonerId === m.id).length + 1;
+            const u = new PartyMember({
+                name: `${m.name}'s ${preset.name} #${summonNum}`,
+                classId: 'summoned', speciesId: 'human',
+                level: m.level,
+                maxHealth: stats.maxHealth, maxStamina: 0, maxMana: 0,
+                portraitSeed: Math.floor(Math.random() * 100000),
+                isSummoned: true, summonType: preset.id, summonerId: m.id,
+                canBeHealed: true, row: 'front',
+                summonStats: {
+                    meleeMin: stats.meleeMin, meleeMax: stats.meleeMax,
+                    defense: stats.defense, keeperLevel: m.level,
+                    beastKind: 'vermin',
+                    incorporeal: !!preset.incorporeal,
+                },
+            });
+            this.party.push(u);
+            this._registerNewSummon(u);
+            spawnedThisAction.push(u);
+            return u;
+        };
+        _spawnOne();
+        this._addLog(`\u{1F577}️ ${m.name} calls forth a ${preset.name}!`);
+        // Cascade
+        let baseChance = VK_SUMMON_CASCADE_BASE;
+        const lvBonus = (m.level || 1) * VK_SUMMON_CASCADE_LEVEL_BONUS;
+        while (true) {
+            const chance = Math.min(1, baseChance + lvBonus);
+            if (chance <= 0) break;
+            if (Math.random() >= chance) break;
+            _spawnOne();
+            baseChance -= VK_SUMMON_CASCADE_DROP;
+        }
+        if (spawnedThisAction.length > 1)
+            this._addLog(`\u{1F577}️ A swarm answers the call! ${spawnedThisAction.length} ${preset.name}s summoned!`);
+        if (this._initiativeOrder.length > 0) {
+            const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
+            for (let si = spawnedThisAction.length - 1; si >= 0; si--) {
+                const sp = spawnedThisAction[si];
+                if (!this._initiativeOrder.some(slot => slot.ref === sp))
+                    this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: sp, init: baseInit, skipThisRound: false });
+            }
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L6: Summon Slime — random type, cascade */
+    vkSummonSlime() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_SUMMON_SLIME_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_SUMMON_SLIME_UNLOCK_LEVEL} to summon slimes.`);
+            return;
+        }
+        if (m.mana < VK_SUMMON_SLIME_MANA_COST) {
+            this._addLog(`${m.name} needs ${VK_SUMMON_SLIME_MANA_COST} MP to summon a slime.`);
+            return;
+        }
+        m.mana -= VK_SUMMON_SLIME_MANA_COST;
+        const typeId = VK_SLIME_TYPES[Math.floor(Math.random() * VK_SLIME_TYPES.length)];
+        const preset = SLIME_PRESETS[typeId] || SLIME_PRESETS.slime;
+        const spawnedThisAction = [];
+        const _spawnOne = () => {
+            const stats = rollVerminStats(m.level, m.maxHealth);
+            const summonNum = this.party.filter(p => p.isSummoned && p.summonType === preset.id && p.summonerId === m.id).length + 1;
+            const u = new PartyMember({
+                name: `${m.name}'s ${preset.name} #${summonNum}`,
+                classId: 'summoned', speciesId: 'human',
+                level: m.level,
+                maxHealth: stats.maxHealth, maxStamina: 0, maxMana: 0,
+                portraitSeed: Math.floor(Math.random() * 100000),
+                isSummoned: true, summonType: preset.id, summonerId: m.id,
+                canBeHealed: true, row: 'front',
+                summonStats: {
+                    meleeMin: stats.meleeMin, meleeMax: stats.meleeMax,
+                    defense: stats.defense, keeperLevel: m.level,
+                    beastKind: 'slime',
+                },
+            });
+            this.party.push(u);
+            this._registerNewSummon(u);
+            spawnedThisAction.push(u);
+            return u;
+        };
+        _spawnOne();
+        this._addLog(`\u{1FAA1} ${m.name} conjures a ${preset.name}!`);
+        let baseChance = VK_SUMMON_CASCADE_BASE;
+        const lvBonus = (m.level || 1) * VK_SUMMON_CASCADE_LEVEL_BONUS;
+        while (true) {
+            const chance = Math.min(1, baseChance + lvBonus);
+            if (chance <= 0) break;
+            if (Math.random() >= chance) break;
+            _spawnOne();
+            baseChance -= VK_SUMMON_CASCADE_DROP;
+        }
+        if (spawnedThisAction.length > 1)
+            this._addLog(`\u{1FAA1} More slimes bubble up! ${spawnedThisAction.length} ${preset.name}s summoned!`);
+        if (this._initiativeOrder.length > 0) {
+            const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
+            for (let si = spawnedThisAction.length - 1; si >= 0; si--) {
+                const sp = spawnedThisAction[si];
+                if (!this._initiativeOrder.some(slot => slot.ref === sp))
+                    this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: sp, init: baseInit, skipThisRound: false });
+            }
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L20: Charm Vermin — like bard charm but restricted to vermin/slime/insect tags */
+    vkCharmVermin(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_CHARM_VERMIN_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_CHARM_VERMIN_UNLOCK_LEVEL} to use Charm Vermin.`);
+            return;
+        }
+        if (m.mana < VK_CHARM_VERMIN_MANA_COST) {
+            this._addLog(`${m.name} needs ${VK_CHARM_VERMIN_MANA_COST} MP for Charm Vermin.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const eName = this._eName(targetEnemy);
+        const tDef  = ENEMY_TYPES[targetEnemy.type] || {};
+        const tTags = tDef.tags || [];
+        const hasVerminTag = VK_CHARM_VERMIN_TAGS.some(tag => tTags.includes(tag));
+        if (!hasVerminTag) {
+            m.mana -= VK_CHARM_VERMIN_MANA_COST;
+            this._addLog(`\u{1F577}️ ${m.name} attempts to charm ${eName}… but it is not vermin, slime, or insect!`);
+            this._advancePlayerTurn();
+            return;
+        }
+        if (targetEnemy.isBoss || targetEnemy.isMegaBoss) {
+            m.mana -= VK_CHARM_VERMIN_MANA_COST;
+            this._addLog(`\u{1F577}️ ${m.name} attempts to charm ${eName}… but it is too powerful!`);
+            this._advancePlayerTurn();
+            return;
+        }
+        if (targetEnemy.charmedRounds > 0) {
+            this._addLog(`${eName} is already charmed!`);
+            return;
+        }
+        m.mana -= VK_CHARM_VERMIN_MANA_COST;
+        const charmChance = Math.min(0.95, BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * (m.level || 1));
+        const duration    = Math.max(1, Math.floor((m.level || 1) / BARD_CHARM_DURATION_DIVISOR));
+        if (Math.random() < charmChance) {
+            targetEnemy.charmedRounds = duration;
+            targetEnemy.charmerId     = m.id;
+            this._addLog(`\u{1F577}️ ${m.name} bends the vermin to their will — ${eName} is charmed! (${duration} rounds)`);
+        } else {
+            this._addLog(`\u{1F577}️ ${m.name} tries to charm ${eName}… it shakes free! (${Math.round(charmChance * 100)}% chance)`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L25: Insect Plague — AoE magic, applies powerful poison DoT on all enemies */
+    vkInsectPlague() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_INSECT_PLAGUE_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_INSECT_PLAGUE_UNLOCK_LEVEL} to use Insect Plague.`);
+            return;
+        }
+        if (m.mana < VK_INSECT_PLAGUE_MANA_COST) {
+            this._addLog(`${m.name} needs ${VK_INSECT_PLAGUE_MANA_COST} MP for Insect Plague.`);
+            return;
+        }
+        m.mana -= VK_INSECT_PLAGUE_MANA_COST;
+        const alive = this.aliveHostileEnemies.slice();
+        if (alive.length === 0) {
+            this._addLog('No enemies to plague!');
+            this._advancePlayerTurn();
+            return;
+        }
+        let raw = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        raw += m.getWeaponBonus?.('magic') || 0;
+        raw += m.getClassDamageBonus?.('magic') || 0;
+        raw += this._getPartyMemberDamageMod(m);
+        raw = this._applyOutgoingDamageBonuses(m, raw, 'magic');
+        this._addLog(`\u{1F41C} ${m.name} unleashes an Insect Plague on all enemies!`);
+        for (const e of alive) {
+            if (e.health <= 0) continue;
+            const dealt = this._damageEnemy(e, raw, false, true);
+            this._addLog(`  → ${this._eName(e)} takes ${dealt} plague damage!`);
+            if (e.health > 0 && !this._enemyHasImmunity(e, 'poison')) {
+                const dotDmg = Math.max(1, Math.floor(dealt * VK_INSECT_PLAGUE_DOT_FRAC));
+                if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
+                e.activeEffects.push({ type: 'insect_plague_poison', damage: dotDmg, rounds: VK_INSECT_PLAGUE_DOT_ROUNDS });
+                this._addLog(`  \u{1F41C} ${this._eName(e)} is swarmed by insects! (${dotDmg}/rd × ${VK_INSECT_PLAGUE_DOT_ROUNDS} rds)`);
+            }
+            if (e.health <= 0 && !e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L30: Summon Vermin Swarm or Acid Swarm — grows existing swarm or creates new one */
+    vkSummonSwarm(swarmType) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_SWARM_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_SWARM_UNLOCK_LEVEL} to summon a swarm.`);
+            return;
+        }
+        const swarmSummonType = swarmType === 'acid' ? 'acid_swarm' : 'vermin_swarm';
+        const otherSwarmType  = swarmType === 'acid' ? 'vermin_swarm' : 'acid_swarm';
+        // Check if the other swarm type is already active (locks out this one)
+        const otherSwarmAlive = this.party.some(p => p.isSummoned && p.summonType === otherSwarmType && p.summonerId === m.id && p.health > 0);
+        if (otherSwarmAlive) {
+            const otherName = swarmType === 'acid' ? 'Vermin Swarm' : 'Acid Swarm';
+            this._addLog(`\u{1F41C} ${m.name} already has a ${otherName} active — it must die before summoning a different swarm!`);
+            return;
+        }
+        if (m.mana < VK_SWARM_SUMMON_MANA_COST) {
+            this._addLog(`${m.name} needs ${VK_SWARM_SUMMON_MANA_COST} MP for this swarm.`);
+            return;
+        }
+        m.mana -= VK_SWARM_SUMMON_MANA_COST;
+        const preset = swarmType === 'acid' ? ACID_SWARM_PRESET : VERMIN_SWARM_PRESET;
+        // Find existing swarm of this type (from this keeper)
+        const existing = this.party.find(p => p.isSummoned && p.summonType === swarmSummonType && p.summonerId === m.id && p.health > 0);
+        if (existing) {
+            // Grow existing swarm
+            const hpGain = Math.max(1, m.maxHealth);
+            existing.health = Math.min(existing.maxHealth + hpGain, existing.health + hpGain);
+            existing.maxHealth += hpGain;
+            existing.summonStats = existing.summonStats || {};
+            existing.summonStats.attackCount = (existing.summonStats.attackCount || 1) + 1;
+            this._addLog(`\u{1F41C} ${m.name}'s ${preset.name} grows larger! (+${hpGain} HP, ${existing.summonStats.attackCount} AoE attacks)`);
+        } else {
+            // Summon new swarm
+            const magicBonus = (m.getWeaponBonus?.('magic') || 0) + (m.getClassDamageBonus?.('magic') || 0);
+            const stats = rollSwarmStats(m.level, m.maxHealth, magicBonus);
+            const u = new PartyMember({
+                name: `${m.name}'s ${preset.name}`,
+                classId: 'summoned', speciesId: 'human',
+                level: m.level,
+                maxHealth: stats.maxHealth, maxStamina: 0, maxMana: 0,
+                portraitSeed: Math.floor(Math.random() * 100000),
+                isSummoned: true, summonType: swarmSummonType, summonerId: m.id,
+                canBeHealed: false, row: 'front',
+                summonStats: {
+                    magicMin: stats.magicMin, magicMax: stats.magicMax,
+                    defense: stats.defense, keeperLevel: m.level,
+                    attackCount: 1,
+                    beastKind: swarmSummonType,
+                    swarmType: swarmType,
+                    incorporeal: swarmType === 'vermin',
+                },
+            });
+            this.party.push(u);
+            this._registerNewSummon(u);
+            this._addLog(`\u{1F41C} ${m.name} calls forth a ${preset.name}! It erupts from the shadows!`);
+            if (this._initiativeOrder.length > 0) {
+                const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
+                if (!this._initiativeOrder.some(slot => slot.ref === u))
+                    this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: u, init: baseInit, skipThisRound: false });
+            }
+        }
+        this._advancePlayerTurn();
+    }
+
+    /** L30: Swarm Protect — toggle swarm to intercept attacks aimed at the keeper */
+    vkSwarmProtect() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_SWARM_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_SWARM_UNLOCK_LEVEL} for Swarm Protect.`);
+            return;
+        }
+        const swarm = this.party.find(p => p.isSummoned && p.summonerId === m.id && p.health > 0 && (p.summonType === 'vermin_swarm' || p.summonType === 'acid_swarm'));
+        if (!swarm) {
+            this._addLog(`${m.name} has no living swarm to activate Swarm Protect!`);
+            return;
+        }
+        if (m.mana < VK_SWARM_PROTECT_MANA_COST) {
+            this._addLog(`${m.name} needs ${VK_SWARM_PROTECT_MANA_COST} MP to activate Swarm Protect.`);
+            return;
+        }
+        if (m.vkSwarmProtectActive) {
+            m.vkSwarmProtectActive = false;
+            this._addLog(`\u{1F41C} ${m.name}'s swarm stops protecting its master.`);
+        } else {
+            m.mana -= VK_SWARM_PROTECT_MANA_COST;
+            m.vkSwarmProtectActive = true;
+            this._addLog(`\u{1F41C} ${m.name}'s swarm coils around its master — ready to intercept attacks! (-${VK_SWARM_PROTECT_MANA_COST} MP)`);
+        }
+        this._notify();
+    }
+
+    /** Helper: get living swarms that protect a given Vermin Keeper */
+    _getVKSwarmInterceptors(target) {
+        if (!target || target.health <= 0 || target.isSummoned || target.classId !== 'verminkeeper') return [];
+        if (!target.vkSwarmProtectActive) return [];
+        return this.party.filter(p =>
+            p && p.health > 0 && p.isSummoned && p.summonerId === target.id
+            && (p.summonType === 'vermin_swarm' || p.summonType === 'acid_swarm')
+        );
+    }
+
+    /** Called from _attackPartyMember to apply swarm attacks on their turn */
+    _processVKSwarmAttack(swarm) {
+        if (!swarm || swarm.health <= 0 || !swarm.isSummoned) return;
+        const st = swarm.summonStats || {};
+        const keeper = this.party.find(p => p.id === swarm.summonerId);
+        const isVermin = swarm.summonType === 'vermin_swarm';
+        const attackCount = st.attackCount || 1;
+        const targets = this.aliveHostileEnemies.slice();
+        if (targets.length === 0) return;
+        const keeperLv = st.keeperLevel || 1;
+        const debuffAmt = Math.floor(keeperLv / (isVermin ? VK_VSWARM_DEBUFF_DIV : VK_ASWARM_DEBUFF_DIV));
+        for (let atk = 0; atk < attackCount; atk++) {
+            if (this.aliveHostileEnemies.length === 0) break;
+            const rawBase = randomInt(st.magicMin || 1, st.magicMax || 5);
+            for (const e of this.aliveHostileEnemies.slice()) {
+                if (e.health <= 0) continue;
+                const dealt = this._damageEnemy(e, rawBase, false, false); // melee-type, not magic
+                if (isVermin) {
+                    // Vermin swarm: poison DoT
+                    if (dealt > 0 && !this._enemyHasImmunity(e, 'poison')) {
+                        const dotDmg = Math.max(1, Math.floor(dealt * VK_VSWARM_POISON_DOT_FRAC));
+                        if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
+                        e.activeEffects.push({ type: 'vk_swarm_poison', damage: dotDmg, rounds: VK_VSWARM_POISON_DOT_ROUNDS });
+                    }
+                    // Unique debuff: refresh vermin swarm debuff
+                    if (debuffAmt > 0) {
+                        const existing = (e.activeEffects || []).find(fx => fx && fx.type === 'vk_vswarm_debuff');
+                        if (existing) { existing.rounds = VK_VSWARM_DEBUFF_ROUNDS; }
+                        else {
+                            if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
+                            e.activeEffects.push({ type: 'vk_vswarm_debuff', damageBonus: -debuffAmt, rangedBonus: -debuffAmt, magicBonus: -debuffAmt, rounds: VK_VSWARM_DEBUFF_ROUNDS });
+                        }
+                    }
+                } else {
+                    // Acid swarm: acid DoT
+                    if (dealt > 0) {
+                        const dotDmg = Math.max(1, Math.floor(dealt * VK_ASWARM_ACID_DOT_FRAC));
+                        if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
+                        e.activeEffects.push({ type: 'vk_swarm_acid', damage: dotDmg, rounds: VK_ASWARM_ACID_DOT_ROUNDS });
+                    }
+                    // Unique debuff: refresh acid swarm debuff
+                    if (debuffAmt > 0) {
+                        const existing = (e.activeEffects || []).find(fx => fx && fx.type === 'vk_aswarm_debuff');
+                        if (existing) { existing.rounds = VK_ASWARM_DEBUFF_ROUNDS; }
+                        else {
+                            if (!Array.isArray(e.activeEffects)) e.activeEffects = [];
+                            e.activeEffects.push({ type: 'vk_aswarm_debuff', defenseBonus: -debuffAmt, rangedBonus: -debuffAmt, magicBonus: -debuffAmt, rounds: VK_ASWARM_DEBUFF_ROUNDS });
+                        }
+                    }
+                }
+                if (e.health <= 0 && !e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
+            }
+        }
+        const swarmName = isVermin ? 'Vermin Swarm' : 'Acid Swarm';
+        this._addLog(`\u{1F41C} ${swarm.name} ${isVermin ? 'swarms' : 'dissolves'} all enemies with ${attackCount} AoE attack(s)!`);
     }
 
     _addLog(msg) {
