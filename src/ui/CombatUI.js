@@ -507,6 +507,34 @@ export class CombatUI {
                     rust_corrosion: {
                         icon: '\u{1F99F}', label: 'Corroded', bg: 'rgba(100,50,10,0.9)',
                         tip: (fx) => 'Rust Corrosion: ' + (fx.defenseBonus||0) + ' defense (lasts full combat)'
+                    },
+                    insect_plague_poison: {
+                        icon: '\u{1F41C}', label: 'Plague', bg: 'rgba(70,110,0,0.95)',
+                        tip: (fx) => 'Insect Plague: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    vk_poison: {
+                        icon: '\u{1F577}️', label: 'VK Venom', bg: 'rgba(80,120,0,0.9)',
+                        tip: (fx) => 'Vermin Venom: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    vk_acid_dot: {
+                        icon: '\u{1FAA1}', label: 'VK Acid', bg: 'rgba(40,140,0,0.9)',
+                        tip: (fx) => 'Slime Acid: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    vk_swarm_poison: {
+                        icon: '\u{1F41C}', label: 'Swarm Venom', bg: 'rgba(60,100,10,0.9)',
+                        tip: (fx) => 'Swarm Venom: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    vk_swarm_acid: {
+                        icon: '\u{1FAA1}', label: 'Swarm Acid', bg: 'rgba(30,130,20,0.9)',
+                        tip: (fx) => 'Swarm Acid: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    vk_vswarm_debuff: {
+                        icon: '\u{1F41C}', label: 'Infested', bg: 'rgba(90,60,10,0.9)',
+                        tip: (fx) => 'Vermin Swarm: ' + Math.abs(fx.damageBonus||0) + ' atk/range/magic — ' + fx.rounds + ' rds left'
+                    },
+                    vk_aswarm_debuff: {
+                        icon: '\u{1FAA1}', label: 'Dissolved', bg: 'rgba(20,100,40,0.9)',
+                        tip: (fx) => 'Acid Swarm: -' + Math.abs(fx.defenseBonus||0) + ' def/range/magic — ' + fx.rounds + ' rds left'
                     }
                 };
 
