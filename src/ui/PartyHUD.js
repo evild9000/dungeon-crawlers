@@ -996,7 +996,8 @@ export class PartyHUD {
             }
             const atkCount = (member.summonStats && member.summonStats.attackCount) || 2;
             horrorBadge.textContent = '🧟' + atkCount;
-            horrorBadge.title = `Corpse Horror: stitched from fallen foes. ${atkCount} melee attacks/round. Grows stronger with each new kill.`;
+            const attackCap = member.summonStats && member.summonStats.attackCap;
+            horrorBadge.title = `Corpse Horror: stitched from fallen foes. ${atkCount}${attackCap ? `/${attackCap}` : ''} melee attacks/round. HP, defense, and melee skill keep growing with each new kill.`;
         } else if (portraitWrap) {
             const existing = portraitWrap.querySelector('.party-corpse-horror-badge');
             if (existing) existing.remove();
@@ -1092,7 +1093,7 @@ export class PartyHUD {
                 const atkCount = ss.attackCount || 1;
                 const skill = ss.meleeSkill || 0;
                 parts.push(`🧵 ${corpses}`);
-                parts.push(`🗡️x${atkCount}`);
+                parts.push(`🗡️x${atkCount}${ss.attackCap ? `/${ss.attackCap}` : ''}`);
                 parts.push(`🎯 ${skill}`);
             }
             // Show regen rate if applicable (flesh golem, stirge-type beasts)
@@ -1107,7 +1108,7 @@ export class PartyHUD {
                     ? `\nGolem attachments: ${ss.attachments.limbs || 0} limb(s), ${ss.attachments.shield ? 'shield' : 'no shield'}, ${ss.attachments.trinkets || 0} trinket(s).`
                     : '') +
                 (member.summonType === 'corpse_horror'
-                    ? `\nCorpse Horror growth: ${ss.corpseCount || 1} corpses, ${ss.attackCount || 1} attacks/round, melee skill ${ss.meleeSkill || 0}.`
+                    ? `\nCorpse Horror growth: ${ss.corpseCount || 1} corpses, ${ss.attackCount || 1}${ss.attackCap ? `/${ss.attackCap}` : ''} attacks/round, melee skill ${ss.meleeSkill || 0}. HP, defense, and skill continue growing after attacks cap.`
                     : '') +
                 (regen ? `\nRegen: ${Math.round(regen * 100)}% HP/round` : '');
         }

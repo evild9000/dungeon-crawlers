@@ -559,15 +559,21 @@ export class CraftingUI {
             if (existingGolem.health < existingGolem.maxHealth) {
                 const tier = GOLEM_TIERS.find(t => t.id === existingGolem.summonStats.tierId);
                 const reagentId = `reagent_${tier ? tier.reagentTier : 'common'}`;
+                const healPct = Math.round(ARTIFICER_HEAL_GOLEM_PCT * 100);
+                const freeRepairPct = Math.round(Math.min(1, (artificer.level || 1) * ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL) * 100);
                 const repairRow = document.createElement('div');
                 repairRow.className = 'craft-row';
                 repairRow.innerHTML = `<div class="craft-row-info"><b>Repair Golem</b><br>` +
-                    `<span class="craft-desc">Restores 50% max HP. Uses 1 ${tier ? tier.reagentTier : 'common'} reagent.</span></div>`;
+                    `<span class="craft-desc">Restores ${healPct}% max HP. ${freeRepairPct}% chance to cost no reagent; otherwise uses 1 ${tier ? tier.reagentTier : 'common'} reagent.</span></div>`;
                 const btn = document.createElement('button');
                 const canPay = state.inventory.hasItem(reagentId, 1);
-                btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
-                btn.disabled = !canPay;
-                btn.textContent = `Repair — 1 ${tier ? tier.reagentTier : 'common'}`;
+                const canTryFreeRepair = freeRepairPct > 0;
+                btn.className = `craft-btn ${(canPay || canTryFreeRepair) ? '' : 'craft-btn-disabled'}`;
+                btn.disabled = !(canPay || canTryFreeRepair);
+                btn.textContent = `Repair — ${freeRepairPct}% free`;
+                btn.title = canPay
+                    ? `Repair has a ${freeRepairPct}% chance to cost no reagent.`
+                    : `No matching reagent; repair must roll free (${freeRepairPct}%) or it will fail.`;
                 btn.addEventListener('click', () => {
                     if (!this._combatSystem) return;
                     this._combatSystem.setInventory(state.inventory);

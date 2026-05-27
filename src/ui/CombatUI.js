@@ -1882,7 +1882,7 @@ export class CombatUI {
                 'After warrior intercepts, each mound can intercept hits aimed at its druid at 50% + druid level/3 percent.',
                 !moundUnlocked ? `Requires druid level ${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL}.` : '',
                 moundUnlocked && moundAtCap ? 'At the living mound cap.' : '',
-                moundUnlocked && !canMound ? 'Not enough mana.' : '',
+                moundUnlocked && !moundAtCap && m.mana < DRUID_SHAMBLING_MOUND_MANA_COST ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
 
             // ── Commune (L20) — summon Faerie Queen at level-scaled fae token thresholds
@@ -2116,18 +2116,23 @@ export class CombatUI {
             // Summon Vermin Swarm / Acid Swarm + Swarm Protect (L30)
             if (m.level >= VK_SWARM_UNLOCK_LEVEL) {
                 const party     = this.combat.party || [];
-                const vSwarm    = party.find(p => p.summonType === 'vermin_swarm' && p.health > 0);
-                const aSwarm    = party.find(p => p.summonType === 'acid_swarm'   && p.health > 0);
+                const vSwarm    = party.find(p => p.summonType === 'vermin_swarm' && p.summonerId === m.id && p.health > 0);
+                const aSwarm    = party.find(p => p.summonType === 'acid_swarm' && p.summonerId === m.id && p.health > 0);
                 const hasVSwarm = !!vSwarm;
                 const hasASwarm = !!aSwarm;
+                const maxSwarmUpgrades = Math.max(0, Math.floor((m.level || 1) / VK_SWARM_MAX_UPGRADE_DIVISOR));
 
                 // Vermin Swarm button — greyed if acid swarm alive
                 {
                     const blocked = hasASwarm;
                     const cost    = hasVSwarm ? VK_SWARM_GROWTH_MANA_COST : VK_SWARM_SUMMON_MANA_COST;
-                    const canSwarm = !blocked && m.mana >= cost;
+                    const upgrades = hasVSwarm ? Math.max(0, vSwarm.summonStats?.growthUpgrades ?? ((vSwarm.summonStats?.attackCount || 1) - 1)) : 0;
+                    const atUpgradeCap = hasVSwarm && upgrades >= maxSwarmUpgrades;
+                    const canSwarm = !blocked && !atUpgradeCap && m.mana >= cost;
                     const label = blocked
                         ? `\u{1F577}️ Vermin Swarm [acid swarm active]`
+                        : atUpgradeCap
+                            ? `\u{1F577}️ Vermin Swarm [${upgrades}/${maxSwarmUpgrades} upgrades]`
                         : hasVSwarm
                             ? `\u{1F577}️ Grow Vermin Swarm (-${cost} MP)`
                             : `\u{1F577}️ Summon Vermin Swarm (-${cost} MP)`;
@@ -2137,11 +2142,13 @@ export class CombatUI {
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon/Grow Vermin Swarm.`,
                         `Costs ${cost} MP. Cannot have both swarm types at once.`,
-                        hasVSwarm ? 'Swarm is ACTIVE — casting again grows it (+keeper HP, +1 attack).' : '',
+                        hasVSwarm ? `Swarm is ACTIVE — growth upgrades ${upgrades}/${maxSwarmUpgrades}; each upgrade adds +keeper HP and +1 AoE attack.` : '',
+                        `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/stuns.',
                         'AoE attack hits all enemies; applies poison DoT and attack/range/magic debuff.',
                         blocked ? 'Cannot summon while Acid Swarm is alive.' : '',
-                        !blocked && !canSwarm ? `Not enough mana (need ${cost} MP).` : '',
+                        atUpgradeCap ? 'At maximum swarm upgrades.' : '',
+                        !blocked && !atUpgradeCap && m.mana < cost ? `Not enough mana (need ${cost} MP).` : '',
                     ].filter(Boolean).join('\n');
                 }
 
@@ -2149,9 +2156,13 @@ export class CombatUI {
                 {
                     const blocked = hasVSwarm;
                     const cost    = hasASwarm ? VK_SWARM_GROWTH_MANA_COST : VK_SWARM_SUMMON_MANA_COST;
-                    const canSwarm = !blocked && m.mana >= cost;
+                    const upgrades = hasASwarm ? Math.max(0, aSwarm.summonStats?.growthUpgrades ?? ((aSwarm.summonStats?.attackCount || 1) - 1)) : 0;
+                    const atUpgradeCap = hasASwarm && upgrades >= maxSwarmUpgrades;
+                    const canSwarm = !blocked && !atUpgradeCap && m.mana >= cost;
                     const label = blocked
                         ? `\u{1FAA1} Acid Swarm [vermin swarm active]`
+                        : atUpgradeCap
+                            ? `\u{1FAA1} Acid Swarm [${upgrades}/${maxSwarmUpgrades} upgrades]`
                         : hasASwarm
                             ? `\u{1FAA1} Grow Acid Swarm (-${cost} MP)`
                             : `\u{1FAA1} Summon Acid Swarm (-${cost} MP)`;
@@ -2161,11 +2172,13 @@ export class CombatUI {
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon/Grow Acid Swarm.`,
                         `Costs ${cost} MP. Cannot have both swarm types at once.`,
-                        hasASwarm ? 'Swarm is ACTIVE — casting again grows it (+keeper HP, +1 attack).' : '',
+                        hasASwarm ? `Swarm is ACTIVE — growth upgrades ${upgrades}/${maxSwarmUpgrades}; each upgrade adds +keeper HP and +1 AoE attack.` : '',
+                        `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/stuns.',
                         'AoE attack hits all enemies; applies acid DoT and defense/range/magic debuff.',
                         blocked ? 'Cannot summon while Vermin Swarm is alive.' : '',
-                        !blocked && !canSwarm ? `Not enough mana (need ${cost} MP).` : '',
+                        atUpgradeCap ? 'At maximum swarm upgrades.' : '',
+                        !blocked && !atUpgradeCap && m.mana < cost ? `Not enough mana (need ${cost} MP).` : '',
                     ].filter(Boolean).join('\n');
                 }
 
@@ -2552,6 +2565,7 @@ export class CombatUI {
             );
             const hasLive = myGolems.length > 0;
             const needsHeal = myGolems.some(g => g.health < g.maxHealth);
+            const freeRepairPct = Math.round(Math.min(1, (m.level || 1) * ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL) * 100);
             // Determine whether the tier reagent is in stock for any living golem.
             const inv = this.combat.inventory;
             const canPayAny = !!inv && myGolems.some(g => {
@@ -2559,8 +2573,9 @@ export class CombatUI {
                 const rTier = (tier && tier.reagentTier) || 'common';
                 return inv.hasItem(`reagent_${rTier}`, 1);
             });
-            const canHeal = hasLive && needsHeal && canPayAny;
-            const label = `\u{1F527} Heal Golem (1 reagent)`;
+            const canTryFreeRepair = freeRepairPct > 0;
+            const canHeal = hasLive && needsHeal && (canPayAny || canTryFreeRepair);
+            const label = `\u{1F527} Heal Golem (${freeRepairPct}% free)`;
             const btn = this._addBtn(label, canHeal, () => {
                 this._pickPartyTarget(t => this.combat.healGolem(t), {
                     filter: (pm) => pm && pm.isSummoned && pm.summonerId === m.id &&
@@ -2574,12 +2589,13 @@ export class CombatUI {
             const healPct = Math.round(ARTIFICER_HEAL_GOLEM_PCT * 100);
             btn.title = [
                 'Artificer special: Repair Golem.',
-                `Consumes 1 reagent matching the golem's tier (common / uncommon / rare).`,
+                `Consumes 1 reagent matching the golem's tier unless the free repair chance succeeds.`,
+                `${freeRepairPct}% chance to repair for free without spending a reagent.`,
                 `Restores ${healPct}% of the golem's max HP.`,
                 'Only works on your own golem.',
                 !hasLive ? 'No living golem summoned.' : '',
                 hasLive && !needsHeal ? 'Your golem is already at full HP.' : '',
-                hasLive && needsHeal && !canPayAny ? 'No matching reagent in inventory.' : '',
+                hasLive && needsHeal && !canPayAny ? 'No matching reagent in inventory; the repair must roll free or it will fail.' : '',
                 'Out of combat, use the Crafting menu (K) to forge, repair, or dismiss a golem.',
             ].filter(Boolean).join('\n');
 
