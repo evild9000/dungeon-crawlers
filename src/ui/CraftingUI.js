@@ -30,6 +30,7 @@ import {
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
     calcScrollBonus, calcScrollCost,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
+    ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
 } from '../utils/constants.js';
 import { getItemDef, WEAPONS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';

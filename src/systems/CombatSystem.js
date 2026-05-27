@@ -50,7 +50,7 @@ import {
     REAGENT_BOSS_HIGH_TIER_AMOUNT, REAGENT_MEGABOSS_HIGH_TIER_AMOUNT,
     SCATTER_SPLASH_BASE, SCATTER_SPLASH_EVERY, SCATTER_SPLASH_FRACTION,
     ARTIFICER_DRONE_UNLOCK_LEVEL, ARTIFICER_DRONE_CHANCE_CAP,
-    ARTIFICER_HEAL_GOLEM_PCT,
+    ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
     PALADIN_SMITE_MANA_COST,
     PALADIN_SMITE_INSTAKILL_BASE, PALADIN_SMITE_INSTAKILL_PER_LEVEL,
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
@@ -106,7 +106,7 @@ import {
     RANGER_EXPLOSIVE_ARROW_INSTAKILL_MULT,
     ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL, ROGUE_BACKSTAB_BLEED_FRAC,
     ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR,
-    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST,
+    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST, DRUID_SHAMBLING_MOUND_CAP_DIVISOR,
     ROGUE_TRAP_UNLOCK_LEVEL, ROGUE_TRAP_DOT_FRACTION, ROGUE_TRAP_DOT_ROUNDS,
     ROGUE_EVASION_STAMINA_COST,
     ROGUE_TWIN_FANGS_UNLOCK_LEVEL, ROGUE_TWIN_FANGS_OFFHAND_MULT, ROGUE_TWIN_FANGS_INSTAKILL_MULT,
@@ -165,7 +165,7 @@ import {
     CLERIC_BANISHMENT_DAMAGE_MULT, CLERIC_BANISHMENT_TAGS,
     NECRO_DARK_APOTHEOSIS_UNLOCK_LEVEL, NECRO_CORPSE_HORROR_HP_FRACTION,
     NECRO_CORPSE_HORROR_DEF_DIVISOR, NECRO_CORPSE_HORROR_SKILL_PER_CORPSE,
-    NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
+    NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE, NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS,
     NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
     ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
     ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
@@ -195,6 +195,7 @@ import {
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
     VK_INSECT_PLAGUE_DOT_FRAC,
     VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
+    VK_SWARM_MAX_UPGRADE_DIVISOR,
     VK_SWARM_DEFENSE_PER_LEVEL,
     VK_VSWARM_MELEE_RESIST, VK_VSWARM_MAGIC_WEAKNESS, VK_VSWARM_FIRE_WEAKNESS,
     VK_VSWARM_POISON_DOT_FRAC, VK_VSWARM_POISON_DOT_ROUNDS,
@@ -969,13 +970,34 @@ export class CombatSystem {
         );
     }
 
+    _getShamblingMoundCap(druid) {
+        return Math.max(1, Math.floor(((druid && druid.level) || 1) / DRUID_SHAMBLING_MOUND_CAP_DIVISOR));
+    }
+
+    _getLivingShamblingMoundsFor(druid) {
+        if (!druid) return [];
+        return (this.party || []).filter(p =>
+            p && p.health > 0 && p.isSummoned && p.summonerId === druid.id
+            && p.summonType === 'shambling_mound'
+            && p.summonStats && p.summonStats.beastKind === 'shambling_mound'
+        );
+    }
+
     _spawnMiniShambler(sourceMound, druid) {
         if (!sourceMound || !druid || druid.health <= 0) return null;
+        const cap = this._getShamblingMoundCap(druid);
+        if (this._getLivingShamblingMoundsFor(druid).length >= cap) {
+            if (!sourceMound.summonStats._shamblingCapLoggedTurn || sourceMound.summonStats._shamblingCapLoggedTurn !== this.turnNumber) {
+                sourceMound.summonStats._shamblingCapLoggedTurn = this.turnNumber;
+                this._addLog(`🌿 ${sourceMound.name} is ready to bud, but ${druid.name} is already maintaining ${cap}/${cap} Shambling Mounds.`);
+            }
+            return null;
+        }
         const baseMaxHealth = sourceMound.summonStats?.baseMaxHealth || sourceMound.maxHealth;
         const baseDefense = sourceMound.summonStats?.baseDefense || sourceMound.summonStats?.defense || 1;
         const meleeMin = sourceMound.summonStats?.meleeMin || (MELEE_DAMAGE_MIN + druid.level * 2);
         const meleeMax = sourceMound.summonStats?.meleeMax || (MELEE_DAMAGE_MAX + druid.level * 2);
-            const miniNum = this.party.filter(p => p.isSummoned && p.summonType === 'shambling_mound' && p.summonStats && p.summonStats.shamblingGrowthStage === 0 && p.summonerId === druid.id).length + 1;
+        const miniNum = this.party.filter(p => p.isSummoned && p.summonType === 'shambling_mound' && p.summonStats && p.summonStats.shamblingGrowthStage === 0 && p.summonerId === druid.id).length + 1;
         const mini = new PartyMember({
             name: `${druid.name}'s Mini Shambler #${miniNum}`,
             classId: 'druid',
@@ -3851,6 +3873,12 @@ export class CombatSystem {
                 return;
             }
             cost = DRUID_SHAMBLING_MOUND_MANA_COST;
+            const cap = this._getShamblingMoundCap(m);
+            const currentMounds = this._getLivingShamblingMoundsFor(m).length;
+            if (currentMounds >= cap) {
+                this._addLog(`${m.name} is already maintaining ${currentMounds}/${cap} Shambling Mounds.`);
+                return;
+            }
         }
 
         if (m.mana < cost) {
@@ -4218,8 +4246,9 @@ export class CombatSystem {
     }
 
     /**
-     * Artificer heal on their own golem. Costs 1 reagent of the golem's tier
-     * and restores ARTIFICER_HEAL_GOLEM_PCT (50%) of the golem's max HP.
+     * Artificer heal on their own golem. Usually costs 1 reagent of the golem's
+     * tier, but has an artificer-level free repair chance.
+     * Restores ARTIFICER_HEAL_GOLEM_PCT (50%) of the golem's max HP.
      * Can be used in or out of combat; pass `spendTurn=false` from the UI
      * when used out of combat.
      *
@@ -4257,19 +4286,24 @@ export class CombatSystem {
         const tier = GOLEM_TIERS.find(t => t.id === tierId);
         const reagentTier = (tier && tier.reagentTier) || 'common';
         const reagentId = `reagent_${reagentTier}`;
+        const freeChance = Math.min(1, Math.max(0, (m.level || 1) * ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL));
+        const freeRepair = Math.random() < freeChance;
 
         const inv = this.inventory;
-        if (!inv || !inv.hasItem(reagentId, 1)) {
+        if (!freeRepair && (!inv || !inv.hasItem(reagentId, 1))) {
             this._addLog(`${m.name} needs 1 ${reagentTier} reagent to repair the ${tier ? tier.name : 'golem'}.`);
             return false;
         }
-        inv.removeItem(reagentId, 1);
+        if (!freeRepair) inv.removeItem(reagentId, 1);
 
         const heal = Math.max(1, Math.floor(golemMember.maxHealth * ARTIFICER_HEAL_GOLEM_PCT));
         const before = golemMember.health;
         golemMember.health = Math.min(golemMember.maxHealth, golemMember.health + heal);
         const dealt = golemMember.health - before;
-        this._addLog(`\u{1F527} ${m.name} repairs the ${tier ? tier.name : 'golem'} for ${dealt} HP (spent 1 ${reagentTier} reagent).`);
+        const costMsg = freeRepair
+            ? `forge insight: no ${reagentTier} reagent spent`
+            : `spent 1 ${reagentTier} reagent`;
+        this._addLog(`\u{1F527} ${m.name} repairs the ${tier ? tier.name : 'golem'} for ${dealt} HP (${costMsg}).`);
 
         if (spendTurn && this.party && this.party.length) this._advancePlayerTurn();
         return true;
@@ -4397,7 +4431,9 @@ export class CombatSystem {
             const oldStat    = existing.summonStats || {};
             const cc         = (oldStat.corpseCount || 1) + 1;
             const newSkill   = necro.level + cc * NECRO_CORPSE_HORROR_SKILL_PER_CORPSE;
-            const newAttacks = cc * NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE;
+            const attackCap  = (necro.level || 1) + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS;
+            const rawAttacks = cc * NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE;
+            const newAttacks = Math.min(rawAttacks, attackCap);
             const baseDef    = Math.max(1, Math.floor(necro.level / NECRO_CORPSE_HORROR_DEF_DIVISOR));
             const newDef     = baseDef + Math.max(0, cc - 1);
             const baseMin    = Math.max(1, Math.floor(necro.level / 6));
@@ -4411,11 +4447,15 @@ export class CombatSystem {
                 corpseCount: cc,
                 meleeSkill: newSkill,
                 attackCount: newAttacks,
+                rawAttackCount: rawAttacks,
+                attackCap,
+                necromancerLevel: necro.level,
                 meleeMin: newMin,
                 meleeMax: newMax,
                 defense: newDef,
             };
-            this._addLog(`\u{1FA78}\u{1F480} ${necro.name} stitches ${this._eName(enemy)}'s remains into the Corpse Horror — it swells with new flesh! (now ${existing.health}/${existing.maxHealth} HP, ${cc} corpses, ${newAttacks} atk/rd, skill ${newSkill}, DEF ${newDef})`);
+            const capNote = rawAttacks > newAttacks ? `, attacks capped at ${attackCap}` : '';
+            this._addLog(`\u{1FA78}\u{1F480} ${necro.name} stitches ${this._eName(enemy)}'s remains into the Corpse Horror — it swells with new flesh! (now ${existing.health}/${existing.maxHealth} HP, ${cc} corpses, ${newAttacks} atk/rd${capNote}, skill ${newSkill}, DEF ${newDef})`);
         } else {
             // Spawn a new Corpse Horror — 1 corpse
             const necroLvl  = necro.level;
@@ -4442,6 +4482,9 @@ export class CombatSystem {
                     meleeSkill:  initSkill,
                     defense:     baseDef,
                     attackCount: NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
+                    rawAttackCount: NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
+                    attackCap: necroLvl + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS,
+                    necromancerLevel: necroLvl,
                 },
             });
             horror.health = corpseHp;
@@ -5760,7 +5803,8 @@ export class CombatSystem {
 
         // ── Corpse Horror AI (Necromancer L30 Dark Apotheosis) ───────────────────
         if (m.summonType === 'corpse_horror') {
-            const attackCount = stats.attackCount || 2;
+            const attackCap = stats.attackCap || ((stats.necromancerLevel || m.level || 1) + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS);
+            const attackCount = Math.min(stats.attackCount || 2, attackCap);
             let firstHit = true;
             for (let atk = 0; atk < attackCount; atk++) {
                 const alive = this.aliveHostileEnemies;
@@ -6703,7 +6747,12 @@ export class CombatSystem {
                 }
                 for (let _a = 0; _a < actionCount; _a++) {
                     if (ref.health <= 0) break;
-                    this._executeOneEnemyTurn(ref);
+                    try {
+                        this._executeOneEnemyTurn(ref);
+                    } catch (err) {
+                        this._handleAutoTurnError(slot, err);
+                        break;
+                    }
                     if (this.phase === 'DEFEAT' || this.phase === 'FLED' || this.phase === 'VICTORY') return;
                     if (this.phase === 'NEED_PROMOTION') return;
                     if (this.aliveHostileEnemies.length === 0) { this._finishVictory(); return; }
@@ -6766,7 +6815,11 @@ export class CombatSystem {
             if (m.isSummoned) {
                 this._logTarget = 'player'; // summon acts for the player's side
                 this._addLog(`--- ${m.name}'s turn ---`);
-                this._takeSummonTurn(m);
+                try {
+                    this._takeSummonTurn(m);
+                } catch (err) {
+                    this._handleAutoTurnError(slot, err);
+                }
                 if (this.aliveHostileEnemies.length === 0) { this._finishVictory(); return; }
                 if (this.allRealMembersDefeated) {
                     this.phase = 'DEFEAT';
@@ -6795,6 +6848,18 @@ export class CombatSystem {
         // All slots exhausted — start a new round.
         this.turnNumber++;
         this._beginInitiativeRound();
+    }
+
+    _handleAutoTurnError(slot, err) {
+        const ref = slot && slot.ref;
+        const actorName = slot?.kind === 'enemy'
+            ? this._eName(ref)
+            : (ref?.name || 'Unknown combatant');
+        const errMsg = err && (err.message || String(err)) || 'unknown error';
+        this._addLog(`⚠️ ${actorName}'s turn was skipped due to a combat script error: ${errMsg}`);
+        try {
+            console.error('Combat auto-turn failed:', { actor: actorName, slot, err });
+        } catch (_) {}
     }
 
     _advancePlayerTurn() {
@@ -6831,7 +6896,26 @@ export class CombatSystem {
     /** Resume after a manual-mode pause (phase === 'ENEMY_TURN'). */
     resumeManualTurn() {
         if (this.phase !== 'ENEMY_TURN') return;
-        this._advanceThroughInitiative();
+        const beforeIdx = this._initTurnIdx;
+        const beforeRound = this.turnNumber;
+        try {
+            this._advanceThroughInitiative();
+        } catch (err) {
+            const slot = this._initiativeOrder[this._initTurnIdx];
+            this._handleAutoTurnError(slot, err);
+            this._initTurnIdx++;
+            this.phase = 'ENEMY_TURN';
+            this._notify();
+            return;
+        }
+        if (this.phase === 'ENEMY_TURN'
+            && this._initTurnIdx === beforeIdx
+            && this.turnNumber === beforeRound) {
+            const slot = this._initiativeOrder[this._initTurnIdx];
+            this._handleAutoTurnError(slot, new Error('manual advance made no progress'));
+            this._initTurnIdx++;
+            this._advanceThroughInitiative();
+        }
     }
 
     /** Move the current player's initiative slot to the end of the round. */

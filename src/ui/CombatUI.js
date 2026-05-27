@@ -27,7 +27,7 @@ import {
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
     PALADIN_FIRE_AURA_MANA_PER_ROUND,
     PALADIN_DRAGONSLAYER_UNLOCK_LEVEL, PALADIN_DRAGONSLAYER_MANA_PER_ROUND,
-    ARTIFICER_HEAL_GOLEM_PCT,
+    ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
     BARBARIAN_RAGE_STAMINA_COST,
     GOLEM_TIERS,
     WARRIOR_DEFEND_MODE_UNLOCK_LEVEL,
@@ -77,7 +77,7 @@ import {
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_ROUNDS,
     DRUID_COMMUNE_UNLOCK_LEVEL, DRUID_COMMUNE_FAE_TOKENS_NEEDED,
-    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST,
+    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST, DRUID_SHAMBLING_MOUND_CAP_DIVISOR,
     DRUID_WILD_SHAPE_UNLOCK_LEVEL, DRUID_WILD_SHAPE_MANA_INITIAL, DRUID_WILD_SHAPE_MANA_PER_ROUND,
     DRUID_WILD_BEAR_ATTACKS_DIVISOR, DRUID_WILD_BEAR_STUN_BASE, DRUID_WILD_BEAR_STUN_PER_LEVEL, DRUID_WILD_BEAR_DEFENSE_DIVISOR,
     DRUID_WILD_WOLF_ATTACKS_DIVISOR, DRUID_WILD_WOLF_BLEED_BASE, DRUID_WILD_WOLF_BLEED_PER_LEVEL, DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR, DRUID_WILD_WOLF_DEFENSE_DIVISOR,
@@ -116,6 +116,7 @@ import {
     VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
     VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
+    VK_SWARM_MAX_UPGRADE_DIVISOR,
     VK_SWARM_PROTECT_MANA_COST,
     WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
     WARLOCK_CURSE_UNLOCK_LEVEL, WARLOCK_CURSE_MANA_COST,
@@ -2918,7 +2919,22 @@ export class CombatUI {
             // Disable every action button immediately so no second click can land
             // before _refresh() rebuilds them.
             this.actionsEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
-            onClick();
+            try {
+                onClick();
+            } catch (err) {
+                console.error('Combat action failed:', err);
+                this._actionInProgress = false;
+                this._refresh();
+                return;
+            }
+            // Safety net: most combat actions synchronously rebuild the action
+            // panel via _notify(). If a branch returns without doing so, do not
+            // leave manual Continue or action buttons permanently disabled.
+            setTimeout(() => {
+                if (!this._active || !this._actionInProgress) return;
+                this._actionInProgress = false;
+                this._refresh();
+            }, 80);
         });
         this.actionsEl.appendChild(btn);
         return btn;

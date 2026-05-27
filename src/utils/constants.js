@@ -1306,7 +1306,8 @@ export const GOLEM_TIERS = [
     },
 ];
 
-export const ARTIFICER_HEAL_GOLEM_PCT = 0.5;   // uses 1 reagent of tier → 50% max HP
+export const ARTIFICER_HEAL_GOLEM_PCT = 0.5;   // uses 1 reagent of tier -> 50% max HP
+export const ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL = 0.02; // level x2% chance repair costs no reagent
 
 // ── Necromancer L30 — Dark Apotheosis ────────────────────────────────────────
 export const NECRO_DARK_APOTHEOSIS_UNLOCK_LEVEL    = 30;
@@ -1314,6 +1315,7 @@ export const NECRO_CORPSE_HORROR_HP_FRACTION       = 0.02;
 export const NECRO_CORPSE_HORROR_DEF_DIVISOR       = 2;
 export const NECRO_CORPSE_HORROR_SKILL_PER_CORPSE  = 5;
 export const NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE = 2;
+export const NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS  = 10;
 
 // ── Necromancer L30 — Plague Bringer ─────────────────────────────────────────
 export const NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL     = 30;
@@ -1461,6 +1463,7 @@ export const MAGE_FAMILIAR_DEFENSE_PER_LEVEL = 1;
 // Druid L25: Shambling Mound summon
 export const DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL = 25;
 export const DRUID_SHAMBLING_MOUND_MANA_COST    = 100;
+export const DRUID_SHAMBLING_MOUND_CAP_DIVISOR  = 2;
 
 // Rogue L25: field trap tools + anti-magic evasion
 export const ROGUE_TRAP_UNLOCK_LEVEL        = 25;
@@ -1837,6 +1840,7 @@ export const VK_INSECT_PLAGUE_LEVEL_DMG_BONUS = 0.02; // +2% damage per VK level
 export const VK_SWARM_UNLOCK_LEVEL        = 30;
 export const VK_SWARM_SUMMON_MANA_COST    = 75;  // initial summon/growth MP cost
 export const VK_SWARM_GROWTH_MANA_COST    = 75;  // MP cost to grow existing swarm (same as summon)
+export const VK_SWARM_MAX_UPGRADE_DIVISOR = 5;   // max growth upgrades = floor(keeper level / 5)
 export const VK_SWARM_HP_MULT             = 1.0; // swarm HP = keeper health × this
 export const VK_SWARM_DEFENSE_PER_LEVEL   = 2;   // swarm defense = keeper level × 2
 // Vermin Swarm resistances/vulnerabilities
