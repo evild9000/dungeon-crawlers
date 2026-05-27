@@ -650,6 +650,10 @@
             overflow-y: hidden;
         }
 
+        #combat-overlay.combat-active {
+            display: flex;
+        }
+
         /* ---- Enemy cards ---- */
 
         #combat-enemies {
@@ -894,6 +898,193 @@
             font-size: 16px;
             padding: 12px 36px;
             letter-spacing: 2px;
+        }
+
+        /* ================================================
+           OPTIONAL SCREEN LAYOUT 2
+           ================================================ */
+
+        body.layout2 #party-hud {
+            top: 0;
+            right: auto;
+            bottom: 0;
+            left: 0;
+            width: 456px;
+            max-width: 48vw;
+            max-height: none;
+            grid-template-columns: repeat(5, 80px);
+            grid-auto-rows: max-content;
+            justify-content: start;
+            align-content: start;
+            align-items: start;
+            gap: 8px;
+            padding: 10px 12px;
+            background: linear-gradient(90deg,
+                rgba(0,0,0,0.88) 0%,
+                rgba(0,0,0,0.62) 82%,
+                transparent 100%
+            );
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        body.layout2 .hud-top-bar {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 6px;
+            margin: 0 0 4px;
+            flex-wrap: wrap;
+        }
+
+        body.layout2 .hud-resource {
+            min-width: 0;
+            font-size: 12px;
+        }
+
+        body.layout2 .hud-btn {
+            padding: 5px 8px;
+            font-size: 10px;
+            letter-spacing: 0;
+        }
+
+        body.layout2 .hud-layout-btn {
+            border-color: #997044;
+            color: #f0cf92;
+        }
+
+        body.layout2 #combat-overlay {
+            grid-template-columns: minmax(468px, 468px) minmax(320px, 1fr) minmax(580px, 620px);
+            grid-template-rows: minmax(0, 1fr) auto auto auto;
+            align-items: stretch;
+            justify-items: stretch;
+            gap: 10px 12px;
+            padding: 10px 12px;
+            overflow: hidden;
+        }
+
+        body.layout2 #combat-overlay.combat-active {
+            display: grid;
+        }
+
+        body.layout2 #combat-enemies {
+            grid-column: 3;
+            grid-row: 1 / 5;
+            display: grid;
+            grid-template-columns: repeat(5, 110px);
+            grid-auto-rows: max-content;
+            justify-content: start;
+            align-content: start;
+            gap: 10px;
+            width: 100%;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+            padding: 0 4px 0 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        body.layout2 #combat-log-wrapper {
+            grid-column: 2;
+            grid-row: 1;
+            width: 100%;
+            max-width: none;
+            height: 100%;
+            min-height: 0;
+            margin: 0;
+            align-self: stretch;
+        }
+
+        body.layout2 #combat-log-player,
+        body.layout2 #combat-log-enemy {
+            min-height: 0;
+        }
+
+        body.layout2 #combat-log-player-inner,
+        body.layout2 #combat-log-enemy-inner {
+            height: auto;
+            min-height: 0;
+            flex: 1;
+        }
+
+        body.layout2 #combat-round-counter {
+            grid-column: 2;
+            grid-row: 2;
+            align-self: end;
+            margin: 0;
+        }
+
+        body.layout2 #combat-turn-info {
+            grid-column: 2;
+            grid-row: 3;
+            margin: 0;
+            min-height: 20px;
+        }
+
+        body.layout2 #combat-actions {
+            grid-column: 2;
+            grid-row: 4;
+            max-height: 25vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        body.layout2 #combat-charmed {
+            grid-column: 2;
+            grid-row: 5;
+            max-height: 18vh;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 1500px) {
+            body.layout2 #party-hud {
+                width: 368px;
+                grid-template-columns: repeat(4, 80px);
+            }
+            body.layout2 #combat-overlay {
+                grid-template-columns: minmax(380px, 380px) minmax(300px, 1fr) minmax(460px, 500px);
+            }
+            body.layout2 #combat-enemies {
+                grid-template-columns: repeat(4, 110px);
+            }
+        }
+
+        @media (max-width: 1100px) {
+            body.layout2 #party-hud {
+                width: 100%;
+                max-width: none;
+                top: auto;
+                right: 0;
+                bottom: 0;
+                grid-template-columns: repeat(auto-fill, 80px);
+                max-height: 34vh;
+                background: linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 70%, transparent 100%);
+            }
+            body.layout2 #combat-overlay {
+                flex-direction: column;
+                padding: 8px 16px 130px;
+                overflow-y: hidden;
+            }
+            body.layout2 #combat-overlay.combat-active {
+                display: flex;
+            }
+            body.layout2 #combat-enemies {
+                display: flex;
+                grid-template-columns: none;
+                justify-content: center;
+                flex-wrap: wrap;
+                max-height: 28vh;
+            }
+            body.layout2 #combat-log-wrapper {
+                height: auto;
+                max-width: 92vw;
+            }
+            body.layout2 #combat-log-player-inner,
+            body.layout2 #combat-log-enemy-inner {
+                height: min(440px, 32vh);
+                flex: none;
+            }
         }
 
         /* ---- End-of-combat messages ---- */
@@ -2383,6 +2574,13 @@
                 <div class="help-row"><span class="help-key">G</span> Open <b>Achievement Badges</b> — track party and individual milestones, tiers, and rewards</div>
                 <div class="help-row"><span class="help-key">H</span> Toggle this help menu</div>
                 <div class="help-row"><span class="help-key">Esc</span> Close any open overlay</div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">Screen Layouts</div>
+                <div class="help-row"><b>Layout 1</b> is the original arrangement: party HUD at the bottom, combat monsters at the top, split combat logs in the middle, and current-character actions below.</div>
+                <div class="help-row"><b>Layout 2</b> moves the party HUD to the left side, combat monsters to the right side, split logs to the center, and current-character actions below the logs. The left and right card panels use up to five columns and scroll downward when they overflow.</div>
+                <div class="help-row">Use the <b>Layout 1 / Layout 2</b> button in the party HUD to switch at any time. Your choice is saved on this browser.</div>
             </div>
 
             <div class="help-section">

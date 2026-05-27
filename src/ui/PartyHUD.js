@@ -52,6 +52,9 @@ export class PartyHUD {
         this._foodEl = null;
         this._partyCountEl = null;
         this._lightEl = null;   // Phase 10 light status indicator
+        this._layoutBtn = null;
+        this._layoutMode = this._readLayoutMode();
+        this._applyLayoutMode(this._layoutMode, false);
     }
 
     /**
@@ -141,7 +144,7 @@ export class PartyHUD {
         }
     }
 
-    show() { this.container.style.display = 'flex'; }
+    show() { this.container.style.display = this._layoutMode === 'layout2' ? 'grid' : 'flex'; }
     hide() { this.container.style.display = 'none'; }
 
     /** Show a brief toast message above the HUD. */
@@ -166,6 +169,7 @@ export class PartyHUD {
         this._goldEl = null;
         this._foodEl = null;
         this._partyCountEl = null;
+        this._layoutBtn = null;
     }
 
     // ──────────────────────────────────────────
@@ -278,8 +282,58 @@ export class PartyHUD {
         this._lightEl.innerHTML = '<span style="color:#555">&#x1F319; Dark</span>';
         this._topBar.appendChild(this._lightEl);
 
+        this._layoutBtn = document.createElement('button');
+        this._layoutBtn.className = 'hud-btn hud-layout-btn';
+        this._layoutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._toggleLayoutMode();
+        });
+        this._topBar.appendChild(this._layoutBtn);
+        this._refreshLayoutButton();
+
         // Insert top bar before any cards
         this.container.prepend(this._topBar);
+    }
+
+    _readLayoutMode() {
+        try {
+            return localStorage.getItem('dungeonLayoutMode') === 'layout2' ? 'layout2' : 'layout1';
+        } catch (_) {
+            return 'layout1';
+        }
+    }
+
+    _toggleLayoutMode() {
+        const next = this._layoutMode === 'layout2' ? 'layout1' : 'layout2';
+        this._applyLayoutMode(next, true);
+        this.showToast(`Screen layout: ${next.toUpperCase()}`);
+    }
+
+    _applyLayoutMode(mode, persist = true) {
+        this._layoutMode = mode === 'layout2' ? 'layout2' : 'layout1';
+        document.body.classList.toggle('layout2', this._layoutMode === 'layout2');
+        document.body.classList.toggle('layout1', this._layoutMode !== 'layout2');
+        if (this.container && this.container.style.display !== 'none') {
+            this.container.style.display = this._layoutMode === 'layout2' ? 'grid' : 'flex';
+        }
+        if (persist) {
+            try { localStorage.setItem('dungeonLayoutMode', this._layoutMode); } catch (_) {}
+        }
+        this._refreshLayoutButton();
+        window.dispatchEvent(new CustomEvent('game-layout-change', { detail: { layout: this._layoutMode } }));
+    }
+
+    _refreshLayoutButton() {
+        if (!this._layoutBtn) return;
+        const next = this._layoutMode === 'layout2' ? 'Layout 1' : 'Layout 2';
+        this._layoutBtn.textContent = this._layoutMode === 'layout2' ? 'Layout 2' : 'Layout 1';
+        this._layoutBtn.title = [
+            `Current screen layout: ${this._layoutMode.toUpperCase()}.`,
+            this._layoutMode === 'layout1'
+                ? 'Layout 1 keeps the original bottom party HUD, top monster HUD in combat, middle combat logs, and buttons below.'
+                : 'Layout 2 places party cards on the left, combat monsters on the right, logs in the center, and actions below the logs.',
+            `Click to switch to ${next}.`,
+        ].join('\n');
     }
 
     // ──────────────────────────────────────────

@@ -158,6 +158,8 @@ export class CombatUI {
         this._manualMode      = false;
         this._spacebarHandler = null;
         this._roundCounterEl  = null;
+        this._layoutChangeHandler = () => this._applyLayoutMode();
+        window.addEventListener('game-layout-change', this._layoutChangeHandler);
     }
 
     show(onEnd) {
@@ -165,7 +167,9 @@ export class CombatUI {
         this._active = true;
         this._actionInProgress = false;
         this._prevMemberHealth = {}; // track previous health to detect KO events
-        this.overlay.style.display = 'flex';
+        this.overlay.style.display = '';
+        this.overlay.classList.add('combat-active');
+        this._applyLayoutMode();
         this._buildEnemyCards();
 
         // Round counter — inserted just before the turn-info bar
@@ -195,6 +199,7 @@ export class CombatUI {
         this._active = false;
         this._selectingTarget = false;
         this._clearTurnIndicators();
+        this.overlay.classList.remove('combat-active');
         this.overlay.style.display = 'none';
         if (this._spacebarHandler) {
             document.removeEventListener('keydown', this._spacebarHandler);
@@ -204,6 +209,13 @@ export class CombatUI {
             this._roundCounterEl.remove();
             this._roundCounterEl = null;
         }
+        this.overlay.style.paddingBottom = '';
+    }
+
+    _applyLayoutMode() {
+        if (!this.overlay) return;
+        const layout2 = document.body.classList.contains('layout2');
+        if (layout2) this.overlay.style.paddingBottom = '';
     }
 
     _clearTurnIndicators() {
@@ -248,12 +260,16 @@ export class CombatUI {
         }
         this._updateTurnIndicators();
 
-        // Keep the overlay scrollable above the party HUD regardless of how
-        // tall the HUD grows (many summons can make it several rows high).
-        const hud = document.getElementById('party-hud');
-        if (hud) {
-            const hudH = hud.offsetHeight;
-            if (hudH > 0) this.overlay.style.paddingBottom = (hudH + 16) + 'px';
+        // Layout 1 keeps combat above the bottom party HUD. Layout 2 reserves
+        // left/right columns in CSS, so no bottom padding is needed.
+        if (document.body.classList.contains('layout2')) {
+            this.overlay.style.paddingBottom = '';
+        } else {
+            const hud = document.getElementById('party-hud');
+            if (hud) {
+                const hudH = hud.offsetHeight;
+                if (hudH > 0) this.overlay.style.paddingBottom = (hudH + 16) + 'px';
+            }
         }
 
         const p = this.combat.phase;
