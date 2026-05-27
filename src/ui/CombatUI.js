@@ -1856,9 +1856,17 @@ export class CombatUI {
             ].filter(Boolean).join('\n');
 
             const moundUnlocked = m.level >= DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL;
-            const canMound = moundUnlocked && m.mana >= DRUID_SHAMBLING_MOUND_MANA_COST;
+            const moundCap = Math.max(1, Math.floor((m.level || 1) / DRUID_SHAMBLING_MOUND_CAP_DIVISOR));
+            const livingMounds = (this.combat.party || []).filter(p =>
+                p && p.health > 0 && p.isSummoned && p.summonerId === m.id
+                && p.summonType === 'shambling_mound'
+            ).length;
+            const moundAtCap = livingMounds >= moundCap;
+            const canMound = moundUnlocked && !moundAtCap && m.mana >= DRUID_SHAMBLING_MOUND_MANA_COST;
             const moundLabel = moundUnlocked
-                ? `🪴 Summon Shambling Mound (-${DRUID_SHAMBLING_MOUND_MANA_COST} MP)`
+                ? (moundAtCap
+                    ? `🪴 Shambling Mound [${livingMounds}/${moundCap} max]`
+                    : `🪴 Summon Shambling Mound (-${DRUID_SHAMBLING_MOUND_MANA_COST} MP)`)
                 : `🪴 Summon Shambling Mound (L${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL})`;
             const moundBtn = this._addBtn(moundLabel, canMound, () => this.combat.summonBeast('shambling_mound'));
             moundBtn.classList.add('combat-special-btn');
@@ -1870,8 +1878,10 @@ export class CombatUI {
                 'Regenerates 20% max HP at the start of its turn. If full after regen, the original mound spawns a Mini Shambler (not on the summon round).',
                 'Mini Shamblers grow over 3 turns: 67%, 84%, then 100% of full mound HP/defense.',
                 'Only the original mound can spawn minis; grown minis cannot bud new minis.',
+                `Maximum living Shambling Mounds for this druid: ${moundCap} (level / ${DRUID_SHAMBLING_MOUND_CAP_DIVISOR}). Current: ${livingMounds}/${moundCap}.`,
                 'After warrior intercepts, each mound can intercept hits aimed at its druid at 50% + druid level/3 percent.',
                 !moundUnlocked ? `Requires druid level ${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL}.` : '',
+                moundUnlocked && moundAtCap ? 'At the living mound cap.' : '',
                 moundUnlocked && !canMound ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
 
