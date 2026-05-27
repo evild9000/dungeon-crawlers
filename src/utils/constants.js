@@ -1860,3 +1860,44 @@ export const VK_ASWARM_DEBUFF_ROUNDS      = 2;    // debuff duration
 export const VK_SWARM_PROTECT_BASE_CHANCE = 0.50;
 export const VK_SWARM_PROTECT_LEVEL_DIV   = 300;
 export const VK_SWARM_PROTECT_MANA_COST   = 25;  // MP to toggle swarm protect
+
+// ── Warlock ────────────────────────────────────────────────────────────────
+export const WARLOCK_HEX_UPKEEP_MANA       = 1;
+export const WARLOCK_HEX_PENALTY_DIVISOR   = 3;
+export const WARLOCK_HEX_DURATION_DIVISOR  = 7;
+export const WARLOCK_CURSE_UNLOCK_LEVEL    = 20;
+export const WARLOCK_CURSE_MANA_COST       = 35;
+export const WARLOCK_CURSE_BASE_PCT        = 0.01;
+export const WARLOCK_CURSE_MAX_PCT         = 0.05;
+export const WARLOCK_CURSE_BASE_ROUNDS     = 4;
+export const WARLOCK_CURSE_LEVEL_DIVISOR   = 20;
+export const WARLOCK_CURSE_MAX_ROUNDS      = 9;
+export const WARLOCK_CURSE_SHRUG_CHANCE    = 0.05;
+export const WARLOCK_CHARM_UNLOCK_LEVEL    = 25;
+export const WARLOCK_CHARM_MANA_COST       = 50;
+export const WARLOCK_CAULDRON_UNLOCK_LEVEL = 3;
+export const WARLOCK_CAULDRON_HP_COST      = 5;
+export const WARLOCK_DEMON_UPKEEP_HP       = 3;
+export const WARLOCK_ABYSS_FORM_UNLOCK_LEVEL = 30;
+export const WARLOCK_ABYSS_MAGIC_RESIST    = 0.50;
+export const WARLOCK_ABYSS_COLD_ACID_RESIST = 0.50;
+export const WARLOCK_DEMON_PROTECTION_CAP  = 0.66;
+export const WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR = 5;
+export const WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE = 1 / 3;
+
+export const WARLOCK_DEMON_TYPES = [
+    { id: 'imp', unlockLevel: 3 },
+    { id: 'flame_imp', unlockLevel: 6 },
+    { id: 'dust_devil', unlockLevel: 6 },
+    { id: 'demon_knight', unlockLevel: 10 },
+    { id: 'quasit', unlockLevel: 10 },
+    { id: 'efreeti', unlockLevel: 15 },
+    { id: 'ice_demon', unlockLevel: 20 },
+    { id: 'acid_demon', unlockLevel: 20 },
+    { id: 'bloat_demon', unlockLevel: 20 },
+    { id: 'hell_hound', unlockLevel: 20 },
+    { id: 'succubus', unlockLevel: 25 },
+    { id: 'chain_devil', unlockLevel: 25 },
+    { id: 'blood_demon', unlockLevel: 25 },
+    { id: 'pit_fiend', unlockLevel: 30 },
+];

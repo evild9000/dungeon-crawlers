@@ -32,6 +32,8 @@ import {
     VK_VERMIN_TYPES, VK_SLIME_TYPES,
     VK_VERMIN_HP_MULT, VK_VERMIN_MELEE_PER_LEVEL, VK_VERMIN_DEFENSE_PER_LEVEL,
     VK_SWARM_HP_MULT, VK_SWARM_DEFENSE_PER_LEVEL,
+    WARLOCK_DEMON_TYPES,
+    ENEMY_TYPES,
 } from '../utils/constants.js';
 
 // ────────────────────────────────────────────
@@ -590,6 +592,67 @@ export const ACID_SWARM_PRESET = {
     ],
 };
 
+// ────────────────────────────────────────────
+// Warlock — demon summons
+// ────────────────────────────────────────────
+
+export const WARLOCK_DEMON_PRESETS = (() => {
+    const out = {};
+    for (const entry of WARLOCK_DEMON_TYPES) {
+        const def = ENEMY_TYPES[entry.id] || {};
+        const name = def.name || entry.id.replace(/_/g, ' ');
+        out[entry.id] = {
+            id: entry.id,
+            name,
+            icon: entry.id === 'hell_hound' ? '\u{1F525}' : entry.id === 'quasit' ? '\u{1F47F}' : '\u{1F608}',
+            enemySprite: entry.id,
+            portraitClass: 'summoned',
+            portraitSpecies: 'human',
+            speciesLabel: name,
+            kind: 'demon',
+            unlockLevel: entry.unlockLevel,
+            immune: Array.isArray(def.immune) ? def.immune.slice() : [],
+            abilities: [
+                `Warlock demon — unlocks at level ${entry.unlockLevel}.`,
+                'Bound summon: HP = warlock max HP; attack and defense key from warlock magic skill.',
+                'Uses the matching monster variant ability profile against enemy parties.',
+                'Costs the warlock 3 HP per round to maintain. Vanishes if its warlock dies.',
+            ],
+        };
+    }
+    return out;
+})();
+
+export function getWarlockUnlockedDemons(level) {
+    const lv = Math.max(1, level | 0);
+    return WARLOCK_DEMON_TYPES
+        .filter(d => lv >= d.unlockLevel)
+        .map(d => WARLOCK_DEMON_PRESETS[d.id])
+        .filter(Boolean);
+}
+
+export function rollWarlockDemonStats(warlockLevel = 1, warlockMaxHealth = 20, warlockMagicSkill = 1, demonId = 'imp') {
+    const skill = Math.max(1, Math.floor(warlockMagicSkill || 1));
+    const hpMult = demonId === 'pit_fiend' ? 1.5 : 1;
+    const defenseBonus = demonId === 'pit_fiend' ? Math.max(5, Math.floor((warlockLevel || 1) / 2)) : 0;
+    return {
+        maxHealth: Math.max(1, Math.floor(warlockMaxHealth * hpMult)),
+        maxStamina: 0,
+        maxMana: 0,
+        meleeMin: skill,
+        meleeMax: skill + 4,
+        rangedMin: skill,
+        rangedMax: skill + 4,
+        magicMin: skill,
+        magicMax: skill + 4,
+        defense: skill + defenseBonus,
+        warlockLevel: Math.max(1, warlockLevel | 0),
+        beastKind: 'warlock_demon',
+        demonType: demonId,
+        immune: (WARLOCK_DEMON_PRESETS[demonId]?.immune || []).slice(),
+    };
+}
+
 /**
  * Roll stats for a Vermin Keeper summon (vermin or slime).
  * HP = keeper maxHealth, melee = keeperLevel×2, defense = keeperLevel×1.5
@@ -640,6 +703,7 @@ export function getSummonPreset(member) {
     if (SLIME_PRESETS[member.summonType]) return SLIME_PRESETS[member.summonType];
     if (member.summonType === 'vermin_swarm') return VERMIN_SWARM_PRESET;
     if (member.summonType === 'acid_swarm') return ACID_SWARM_PRESET;
+    if (WARLOCK_DEMON_PRESETS[member.summonType]) return WARLOCK_DEMON_PRESETS[member.summonType];
     return null;
 }
 

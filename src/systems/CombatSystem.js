@@ -205,6 +205,15 @@ import {
     VK_SWARM_PROTECT_BASE_CHANCE, VK_SWARM_PROTECT_LEVEL_DIV, VK_SWARM_PROTECT_MANA_COST,
     VK_RESIST_PER_LEVEL,
     VK_INSECT_PLAGUE_LEVEL_DMG_BONUS,
+    WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
+    WARLOCK_CURSE_UNLOCK_LEVEL, WARLOCK_CURSE_MANA_COST, WARLOCK_CURSE_BASE_PCT,
+    WARLOCK_CURSE_MAX_PCT, WARLOCK_CURSE_BASE_ROUNDS, WARLOCK_CURSE_LEVEL_DIVISOR,
+    WARLOCK_CURSE_MAX_ROUNDS, WARLOCK_CURSE_SHRUG_CHANCE,
+    WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
+    WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP,
+    WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ABYSS_MAGIC_RESIST, WARLOCK_ABYSS_COLD_ACID_RESIST,
+    WARLOCK_DEMON_PROTECTION_CAP, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
+    WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE,
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     calcScrollBonus,
 } from '../utils/constants.js';
@@ -221,6 +230,7 @@ import {
     GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems, rollGolemStats,
     VERMIN_PRESETS, SLIME_PRESETS, VERMIN_SWARM_PRESET, ACID_SWARM_PRESET,
     rollVerminStats, rollSwarmStats,
+    WARLOCK_DEMON_PRESETS, getWarlockUnlockedDemons, rollWarlockDemonStats,
 } from '../entities/Summons.js';
 
 function randomInt(min, max) {
@@ -397,6 +407,28 @@ export class CombatSystem {
 
     _isDragonEnemy(enemy) {
         return this._getEnemyTags(enemy).includes('dragon');
+    }
+
+    _isDemonEnemy(enemy) {
+        return this._getEnemyTags(enemy).includes('demon');
+    }
+
+    _getWarlockDemonProtectionReduction() {
+        let best = 0;
+        for (const m of this.party || []) {
+            if (!m || m.health <= 0 || m.isSummoned || m.classId !== 'warlock') continue;
+            if ((m.level || 1) < WARLOCK_ABYSS_FORM_UNLOCK_LEVEL) continue;
+            best = Math.max(best, Math.min(WARLOCK_DEMON_PROTECTION_CAP, (m.level || 1) / 100));
+        }
+        return best;
+    }
+
+    _getWarlockMagicSkill(warlock) {
+        if (!warlock) return 1;
+        return Math.max(1,
+            (warlock.getWeaponBonus?.('magic') || 0)
+            + (warlock.getClassDamageBonus?.('magic') || 0)
+            + this._getPartyMemberDamageMod(warlock));
     }
 
     _getDragonBreathDamageBonusPct(enemy) {
@@ -587,6 +619,7 @@ export class CombatSystem {
 
     _isPsychicImmunePartyMember(target) {
         if (!target || target.health <= 0) return false;
+        if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
         if (!target.isSummoned) return false;
         // Undead summons have no living mind
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
@@ -603,10 +636,17 @@ export class CombatSystem {
     _isPoisonImmunePartyMember(target) {
         if (!target) return false;
         if (target.isLichForm) return true;
+        if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
         if (!target.isSummoned) return false;
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         if (GOLEM_PRESETS[target.summonType]) return true;
         if (Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes('poison')) return true;
+        return false;
+    }
+
+    _isHoldImmunePartyMember(target) {
+        if (!target) return false;
+        if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
         return false;
     }
 
@@ -6074,6 +6114,12 @@ export class CombatSystem {
             return;
         }
 
+        // ── Warlock demon summons ───────────────────────────────────────────────
+        if (beastKind === 'warlock_demon' || (m.isSummoned && WARLOCK_DEMON_PRESETS[m.summonType])) {
+            this._processWarlockDemonAttack(m);
+            return;
+        }
+
         // ── Vermin Keeper: vermin summon attack ─────────────────────────────────
         if (beastKind === 'vermin' || (m.isSummoned && VERMIN_PRESETS[m.summonType])) {
             const sType = m.summonType;
@@ -9271,6 +9317,14 @@ export class CombatSystem {
             dmg = Math.max(1, Math.floor(dmg * (1 - lichResist)));
         }
 
+        // Warlock L30 abyss form resistances.
+        if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) {
+            if (attackKind === 'magic' || opts.aoe) dmg = Math.max(1, Math.floor(dmg * (1 - WARLOCK_ABYSS_MAGIC_RESIST)));
+            if (opts.dragonBreath === 'acid' || opts.dragonBreath === 'cold' || this._enemyHasImmunity(e, 'acid') || this._enemyHasImmunity(e, 'cold')) {
+                dmg = Math.max(1, Math.floor(dmg * (1 - WARLOCK_ABYSS_COLD_ACID_RESIST)));
+            }
+        }
+
         // ── Bard L30 Thunderous Drums: reduce sonic or psychic damage (all active drums combined, applied once) ───
         if (typeDef.sonic || opts.psychic) {
             const _drumBards = this._getAllBardsWithDrums();
@@ -9291,6 +9345,14 @@ export class CombatSystem {
         if (typeDef.sonic && target.isSummoned
             && ['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) {
             dmg = Math.max(1, Math.floor(dmg * 0.5));
+        }
+
+        // Warlock L30 Protection from Demons: best living warlock protects the party.
+        if (Array.isArray(typeDef.tags) && typeDef.tags.includes('demon')) {
+            const demonRed = this._getWarlockDemonProtectionReduction();
+            if (demonRed > 0) {
+                dmg = Math.max(1, Math.floor(dmg * (1 - demonRed)));
+            }
         }
 
         if (attackKind === 'melee') {
@@ -9332,6 +9394,12 @@ export class CombatSystem {
         // ── Wild Shape: druid falls — exit form immediately ──────────────────
         if (target.health <= 0 && !target.isSummoned && target.classId === 'druid' && target.wildShapeForm) {
             this._exitWildShape(target);
+        }
+
+        if (target.health <= 0 && !target.isSummoned && target.classId === 'warlock') {
+            if (target.abyssFormActive) this._exitAbyssForm(target);
+            this._removeWarlockSummons(target);
+            target.warlockCauldronOpen = false;
         }
 
         // ── Lich Phial: necromancer in lich form caught at 0 HP ─────────────────
@@ -9992,6 +10060,8 @@ export class CombatSystem {
         let mod = 0;
         for (const x of effects) {
             if (typeof x.damageBonus === 'number') mod += x.damageBonus;
+            if (attackType === 'ranged' && typeof x.rangedBonus === 'number') mod += x.rangedBonus;
+            if (attackType === 'magic' && typeof x.magicBonus === 'number') mod += x.magicBonus;
         }
         // Boss/mega-boss/super-boss attack bonus split by attack type.
         // bossDL = the dungeon level at spawn time.
@@ -10415,6 +10485,40 @@ export class CombatSystem {
                     m.mana = 0;
                     m.elementalRiftOpen = false;
                     this._addLog(`\u{1F300} ${m.name}'s Elemental Rift collapses — no mana left!`);
+                }
+            }
+            if (m.classId === 'warlock' && m.health > 0) {
+                const hasHex = this.aliveHostileEnemies.some(e =>
+                    (e.activeEffects || []).some(fx => fx && fx.type === 'warlock_hex' && fx.casterId === m.id && fx.rounds > 0));
+                if (hasHex) {
+                    if (m.mana >= WARLOCK_HEX_UPKEEP_MANA) {
+                        m.mana -= WARLOCK_HEX_UPKEEP_MANA;
+                        this._addLog(`\u{1F9FF} ${m.name}'s Evil Eye feeds on ${WARLOCK_HEX_UPKEEP_MANA} MP.`);
+                    } else {
+                        for (const e of this.enemies) {
+                            e.activeEffects = (e.activeEffects || []).filter(fx => !(fx && fx.type === 'warlock_hex' && fx.casterId === m.id));
+                        }
+                        this._addLog(`\u{1F9FF} ${m.name}'s Evil Eye fades — no mana left.`);
+                    }
+                }
+                if (m.warlockCauldronOpen) {
+                    const demons = this.party.filter(p => p.isSummoned && p.summonerId === m.id && WARLOCK_DEMON_PRESETS[p.summonType] && p.health > 0);
+                    const upkeep = demons.length * WARLOCK_DEMON_UPKEEP_HP;
+                    if (upkeep > 0) {
+                        m.health = Math.max(0, m.health - upkeep);
+                        this._addLog(`\u{1F608} ${m.name}'s bound demons drink ${upkeep} HP in upkeep.`);
+                    }
+                    if (m.health <= 0) {
+                        this._addLog(`${m.name} is consumed by the cauldron's bargain!`);
+                        m.warlockCauldronOpen = false;
+                        this._removeWarlockSummons(m);
+                    } else {
+                        this._warlockSummonDemon(m, m.warlockSelectedDemon);
+                    }
+                }
+                if (m.abyssFormActive && !m.eldritchSignReady && Math.random() < WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE) {
+                    m.eldritchSignReady = true;
+                    this._addLog(`\u{1F9FF} The Eldritch Sign reforms before ${m.name}.`);
                 }
             }
             // Druid Wild Shape: 5 MP/round upkeep; exit form if out of mana.
@@ -11697,6 +11801,24 @@ export class CombatSystem {
                 }
             }
 
+            const wasting = effects.find(fx => fx && fx.type === 'wasting_curse' && fx.rounds > 0);
+            if (wasting && e.health > 0) {
+                if (Math.random() < WARLOCK_CURSE_SHRUG_CHANCE) {
+                    wasting.rounds = 0;
+                    this._addLog(`\u{1F9FF} ${this._eName(e)} shrugs off the Wasting Curse!`);
+                } else {
+                    const pct = Math.min(WARLOCK_CURSE_MAX_PCT, wasting.pct || WARLOCK_CURSE_BASE_PCT);
+                    const dmg = Math.max(1, Math.floor(e.health * pct));
+                    e.health = Math.max(0, e.health - dmg);
+                    this._addLog(`\u{1F9FF} Wasting Curse: ${this._eName(e)} loses ${dmg} HP (${Math.round(pct * 100)}% current HP)!`);
+                    wasting.pct = Math.min(WARLOCK_CURSE_MAX_PCT, pct + WARLOCK_CURSE_BASE_PCT);
+                    if (e.health <= 0 && !e._deathHandled) {
+                        e._deathHandled = true;
+                        this._onEnemyDeath(e);
+                    }
+                }
+            }
+
             // Verdant Surge — nature DoT + 25% action loss per round for entangled enemies (L30 druid)
             const verdantEntangle = effects.find(fx => fx && fx.type === 'entangle' && fx.verdantSurge && fx.rounds > 0);
             if (verdantEntangle && e.health > 0) {
@@ -12394,6 +12516,10 @@ export class CombatSystem {
             this._addLog(`💀 ${target.name}'s lich form shrugs off the stun!`);
             return false;
         }
+        if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) {
+            this._addLog(`\u{1F9FF} ${target.name}'s abyss form cannot be stunned!`);
+            return false;
+        }
         // Necromancer undead summons are immune to stun
         if (target.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror')) {
             this._addLog(`💀 ${target.name} is undead — immune to stun!`);
@@ -12426,6 +12552,291 @@ export class CombatSystem {
         }
         target.stunned = true;
         return true;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // Warlock abilities
+    // ════════════════════════════════════════════════════════════════════════════
+
+    warlockEvilEye(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock') return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        const penalty = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HEX_PENALTY_DIVISOR));
+        const rounds = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HEX_DURATION_DIVISOR));
+        targetEnemy.activeEffects = (targetEnemy.activeEffects || []).filter(fx => !(fx && fx.type === 'warlock_hex' && fx.casterId === m.id));
+        targetEnemy.activeEffects.push({
+            type: 'warlock_hex',
+            casterId: m.id,
+            damageBonus: -penalty,
+            rangedBonus: -penalty,
+            magicBonus: -penalty,
+            defenseBonus: -penalty,
+            rounds,
+        });
+        this._addLog(`\u{1F9FF} ${m.name} fixes the Evil Eye on ${this._eName(targetEnemy)}! (-${penalty} attack/defense, ${rounds} rd${rounds === 1 ? '' : 's'})`);
+        this._notify();
+    }
+
+    warlockBolt(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock') return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (m.abyssFormActive) {
+            this._addLog(`${m.name}'s abyss form cannot cast Eldritch Bolt.`);
+            return;
+        }
+        const manaCost = this.getMagicManaCost(m);
+        const exhausted = m.mana < manaCost;
+        m.mana = Math.max(0, m.mana - manaCost);
+        let raw = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        raw += m.getWeaponBonus?.('magic') || 0;
+        raw += m.getClassDamageBonus?.('magic') || 0;
+        raw += this._getPartyMemberDamageMod(m);
+        raw = Math.max(1, Math.round(raw * (1 + (m.level || 1) / 100)));
+        raw = this._applyOutgoingDamageBonuses(m, raw, 'magic');
+        if (exhausted) raw = Math.max(1, Math.floor(raw / 2));
+        const dealt = this._damageEnemy(targetEnemy, raw, true, true);
+        this._addLog(`\u{1F9FF} ${m.name} hurls an armor-bypassing eldritch bolt at ${this._eName(targetEnemy)} for ${dealt}!${exhausted ? ' (exhausted!)' : ''}`);
+        if (targetEnemy.health <= 0 && !targetEnemy._deathHandled) {
+            targetEnemy._deathHandled = true;
+            this._onEnemyDeath(targetEnemy);
+        }
+        this._advancePlayerTurn();
+    }
+
+    warlockToggleCauldron(demonId = null) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock') return;
+        if ((m.level || 1) < WARLOCK_CAULDRON_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${WARLOCK_CAULDRON_UNLOCK_LEVEL} to tend a cauldron.`);
+            return;
+        }
+        const unlocked = getWarlockUnlockedDemons(m.level || 1);
+        if (demonId && unlocked.some(d => d.id === demonId)) m.warlockSelectedDemon = demonId;
+        const selectedId = unlocked.some(d => d.id === m.warlockSelectedDemon)
+            ? m.warlockSelectedDemon
+            : (unlocked[0]?.id || 'imp');
+        const selected = WARLOCK_DEMON_PRESETS[selectedId] || WARLOCK_DEMON_PRESETS.imp;
+        m.warlockSelectedDemon = selected.id;
+        if (m.warlockCauldronOpen) {
+            m.warlockCauldronOpen = false;
+            this._addLog(`\u{1F9EA} ${m.name} banks the cauldron fire. Demon summoning pauses.`);
+            this._notify();
+            return;
+        }
+        if (m.health <= WARLOCK_CAULDRON_HP_COST) {
+            this._addLog(`${m.name} needs more than ${WARLOCK_CAULDRON_HP_COST} HP to open the cauldron.`);
+            return;
+        }
+        m.health = Math.max(1, m.health - WARLOCK_CAULDRON_HP_COST);
+        m.warlockCauldronOpen = true;
+        this._addLog(`\u{1F9EA} ${m.name} tends the Cauldron of Summoning (-${WARLOCK_CAULDRON_HP_COST} HP). Bound demon: ${selected.name}.`);
+        this._notify();
+    }
+
+    _warlockSummonDemon(warlock, demonId = null) {
+        if (!warlock || warlock.health <= 0 || warlock.classId !== 'warlock') return null;
+        const unlocked = getWarlockUnlockedDemons(warlock.level || 1);
+        const requestedId = unlocked.some(d => d.id === demonId)
+            ? demonId
+            : unlocked.some(d => d.id === warlock.warlockSelectedDemon)
+                ? warlock.warlockSelectedDemon
+                : (unlocked[0]?.id || 'imp');
+        const preset = WARLOCK_DEMON_PRESETS[requestedId] || WARLOCK_DEMON_PRESETS.imp;
+        const magicSkill = this._getWarlockMagicSkill(warlock);
+        const stats = rollWarlockDemonStats(warlock.level || 1, warlock.maxHealth, magicSkill, preset.id);
+        const num = this.party.filter(p => p.isSummoned && p.summonerId === warlock.id && p.summonType === preset.id).length + 1;
+        const demon = new PartyMember({
+            name: `${warlock.name}'s ${preset.name} #${num}`,
+            classId: 'summoned',
+            speciesId: 'human',
+            level: warlock.level || 1,
+            maxHealth: stats.maxHealth,
+            maxStamina: 0,
+            maxMana: 0,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            summonType: preset.id,
+            summonerId: warlock.id,
+            canBeHealed: true,
+            row: 'back',
+            summonStats: stats,
+        });
+        this.party.push(demon);
+        this._registerNewSummon(demon);
+        this._addLog(`\u{1F608} ${preset.name} claws into reality for ${warlock.name}! (HP ${demon.maxHealth}, atk ${stats.meleeMin}-${stats.meleeMax}, def ${stats.defense})`);
+        if (this._initiativeOrder.length > 0) {
+            const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
+            if (!this._initiativeOrder.some(slot => slot.ref === demon))
+                this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: demon, init: baseInit, skipThisRound: false });
+        }
+        return demon;
+    }
+
+    warlockWastingCurse(targetEnemy, opts = {}) {
+        const m = opts.caster || this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock') return false;
+        if ((m.level || 1) < WARLOCK_CURSE_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${WARLOCK_CURSE_UNLOCK_LEVEL} to cast Wasting Curse.`);
+            return false;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return false;
+        if (!opts.free && m.mana < WARLOCK_CURSE_MANA_COST) {
+            this._addLog(`${m.name} needs ${WARLOCK_CURSE_MANA_COST} MP for Wasting Curse.`);
+            return false;
+        }
+        if (this._enemyHasImmunity(targetEnemy, 'magic') || (ENEMY_TYPES[targetEnemy.type] || {}).fullMagicImmune) {
+            if (!opts.free) m.mana = Math.max(0, m.mana - WARLOCK_CURSE_MANA_COST);
+            this._addLog(`\u{1F9FF} ${this._eName(targetEnemy)} is immune to the Wasting Curse!`);
+            if (!opts.free) this._advancePlayerTurn();
+            return false;
+        }
+        const existing = (targetEnemy.activeEffects || []).find(fx => fx && fx.type === 'wasting_curse');
+        if (existing) {
+            this._addLog(`${this._eName(targetEnemy)} is already wasting away.`);
+            return false;
+        }
+        if (!opts.free) m.mana -= WARLOCK_CURSE_MANA_COST;
+        const rounds = Math.min(WARLOCK_CURSE_MAX_ROUNDS,
+            WARLOCK_CURSE_BASE_ROUNDS + Math.floor((m.level || 1) / WARLOCK_CURSE_LEVEL_DIVISOR));
+        targetEnemy.activeEffects = targetEnemy.activeEffects || [];
+        targetEnemy.activeEffects.push({
+            type: 'wasting_curse',
+            casterId: m.id,
+            pct: WARLOCK_CURSE_BASE_PCT,
+            rounds,
+            maxRounds: rounds,
+        });
+        this._addLog(`\u{1F9FF} ${m.name} lays Wasting Curse on ${this._eName(targetEnemy)} (${rounds} rds).`);
+        if (!opts.free) this._advancePlayerTurn();
+        return true;
+    }
+
+    warlockCharmDemon(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock') return;
+        if ((m.level || 1) < WARLOCK_CHARM_UNLOCK_LEVEL) return;
+        if (m.abyssFormActive) {
+            this._addLog(`${m.name}'s abyss form is too mindless for demon charm.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (m.mana < WARLOCK_CHARM_MANA_COST) {
+            this._addLog(`${m.name} needs ${WARLOCK_CHARM_MANA_COST} MP for Charm Demon.`);
+            return;
+        }
+        const eName = this._eName(targetEnemy);
+        if (!this._isDemonEnemy(targetEnemy)) {
+            m.mana -= WARLOCK_CHARM_MANA_COST;
+            this._addLog(`\u{1F9FF} ${m.name} tries to charm ${eName}, but it is not a demon.`);
+            this._advancePlayerTurn();
+            return;
+        }
+        if (targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss) {
+            m.mana -= WARLOCK_CHARM_MANA_COST;
+            this._addLog(`\u{1F9FF} ${eName} is too powerful to charm.`);
+            this._advancePlayerTurn();
+            return;
+        }
+        m.mana -= WARLOCK_CHARM_MANA_COST;
+        const charmChance = Math.min(0.95, BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * (m.level || 1));
+        const duration = Math.max(1, Math.floor((m.level || 1) / BARD_CHARM_DURATION_DIVISOR));
+        if (Math.random() < charmChance) {
+            targetEnemy.charmedRounds = duration;
+            targetEnemy.charmerId = m.id;
+            this._addLog(`\u{1F9FF} ${m.name} binds ${eName}'s infernal will — charmed for ${duration} rounds!`);
+        } else {
+            this._addLog(`\u{1F9FF} ${eName} resists ${m.name}'s charm! (${Math.round(charmChance * 100)}% chance)`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    warlockToggleAbyssForm() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock' || (m.level || 1) < WARLOCK_ABYSS_FORM_UNLOCK_LEVEL) return;
+        if (m.abyssFormActive) {
+            this._exitAbyssForm(m);
+            this._addLog(`\u{1F9FF} ${m.name} releases the abyssal shape.`);
+            this._notify();
+            return;
+        }
+        if (m.abyssFormUsed) {
+            this._addLog(`${m.name} has already taken abyss form this combat.`);
+            return;
+        }
+        m.abyssFormUsed = true;
+        m.abyssFormActive = true;
+        m.abyssFormOrigRow = m.row;
+        m.row = 'back';
+        m.abyssFormHpBonus = m.maxHealth;
+        m.maxHealth += m.abyssFormHpBonus;
+        m.health += m.abyssFormHpBonus;
+        m.abyssFormDefBonus = m.level || 1;
+        m.eldritchSignReady = true;
+        this._addLog(`\u{1F9FF} ${m.name} becomes a tentacled horror of the abyss! HP doubles, +${m.abyssFormDefBonus} defense.`);
+        this._notify();
+    }
+
+    _exitAbyssForm(m) {
+        if (!m || !m.abyssFormActive) return;
+        if (m.abyssFormHpBonus > 0) {
+            m.maxHealth = Math.max(1, m.maxHealth - m.abyssFormHpBonus);
+            m.health = Math.min(m.health, m.maxHealth);
+        }
+        if (m.abyssFormOrigRow) m.row = m.abyssFormOrigRow;
+        m.abyssFormActive = false;
+        m.abyssFormHpBonus = 0;
+        m.abyssFormDefBonus = 0;
+        m.abyssFormOrigRow = null;
+    }
+
+    warlockTentacleAttack() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock' || !m.abyssFormActive) return;
+        const count = Math.max(1, Math.floor((m.level || 1) / 3));
+        const dmgMult = 1 + (m.level || 1) / 100;
+        this._addLog(`\u{1F9D0} ${m.name}'s abyssal tentacles lash out (${count} attacks)!`);
+        for (let i = 0; i < count; i++) {
+            const targets = this.aliveHostileEnemies;
+            if (!targets.length) break;
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            let dmg = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX) + this._getWarlockMagicSkill(m);
+            dmg = Math.max(1, Math.round(dmg * dmgMult));
+            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
+            const dealt = this._damageEnemy(t, dmg);
+            this._addLog(`  \u{1F9D0} Tentacle hits ${this._eName(t)} for ${dealt}.`);
+            if (t.health > 0 && Math.random() < Math.min(1, (m.level || 1) / 100)) {
+                if (this._tryStunEnemy(t)) this._addLog(`  ⚡ ${this._eName(t)} is stunned by the abyssal grip!`);
+            }
+            if (t.health <= 0 && !t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
+        }
+        this._advancePlayerTurn();
+    }
+
+    warlockEldritchSign() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock' || !m.abyssFormActive) return;
+        if (!m.eldritchSignReady) {
+            this._addLog(`The Eldritch Sign has not reformed yet.`);
+            return;
+        }
+        const count = Math.max(1, Math.floor((m.level || 1) / WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR));
+        const targets = this.aliveHostileEnemies.slice().sort(() => Math.random() - 0.5).slice(0, count);
+        this._addLog(`\u{1F9FF} ${m.name} burns the Eldritch Sign into the air!`);
+        for (const t of targets) this.warlockWastingCurse(t, { caster: m, free: true });
+        m.eldritchSignReady = false;
+        this._advancePlayerTurn();
+    }
+
+    _removeWarlockSummons(warlock) {
+        if (!warlock) return;
+        for (const p of this.party) {
+            if (p.isSummoned && p.summonerId === warlock.id && WARLOCK_DEMON_PRESETS[p.summonType] && p.health > 0) {
+                p.health = 0;
+                this._addLog(`\u{1F608} ${p.name} is pulled back into the abyss as ${warlock.name} falls!`);
+            }
+        }
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -12891,6 +13302,223 @@ export class CombatSystem {
                 }
                 if (e.health <= 0) this._addLog(`  ${this._eName(e)} is defeated!`);
                 if (e.health <= 0 && !e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
+            }
+        }
+    }
+
+    _processWarlockDemonAttack(demon) {
+        if (!demon || demon.health <= 0 || !demon.isSummoned) return;
+        const st = demon.summonStats || {};
+        const type = demon.summonType;
+        const targets = this.aliveHostileEnemies;
+        if (!targets.length) return;
+        const hit = (target, kind = 'melee', mult = 1, ignoreDefense = false) => {
+            const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
+            const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
+            const raw = Math.max(1, Math.round(randomInt(min, max) * mult));
+            return this._damageSummonEnemy(target, raw, ignoreDefense, kind === 'magic');
+        };
+        const randTarget = () => this.aliveHostileEnemies[Math.floor(Math.random() * this.aliveHostileEnemies.length)];
+        const burn = (target, dealt) => {
+            if (!target || target.health <= 0 || this._enemyHasImmunity(target, 'fire')) return;
+            const dot = Math.max(1, Math.floor(dealt * DRAKE_FIRE_BURN_FRACTION));
+            target.activeEffects = target.activeEffects || [];
+            target.activeEffects.push({ type: 'burn', damage: dot, rounds: DRAKE_FIRE_BURN_ROUNDS });
+            this._addLog(`    \u{1F525} ${this._eName(target)} burns (${dot}/rd, ${DRAKE_FIRE_BURN_ROUNDS} rds).`);
+        };
+        const poison = (target, dealt, mult = 1) => {
+            if (!target || target.health <= 0 || this._enemyHasImmunity(target, 'poison')) return;
+            const dot = Math.max(1, Math.floor(dealt * POISON_DAMAGE_FRACTION * mult));
+            target.activeEffects = target.activeEffects || [];
+            target.activeEffects.push({ type: 'vk_poison', damage: dot, rounds: POISON_DURATION_ROUNDS });
+            this._addLog(`    \u{1F7E2} ${this._eName(target)} is poisoned (${dot}/rd).`);
+        };
+        const acid = (target, dealt) => {
+            if (!target || target.health <= 0) return;
+            const dot = Math.max(1, Math.floor(dealt * 0.25));
+            target.activeEffects = target.activeEffects || [];
+            target.activeEffects.push({ type: 'acid_dot', damage: dot, defenseBonus: -2, rounds: 3 });
+            this._addLog(`    \u{1F7E2} ${this._eName(target)} corrodes (${dot}/rd, -2 def).`);
+        };
+        const kill = (target) => {
+            if (target && target.health <= 0 && !target._deathHandled) {
+                target._deathHandled = true;
+                this._onEnemyDeath(target);
+            }
+        };
+
+        switch (type) {
+            case 'imp': {
+                const t = randTarget();
+                const d = hit(t, 'ranged');
+                this._addLog(`\u{1F47F} ${demon.name} hurls hellfire at ${this._eName(t)} for ${d}!`);
+                burn(t, d);
+                kill(t);
+                break;
+            }
+            case 'flame_imp': {
+                this._addLog(`\u{1F525} ${demon.name} erupts in flame over all enemies!`);
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    if (this._enemyHasImmunity(e, 'fire')) continue;
+                    const d = hit(e, 'magic', 0.8);
+                    this._addLog(`  -> ${this._eName(e)} takes ${d} fire.`);
+                    burn(e, d);
+                    kill(e);
+                }
+                break;
+            }
+            case 'dust_devil': {
+                this._addLog(`\u{1F32A} ${demon.name} becomes a choking cyclone!`);
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'magic', 0.8);
+                    this._addLog(`  -> ${this._eName(e)} takes ${d} cutting grit.`);
+                    if (e.health > 0 && Math.random() < 0.10) {
+                        if (this._tryStunEnemy(e)) this._addLog(`    ⚡ ${this._eName(e)} is stunned!`);
+                    }
+                    kill(e);
+                }
+                break;
+            }
+            case 'demon_knight': {
+                for (let i = 0; i < 2; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'melee', 1.15);
+                    this._addLog(`\u{2694} ${demon.name} hews ${this._eName(t)} for ${d}!`);
+                    if (t.health > 0 && Math.random() < 0.40) {
+                        if (this._tryStunEnemy(t)) this._addLog(`    ⚡ ${this._eName(t)} is stunned!`);
+                    }
+                    kill(t);
+                }
+                break;
+            }
+            case 'quasit': {
+                this._addLog(`\u{1F47F} ${demon.name} darts through the enemy line with venomous stings!`);
+                for (let i = 0; i < 5; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged', 0.6);
+                    this._addLog(`  -> sting hits ${this._eName(t)} for ${d}.`);
+                    poison(t, d, 2);
+                    kill(t);
+                }
+                break;
+            }
+            case 'efreeti':
+            case 'pit_fiend': {
+                if (type === 'pit_fiend' && Math.random() >= 0.5) {
+                    this._addLog(`\u{1F608} ${demon.name} batters foes with titanic blows!`);
+                    for (let i = 0; i < 3; i++) {
+                        const t = randTarget(); if (!t) break;
+                        const d = hit(t, 'melee', 1.35);
+                        this._addLog(`  -> ${this._eName(t)} takes ${d}.`);
+                        kill(t);
+                    }
+                } else {
+                    this._addLog(`\u{1F525} ${demon.name} calls down infernal fire!`);
+                    for (const e of this.aliveHostileEnemies.slice()) {
+                        if (this._enemyHasImmunity(e, 'fire')) continue;
+                        const d = hit(e, 'magic', type === 'pit_fiend' ? 1.2 : 1);
+                        this._addLog(`  -> ${this._eName(e)} takes ${d} fire.`);
+                        burn(e, d);
+                        kill(e);
+                    }
+                }
+                break;
+            }
+            case 'ice_demon': {
+                this._addLog(`❄️ ${demon.name} rakes with freezing claws!`);
+                for (let i = 0; i < 4; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'melee', 1.2);
+                    this._addLog(`  -> ${this._eName(t)} takes ${d}.`);
+                    if (t.health > 0 && !this._enemyHasImmunity(t, 'cold')) {
+                        t.activeEffects = t.activeEffects || [];
+                        t.activeEffects.push({ type: 'frost_dot', damage: Math.max(1, Math.floor(d * 0.3)), rounds: 2 });
+                    }
+                    kill(t);
+                }
+                break;
+            }
+            case 'acid_demon': {
+                this._addLog(`\u{1F7E2} ${demon.name} spews corrosive acid over the enemy party!`);
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'magic');
+                    this._addLog(`  -> ${this._eName(e)} takes ${d} acid.`);
+                    acid(e, d);
+                    kill(e);
+                }
+                break;
+            }
+            case 'bloat_demon': {
+                this._addLog(`\u{1F922} ${demon.name} launches toxic bile!`);
+                for (let i = 0; i < 6; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged', 0.8);
+                    this._addLog(`  -> bile hits ${this._eName(t)} for ${d}.`);
+                    poison(t, d, 1.5);
+                    kill(t);
+                }
+                break;
+            }
+            case 'hell_hound': {
+                if (Math.random() < 0.5) {
+                    const t = randTarget();
+                    const d = hit(t, 'melee', 1.1);
+                    this._addLog(`\u{1F525} ${demon.name} bites ${this._eName(t)} for ${d}!`);
+                    burn(t, d);
+                    kill(t);
+                } else {
+                    this._addLog(`\u{1F525} ${demon.name} breathes hellfire!`);
+                    for (const e of this.aliveHostileEnemies.slice()) {
+                        if (this._enemyHasImmunity(e, 'fire')) continue;
+                        const d = hit(e, 'magic', 0.8);
+                        this._addLog(`  -> ${this._eName(e)} takes ${d} fire.`);
+                        burn(e, d);
+                        kill(e);
+                    }
+                }
+                break;
+            }
+            case 'succubus': {
+                const t = randTarget();
+                const d = hit(t, 'magic');
+                this._addLog(`\u{1F48B} ${demon.name} drains ${this._eName(t)} for ${d}!`);
+                if (d > 0) demon.health = Math.min(demon.maxHealth, demon.health + Math.floor(d * 0.5));
+                if (t.health > 0 && Math.random() < 0.35 && !this._enemyHasImmunity(t, 'psychic')) {
+                    if (this._tryHoldEnemy(t)) this._addLog(`    \u{1F49C} ${this._eName(t)} is dazed by charm!`);
+                }
+                kill(t);
+                break;
+            }
+            case 'chain_devil': {
+                this._addLog(`\u{26D3} ${demon.name} lashes binding chains!`);
+                for (let i = 0; i < 3; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged');
+                    this._addLog(`  -> chain hits ${this._eName(t)} for ${d}.`);
+                    if (t.health > 0 && Math.random() < 0.50) {
+                        if (this._tryHoldEnemy(t)) this._addLog(`    \u{26D3} ${this._eName(t)} is bound!`);
+                    }
+                    kill(t);
+                }
+                break;
+            }
+            case 'blood_demon': {
+                const t = randTarget();
+                const d = hit(t, 'melee', 1.2 + (st.bloodDemonKillBonus || 0) * 0.05);
+                this._addLog(`\u{1F9B7} ${demon.name} tears into ${this._eName(t)} for ${d}!`);
+                demon.health = Math.min(demon.maxHealth, demon.health + Math.floor(d * 0.4));
+                if (t.health <= 0) {
+                    demon.health = demon.maxHealth;
+                    st.bloodDemonKillBonus = (st.bloodDemonKillBonus || 0) + 2;
+                }
+                kill(t);
+                break;
+            }
+            default: {
+                const t = randTarget();
+                const d = hit(t, 'melee');
+                this._addLog(`\u{1F608} ${demon.name} strikes ${this._eName(t)} for ${d}!`);
+                kill(t);
             }
         }
     }

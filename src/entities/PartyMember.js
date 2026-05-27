@@ -168,7 +168,7 @@ export class PartyMember {
             }
         }
         this.stunned = false;
-        this.webbedRounds = 0;   // Phase 11 — web lockdown counter (rounds left)
+        this._webbedRounds = 0;  // Phase 11 — web/hold lockdown counter (rounds left)
         this.usedBardSong = false;  // "once per combat" tracker
         this.isRaging = false;   // Barbarian: active rage flag
         this.usedRage = false;   // Barbarian: once-per-combat rage tracker
@@ -189,6 +189,27 @@ export class PartyMember {
         // Mage L30: Elemental Rift — once-per-combat free-action toggle
         this.elementalRiftOpen = false;
         this.elementalRiftUsed = false;
+
+        // Warlock: demon cauldron and L30 abyss form are combat-only.
+        this.warlockCauldronOpen = false;
+        this.warlockSelectedDemon = 'imp';
+        this.abyssFormActive = false;
+        this.abyssFormUsed = false;
+        this.abyssFormHpBonus = 0;
+        this.abyssFormDefBonus = 0;
+        this.abyssFormOrigRow = null;
+        this.eldritchSignReady = true;
+        Object.defineProperty(this, 'webbedRounds', {
+            enumerable: true,
+            configurable: true,
+            get: () => this._webbedRounds || 0,
+            set: (value) => {
+                const rounds = Math.max(0, value | 0);
+                this._webbedRounds = (!this.isSummoned && this.classId === 'warlock' && this.abyssFormActive && rounds > 0)
+                    ? 0
+                    : rounds;
+            },
+        });
 
         // Persistent bard out-of-combat songs (serialized). Array of song IDs:
         //   'haste' | 'battle' | 'healing'
@@ -457,6 +478,7 @@ export class PartyMember {
              + this.getTrinketBonus('defense')
              + this.getEffectModifier('defense')
              + (this.wildShapeDefBonus || 0)
+             + (this.abyssFormDefBonus || 0)
              + this.getShieldDefenseBonus()
              - hunger;
     }
@@ -1119,6 +1141,18 @@ export class PartyMember {
         this.wildShapeOrigRow  = null;
         this.elementalRiftOpen = false;
         this.elementalRiftUsed = false;
+        this.warlockCauldronOpen = false;
+        if (this.abyssFormHpBonus > 0) {
+            this.maxHealth = Math.max(1, this.maxHealth - this.abyssFormHpBonus);
+            this.health = Math.min(this.health, this.maxHealth);
+        }
+        if (this.abyssFormOrigRow) this.row = this.abyssFormOrigRow;
+        this.abyssFormActive = false;
+        this.abyssFormUsed = false;
+        this.abyssFormHpBonus = 0;
+        this.abyssFormDefBonus = 0;
+        this.abyssFormOrigRow = null;
+        this.eldritchSignReady = true;
         this.golemBerserkActive = false;
         this.golemBerserkUsed   = false;
         this.thunderousDrumsActive = false;

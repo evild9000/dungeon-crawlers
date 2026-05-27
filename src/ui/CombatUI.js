@@ -117,11 +117,16 @@ import {
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
     VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
     VK_SWARM_PROTECT_MANA_COST,
+    WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
+    WARLOCK_CURSE_UNLOCK_LEVEL, WARLOCK_CURSE_MANA_COST,
+    WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
+    WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP,
+    WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
 import { soundManager } from '../utils/SoundManager.js';
-import { BEAST_TYPES, GOLEM_PRESETS, getSummonPreset } from '../entities/Summons.js';
+import { BEAST_TYPES, GOLEM_PRESETS, getSummonPreset, getWarlockUnlockedDemons, WARLOCK_DEMON_PRESETS } from '../entities/Summons.js';
 
 /**
  * CombatUI — full-screen overlay for turn-based combat.
@@ -535,6 +540,14 @@ export class CombatUI {
                     vk_aswarm_debuff: {
                         icon: '\u{1FAA1}', label: 'Dissolved', bg: 'rgba(20,100,40,0.9)',
                         tip: (fx) => 'Acid Swarm: -' + Math.abs(fx.defenseBonus||0) + ' def/range/magic — ' + fx.rounds + ' rds left'
+                    },
+                    warlock_hex: {
+                        icon: '\u{1F441}', label: 'Evil Eye', bg: 'rgba(90,0,120,0.95)',
+                        tip: (fx) => 'Evil Eye: -' + Math.abs(fx.defenseBonus||0) + ' def/melee/ranged/magic — ' + fx.rounds + ' rds left'
+                    },
+                    wasting_curse: {
+                        icon: '\u{1F56F}\uFE0F', label: 'Wasting', bg: 'rgba(80,0,20,0.95)',
+                        tip: (fx) => 'Wasting Curse: ' + Math.round((fx.pct || 0.01) * 100) + '% current HP this round — ' + fx.rounds + ' rds left'
                     }
                 };
 
@@ -825,9 +838,10 @@ export class CombatUI {
 
         // Warrior L20 Defend Mode blocks all attacks this turn
         const inDefendMode = m.classId === 'warrior' && !!m.isDefendMode;
+        const inAbyssForm = m.classId === 'warlock' && !!m.abyssFormActive;
 
         // ── Melee (gated by row)
-        const canMelee = this.combat.canMelee(m) && !inDefendMode && !m.wildShapeForm;
+        const canMelee = this.combat.canMelee(m) && !inDefendMode && !m.wildShapeForm && !inAbyssForm;
         const isMonk = m.classId === 'monk';
         const meleeStMiss = m.stamina < MELEE_STAMINA_COST;
         const meleeMpMiss = isMonk && m.mana < MONK_MELEE_MANA_COST;
@@ -865,7 +879,7 @@ export class CombatUI {
         meleeBtn.title = meleeTipParts.join('\n');
 
         // ── Ranged (Artificers fire Scatter Shot instead of a normal single-target shot.)
-        const rangedExhausted = m.stamina < RANGED_STAMINA_COST || inDefendMode;
+        const rangedExhausted = m.stamina < RANGED_STAMINA_COST || inDefendMode || inAbyssForm;
         const rangedWeaponBonus = m.getWeaponBonus('ranged');
         const rangedTotalBonus = rangedWeaponBonus + rBonus;
         const isArtificer = m.classId === 'artificer';
@@ -875,7 +889,7 @@ export class CombatUI {
             : `Ranged (-${RANGED_STAMINA_COST} ST)`;
         if (rangedTotalBonus > 0) rangedLabel += ` +${rangedTotalBonus}`;
         if (rangedExhausted) rangedLabel += ' [HALF]';
-        const rangedBtn = this._addBtn(rangedLabel, !inDefendMode && !m.wildShapeForm, () => {
+        const rangedBtn = this._addBtn(rangedLabel, !inDefendMode && !m.wildShapeForm && !inAbyssForm, () => {
             soundManager.playRanged();
             if (isArtificer) {
                 this._pickTarget(e => this.combat.scatterShot(e));
@@ -904,20 +918,28 @@ export class CombatUI {
 
         // ── Magic
         const magicManaCost = this.combat.getMagicManaCost(m);
-        const magicExhausted = m.mana < magicManaCost || inDefendMode;
+        const magicExhausted = m.mana < magicManaCost || inDefendMode || inAbyssForm;
         const magicWeaponBonus = m.getWeaponBonus('magic');
         const magicTotalBonus = magicWeaponBonus + gBonus;
-        let magicLabel = `Magic (-${magicManaCost} MP)`;
+        let magicLabel = m.classId === 'warlock' ? `\u{1F9FF} Eldritch Bolt (-${magicManaCost} MP)` : `Magic (-${magicManaCost} MP)`;
         if (magicTotalBonus > 0) magicLabel += ` +${magicTotalBonus}`;
         if (magicExhausted) magicLabel += ' [HALF]';
-        const magicBtn = this._addBtn(magicLabel, !inDefendMode && !m.wildShapeForm, () => {
+        const magicBtn = this._addBtn(magicLabel, !inDefendMode && !m.wildShapeForm && !inAbyssForm, () => {
             soundManager.playMagic();
-            this.combat.magicAttack();
+            if (m.classId === 'warlock') {
+                this._pickTarget(e => this.combat.warlockBolt(e), {
+                    prompt: '\u{1F9FF} Choose a target for Eldritch Bolt...',
+                });
+            } else {
+                this.combat.magicAttack();
+            }
         });
         const magicStunPct = m.getMagicStunBonus() * 100;
         const magicTip = [
-            `Magic attack. Costs ${magicManaCost} mana.`,
-            `Hits ALL enemies.`,
+            m.classId === 'warlock'
+                ? `Warlock Eldritch Bolt. Costs ${magicManaCost} mana. Single target, bypasses armor/defense, +${m.level || 1}% damage.`
+                : `Magic attack. Costs ${magicManaCost} mana.`,
+            m.classId === 'warlock' ? null : `Hits ALL enemies.`,
         ];
         if (gBonus > 0) magicTip.push(`Damage bonus (class/species/level): +${gBonus}`);
         if (magicStunPct > 0) magicTip.push(`Mage: ${magicStunPct.toFixed(0)}% chance to stun foes with magic.`);
@@ -926,6 +948,7 @@ export class CombatUI {
             const drainAmt = NECRO_LIFE_DRAIN_AMOUNT + m.getDrainBonus();
             magicTip.push(`Necromancer: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% to drain ${drainAmt} HP (self + own undead).`);
         }
+        if (inAbyssForm) magicTip.push('Disabled while in Tentacled Horror form.');
         magicBtn.title = magicTip.join('\n');
 
         // ── Mage-specific: Arcane Shield (level 3+)
@@ -2136,6 +2159,140 @@ export class CombatUI {
                         active ? 'ACTIVE — swarm is intercepting attacks for you.' : 'Inactive.',
                         !active && !canProt ? `Not enough mana (need ${VK_SWARM_PROTECT_MANA_COST} MP).` : '',
                     ].filter(Boolean).join('\n');
+                }
+            }
+        }
+
+        // Warlock: hexes, demon cauldron, curses, and abyss form
+        if (m.classId === 'warlock') {
+            const hexPenalty = Math.max(1, Math.floor(m.level / WARLOCK_HEX_PENALTY_DIVISOR));
+            const hexRounds = Math.max(1, Math.floor(m.level / WARLOCK_HEX_DURATION_DIVISOR));
+            const canHex = m.mana >= WARLOCK_HEX_UPKEEP_MANA;
+            const hexBtn = this._addBtn(`\u{1F441} Evil Eye Hex (free)`, canHex, () => {
+                this._pickTarget(e => this.combat.warlockEvilEye(e), { prompt: 'Hex which enemy?' });
+            });
+            hexBtn.classList.add('combat-special-btn');
+            hexBtn.title = [
+                'Warlock L1: Free action. Does not consume the turn.',
+                `Applies -${hexPenalty} defense, melee, ranged, and magic damage for ${hexRounds} round(s).`,
+                `Costs ${WARLOCK_HEX_UPKEEP_MANA} MP per round to maintain while any of this warlock's hexes remain.`,
+                !canHex ? `Need ${WARLOCK_HEX_UPKEEP_MANA} MP to maintain a hex.` : '',
+            ].filter(Boolean).join('\n');
+
+            if (m.level >= WARLOCK_CAULDRON_UNLOCK_LEVEL) {
+                const unlocked = getWarlockUnlockedDemons(m.level);
+                const selected = unlocked.some(d => d.id === m.warlockSelectedDemon)
+                    ? m.warlockSelectedDemon
+                    : (unlocked[0]?.id || 'imp');
+                m.warlockSelectedDemon = selected;
+
+                const picker = document.createElement('select');
+                picker.className = 'combat-special-btn';
+                picker.style.cssText = 'min-height:32px;background:#20130d;color:#f2d9a0;border:1px solid #6b4a24;border-radius:4px;padding:4px 8px;';
+                for (const d of unlocked) {
+                    const opt = document.createElement('option');
+                    const preset = WARLOCK_DEMON_PRESETS[d.id];
+                    opt.value = d.id;
+                    opt.textContent = `${preset?.icon || '\u{1F47F}'} ${preset?.name || d.id}`;
+                    if (d.id === selected) opt.selected = true;
+                    picker.appendChild(opt);
+                }
+                picker.title = 'Choose which demon the cauldron will auto-summon each round while active.';
+                picker.addEventListener('change', () => {
+                    m.warlockSelectedDemon = picker.value;
+                    const preset = WARLOCK_DEMON_PRESETS[picker.value];
+                    this.combat._addLog(`${m.name} prepares the cauldron for ${preset?.name || picker.value}.`, 'player');
+                    this.combat._notify();
+                });
+                this.actionsEl.appendChild(picker);
+
+                const boundDemons = (this.combat.party || [])
+                    .filter(p => p.health > 0 && p.isSummoned && p.summonerId === m.id && WARLOCK_DEMON_PRESETS[p.summonType]);
+                const upkeep = boundDemons.length * WARLOCK_DEMON_UPKEEP_HP;
+                const canCauldron = m.warlockCauldronOpen || m.health > WARLOCK_CAULDRON_HP_COST;
+                const cauldronLabel = m.warlockCauldronOpen
+                    ? `\u{1F372} Cauldron: ON (${upkeep} HP/round)`
+                    : `\u{1F372} Tend Cauldron (-${WARLOCK_CAULDRON_HP_COST} HP)`;
+                const cauldronBtn = this._addBtn(cauldronLabel, canCauldron, () => this.combat.warlockToggleCauldron(m.warlockSelectedDemon));
+                cauldronBtn.classList.add('combat-special-btn');
+                if (m.warlockCauldronOpen) cauldronBtn.style.background = 'linear-gradient(135deg,#2a0718,#5a1238)';
+                cauldronBtn.title = [
+                    `Warlock L${WARLOCK_CAULDRON_UNLOCK_LEVEL}: Free action toggle.`,
+                    `Opening costs ${WARLOCK_CAULDRON_HP_COST} HP. While open, summons one selected demon every round at 100% chance.`,
+                    `Each bound demon costs ${WARLOCK_DEMON_UPKEEP_HP} HP per round to maintain. Current upkeep: ${upkeep} HP/round.`,
+                    'If the warlock falls, all demons bound to that cauldron vanish.',
+                    !canCauldron ? `Need more than ${WARLOCK_CAULDRON_HP_COST} HP to open the cauldron.` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            if (m.level >= WARLOCK_CURSE_UNLOCK_LEVEL && !inAbyssForm) {
+                const canCurse = m.mana >= WARLOCK_CURSE_MANA_COST;
+                const rounds = Math.min(9, 4 + Math.floor(m.level / 20));
+                const curseBtn = this._addBtn(`\u{1F56F}\uFE0F Wasting Curse (-${WARLOCK_CURSE_MANA_COST} MP)`, canCurse, () => {
+                    this._pickTarget(e => this.combat.warlockWastingCurse(e), { prompt: 'Curse which enemy?' });
+                });
+                curseBtn.classList.add('combat-special-btn');
+                curseBtn.title = [
+                    `Warlock L${WARLOCK_CURSE_UNLOCK_LEVEL}: single-target magic curse.`,
+                    `Deals 1% of the target's current HP this round, increasing by 1% per round to a 5% cap.`,
+                    `Duration: ${rounds} round(s). Only one Wasting Curse can be active per target.`,
+                    'Magic-immune targets are immune. Other targets have a 5% chance each round to shrug it off.',
+                    !canCurse ? `Not enough mana (need ${WARLOCK_CURSE_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            if (m.level >= WARLOCK_CHARM_UNLOCK_LEVEL && !inAbyssForm) {
+                const canCharm = m.mana >= WARLOCK_CHARM_MANA_COST;
+                const charmBtn = this._addBtn(`\u{1F47F} Charm Demon (-${WARLOCK_CHARM_MANA_COST} MP)`, canCharm, () => {
+                    this._pickTarget(e => this.combat.warlockCharmDemon(e), {
+                        filter: e => this.combat._isDemonEnemy(e),
+                        prompt: 'Charm which demon?',
+                    });
+                });
+                charmBtn.classList.add('combat-special-btn');
+                charmBtn.title = [
+                    `Warlock L${WARLOCK_CHARM_UNLOCK_LEVEL}: works like Bard Charm Monster, but only against demons.`,
+                    'Bosses, mega-bosses, and super-bosses cannot be charmed.',
+                    !canCharm ? `Not enough mana (need ${WARLOCK_CHARM_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            if (m.level >= WARLOCK_ABYSS_FORM_UNLOCK_LEVEL) {
+                const formLabel = m.abyssFormActive
+                    ? '\u{1F419} Abyss Form: ON'
+                    : m.abyssFormUsed
+                        ? '\u{1F419} Abyss Form [used]'
+                        : '\u{1F419} Abyss Form';
+                const formBtn = this._addBtn(formLabel, m.abyssFormActive || !m.abyssFormUsed, () => this.combat.warlockToggleAbyssForm());
+                formBtn.classList.add('combat-special-btn');
+                if (m.abyssFormActive) formBtn.style.background = 'linear-gradient(135deg,#120b2d,#3a1b68)';
+                formBtn.title = [
+                    `Warlock L${WARLOCK_ABYSS_FORM_UNLOCK_LEVEL}: once per combat, lasts until killed, toggled off, or combat ends.`,
+                    'Doubles health, adds level to defense, stays back row, disables normal melee/ranged/magic, curse, and charm.',
+                    'Gains tentacle attacks from the back row, half magic/AoE damage, poison/psychic/charm/hold/stun immunity, and half cold/acid damage.',
+                    m.abyssFormActive ? 'Currently transformed. Click to return to normal form.' : '',
+                    !m.abyssFormActive && m.abyssFormUsed ? 'Already used this combat.' : '',
+                ].filter(Boolean).join('\n');
+
+                if (m.abyssFormActive) {
+                    const tentacleCount = Math.max(1, Math.floor(m.level / 3));
+                    const tentacleBtn = this._addBtn(`\u{1F419} Tentacles x${tentacleCount}`, true, () => this.combat.warlockTentacleAttack());
+                    tentacleBtn.classList.add('combat-special-btn');
+                    tentacleBtn.title = [
+                        `Attacks ${tentacleCount} random available target(s) from the back row.`,
+                        `Uses warlock magic skill for melee damage with +${m.level}% bonus.`,
+                        `${m.level}% stun chance per hit; normal monster and type immunities still apply.`,
+                    ].join('\n');
+
+                    const targets = Math.max(1, Math.floor(m.level / WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR));
+                    const signBtn = this._addBtn(`\u{1F52E} Eldritch Sign (${targets})`, !!m.eldritchSignReady, () => this.combat.warlockEldritchSign());
+                    signBtn.classList.add('combat-special-btn');
+                    if (!m.eldritchSignReady) signBtn.style.opacity = '0.55';
+                    signBtn.title = [
+                        `Applies Wasting Curse to ${targets} random enemy target(s), ignoring mana cost.`,
+                        'After use, it is disabled until it rolls a 1-in-3 recharge at the start of a round.',
+                        !m.eldritchSignReady ? 'Not recharged yet.' : 'Ready.',
+                    ].join('\n');
                 }
             }
         }
