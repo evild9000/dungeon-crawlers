@@ -342,7 +342,7 @@ export const CORPSE_HORROR_PRESET = {
     abilities: [
         'Front-row melee. Absorbs fallen enemies to grow stronger.',
         'Each absorbed corpse adds HP, melee skill, and defense without limit.',
-        'Attack count is capped at necromancer level + 10.',
+        'Attack count is capped at necromancer level.',
         'Cannot be healed by potions or Cleric heal.',
         'Restored only by its summoner\'s Necromancer life-drain.',
     ],
@@ -571,8 +571,8 @@ export const VERMIN_SWARM_PRESET = {
         'Each attack: poison DoT (2/3 base dmg for 2 rds, stacks independently).',
         'Unique debuff: -⌊keeper level/4⌋ attack/ranged/magic for 2 rds (refreshed by any vermin swarm).',
         'Takes only 10% damage from melee/ranged. ×1.5 from magic/AoE. ×2 from fire.',
-        'Grows each cast: +keeper max HP added to its current HP pool; gains an extra AoE attack.',
-        'Immune to poison, psychic damage/DoTs, charms, holds, stuns, and paralysis.',
+        'Grows automatically before its own turn: +keeper max HP and +1 AoE attack, capped at floor(keeper level / 5) upgrades.',
+        'Immune to poison, psychic damage/DoTs, charms, holds, stuns, paralysis, and death-roll holds.',
         'Incorporeal tag. Once summoned, Acid Swarm button is locked until this swarm dies.',
     ],
 };
@@ -587,9 +587,9 @@ export const ACID_SWARM_PRESET = {
         'Each attack: acid DoT (40% base dmg for 2 rds, stacks independently).',
         'Unique debuff: -⌊keeper level/4⌋ defense/ranged/magic for 2 rds (refreshed by any acid swarm).',
         'Takes only 10% damage from melee/ranged. ×1.5 from magic/AoE. ×3 from lightning.',
-        'Grows each cast: +keeper max HP added to its current HP pool; gains an extra AoE attack.',
+        'Grows automatically before its own turn: +keeper max HP and +1 AoE attack, capped at floor(keeper level / 5) upgrades.',
         'Immune to acid and acid DoTs.',
-        'Immune to psychic damage/DoTs, charms, holds, stuns, and paralysis.',
+        'Immune to psychic damage/DoTs, charms, holds, stuns, paralysis, and death-roll holds.',
         'Slime tag. Once summoned, Vermin Swarm button is locked until this swarm dies.',
     ],
 };

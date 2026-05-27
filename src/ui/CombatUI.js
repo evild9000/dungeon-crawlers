@@ -115,7 +115,7 @@ import {
     VK_SUMMON_SLIME_MANA_COST, VK_SUMMON_SLIME_UNLOCK_LEVEL,
     VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
-    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_GROWTH_MANA_COST,
+    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST,
     VK_SWARM_MAX_UPGRADE_DIVISOR,
     VK_SWARM_PROTECT_MANA_COST,
     WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
@@ -232,14 +232,11 @@ export class CombatUI {
     _refresh() {
         if (!this._active) return;
 
-        // Reset action guard and stale target-selection state every refresh so
-        // a missed or double-click from the previous turn can never carry over.
+        // Reset the action guard every refresh so a missed or double-click from
+        // the previous turn can never leave the action panel disabled. Target
+        // selection is intentionally preserved across refreshes; some actions
+        // rebuild HUD/log state while waiting for the player to click a target.
         this._actionInProgress = false;
-        if (this._selectingTarget) {
-            this._selectingTarget = false;
-            this._targetCallback  = null;
-            this._clearTargetable();
-        }
 
         // Detect newly knocked-out party members (play sorrowful tone once per KO)
         if (this.combat.party) {
@@ -762,11 +759,13 @@ export class CombatUI {
         this.actionsEl.innerHTML = '';
 
         if (this.combat.phase === 'NEED_PROMOTION') {
+            this._cancelTargetSelection();
             this._showRowPromotion();
             return;
         }
 
         if (this.combat.phase !== 'PLAYER_TURN') {
+            this._cancelTargetSelection();
             if (this.combat.phase === 'ENEMY_TURN' && this._manualMode) {
                 this.turnInfo.textContent = '⏸️ Manual — review the log, then continue...';
                 const contBtn = this._addBtn('▶ Continue [Space]', true, () => this.combat.resumeManualTurn());
@@ -2125,60 +2124,52 @@ export class CombatUI {
                 // Vermin Swarm button — greyed if acid swarm alive
                 {
                     const blocked = hasASwarm;
-                    const cost    = hasVSwarm ? VK_SWARM_GROWTH_MANA_COST : VK_SWARM_SUMMON_MANA_COST;
+                    const cost    = VK_SWARM_SUMMON_MANA_COST;
                     const upgrades = hasVSwarm ? Math.max(0, vSwarm.summonStats?.growthUpgrades ?? ((vSwarm.summonStats?.attackCount || 1) - 1)) : 0;
-                    const atUpgradeCap = hasVSwarm && upgrades >= maxSwarmUpgrades;
-                    const canSwarm = !blocked && !atUpgradeCap && m.mana >= cost;
+                    const canSwarm = !blocked && !hasVSwarm && m.mana >= cost;
                     const label = blocked
                         ? `\u{1F577}️ Vermin Swarm [acid swarm active]`
-                        : atUpgradeCap
-                            ? `\u{1F577}️ Vermin Swarm [${upgrades}/${maxSwarmUpgrades} upgrades]`
                         : hasVSwarm
-                            ? `\u{1F577}️ Grow Vermin Swarm (-${cost} MP)`
+                            ? `\u{1F577}️ Vermin Swarm [active ${upgrades}/${maxSwarmUpgrades}]`
                             : `\u{1F577}️ Summon Vermin Swarm (-${cost} MP)`;
                     const btn = this._addBtn(label, canSwarm, () => this.combat.vkSummonSwarm('vermin'));
                     btn.classList.add('combat-special-btn');
                     if (hasVSwarm) btn.style.background = 'linear-gradient(135deg,#1a2a0a,#3a5a0a)';
                     btn.title = [
-                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon/Grow Vermin Swarm.`,
-                        `Costs ${cost} MP. Cannot have both swarm types at once.`,
-                        hasVSwarm ? `Swarm is ACTIVE — growth upgrades ${upgrades}/${maxSwarmUpgrades}; each upgrade adds +keeper HP and +1 AoE attack.` : '',
+                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Vermin Swarm.`,
+                        `Costs ${cost} MP to summon. Cannot have both swarm types at once.`,
+                        hasVSwarm ? `Swarm is ACTIVE — it grows automatically on its own turn before attacking (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
-                        'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/stuns.',
+                        'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/holds/death-roll holds/stuns.',
                         'AoE attack hits all enemies; applies poison DoT and attack/range/magic debuff.',
                         blocked ? 'Cannot summon while Acid Swarm is alive.' : '',
-                        atUpgradeCap ? 'At maximum swarm upgrades.' : '',
-                        !blocked && !atUpgradeCap && m.mana < cost ? `Not enough mana (need ${cost} MP).` : '',
+                        !blocked && !hasVSwarm && m.mana < cost ? `Not enough mana (need ${cost} MP).` : '',
                     ].filter(Boolean).join('\n');
                 }
 
                 // Acid Swarm button — greyed if vermin swarm alive
                 {
                     const blocked = hasVSwarm;
-                    const cost    = hasASwarm ? VK_SWARM_GROWTH_MANA_COST : VK_SWARM_SUMMON_MANA_COST;
+                    const cost    = VK_SWARM_SUMMON_MANA_COST;
                     const upgrades = hasASwarm ? Math.max(0, aSwarm.summonStats?.growthUpgrades ?? ((aSwarm.summonStats?.attackCount || 1) - 1)) : 0;
-                    const atUpgradeCap = hasASwarm && upgrades >= maxSwarmUpgrades;
-                    const canSwarm = !blocked && !atUpgradeCap && m.mana >= cost;
+                    const canSwarm = !blocked && !hasASwarm && m.mana >= cost;
                     const label = blocked
                         ? `\u{1FAA1} Acid Swarm [vermin swarm active]`
-                        : atUpgradeCap
-                            ? `\u{1FAA1} Acid Swarm [${upgrades}/${maxSwarmUpgrades} upgrades]`
                         : hasASwarm
-                            ? `\u{1FAA1} Grow Acid Swarm (-${cost} MP)`
+                            ? `\u{1FAA1} Acid Swarm [active ${upgrades}/${maxSwarmUpgrades}]`
                             : `\u{1FAA1} Summon Acid Swarm (-${cost} MP)`;
                     const btn = this._addBtn(label, canSwarm, () => this.combat.vkSummonSwarm('acid'));
                     btn.classList.add('combat-special-btn');
                     if (hasASwarm) btn.style.background = 'linear-gradient(135deg,#0a2a1a,#0a5a3a)';
                     btn.title = [
-                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon/Grow Acid Swarm.`,
-                        `Costs ${cost} MP. Cannot have both swarm types at once.`,
-                        hasASwarm ? `Swarm is ACTIVE — growth upgrades ${upgrades}/${maxSwarmUpgrades}; each upgrade adds +keeper HP and +1 AoE attack.` : '',
+                        `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Acid Swarm.`,
+                        `Costs ${cost} MP to summon. Cannot have both swarm types at once.`,
+                        hasASwarm ? `Swarm is ACTIVE — it grows automatically on its own turn before attacking (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
-                        'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/stuns.',
+                        'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/holds/death-roll holds/stuns.',
                         'AoE attack hits all enemies; applies acid DoT and defense/range/magic debuff.',
                         blocked ? 'Cannot summon while Vermin Swarm is alive.' : '',
-                        atUpgradeCap ? 'At maximum swarm upgrades.' : '',
-                        !blocked && !atUpgradeCap && m.mana < cost ? `Not enough mana (need ${cost} MP).` : '',
+                        !blocked && !hasASwarm && m.mana < cost ? `Not enough mana (need ${cost} MP).` : '',
                     ].filter(Boolean).join('\n');
                 }
 
@@ -2844,6 +2835,7 @@ export class CombatUI {
     }
 
     _showUndeadPicker(necro) {
+        this._actionInProgress = false;
         this.actionsEl.innerHTML = '';
         this.turnInfo.textContent = 'Summon which undead?';
         const tiers = this.combat.getAvailableNecroTiers(necro.level);
@@ -2859,11 +2851,15 @@ export class CombatUI {
         const cancel = document.createElement('button');
         cancel.className = 'combat-action-btn';
         cancel.textContent = 'Cancel';
-        cancel.addEventListener('click', () => this._refresh());
+        cancel.addEventListener('click', () => {
+            this._cancelTargetSelection();
+            this._refresh();
+        });
         this.actionsEl.appendChild(cancel);
     }
 
     _showBeastPicker(caster) {
+        this._actionInProgress = false;
         this.actionsEl.innerHTML = '';
         this.turnInfo.textContent = 'Summon which creature?';
         const m = caster || this.combat.currentMember;
@@ -2907,6 +2903,7 @@ export class CombatUI {
     }
 
     _showSummonReposition() {
+        this._actionInProgress = false;
         this.actionsEl.innerHTML = '';
         this.turnInfo.textContent = '\u2195\uFE0F Reposition Summons (free action):';
         const liveSummons = this.combat.party.filter(p => p.isSummoned && p.health > 0);
@@ -2994,6 +2991,7 @@ export class CombatUI {
 
     /** Replaces the actions panel with a Use Item picker. */
     _showUseItemPanel(member) {
+        this._actionInProgress = false;
         this.actionsEl.innerHTML = '';
 
         const title = document.createElement('div');
@@ -3213,11 +3211,13 @@ export class CombatUI {
         const valid = filter ? base.filter(filter) : base;
 
         if (valid.length === 0) {
+            this._actionInProgress = false;
             this._addBlockingNotice('No valid targets for this action.');
             return;
         }
         if (valid.length === 1) { callback(valid[0]); return; }
 
+        this._actionInProgress = false;
         this._selectingTarget = true;
         this._targetCallback = callback;
         this.turnInfo.textContent = prompt || 'Select a target...';
@@ -3228,7 +3228,10 @@ export class CombatUI {
         _cancelBtn.className = 'combat-action-btn';
         _cancelBtn.textContent = '← Cancel';
         _cancelBtn.title = 'Cancel target selection and return to your action choices.';
-        _cancelBtn.addEventListener('click', () => this._refresh());
+        _cancelBtn.addEventListener('click', () => {
+            this._cancelTargetSelection();
+            this._refresh();
+        });
         this.actionsEl.appendChild(_cancelBtn);
 
         // Mark only valid targets as clickable; dim invalid ones (uses base, not alive, so charmed are also hidden)
@@ -3252,11 +3255,19 @@ export class CombatUI {
         });
     }
 
+    _cancelTargetSelection() {
+        if (!this._selectingTarget && !this._targetCallback) return;
+        this._selectingTarget = false;
+        this._targetCallback = null;
+        this._clearTargetable();
+    }
+
     // ────────────────────────────────────────────
     // Party target selection
     // ────────────────────────────────────────────
 
     _pickPartyTarget(callback, { filter, prompt, includeCharmed = false } = {}) {
+        this._actionInProgress = false;
         let candidates = this.combat.party.filter(pm => filter ? filter(pm) : pm.health > 0);
 
         // Optionally include wounded charmed enemies as heal targets (excludes undead/construct/elemental)
