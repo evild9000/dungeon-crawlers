@@ -10883,7 +10883,9 @@ export class CombatSystem {
         const cHit = (target, dmg, isMagic = false, contactAttacker = null) => {
             if (!target || target.health <= 0) return 0;
             const options = contactAttacker ? { contactAttacker } : {};
-            return this._damageEnemy(target, dmg, false, isMagic, 0, false, options);
+            const dealt = this._damageEnemy(target, dmg, false, isMagic, 0, false, options);
+            this._addLog(`  \u2192 ${eN(target)} takes ${dealt}${isMagic ? ' magic' : ''} damage.`);
+            return dealt;
         };
         const cEffect = (target, effect) => {
             if (!target || target.health <= 0 || !effect) return;
@@ -10892,6 +10894,12 @@ export class CombatSystem {
                 target.activeEffects = target.activeEffects || [];
                 target.activeEffects.push(effect);
             }
+            const bits = [];
+            if (typeof effect.damage === 'number') bits.push(`${effect.damage}/rd`);
+            if (typeof effect.damageBonus === 'number') bits.push(`${effect.damageBonus} dmg`);
+            if (typeof effect.defenseBonus === 'number') bits.push(`${effect.defenseBonus} def`);
+            if (typeof effect.rounds === 'number') bits.push(`${effect.rounds} rd${effect.rounds === 1 ? '' : 's'}`);
+            this._addLog(`    \u21B3 ${eN(target)} gains ${effect.type}${bits.length ? ` (${bits.join(', ')})` : ''}.`);
         };
         const pick = () => { const h = hostile(); return h.length ? h[Math.floor(Math.random() * h.length)] : null; };
         const eN = t => this._eName(t);
@@ -10947,8 +10955,7 @@ export class CombatSystem {
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`🎵${breathIcons[bType]||'🔥'} ${eName} (charmed) exhales ${bType} breath at the enemy group!`);
                 for (const t of hostile()) {
-                    const dealt = cHit(t, dmg, true);
-                    this._addLog(`  ${eN(t)} takes ${dealt} ${bType} breath damage.`);
+                    cHit(t, dmg, true);
                     tickDeath(t);
                 }
             } else {
@@ -10960,8 +10967,7 @@ export class CombatSystem {
                         e.stamina -= MONSTER_MELEE_STAMINA_COST;
                         let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
                         dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                        const dealt = cHit(t, dmg, false, e);
-                        this._addLog(`  ${atk.label} hits ${eN(t)} for ${dealt}.`);
+                        cHit(t, dmg, false, e);
                         tickDeath(t);
                     }
                 }
@@ -13260,7 +13266,7 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
-    /** L30: Summon Vermin Swarm or Acid Swarm — creates one swarm; it grows before its own turns */
+    /** L30: Summon Vermin Swarm or Acid Swarm — creates one swarm; it grows after its own turns */
     vkSummonSwarm(swarmType) {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
@@ -13337,7 +13343,7 @@ export class CombatSystem {
         const growthUpgrades = currentUpgrades + 1;
         stats.growthUpgrades = growthUpgrades;
         stats.attackCount = 1 + growthUpgrades;
-        this._addLog(`\u{1F41C} ${swarm.name} grows before attacking! (+${hpGain} HP, ${growthUpgrades}/${maxUpgrades} upgrades, ${stats.attackCount} AoE attacks)`);
+        this._addLog(`\u{1F41C} ${swarm.name} grows after attacking! (+${hpGain} HP, ${growthUpgrades}/${maxUpgrades} upgrades, ${stats.attackCount} AoE attacks next turn)`);
         return true;
     }
 
@@ -13385,10 +13391,12 @@ export class CombatSystem {
         const st = swarm.summonStats || {};
         const keeper = this.party.find(p => p.id === swarm.summonerId);
         const isVermin = swarm.summonType === 'vermin_swarm';
-        this._autoGrowVKSwarm(swarm, keeper);
         const attackCount = st.attackCount || 1;
         const targets = this.aliveHostileEnemies.slice();
-        if (targets.length === 0) return;
+        if (targets.length === 0) {
+            this._autoGrowVKSwarm(swarm, keeper);
+            return;
+        }
         const keeperLv = st.keeperLevel || 1;
         const debuffAmt = Math.floor(keeperLv / (isVermin ? VK_VSWARM_DEBUFF_DIV : VK_ASWARM_DEBUFF_DIV));
         this._addLog(`\u{1F41C} ${swarm.name} ${isVermin ? 'swarms' : 'dissolves'} all enemies with ${attackCount} AoE attack(s)!`);
@@ -13657,6 +13665,7 @@ export class CombatSystem {
                 kill(t);
             }
         }
+        this._autoGrowVKSwarm(swarm, keeper);
     }
 
     _addLog(msg) {

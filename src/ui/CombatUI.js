@@ -2138,7 +2138,7 @@ export class CombatUI {
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Vermin Swarm.`,
                         `Costs ${cost} MP to summon. Cannot have both swarm types at once.`,
-                        hasVSwarm ? `Swarm is ACTIVE — it grows automatically on its own turn before attacking (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
+                        hasVSwarm ? `Swarm is ACTIVE — it grows automatically after its own attack turn (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/holds/death-roll holds/stuns.',
                         'AoE attack hits all enemies; applies poison DoT and attack/range/magic debuff.',
@@ -2164,7 +2164,7 @@ export class CombatUI {
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Acid Swarm.`,
                         `Costs ${cost} MP to summon. Cannot have both swarm types at once.`,
-                        hasASwarm ? `Swarm is ACTIVE — it grows automatically on its own turn before attacking (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
+                        hasASwarm ? `Swarm is ACTIVE — it grows automatically after its own attack turn (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/holds/death-roll holds/stuns.',
                         'AoE attack hits all enemies; applies acid DoT and defense/range/magic debuff.',
