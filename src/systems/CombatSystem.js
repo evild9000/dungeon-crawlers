@@ -13242,22 +13242,33 @@ export class CombatSystem {
             this._addLog(`\u{1F41C} ${m.name} already has a ${otherName} active — it must die before summoning a different swarm!`);
             return;
         }
+        const existing = this.party.find(p => p.isSummoned && p.summonType === swarmSummonType && p.summonerId === m.id && p.health > 0);
+        if (existing) {
+            const maxUpgrades = Math.max(0, Math.floor((m.level || 1) / VK_SWARM_MAX_UPGRADE_DIVISOR));
+            const currentUpgrades = Math.max(0, existing.summonStats?.growthUpgrades ?? ((existing.summonStats?.attackCount || 1) - 1));
+            if (currentUpgrades >= maxUpgrades) {
+                this._addLog(`\u{1F41C} ${m.name}'s ${swarmType === 'acid' ? 'Acid Swarm' : 'Vermin Swarm'} is already at its growth limit (${currentUpgrades}/${maxUpgrades} upgrades).`);
+                return;
+            }
+        }
         if (m.mana < VK_SWARM_SUMMON_MANA_COST) {
             this._addLog(`${m.name} needs ${VK_SWARM_SUMMON_MANA_COST} MP for this swarm.`);
             return;
         }
         m.mana -= VK_SWARM_SUMMON_MANA_COST;
         const preset = swarmType === 'acid' ? ACID_SWARM_PRESET : VERMIN_SWARM_PRESET;
-        // Find existing swarm of this type (from this keeper)
-        const existing = this.party.find(p => p.isSummoned && p.summonType === swarmSummonType && p.summonerId === m.id && p.health > 0);
         if (existing) {
             // Grow existing swarm
             const hpGain = Math.max(1, m.maxHealth);
             existing.health = Math.min(existing.maxHealth + hpGain, existing.health + hpGain);
             existing.maxHealth += hpGain;
             existing.summonStats = existing.summonStats || {};
-            existing.summonStats.attackCount = (existing.summonStats.attackCount || 1) + 1;
-            this._addLog(`\u{1F41C} ${m.name}'s ${preset.name} grows larger! (+${hpGain} HP, ${existing.summonStats.attackCount} AoE attacks)`);
+            const growthUpgrades = Math.max(0, existing.summonStats.growthUpgrades ?? ((existing.summonStats.attackCount || 1) - 1)) + 1;
+            const maxUpgrades = Math.max(0, Math.floor((m.level || 1) / VK_SWARM_MAX_UPGRADE_DIVISOR));
+            existing.summonStats.growthUpgrades = growthUpgrades;
+            existing.summonStats.maxGrowthUpgrades = maxUpgrades;
+            existing.summonStats.attackCount = 1 + growthUpgrades;
+            this._addLog(`\u{1F41C} ${m.name}'s ${preset.name} grows larger! (+${hpGain} HP, ${growthUpgrades}/${maxUpgrades} upgrades, ${existing.summonStats.attackCount} AoE attacks)`);
         } else {
             // Summon new swarm
             const magicBonus = (m.getWeaponBonus?.('magic') || 0) + (m.getClassDamageBonus?.('magic') || 0);
@@ -13274,6 +13285,8 @@ export class CombatSystem {
                     magicMin: stats.magicMin, magicMax: stats.magicMax,
                     defense: stats.defense, keeperLevel: m.level,
                     attackCount: 1,
+                    growthUpgrades: 0,
+                    maxGrowthUpgrades: Math.max(0, Math.floor((m.level || 1) / VK_SWARM_MAX_UPGRADE_DIVISOR)),
                     beastKind: swarmSummonType,
                     swarmType: swarmType,
                     incorporeal: swarmType === 'vermin',
