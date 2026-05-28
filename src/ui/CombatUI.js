@@ -1178,6 +1178,7 @@ export class CombatUI {
                 const hasToken = tokens >= 1;
                 const deedLabel = `🏆 Heroic Deeds (${tokens})`;
                 const deedBtn = this._addBtn(deedLabel, hasToken, () => {
+                    this._actionInProgress = false;
                     // Toggle a sub-panel with the four deed buttons
                     const existing = this.actionsEl.querySelector('.heroic-deeds-panel');
                     if (existing) { existing.remove(); return; }

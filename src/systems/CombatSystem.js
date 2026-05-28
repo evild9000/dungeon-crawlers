@@ -1188,7 +1188,7 @@ export class CombatSystem {
                     if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
                     dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
                     dmg = Math.round(dmg * (1 + m.level * 0.005));
-                    const d = this._damageEnemy(other, dmg);
+                    const d = this._damageEnemy(other, dmg, false, false, 0, false, { contactAttacker: m });
                     this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}! [+${Math.floor(m.level / 2)}% level bonus]`);
                     this._applyWeaponRider(m, other, d);
                     this._applyWeaponRider(m, other, d, 'offhand');
@@ -1901,7 +1901,7 @@ export class CombatSystem {
             if (enemy.health <= 0) continue;
             const eDef = ENEMY_TYPES[enemy.type] || {};
             const eTags = Array.isArray(eDef.tags) ? eDef.tags : [];
-            const dealt = this._damageEnemy(enemy, dmg);
+            const dealt = this._damageEnemy(enemy, dmg, false, false, 0, false, { contactAttacker: m });
             if (enemy.health <= 0) {
                 this._addLog(`  💥 ${this._eName(enemy)} takes ${dealt} damage and is SLAIN!`);
                 continue;
@@ -5946,7 +5946,7 @@ export class CombatSystem {
         if (beastKind === 'vampire_bat') {
             const t = targets[Math.floor(Math.random() * targets.length)];
             const dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 6);
-            const dealt = this._damageSummonEnemy(t, dmg);
+            const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
             this._addLog(`\u{1F987} ${m.name} strikes ${this._eName(t)} for ${dealt}!`);
             // Vampire bat life drain: heals for damage dealt
             if (dealt > 0) {
@@ -6085,7 +6085,7 @@ export class CombatSystem {
                 // Single melee
                 const t = targets[Math.floor(Math.random() * targets.length)];
                 let dmg = randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5);
-                const dealt = this._damageSummonEnemy(t, dmg);
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 this._addLog(`\u{1FAA8} ${m.name} slams ${this._eName(t)} for ${dealt}!`);
                 if (t.health > 0 && !this._enemyHasImmunity(t, 'stun') && Math.random() < stunChance_earth)
                     if (this._tryStunEnemy(t)) this._addLog(`  ⚡ ${this._eName(t)} is stunned!`);
@@ -6468,8 +6468,8 @@ export class CombatSystem {
         const t = targets[Math.floor(Math.random() * targets.length)];
         const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
         const dealt = isIncorporeal
-            ? this._damageSummonEnemy(t, dmg, true)   // true = ignore armor/defense
-            : this._damageSummonEnemy(t, dmg);
+            ? this._damageSummonEnemy(t, dmg, true, false, { contactAttacker: m })   // true = ignore armor/defense
+            : this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
         if (isIncorporeal) {
             this._addLog(`\u{1F47B} ${m.name} phases through ${this._eName(t)}'s defences for ${dealt}!`);
         } else {
@@ -6533,7 +6533,7 @@ export class CombatSystem {
                 if (t.isBoss || t.isMegaBoss) {
                     // Boss/mega-boss immune to instant death — x4 pre-defense damage instead
                     const dkBossDmg = Math.max(1, Math.round(dmg * 4));
-                    const dkBossDealt = this._damageSummonEnemy(t, dkBossDmg);
+                    const dkBossDealt = this._damageSummonEnemy(t, dkBossDmg, false, false, { contactAttacker: m });
                     this._addLog(`\u{1F480} ${m.name} attempts a death strike on ${this._eName(t)} — Boss resists! (x4: ${dkBossDealt} damage)`);
                     if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
                 } else {
