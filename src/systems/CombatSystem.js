@@ -35,7 +35,7 @@ import {
     DRUID_SUMMON_MANA_COST,
     POISON_DURATION_ROUNDS, POISON_DAMAGE_FRACTION,
     WEB_DURATION_ROUNDS,
-    TRINKET_DROP_CHANCE,
+    TRINKET_DROP_CHANCE, TRINKET_DROP_CHANCE_MAX,
     XP_PER_MONSTER_LEVEL,
     LOOT_TORCH_CHANCE,
     LOOT_REAGENT_COMMON_BASE, LOOT_REAGENT_UNCOMMON_BASE, LOOT_REAGENT_RARE_BASE,
@@ -7320,15 +7320,15 @@ export class CombatSystem {
             const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
             const headCount = 6 + Math.floor(dlvl / 5);
             this._addLog(`\u{1F40D} ${eName} attacks with ${headCount} heads!`);
-            for (let hi = 0; hi < headCount && this.aliveFront.length > 0; hi++) {
-                const target = this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)];
+            for (let hi = 0; hi < headCount && this.aliveParty.length > 0; hi++) {
+                const anyAlive = this.aliveParty;
+                const target = anyAlive[Math.floor(Math.random() * anyAlive.length)];
                 if (e.stamina < MONSTER_MELEE_STAMINA_COST) { e.stamina = Math.min(e.maxStamina || 30, e.stamina + 2); continue; }
                 e.stamina -= MONSTER_MELEE_STAMINA_COST;
                 let dmg = randomInt(dmin, dmax);
                 dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                this._applyEnemyHit(e, target, dmg, 'ranged');
-                if (this.aliveFront.length === 0) break;
+                this._applyEnemyHit(e, target, dmg, 'melee');
             }
 
         // ── Manticore: 5 ranged attacks, poison tail DoT ─────────────────
@@ -11055,7 +11055,7 @@ export class CombatSystem {
                 e.stamina -= MONSTER_MELEE_STAMINA_COST;
                 let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                cHit(t, dmg);
+                cHit(t, dmg, false, e);
             }
 
         } else if (typeDef.isManticoreAI) {
@@ -12074,6 +12074,7 @@ export class CombatSystem {
         let anyRecovered = false;
         for (const m of this.party) {
             if (m.isSummoned) continue;
+            if (m.abyssFormActive) this._exitAbyssForm(m);
             m.tempHp    = 0; // Blood Rage temp HP resets after combat
             m.rageEncourageRounds = 0;
             m.mirrorImages = 0; // mirror images reset
@@ -12143,7 +12144,7 @@ export class CombatSystem {
                     items.push({ itemId: randomShieldDrop(), quantity: 1 });
                 }
                 // Mega bosses get 5 trinket rolls per loot roll; normal bosses get 3× chance per roll.
-                const trinketChance = TRINKET_DROP_CHANCE + dlvlBoost;
+                const trinketChance = Math.min(TRINKET_DROP_CHANCE_MAX, TRINKET_DROP_CHANCE + dlvlBoost);
                 const trinketRolls = isMegaBoss ? 5 : 1;
                 for (let tr = 0; tr < trinketRolls; tr++) {
                     if (Math.random() < (isBoss ? trinketChance * 3 : trinketChance)) {
@@ -12771,6 +12772,11 @@ export class CombatSystem {
         const preset = WARLOCK_DEMON_PRESETS[requestedId] || WARLOCK_DEMON_PRESETS.imp;
         const magicSkill = this._getWarlockMagicSkill(warlock);
         const stats = rollWarlockDemonStats(warlock.level || 1, warlock.maxHealth, magicSkill, preset.id);
+        if (warlock.abyssFormActive && warlock.abyssFormHpBonus > 0) {
+            const baseWarlockMax = Math.max(1, warlock.maxHealth - warlock.abyssFormHpBonus);
+            const normalStats = rollWarlockDemonStats(warlock.level || 1, baseWarlockMax, magicSkill, preset.id);
+            stats.abyssFormHpBonus = Math.max(0, stats.maxHealth - normalStats.maxHealth);
+        }
         const num = this.party.filter(p => p.isSummoned && p.summonerId === warlock.id && p.summonType === preset.id).length + 1;
         const demon = new PartyMember({
             name: `${warlock.name}'s ${preset.name} #${num}`,
@@ -12899,12 +12905,14 @@ export class CombatSystem {
         m.health += m.abyssFormHpBonus;
         m.abyssFormDefBonus = m.level || 1;
         m.eldritchSignReady = true;
-        this._addLog(`\u{1F9FF} ${m.name} becomes a tentacled horror of the abyss! HP doubles, +${m.abyssFormDefBonus} defense.`);
+        const empoweredDemons = this._applyAbyssFormToWarlockDemons(m);
+        this._addLog(`\u{1F9FF} ${m.name} becomes a tentacled horror of the abyss! HP doubles, +${m.abyssFormDefBonus} defense.${empoweredDemons ? ` ${empoweredDemons} bound demon${empoweredDemons === 1 ? '' : 's'} also swell with abyssal vitality.` : ''}`);
         this._notify();
     }
 
     _exitAbyssForm(m) {
         if (!m || !m.abyssFormActive) return;
+        this._removeAbyssFormFromWarlockDemons(m);
         if (m.abyssFormHpBonus > 0) {
             m.maxHealth = Math.max(1, m.maxHealth - m.abyssFormHpBonus);
             m.health = Math.min(m.health, m.maxHealth);
@@ -12914,6 +12922,40 @@ export class CombatSystem {
         m.abyssFormHpBonus = 0;
         m.abyssFormDefBonus = 0;
         m.abyssFormOrigRow = null;
+    }
+
+    _applyAbyssFormToWarlockDemons(warlock) {
+        if (!warlock || !warlock.abyssFormActive) return 0;
+        let count = 0;
+        for (const demon of this.party) {
+            if (!demon || demon.health <= 0 || !demon.isSummoned || demon.summonerId !== warlock.id) continue;
+            if (!WARLOCK_DEMON_PRESETS[demon.summonType]) continue;
+            const stats = demon.summonStats = demon.summonStats || {};
+            if (stats.abyssFormHpBonus > 0) continue;
+            const bonus = Math.max(1, demon.maxHealth || 1);
+            stats.abyssFormHpBonus = bonus;
+            demon.maxHealth += bonus;
+            demon.health += bonus;
+            count++;
+        }
+        return count;
+    }
+
+    _removeAbyssFormFromWarlockDemons(warlock) {
+        if (!warlock) return 0;
+        let count = 0;
+        for (const demon of this.party) {
+            if (!demon || !demon.isSummoned || demon.summonerId !== warlock.id) continue;
+            if (!WARLOCK_DEMON_PRESETS[demon.summonType]) continue;
+            const stats = demon.summonStats || {};
+            const bonus = Math.max(0, stats.abyssFormHpBonus || 0);
+            if (!bonus) continue;
+            demon.maxHealth = Math.max(1, demon.maxHealth - bonus);
+            demon.health = Math.min(demon.health, demon.maxHealth);
+            stats.abyssFormHpBonus = 0;
+            count++;
+        }
+        return count;
     }
 
     warlockTentacleAttack() {
@@ -13447,6 +13489,7 @@ export class CombatSystem {
                 if (e.health <= 0 && !e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
             }
         }
+        this._autoGrowVKSwarm(swarm, keeper);
     }
 
     _processWarlockDemonAttack(demon) {
@@ -13665,7 +13708,6 @@ export class CombatSystem {
                 kill(t);
             }
         }
-        this._autoGrowVKSwarm(swarm, keeper);
     }
 
     _addLog(msg) {

@@ -398,6 +398,7 @@ export class PartyHUD {
         } else if (cls && sp) {
             card.title = `${member.name}\n${cls.icon} ${cls.name} — ${cls.description}\n${sp.icon} ${sp.name} — ${sp.description}`;
         }
+        card.dataset.baseTitle = card.title || '';
 
         // Portrait
         const portraitWrap = document.createElement('div');
@@ -1096,10 +1097,22 @@ export class PartyHUD {
                 parts.push(`🗡️x${atkCount}${ss.attackCap ? `/${ss.attackCap}` : ''}`);
                 parts.push(`🎯 ${skill}`);
             }
+            const isVKSwarm = member.summonType === 'vermin_swarm' || member.summonType === 'acid_swarm';
+            if (isVKSwarm) {
+                const atkCount = Math.max(1, ss.attackCount || 1);
+                const maxUpgrades = Math.max(0, ss.maxGrowthUpgrades || 0);
+                const currentUpgrades = Math.max(0, ss.growthUpgrades ?? (atkCount - 1));
+                parts.push(`🗡️x${atkCount}/${maxUpgrades + 1}`);
+                parts.push(`🐜 ${currentUpgrades}/${maxUpgrades}`);
+            }
             // Show regen rate if applicable (flesh golem, stirge-type beasts)
             const regen = ss.regenPercent;
             if (regen) parts.push(`\u{1F504} ${Math.round(regen * 100)}%/rd`);
             statsRow.textContent = parts.join('  ');
+            const swarmTitle = isVKSwarm
+                ? `\nSwarm attacks: ${Math.max(1, ss.attackCount || 1)}/${Math.max(0, ss.maxGrowthUpgrades || 0) + 1} AoE attack(s) per turn.` +
+                  `\nGrowth: ${Math.max(0, ss.growthUpgrades ?? ((ss.attackCount || 1) - 1))}/${Math.max(0, ss.maxGrowthUpgrades || 0)} upgrades. It grows after completing its own attack turn, adding +1 future AoE attack and keeper max HP until capped.`
+                : '';
             statsRow.title = `${dmgTitle}\nDefense: ${def}` +
                 (ss.beastKind === 'shambling_mound' && (ss.shamblingGrowthStage ?? 3) < 3
                     ? `\nMini Shambler growth: ${ss.shamblingGrowthStage || 0}/3 turns. Grows to 67%, 84%, then 100% of full mound HP/defense.`
@@ -1110,7 +1123,20 @@ export class PartyHUD {
                 (member.summonType === 'corpse_horror'
                     ? `\nCorpse Horror growth: ${ss.corpseCount || 1} corpses, ${ss.attackCount || 1}${ss.attackCap ? `/${ss.attackCap}` : ''} attacks/round, melee skill ${ss.meleeSkill || 0}. HP, defense, and skill continue growing after attacks cap.`
                     : '') +
+                swarmTitle +
                 (regen ? `\nRegen: ${Math.round(regen * 100)}% HP/round` : '');
+            if (isVKSwarm) {
+                card.title = `${card.dataset.baseTitle || card.title || ''}${swarmTitle}`;
+            }
+        }
+        if (!member.isSummoned) {
+            const baseTitle = card.dataset.baseTitle || card.title || '';
+            if (member.classId === 'warlock' && member.abyssFormActive) {
+                const defBonus = member.abyssFormDefBonus || member.level || 0;
+                card.title = `${baseTitle}\n\nTentacled Horror Form: +${defBonus} defense, doubled HP, demon HP doubled.`;
+            } else {
+                card.title = baseTitle;
+            }
         }
 
         // Row indicator — green outline for front row, orange for back row.

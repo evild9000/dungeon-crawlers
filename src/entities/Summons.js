@@ -616,7 +616,7 @@ export const WARLOCK_DEMON_PRESETS = (() => {
             immune: Array.isArray(def.immune) ? def.immune.slice() : [],
             abilities: [
                 `Warlock demon — unlocks at level ${entry.unlockLevel}.`,
-                'Bound summon: HP = warlock max HP; attack and defense key from warlock magic skill.',
+                'Bound summon: HP = warlock max HP, doubled while the warlock is in Tentacled Horror form; attack and defense key from warlock magic skill.',
                 'Uses the matching monster variant ability profile against enemy parties.',
                 'Costs the warlock 3 HP per round to maintain. Vanishes if its warlock dies.',
             ],

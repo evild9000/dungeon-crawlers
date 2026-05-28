@@ -2138,7 +2138,7 @@ export class CombatUI {
                     if (hasVSwarm) btn.style.background = 'linear-gradient(135deg,#1a2a0a,#3a5a0a)';
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Vermin Swarm.`,
-                        `Costs ${cost} MP to summon. Cannot have both swarm types at once.`,
+                        `Costs ${cost} MP to summon. Acts immediately. Cannot have both swarm types at once.`,
                         hasVSwarm ? `Swarm is ACTIVE — it grows automatically after its own attack turn (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/holds/death-roll holds/stuns.',
@@ -2164,7 +2164,7 @@ export class CombatUI {
                     if (hasASwarm) btn.style.background = 'linear-gradient(135deg,#0a2a1a,#0a5a3a)';
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Acid Swarm.`,
-                        `Costs ${cost} MP to summon. Cannot have both swarm types at once.`,
+                        `Costs ${cost} MP to summon. Acts immediately. Cannot have both swarm types at once.`,
                         hasASwarm ? `Swarm is ACTIVE — it grows automatically after its own attack turn (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/holds/death-roll holds/stuns.',
@@ -2251,6 +2251,7 @@ export class CombatUI {
                 cauldronBtn.title = [
                     `Warlock L${WARLOCK_CAULDRON_UNLOCK_LEVEL}: Free action toggle.`,
                     `Opening costs ${WARLOCK_CAULDRON_HP_COST} HP. While open, summons one selected demon every round at 100% chance.`,
+                    'Demon HP is based on the warlock\'s max HP, not current HP; Tentacled Horror form doubles current and future bound demon HP.',
                     `Each bound demon costs ${WARLOCK_DEMON_UPKEEP_HP} HP per round to maintain. Current upkeep: ${upkeep} HP/round.`,
                     'If the warlock falls, all demons bound to that cauldron vanish.',
                     !canCauldron ? `Need more than ${WARLOCK_CAULDRON_HP_COST} HP to open the cauldron.` : '',
@@ -2300,7 +2301,7 @@ export class CombatUI {
                 if (m.abyssFormActive) formBtn.style.background = 'linear-gradient(135deg,#120b2d,#3a1b68)';
                 formBtn.title = [
                     `Warlock L${WARLOCK_ABYSS_FORM_UNLOCK_LEVEL}: once per combat, lasts until killed, toggled off, or combat ends.`,
-                    'Doubles health, adds level to defense, stays back row, disables normal melee/ranged/magic, curse, and charm.',
+                    'Doubles health, doubles current and future bound demon HP, adds level to defense, stays back row, disables normal melee/ranged/magic, curse, and charm.',
                     'Gains tentacle attacks from the back row, half magic/AoE damage, poison/psychic/charm/hold/stun immunity, and half cold/acid damage.',
                     m.abyssFormActive ? 'Currently transformed. Click to return to normal form.' : '',
                     !m.abyssFormActive && m.abyssFormUsed ? 'Already used this combat.' : '',

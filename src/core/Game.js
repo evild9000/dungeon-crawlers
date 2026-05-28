@@ -1402,23 +1402,83 @@ export class Game {
 
         // Encounter size: one enemy per non-summoned party member, plus a depth
         // bonus (one extra foe per 10 dungeon levels).  The trigger enemy counts
-        // as slot #1, so we spawn (targetSize − 1) thematic adds.
+        // as slot #1.  Nearby map monsters can join immediately in expanding
+        // square rings; anything not pulled in can still arrive as a wanderer.
         const partySize    = Math.max(1, this.gameState.party.filter(m => !m.isSummoned).length);
         const dungeonLevel = this.gameState.dungeonLevel || 1;
         const targetSize   = partySize + Math.floor(dungeonLevel / 10);
 
         const group = [trigger];
+        const groupSet = new Set(group);
+        const primaryType = trigger.type;
+        const primaryTag = this._encounterPrimaryTag(primaryType);
+        const secondaryTypesByTag = new Map();
+        const remaining = () => Math.max(0, targetSize - group.length);
+        const addEnemy = (enemy) => {
+            if (!enemy || enemy.health <= 0 || enemy.friendly || groupSet.has(enemy) || remaining() <= 0) return false;
+            group.push(enemy);
+            groupSet.add(enemy);
+            const tag = this._encounterPrimaryTag(enemy.type);
+            if (tag && tag !== primaryTag && !secondaryTypesByTag.has(tag)) {
+                secondaryTypesByTag.set(tag, enemy.type);
+            }
+            return true;
+        };
+        const addFresh = (nearX, nearZ, count, type) => {
+            const need = Math.min(count, remaining());
+            if (need <= 0) return 0;
+            const fresh = this.enemyManager.forceSpawnNear(nearX, nearZ, need, type);
+            let added = 0;
+            for (const e of fresh) {
+                if (addEnemy(e)) added++;
+            }
+            return added;
+        };
+        const addFillerPack = () => {
+            let added = 0;
+            added += addFresh(gx, gz, 3, primaryType);
+            for (const type of secondaryTypesByTag.values()) {
+                if (remaining() <= 0) break;
+                added += addFresh(gx, gz, 1, type);
+            }
+            return added;
+        };
 
-        // Existing nearby monsters are no longer pulled in immediately; they
-        // may arrive as wanderers in subsequent rounds.  Instead, spawn fresh
-        // same-tag enemies near the trigger to fill the encounter thematically.
-        const need = targetSize - 1;
-        if (need > 0) {
-            const fresh = this.enemyManager.forceSpawnNear(gx, gz, need, trigger.type);
-            for (const e of fresh) group.push(e);
+        addFresh(gx, gz, 5, primaryType);
+        if (remaining() <= 0) return group;
+
+        const nearby = this.enemyManager.getEnemies()
+            .filter(e => e && e.health > 0 && !e.friendly && !groupSet.has(e))
+            .map(e => ({
+                enemy: e,
+                ring: Math.max(Math.abs((e.gridX ?? gx) - gx), Math.abs((e.gridZ ?? gz) - gz)),
+                dist: Math.hypot((e.gridX ?? gx) - gx, (e.gridZ ?? gz) - gz),
+            }))
+            .filter(entry => entry.ring >= 1 && entry.ring <= 10)
+            .sort((a, b) => a.ring - b.ring || a.dist - b.dist || String(a.enemy.id || '').localeCompare(String(b.enemy.id || '')));
+
+        for (let ring = 1; ring <= 10 && remaining() > 0; ring++) {
+            for (const entry of nearby) {
+                if (entry.ring !== ring || remaining() <= 0) continue;
+                if (addEnemy(entry.enemy)) {
+                    addFresh(entry.enemy.gridX, entry.enemy.gridZ, 3, entry.enemy.type);
+                }
+            }
+
+            if ((ring === 3 || ring === 6 || ring === 9 || ring === 10) && remaining() > 0) {
+                let guard = 0;
+                while (remaining() > 0 && guard++ < targetSize) {
+                    if (addFillerPack() <= 0) break;
+                }
+            }
         }
 
         return group;
+    }
+
+    _encounterPrimaryTag(type) {
+        const tags = ENEMY_TYPES[type]?.tags;
+        return Array.isArray(tags) && tags.length > 0 ? tags[0] : type;
     }
 
     /**

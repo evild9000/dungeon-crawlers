@@ -283,7 +283,7 @@ export const ENEMY_TYPES = {
         isMedusaAI: true,
         tags: ['humanoid', 'monster'] },
 
-    // hydra: 6+ heads (1 per 5 dungeon levels), each attacks per round, regen 15%/round.
+    // hydra: 6+ melee-contact heads (1 per 5 dungeon levels), each can reach any row, regen 15%/round.
     hydra:        { name: 'Hydra',        spriteW: 2.4, spriteH: 1.8,
         isHydraAI: true, regenPercent: 0.15, hpMult: 2.0,
         tags: ['beast', 'monster'] },
@@ -910,9 +910,11 @@ export const TRAP_TYPES = [
 // ──────────────────────────────────────────
 // Phase 8 — Trinket drops & bonuses
 // ──────────────────────────────────────────
-// Monsters have a 2% chance to drop a trinket (cloak / amulet / ring / belt).
+// Monsters have a 2% chance to drop a trinket (cloak / amulet / ring / belt),
+// scaling with dungeon level up to 30%.
 // Trinkets grant +1..+4 to one of: defense, melee, ranged, magic.
 export const TRINKET_DROP_CHANCE = 0.02;
+export const TRINKET_DROP_CHANCE_MAX = 0.30;
 export const TRINKET_SLOTS = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
 
 // ──────────────────────────────────────────
