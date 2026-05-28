@@ -1045,6 +1045,7 @@ export const PALADIN_HEAL_PER_LEVEL = CLERIC_HEAL_PER_LEVEL / 2;     // +1% per 
 export const PALADIN_L20_UNLOCK_LEVEL        = 20;
 export const PALADIN_SMITE_INSTAKILL_CAP     = 0.50; // purge chance hard cap (50%)
 export const PALADIN_SMITE_BOSS_DAMAGE_MULT  = 4;    // on bosses/mega-bosses: x4 damage instead of instant kill
+export const PALADIN_SMITE_DAMAGE_BONUS_MULT = 1.75; // all Smite/AoE Smite damage gets +75%
 export const PALADIN_AOE_SMITE_MANA_MULT     = 3;    // 3× normal smite mana
 export const PALADIN_AOE_SMITE_DAMAGE_MULT   = (1 / 3); // 1/3 normal smite damage
 export const PALADIN_AOE_SMITE_INSTAKILL_MULT = (1 / 3); // 1/3 normal purge chance

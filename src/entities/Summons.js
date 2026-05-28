@@ -581,6 +581,7 @@ export const ACID_SWARM_PRESET = {
     id: 'acid_swarm', name: 'Acid Swarm', icon: '\u{1FAA1}',
     portraitClass: 'summoned', portraitSpecies: 'human',
     speciesLabel: 'Acid Swarm', kind: 'slime',
+    enemySprite: 'acid_slime', spriteTint: '#ff8a00',
     isSwarm: true, swarmType: 'acid',
     abilities: [
         'Front-row AoE melee. Attacks ALL enemies each turn.',

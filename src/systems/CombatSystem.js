@@ -22,7 +22,7 @@ import {
     MONSTER_MELEE_DAMAGE_BONUS_PER_LEVEL, MONSTER_RANGED_DAMAGE_BONUS_PER_LEVEL,
     CLERIC_HEAL_MANA_COST, CLERIC_HEAL_PERCENT,
     MAGE_SHIELD_MANA_COST, MAGE_SHIELD_BASE_DEF, MAGE_SHIELD_BASE_ROUNDS, MAGE_SHIELD_BONUS_EVERY, MAGE_SHIELD_MIN_LEVEL,
-    NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
+    NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE,
     NECRO_UNDEAD_MANA_UPKEEP,
     NECRO_DARK_HARVEST_HP_FRAC, NECRO_DARK_HARVEST_ST_FRAC, NECRO_DARK_HARVEST_MANA_FRAC,
     BARBARIAN_RAGE_STAMINA_COST, BARBARIAN_RAGE_HP_REGEN,
@@ -53,6 +53,7 @@ import {
     ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
     PALADIN_SMITE_MANA_COST,
     PALADIN_SMITE_INSTAKILL_BASE, PALADIN_SMITE_INSTAKILL_PER_LEVEL,
+    PALADIN_SMITE_DAMAGE_BONUS_MULT,
     PALADIN_HEAL_MANA_COST, PALADIN_HEAL_PERCENT,
     PALADIN_FIRE_AURA_MANA_PER_ROUND,
     RIDER_PROC_CHANCE, RIDER_DOT_DAMAGE_FRACTION, RIDER_DOT_DAMAGE_MULT,
@@ -638,6 +639,7 @@ export class CombatSystem {
         if (!target) return false;
         if (target.isLichForm) return true;
         if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
+        if (target.speciesId === 'undead' || target.speciesId === 'elemental' || target.speciesId === 'construct' || target.speciesId === 'incorporeal') return true;
         if (!target.isSummoned) return false;
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         if (GOLEM_PRESETS[target.summonType]) return true;
@@ -650,6 +652,24 @@ export class CombatSystem {
         if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
         if (target.isSummoned && (target.summonType === 'vermin_swarm' || target.summonType === 'acid_swarm')) return true;
         if (target.isSummoned && (target.summonStats?.beastKind === 'vermin_swarm' || target.summonStats?.beastKind === 'acid_swarm')) return true;
+        return false;
+    }
+
+    _isParalysisImmunePartyMember(target) {
+        if (!target) return false;
+        if (target.isLichForm) return true;
+        if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
+        if (!target.isSummoned) return false;
+        if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
+        if (GOLEM_PRESETS[target.summonType]) return true;
+        if (target.summonType === 'spiritual_weapon') return true;
+        if (this._isRiftElemental(target) || target.speciesId === 'elemental') return true;
+        if (target.summonStats?.incorporeal === true) return true;
+        if (['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) return true;
+        if (target.summonType === 'vermin_swarm' || target.summonType === 'acid_swarm') return true;
+        if (target.summonStats?.beastKind === 'vermin_swarm' || target.summonStats?.beastKind === 'acid_swarm') return true;
+        const immune = target.summonStats?.immune;
+        if (Array.isArray(immune) && (immune.includes('paralyze') || immune.includes('stun') || immune.includes('hold'))) return true;
         return false;
     }
 
@@ -1762,8 +1782,7 @@ export class CombatSystem {
             }
             // Necromancer drain: roll per target hit
             if (m.classId === 'necromancer' && Math.random() < NECRO_LIFE_DRAIN_CHANCE) {
-                const amount = NECRO_LIFE_DRAIN_AMOUNT + m.getDrainBonus();
-                this._drainHeal(m, amount);
+                this._drainHeal(m);
             }
             if (e.health <= 0) this._addLog(`  ☠️ ${this._eName(e)} is defeated!`);
         }
@@ -1818,19 +1837,27 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
-    _drainHeal(necro, amount) {
-        const targets = [necro, ...this.party.filter(
-            p => p.isSummoned && p.summonerId === necro.id && p.canBeHealed === false && p.health > 0,
-        )];
+    _drainHeal(necro) {
+        const healPct = 0.05 + ((necro.level || 1) / 2) / 100;
+        const targets = this.party.filter(
+            p => p.isSummoned
+                && p.summonerId === necro.id
+                && (UNDEAD_TIERS.some(ut => ut.id === p.summonType) || p.summonType === 'demi_lich' || p.summonType === 'corpse_horror')
+                && p.health > 0,
+        );
         let totalGained = 0;
+        let healedCount = 0;
         for (const t of targets) {
             if (t.health <= 0) continue;
+            const amount = Math.max(1, Math.floor((t.maxHealth || 1) * healPct));
             const before = t.health;
             t.health = Math.min(t.maxHealth, t.health + amount);
-            totalGained += (t.health - before);
+            const gained = t.health - before;
+            if (gained > 0) healedCount++;
+            totalGained += gained;
         }
         if (totalGained > 0) {
-            this._addLog(`\u{1FA78} Life drain! ${necro.name} and their undead recover ${amount} HP.`);
+            this._addLog(`\u{1FA78} Life drain! ${necro.name}'s undead recover ${totalGained} total HP (${Math.round(healPct * 100)}% max HP each, ${healedCount} healed).`);
         }
     }
 
@@ -2780,7 +2807,7 @@ export class CombatSystem {
                     let bossDmg = this._rollPlayerMeleeDamage(m);
                     bossDmg += 2 * m.level;
                     bossDmg *= (2 + 0.10 * m.level);
-                    bossDmg  = Math.floor(bossDmg * PALADIN_AOE_SMITE_DAMAGE_MULT * PALADIN_SMITE_BOSS_DAMAGE_MULT);
+                    bossDmg  = Math.floor(bossDmg * PALADIN_AOE_SMITE_DAMAGE_MULT * PALADIN_SMITE_BOSS_DAMAGE_MULT * PALADIN_SMITE_DAMAGE_BONUS_MULT);
                     bossDmg = this._applyOutgoingDamageBonuses(m, bossDmg, 'aoe');
                     const bossDealt = this._damageEnemy(target, Math.max(1, bossDmg));
                     this._addLog(`✨ ${eName} resists the holy nova instant-kill! (x4 AoE smite: ${bossDealt} damage)`);
@@ -2799,7 +2826,7 @@ export class CombatSystem {
             let dmg = this._rollPlayerMeleeDamage(m);
             dmg    += 2 * m.level;                     // paladin holy bonus
             dmg    *= (2 + 0.10 * m.level);            // smite scaling
-            dmg     = Math.floor(dmg * PALADIN_AOE_SMITE_DAMAGE_MULT);
+            dmg     = Math.floor(dmg * PALADIN_AOE_SMITE_DAMAGE_MULT * PALADIN_SMITE_DAMAGE_BONUS_MULT);
             dmg = this._applyOutgoingDamageBonuses(m, dmg, 'aoe');
             const dealt = this._damageEnemy(target, Math.max(1, dmg));
             this._addLog(`✨ ${eName} is scorched by the holy nova for ${dealt}!`);
@@ -4627,7 +4654,7 @@ export class CombatSystem {
                     let bossDmg = this._rollPlayerMeleeDamage(m);
                     bossDmg += 2 * m.level;
                     bossDmg *= (2 + 0.10 * m.level);
-                    bossDmg  = Math.floor(bossDmg * PALADIN_SMITE_BOSS_DAMAGE_MULT);
+                    bossDmg  = Math.floor(bossDmg * PALADIN_SMITE_BOSS_DAMAGE_MULT * PALADIN_SMITE_DAMAGE_BONUS_MULT);
                     bossDmg = this._applyOutgoingDamageBonuses(m, bossDmg, 'melee');
                     const bossDealt = this._damageEnemy(targetEnemy, Math.max(1, bossDmg), false, false, 0, false, { contactAttacker: m });
                     this._addLog(`✨ ${m.name}'s divine purge strikes ${eName} — Boss resists instant death! (x4 smite: ${bossDealt} damage)`);
@@ -4655,6 +4682,7 @@ export class CombatSystem {
             dmg += 2 * m.level;
             dmg *= (2 + 0.10 * m.level);
         }
+        dmg = Math.floor(dmg * PALADIN_SMITE_DAMAGE_BONUS_MULT);
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
 
         const dealt = this._damageEnemy(targetEnemy, dmg, false, false, 0, false, { contactAttacker: m });
@@ -6403,7 +6431,7 @@ export class CombatSystem {
                         if (_sHold(t)) {
                             this._addLog(`  \u{1F9B7} ${this._eName(t)} is ENGULFED and held!`);
                             if (Math.random() < 0.40) {
-                                this._addLog(`  \u{1F9EA} ${this._eName(t)} is PARALYZED by the cube's acid!`);
+                                if (this._tryParalyzeEnemy(t)) this._addLog(`  \u{1F9EA} ${this._eName(t)} is PARALYZED by the cube's acid!`);
                             }
                         }
                     }
@@ -6970,6 +6998,7 @@ export class CombatSystem {
             this._notify();
             return;
         }
+        this._addLog(`--- ${eName}'s turn ---`);
 
         // Charmed enemy: fights for the party this turn
         if (e.charmedRounds > 0) {
@@ -8766,7 +8795,7 @@ export class CombatSystem {
                             this._addLog(`🦑 ${_roperHit.name}'s muscles weaken! (-${rLvl} melee for ${tentacleDur} rds)`);
                         }
                         // 50% paralysis (webbedRounds)
-                        if (!_roperHit.isLichForm && Math.random() < 0.50) {
+                        if (!this._isParalysisImmunePartyMember(_roperHit) && Math.random() < 0.50) {
                             _roperHit.webbedRounds = Math.max(_roperHit.webbedRounds || 0, tentacleDur);
                             this._addLog(`🦑 ${_roperHit.name} is PARALYZED by the roper's grip! (${tentacleDur} rds)`);
                         }
@@ -9637,10 +9666,7 @@ export class CombatSystem {
             && target.health > 0
             && !isImmune('stun')
             && !isImmune('hold')
-            && !isNecroUndead          // undead immune
-            && !isIncorporealSummon    // incorporeal immune
-            && !isPlantSummon          // plant summons immune to paralysis
-            && !target.isLichForm      // lich form immune to paralysis
+            && !this._isParalysisImmunePartyMember(target)
             && typeDef.paralyzingBite) {
             const pRounds = typeDef.paralyzingBite;
             target.webbedRounds = Math.max(target.webbedRounds || 0, pRounds);
@@ -9961,7 +9987,7 @@ export class CombatSystem {
                             _fhHit.addEffect({ type: 'roper_weakness', meleeDamageBonus: -rLvl, rounds: tentacleDur });
                             this._addLog(`\u{1F991} ${_fhHit.name}'s muscles weaken! (-${rLvl} melee for ${tentacleDur} rds)`);
                         }
-                        if (!_fhHit.isLichForm && Math.random() < 0.50) {
+                        if (!this._isParalysisImmunePartyMember(_fhHit) && Math.random() < 0.50) {
                             _fhHit.webbedRounds = Math.max(_fhHit.webbedRounds || 0, tentacleDur);
                             this._addLog(`\u{1F991} ${_fhHit.name} is PARALYZED by the roper's grip! (${tentacleDur} rds)`);
                         }
@@ -12688,6 +12714,10 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'warlock') return;
         if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (m.warlockEvilEyeRound === this.turnNumber) {
+            this._addLog(`\u{1F441} ${m.name} has already used Evil Eye this round.`);
+            return;
+        }
         const penalty = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HEX_PENALTY_DIVISOR));
         const rounds = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HEX_DURATION_DIVISOR));
         targetEnemy.activeEffects = (targetEnemy.activeEffects || []).filter(fx => !(fx && fx.type === 'warlock_hex' && fx.casterId === m.id));
@@ -12700,6 +12730,7 @@ export class CombatSystem {
             defenseBonus: -penalty,
             rounds,
         });
+        m.warlockEvilEyeRound = this.turnNumber;
         this._addLog(`\u{1F9FF} ${m.name} fixes the Evil Eye on ${this._eName(targetEnemy)}! (-${penalty} attack/defense, ${rounds} rd${rounds === 1 ? '' : 's'})`);
         this._notify();
     }
@@ -12962,7 +12993,7 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'warlock' || !m.abyssFormActive) return;
         const count = Math.max(1, Math.floor((m.level || 1) / 3));
-        const dmgMult = 1 + (m.level || 1) / 100;
+        const dmgMult = 1 + ((m.level || 1) * 3) / 100;
         this._addLog(`\u{1F9D0} ${m.name}'s abyssal tentacles lash out (${count} attacks)!`);
         for (let i = 0; i < count; i++) {
             const targets = this.aliveHostileEnemies;

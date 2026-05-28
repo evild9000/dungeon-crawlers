@@ -20,6 +20,7 @@ import { generatePortrait } from '../utils/PortraitGenerator.js';
 import { soundManager } from '../utils/SoundManager.js';
 import { getFamiliarDef } from '../entities/Familiars.js';
 import { getSummonPreset } from '../entities/Summons.js';
+import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import {
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
@@ -27,7 +28,7 @@ import {
     MELEE_STUN_CHANCE, RANGED_CRIT_CHANCE,
     BACKSTAB_INSTAKILL_CHANCE, MONK_DODGE_CHANCE, MONK_WHIRLWIND_CHANCE,
     CLERIC_HEAL_PERCENT, CLERIC_HEAL_MANA_COST,
-    NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
+    NECRO_LIFE_DRAIN_CHANCE,
     NECRO_SUMMON_MANA_COST,
     MONK_MELEE_MANA_COST,
     MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
@@ -988,10 +989,9 @@ export class InventoryUI {
             }
         }
         if (cls.drainPerLevel) {
-            const base = NECRO_LIFE_DRAIN_AMOUNT;
-            const cur  = base + member.getDrainBonus();
-            perk.push(`Life drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance, +${cur} HP`);
-            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance per enemy hit by magic (AoE rolls independently)\n  Base drain: ${base} HP, current: ${cur} HP (heals self and own undead)\n  (+${cls.drainPerLevel} HP/level)`);
+            const drainPct = Math.round((0.05 + ((member.level || 1) / 2) / 100) * 100);
+            perk.push(`Life drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance, ${drainPct}% undead HP`);
+            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance per enemy hit by magic (AoE rolls independently)\n  Heals only this necromancer's own undead for ${drainPct}% of each undead summon max HP.\n  Formula: 5% + (necromancer level / 2)%.`);
         }
         // Ranger favored enemy — show all selected tags + instakill pct
         if (member.classId === 'ranger') {
@@ -1366,8 +1366,31 @@ export class InventoryUI {
     }
 
     _getSummonPortraitURL(summon) {
-        const key = `summon:${summon.id}`;
+        const key = `summon:${summon.id}:${summon.spriteTint || ''}`;
         if (this._portraitCache.has(key)) return this._portraitCache.get(key);
+        if (summon.enemySprite) {
+            const spriteCanvas = generateEnemySprite(summon.enemySprite, 42);
+            if (summon.spriteTint) {
+                const tinted = document.createElement('canvas');
+                tinted.width = spriteCanvas.width;
+                tinted.height = spriteCanvas.height;
+                const tctx = tinted.getContext('2d');
+                tctx.drawImage(spriteCanvas, 0, 0);
+                tctx.globalCompositeOperation = 'source-atop';
+                tctx.globalAlpha = 0.85;
+                tctx.fillStyle = summon.spriteTint;
+                tctx.fillRect(0, 0, tinted.width, tinted.height);
+                tctx.globalCompositeOperation = 'source-over';
+                tctx.globalAlpha = 0.35;
+                tctx.drawImage(spriteCanvas, 0, 0);
+                const url = tinted.toDataURL();
+                this._portraitCache.set(key, url);
+                return url;
+            }
+            const url = spriteCanvas.toDataURL();
+            this._portraitCache.set(key, url);
+            return url;
+        }
         const size = 96;
         const canvas = document.createElement('canvas');
         canvas.width = size; canvas.height = size;

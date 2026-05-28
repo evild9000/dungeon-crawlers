@@ -12,7 +12,7 @@ import {
     CLERIC_TURN_UNDEAD_MIN_LEVEL, CLERIC_TURN_UNDEAD_MANA_COST,
     CLERIC_TURN_UNDEAD_DEBUFF_BASE, CLERIC_TURN_UNDEAD_DEBUFF_EVERY,
     MAGE_SHIELD_MANA_COST, MAGE_SHIELD_BASE_DEF, MAGE_SHIELD_BASE_ROUNDS, MAGE_SHIELD_BONUS_EVERY, MAGE_SHIELD_MIN_LEVEL,
-    NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE, NECRO_LIFE_DRAIN_AMOUNT,
+    NECRO_SUMMON_MANA_COST, NECRO_LIFE_DRAIN_CHANCE,
     NECRO_DARK_HARVEST_HP_FRAC, NECRO_DARK_HARVEST_ST_FRAC, NECRO_DARK_HARVEST_MANA_FRAC,
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
@@ -36,6 +36,7 @@ import {
     MONK_QUIVERING_PALM_STAMINA_MULT, MONK_QUIVERING_PALM_MANA_MULT,
     PALADIN_L20_UNLOCK_LEVEL,
     PALADIN_AOE_SMITE_MANA_MULT, PALADIN_AOE_SMITE_INSTAKILL_MULT,
+    PALADIN_SMITE_DAMAGE_BONUS_MULT,
     PALADIN_L30_UNLOCK_LEVEL,
     PALADIN_AURA_RIGHTEOUSNESS_REDUCTION, PALADIN_AURA_RIGHTEOUSNESS_HEAL_FRAC,
     PALADIN_DIVINE_JUDGMENT_STAMINA_COST, PALADIN_DIVINE_JUDGMENT_MANA_COST,
@@ -706,7 +707,8 @@ export class CombatUI {
     // ────────────────────────────────────────────
 
     /** Classify a log message string and return a CSS class (or ''). */
-    _logClass(msg) {
+    _logClass(msg, containerEl = null) {
+        if (containerEl === this.enemyLogEl && msg.startsWith('--- ') && msg.endsWith("'s turn ---")) return 'log-monster-turn';
         if (msg.includes('CRITICAL'))           return 'log-crit';
         if (msg.includes('STUNNED') ||
             msg.includes('is stunned') ||
@@ -732,7 +734,7 @@ export class CombatUI {
         for (const msg of messages) {
             const p = document.createElement('p');
             p.textContent = msg;
-            const cls = this._logClass(msg);
+            const cls = this._logClass(msg, containerEl);
             if (cls) p.classList.add(cls);
             containerEl.appendChild(p);
         }
@@ -961,8 +963,8 @@ export class CombatUI {
         if (magicStunPct > 0) magicTip.push(`Mage: ${magicStunPct.toFixed(0)}% chance to stun foes with magic.`);
         if (m.classId === 'mage') magicTip.push(`Mage: ignores ${Math.min(100, m.level || 1)}% enemy defense on magic/AoE hits (level%).`);
         if (m.classId === 'necromancer') {
-            const drainAmt = NECRO_LIFE_DRAIN_AMOUNT + m.getDrainBonus();
-            magicTip.push(`Necromancer: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% to drain ${drainAmt} HP (self + own undead).`);
+            const drainPct = Math.round((0.05 + ((m.level || 1) / 2) / 100) * 100);
+            magicTip.push(`Necromancer: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% per enemy hit to heal this necromancer's undead for ${drainPct}% max HP.`);
         }
         if (inAbyssForm) magicTip.push('Disabled while in Tentacled Horror form.');
         magicBtn.title = magicTip.join('\n');
@@ -2199,16 +2201,18 @@ export class CombatUI {
         if (m.classId === 'warlock') {
             const hexPenalty = Math.max(1, Math.floor(m.level / WARLOCK_HEX_PENALTY_DIVISOR));
             const hexRounds = Math.max(1, Math.floor(m.level / WARLOCK_HEX_DURATION_DIVISOR));
-            const canHex = m.mana >= WARLOCK_HEX_UPKEEP_MANA;
+            const hexUsedThisRound = m.warlockEvilEyeRound === this.combat.turnNumber;
+            const canHex = m.mana >= WARLOCK_HEX_UPKEEP_MANA && !hexUsedThisRound;
             const hexBtn = this._addBtn(`\u{1F441} Evil Eye Hex (free)`, canHex, () => {
                 this._pickTarget(e => this.combat.warlockEvilEye(e), { prompt: 'Hex which enemy?' });
             });
             hexBtn.classList.add('combat-special-btn');
             hexBtn.title = [
-                'Warlock L1: Free action. Does not consume the turn.',
+                'Warlock L1: Free action. Does not consume the turn. Usable once per round.',
                 `Applies -${hexPenalty} defense, melee, ranged, and magic damage for ${hexRounds} round(s).`,
                 `Costs ${WARLOCK_HEX_UPKEEP_MANA} MP per round to maintain while any of this warlock's hexes remain.`,
-                !canHex ? `Need ${WARLOCK_HEX_UPKEEP_MANA} MP to maintain a hex.` : '',
+                hexUsedThisRound ? 'Already used this round.' : '',
+                m.mana < WARLOCK_HEX_UPKEEP_MANA ? `Need ${WARLOCK_HEX_UPKEEP_MANA} MP to maintain a hex.` : '',
             ].filter(Boolean).join('\n');
 
             if (m.level >= WARLOCK_CAULDRON_UNLOCK_LEVEL) {
@@ -2313,7 +2317,7 @@ export class CombatUI {
                     tentacleBtn.classList.add('combat-special-btn');
                     tentacleBtn.title = [
                         `Attacks ${tentacleCount} random available target(s) from the back row.`,
-                        `Uses warlock magic skill for melee damage with +${m.level}% bonus.`,
+                        `Uses warlock magic skill for melee damage with +${m.level * 3}% bonus.`,
                         `${m.level}% stun chance per hit; normal monster and type immunities still apply.`,
                     ].join('\n');
 
@@ -2377,7 +2381,7 @@ export class CombatUI {
             smiteBtn.title = [
                 'Paladin special: Smite.',
                 `Costs ${PALADIN_SMITE_MANA_COST} mana. Front-row only.`,
-                `Deals +${2 * m.level} holy bonus damage and has a ${curKill.toFixed(0)}% chance to instantly purge the target (${baseKill}% base +${perLvlKill}%/level).`,
+                `Deals +${2 * m.level} holy bonus damage, then +${Math.round((PALADIN_SMITE_DAMAGE_BONUS_MULT - 1) * 100)}% damage, and has a ${curKill.toFixed(0)}% chance to instantly purge the target (${baseKill}% base +${perLvlKill}%/level).`,
                 m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
                     ? 'Dragonslayer is active: dragons are valid Smite targets too.'
                     : 'Targets undead and demons; dragons are added while Dragonslayer is active.',
@@ -2472,8 +2476,8 @@ export class CombatUI {
                     'Paladin L20 special: AoE Smite.',
                     `Costs ${aoeCost} mana. Front-row only.`,
                     'Calls down holy light on every valid Smite target simultaneously.',
-                    `Deals half of normal Smite damage to each target.`,
-                    `${halfPurge}% chance to instantly purge each target (half of single-target ${fullPurge}%).`,
+                    `Deals one-third normal Smite damage to each target, then +${Math.round((PALADIN_SMITE_DAMAGE_BONUS_MULT - 1) * 100)}% damage.`,
+                    `${halfPurge}% chance to instantly purge each target (one-third of single-target ${fullPurge}%).`,
                     m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive
                         ? 'Dragonslayer is active: dragons are included too.'
                         : 'Targets undead and demons; dragons are added while Dragonslayer is active.',

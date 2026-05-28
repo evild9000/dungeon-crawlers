@@ -1279,11 +1279,28 @@ export class PartyHUD {
      * per summon id since it is purely deterministic.
      */
     _getSummonPortraitURL(summon) {
-        const key = `summon:${summon.id}`;
+        const key = `summon:${summon.id}:${summon.spriteTint || ''}`;
         if (this.portraitCache.has(key)) return this.portraitCache.get(key);
 
         if (summon.enemySprite) {
             const spriteCanvas = generateEnemySprite(summon.enemySprite, 42);
+            if (summon.spriteTint) {
+                const tinted = document.createElement('canvas');
+                tinted.width = spriteCanvas.width;
+                tinted.height = spriteCanvas.height;
+                const tctx = tinted.getContext('2d');
+                tctx.drawImage(spriteCanvas, 0, 0);
+                tctx.globalCompositeOperation = 'source-atop';
+                tctx.globalAlpha = 0.85;
+                tctx.fillStyle = summon.spriteTint;
+                tctx.fillRect(0, 0, tinted.width, tinted.height);
+                tctx.globalCompositeOperation = 'source-over';
+                tctx.globalAlpha = 0.35;
+                tctx.drawImage(spriteCanvas, 0, 0);
+                const url = tinted.toDataURL();
+                this.portraitCache.set(key, url);
+                return url;
+            }
             const url = spriteCanvas.toDataURL();
             this.portraitCache.set(key, url);
             return url;
