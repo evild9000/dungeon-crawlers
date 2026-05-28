@@ -708,7 +708,9 @@ export class CombatUI {
 
     /** Classify a log message string and return a CSS class (or ''). */
     _logClass(msg, containerEl = null) {
-        if (containerEl === this.enemyLogEl && msg.startsWith('--- ') && msg.endsWith("'s turn ---")) return 'log-monster-turn';
+        if ((containerEl === this.enemyLogEl || containerEl === this.playerLogEl)
+            && msg.startsWith('--- ')
+            && msg.endsWith("'s turn ---")) return 'log-turn-heading';
         if (msg.includes('CRITICAL'))           return 'log-crit';
         if (msg.includes('STUNNED') ||
             msg.includes('is stunned') ||
