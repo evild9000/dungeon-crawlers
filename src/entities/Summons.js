@@ -595,6 +595,28 @@ export const ACID_SWARM_PRESET = {
     ],
 };
 
+export const ILLUSIONARY_WARRIOR_PRESET = {
+    id: 'illusionary_warrior', name: 'Illusionary Warrior', icon: '\u{1F5E1}\uFE0F',
+    portraitClass: 'summoned', portraitSpecies: 'human',
+    speciesLabel: 'Illusion', kind: 'illusion',
+    abilities: [
+        'Front-row illusion. Immune to all damage, DoTs, and effects.',
+        'Constructs, undead, and magic-immune enemies ignore or disbelieve it.',
+        'Attacks randomly using the photomancer magic skill as armor-ignoring magic damage.',
+    ],
+};
+
+export const SIMULACRUM_PRESET = {
+    id: 'simulacrum', name: 'Simulacrum', icon: '\u{1FA9E}',
+    portraitClass: 'summoned', portraitSpecies: 'human',
+    speciesLabel: 'Simulacrum', kind: 'construct',
+    abilities: [
+        'Permanent shadow-magic duplicate of an encountered monster.',
+        'Cannot be healed, repaired, cleansed, revived, or buffed as a living ally.',
+        'Uses monster-like attacks with photomancer-scaled stats and damage bonus.',
+    ],
+};
+
 // ────────────────────────────────────────────
 // Warlock — demon summons
 // ────────────────────────────────────────────
@@ -707,6 +729,8 @@ export function getSummonPreset(member) {
     if (member.summonType === 'vermin_swarm') return VERMIN_SWARM_PRESET;
     if (member.summonType === 'acid_swarm') return ACID_SWARM_PRESET;
     if (WARLOCK_DEMON_PRESETS[member.summonType]) return WARLOCK_DEMON_PRESETS[member.summonType];
+    if (member.summonType === 'illusionary_warrior') return ILLUSIONARY_WARRIOR_PRESET;
+    if (member.summonType === 'simulacrum') return SIMULACRUM_PRESET;
     return null;
 }
 

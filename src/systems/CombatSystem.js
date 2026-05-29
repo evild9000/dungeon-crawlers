@@ -216,6 +216,14 @@ import {
     WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ABYSS_MAGIC_RESIST, WARLOCK_ABYSS_COLD_ACID_RESIST,
     WARLOCK_DEMON_PROTECTION_CAP, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
     WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE,
+    PHOTOMANCER_COLOR_SPRAY_MANA_COST, PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL,
+    PHOTOMANCER_MIRROR_IMAGE_MANA_COST, PHOTOMANCER_BLUR_UNLOCK_LEVEL,
+    PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_BLUR_MISS_CHANCE,
+    PHOTOMANCER_INVISIBILITY_MANA_COST, PHOTOMANCER_ILLUSION_UNLOCK_LEVEL,
+    PHOTOMANCER_ILLUSION_MANA_COST, PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
+    PHOTOMANCER_DISINTEGRATE_BASE_KILL, PHOTOMANCER_DISINTEGRATE_BOSS_MULT,
+    PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     calcScrollBonus,
 } from '../utils/constants.js';
@@ -233,6 +241,7 @@ import {
     VERMIN_PRESETS, SLIME_PRESETS, VERMIN_SWARM_PRESET, ACID_SWARM_PRESET,
     rollVerminStats, rollSwarmStats,
     WARLOCK_DEMON_PRESETS, getWarlockUnlockedDemons, rollWarlockDemonStats,
+    ILLUSIONARY_WARRIOR_PRESET,
 } from '../entities/Summons.js';
 
 function randomInt(min, max) {
@@ -295,6 +304,7 @@ export class CombatSystem {
         this.inventory = null;
         this.telemetry = null;
         this._lastDamageByEnemyId = Object.create(null);
+        this.prismaticSphere = null;
     }
 
     /** Game.js can assign the live inventory reference (also set in startCombat). */
@@ -366,6 +376,7 @@ export class CombatSystem {
         for (const m of this.party) {
             if (typeof m.clearCombatState === 'function') m.clearCombatState();
         }
+        this.prismaticSphere = null;
 
         this._addLog('--- Combat begins! ---');
         const n = this.enemies.length;
@@ -391,8 +402,13 @@ export class CombatSystem {
     // ────────────────────────────────────────────
 
     get currentMember() { return this.party[this.currentMemberIndex] ?? null; }
-    get aliveParty()   { return this.party.filter(m => m.health > 0); }
-    get aliveFront()   { return this.party.filter(m => m.health > 0 && m.row === 'front'); }
+    get charmedAllies() {
+        return this.enemies
+            .filter(e => e.health > 0 && e.charmedRounds > 0)
+            .map(e => this._prepareCharmedAlly(e));
+    }
+    get aliveParty()   { return this.party.filter(m => m.health > 0).concat(this.charmedAllies); }
+    get aliveFront()   { return this.party.filter(m => m.health > 0 && m.row === 'front').concat(this.charmedAllies); }
     get aliveBack()    { return this.party.filter(m => m.health > 0 && m.row === 'back'); }
     get aliveEnemies() { return this.enemies.filter(e => e.health > 0); }
 
@@ -401,6 +417,32 @@ export class CombatSystem {
 
     /** True when every real (non-summoned) party member is at 0 HP — even if summoned undead remain. */
     get allRealMembersDefeated() { return this.party.filter(p => !p.isSummoned).every(p => p.health <= 0); }
+
+    _prepareCharmedAlly(enemy) {
+        if (!enemy) return enemy;
+        enemy.activeEffects = enemy.activeEffects || [];
+        if (typeof enemy.addEffect !== 'function') {
+            enemy.addEffect = function(effect) {
+                if (!this.activeEffects) this.activeEffects = [];
+                this.activeEffects.push(effect);
+            };
+        }
+        if (typeof enemy.getArmorBlocking !== 'function') enemy.getArmorBlocking = () => 0;
+        if (typeof enemy.getTotalDefense !== 'function') {
+            enemy.getTotalDefense = function() {
+                const effects = this.activeEffects || [];
+                const effectDefense = effects.reduce((sum, fx) => sum + (typeof fx?.defenseBonus === 'number' ? fx.defenseBonus : 0), 0);
+                return Math.max(0, (this.defense || 0) + effectDefense);
+            };
+        }
+        if (typeof enemy.getEffectiveDodgePct !== 'function') enemy.getEffectiveDodgePct = () => 0;
+        if (typeof enemy.getShieldBlockChance !== 'function') enemy.getShieldBlockChance = () => 0;
+        if (typeof enemy.getStunResistChance !== 'function') enemy.getStunResistChance = () => 0;
+        // Several monster rider logs use target.name directly. Preserve the
+        // full combat label, including level, once a monster switches sides.
+        if (!enemy.name) enemy.name = this._eName(enemy);
+        return enemy;
+    }
 
     _getEnemyTags(enemy) {
         const def = ENEMY_TYPES[enemy?.type] || {};
@@ -3073,6 +3115,198 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
+    _rollPhotomancerMagicDamage(m, mult = 1) {
+        let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        dmg += m.getWeaponBonus?.('magic') || 0;
+        dmg += m.getClassDamageBonus?.('magic') || 0;
+        dmg += this._getPartyMemberDamageMod(m);
+        dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1) * mult));
+        return this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+    }
+
+    _hasInvisibility(target) {
+        return !!(target && (target.activeEffects || []).some(fx =>
+            fx && (fx.type === 'invisibility' || fx.type === 'improved_invisibility') && (fx.rounds || 0) > 0));
+    }
+
+    _breakInvisibility(actor) {
+        if (!actor || !actor.activeEffects) return;
+        const before = actor.activeEffects.length;
+        actor.activeEffects = actor.activeEffects.filter(fx => !(fx && fx.type === 'invisibility'));
+        if (actor.activeEffects.length !== before) {
+            this._addLog(`\u{1F441} ${actor.name}'s invisibility breaks as they strike!`);
+        }
+    }
+
+    photomancerColorSpray() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer') return;
+        if (m.mana < PHOTOMANCER_COLOR_SPRAY_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_COLOR_SPRAY_MANA_COST} MP for Color Spray.`);
+            return;
+        }
+        const targets = this.aliveHostileEnemies.slice().sort(() => Math.random() - 0.5).slice(0, Math.max(1, (m.level || 1) + 1));
+        if (!targets.length) return;
+        m.mana -= PHOTOMANCER_COLOR_SPRAY_MANA_COST;
+        const stunChance = Math.min(0.95, (m.level || 1) / 100);
+        this._addLog(`\u{1F308} ${m.name} releases a Color Spray over ${targets.length} target${targets.length !== 1 ? 's' : ''}!`);
+        for (const e of targets) {
+            const dealt = this._damageEnemy(e, this._rollPhotomancerMagicDamage(m), false, true);
+            this._addLog(`  \u2192 ${this._eName(e)} takes ${dealt} prismatic damage.`);
+            if (e.health > 0 && Math.random() < stunChance) {
+                if (this._tryStunEnemy(e)) this._addLog(`  \u26A1 ${this._eName(e)} is dazzled and stunned!`);
+            }
+            if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    photomancerMirrorImage() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL) return;
+        if (m.mana < PHOTOMANCER_MIRROR_IMAGE_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_MIRROR_IMAGE_MANA_COST} MP for Mirror Image.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_MIRROR_IMAGE_MANA_COST;
+        const count = Math.max(1, Math.floor((m.level || 1) / MAGE_MIRROR_IMAGE_COUNT_DIVISOR)) + 1;
+        m.mirrorImages = (m.mirrorImages || 0) + count;
+        this._addLog(`\u{1FA9E} ${m.name} splits light into ${count} Mirror Images! (${m.mirrorImages} total)`);
+        this._advancePlayerTurn();
+    }
+
+    photomancerBlur() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_BLUR_UNLOCK_LEVEL) return;
+        if (m.mana < PHOTOMANCER_BLUR_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_BLUR_MANA_COST} MP for Blur.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_BLUR_MANA_COST;
+        const rounds = 3 + Math.floor((m.level || 1) / 10);
+        for (const ally of this.aliveParty) {
+            ally.addEffect?.({ type: 'blur', rounds, missChance: PHOTOMANCER_BLUR_MISS_CHANCE });
+        }
+        this._addLog(`\u{1F300} ${m.name} blurs the whole party! (${Math.round(PHOTOMANCER_BLUR_MISS_CHANCE * 100)}% melee/ranged miss, ${rounds} rounds)`);
+        this._advancePlayerTurn();
+    }
+
+    photomancerInvisibility(targetMember) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_BLUR_UNLOCK_LEVEL) return;
+        if (!targetMember || targetMember.health <= 0) return;
+        if (m.mana < PHOTOMANCER_INVISIBILITY_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_INVISIBILITY_MANA_COST} MP for Invisibility.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_INVISIBILITY_MANA_COST;
+        const improved = (m.level || 1) >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL;
+        const rounds = 5 + Math.floor((m.level || 1) / 10);
+        targetMember.addEffect?.({ type: improved ? 'improved_invisibility' : 'invisibility', rounds });
+        this._addLog(`\u{1F441} ${m.name} cloaks ${targetMember.name} in ${improved ? 'Improved ' : ''}Invisibility for ${rounds} rounds.`);
+        this._advancePlayerTurn();
+    }
+
+    photomancerCreateIllusionaryWarriors() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_ILLUSION_UNLOCK_LEVEL) return;
+        if (m.mana < PHOTOMANCER_ILLUSION_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_ILLUSION_MANA_COST} MP to create Illusionary Warriors.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_ILLUSION_MANA_COST;
+        const count = Math.max(1, Math.floor((m.level || 1) / 10));
+        for (let i = 0; i < count; i++) {
+            const num = this.party.filter(p => p.isSummoned && p.summonerId === m.id && p.summonType === 'illusionary_warrior').length + 1;
+            const iw = new PartyMember({
+                name: `${m.name}'s Illusionary Warrior #${num}`,
+                classId: 'summoned',
+                speciesId: 'human',
+                level: m.level,
+                maxHealth: 1,
+                maxStamina: 0,
+                maxMana: 0,
+                portraitSeed: Math.floor(Math.random() * 100000),
+                isSummoned: true,
+                summonType: 'illusionary_warrior',
+                summonerId: m.id,
+                canBeHealed: false,
+                row: 'front',
+                summonStats: {
+                    illusionaryWarrior: true,
+                    icon: ILLUSIONARY_WARRIOR_PRESET.icon,
+                    defense: 9999,
+                    photomancerLevel: m.level || 1,
+                },
+            });
+            iw.health = iw.maxHealth;
+            this.party.push(iw);
+            this._registerNewSummon(iw);
+        }
+        this._addLog(`\u{1FA9E} ${m.name} creates ${count} Illusionary Warrior${count !== 1 ? 's' : ''}!`);
+        this._advancePlayerTurn();
+    }
+
+    photomancerDisintegrate(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (m.mana < PHOTOMANCER_DISINTEGRATE_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_DISINTEGRATE_MANA_COST} MP for Disintegrate.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_DISINTEGRATE_MANA_COST;
+        const beams = 1 + Math.floor((m.level || 1) / 33);
+        const killChance = Math.min(0.95, PHOTOMANCER_DISINTEGRATE_BASE_KILL + ((m.level || 1) / 2) / 100);
+        const dmgMult = 1 + 2 + ((m.level || 1) * 2) / 100;
+        this._addLog(`\u{1F52C} ${m.name} fires ${beams} disintegrating light beam${beams !== 1 ? 's' : ''}!`);
+        for (let i = 0; i < beams; i++) {
+            if (!targetEnemy || targetEnemy.health <= 0) break;
+            if ((ENEMY_TYPES[targetEnemy.type] || {}).fullMagicImmune || this._enemyHasImmunity(targetEnemy, 'magic')) {
+                this._addLog(`${this._eName(targetEnemy)} is immune to Disintegrate's magic.`);
+                break;
+            }
+            if (Math.random() < killChance) {
+                if (targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss) {
+                    const dealt = this._damageEnemy(targetEnemy, Math.max(1, Math.round(this._rollPhotomancerMagicDamage(m, dmgMult) * PHOTOMANCER_DISINTEGRATE_BOSS_MULT)), true, true);
+                    this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} resists annihilation but takes ${dealt} damage!`);
+                } else {
+                    const hp = targetEnemy.health;
+                    targetEnemy.health = 0;
+                    if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
+                    this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} is disintegrated! (${hp} damage)`);
+                }
+            } else {
+                const dealt = this._damageEnemy(targetEnemy, this._rollPhotomancerMagicDamage(m, dmgMult), true, true);
+                this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} takes ${dealt} radiant force damage.`);
+            }
+        }
+        if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
+        this._advancePlayerTurn();
+    }
+
+    photomancerPrismaticSphere() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL) return;
+        if (m.prismaticSphereUsed) {
+            this._addLog(`${m.name} has already shaped a Prismatic Sphere this combat.`);
+            return;
+        }
+        if (this.prismaticSphere && this.prismaticSphere.hp > 0) {
+            this._addLog('A Prismatic Sphere already protects the party.');
+            return;
+        }
+        if (m.mana < PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST} MP for Prismatic Sphere.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST;
+        m.prismaticSphereUsed = true;
+        this.prismaticSphere = { hp: Math.max(1, (m.level || 1) * 100), casterId: m.id };
+        this._addLog(`\u{1F308} ${m.name} raises a Prismatic Sphere! (${this.prismaticSphere.hp} absorption)`);
+        this._advancePlayerTurn();
+    }
+
     // ── Druid L20: Commune / Faerie Queen ────────────────────────────────────
 
     /**
@@ -3220,6 +3454,7 @@ export class CombatSystem {
         const duration    = Math.max(1, Math.floor(m.level / BARD_CHARM_DURATION_DIVISOR));
 
         if (Math.random() < charmChance) {
+            this._prepareCharmedAlly(targetEnemy);
             targetEnemy.charmedRounds = duration;
             targetEnemy.charmerId     = m.id;
             this._addLog(`🎵 ${m.name} weaves a hypnotic song — ${eName} falls under the spell! (${duration} rounds)`);
@@ -5640,6 +5875,68 @@ export class CombatSystem {
     // Summon combat AI
     // ────────────────────────────────────────────
 
+    _processIllusionaryWarriorAttack(m) {
+        const photomancer = this.party.find(p => p.id === m.summonerId && p.health > 0);
+        const level = photomancer?.level || m.summonStats?.photomancerLevel || m.level || 1;
+        const attacks = Math.max(1, Math.floor(level / 5));
+        this._addLog(`\u{1FA9E} ${m.name} flickers into motion (${attacks} illusion attack${attacks !== 1 ? 's' : ''}).`);
+        for (let i = 0; i < attacks; i++) {
+            const targets = this.aliveHostileEnemies;
+            if (!targets.length) break;
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            const def = ENEMY_TYPES[t.type] || {};
+            const tags = this._getEnemyTags(t);
+            if (tags.includes('undead') || tags.includes('construct') || def.fullMagicImmune) {
+                this._addLog(`  \u2192 ${this._eName(t)} ignores the illusion.`);
+                continue;
+            }
+            if (Math.random() < Math.min(0.95, (t.level || 1) / 100)) {
+                this._addLog(`  \u2192 ${this._eName(t)} disbelieves the strike; it passes harmlessly.`);
+                continue;
+            }
+            let dmg = photomancer ? this._rollPhotomancerMagicDamage(photomancer, 1 + level / 100) : Math.max(1, randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX));
+            const dealt = this._damageEnemy(t, dmg, true, true, 0, false, { contactAttacker: m });
+            this._addLog(`  \u2192 ${m.name} cuts ${this._eName(t)} with solid light for ${dealt}.`);
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+        }
+    }
+
+    _processSimulacrumAttack(m) {
+        const st = m.summonStats || {};
+        const type = st.enemyType || st.simulacrumType;
+        const def = ENEMY_TYPES[type] || {};
+        const targets = this.aliveHostileEnemies;
+        if (!targets.length) return;
+        const level = st.photomancerLevel || m.level || 1;
+        const dmgMult = 1 + level / 100;
+        const hit = (target, kind = 'melee', mult = 1, ignoreDefense = false) => {
+            const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
+            const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
+            const raw = Math.max(1, Math.round(randomInt(min, max) * mult * dmgMult));
+            return this._damageSummonEnemy(target, raw, ignoreDefense, false, kind === 'melee' ? { contactAttacker: m } : {});
+        };
+        if (def.aoeMagic && m.mana >= MONSTER_MAGIC_MANA_COST) {
+            m.mana = Math.max(0, m.mana - MONSTER_MAGIC_MANA_COST);
+            this._addLog(`\u{1FA9E} ${m.name} echoes ${def.name || type}'s magic across the enemy line!`);
+            for (const e of targets.slice()) {
+                const d = hit(e, 'magic', def.aoeMagicDamageMult || 1);
+                this._addLog(`  \u2192 ${this._eName(e)} takes ${d} simulacrum magic.`);
+                if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+            }
+            return;
+        }
+        const attacks = def.multiAttack || def.attacks || (def.isHydraAI ? Math.max(3, Math.floor(level / 5)) : 1);
+        for (let i = 0; i < attacks; i++) {
+            const alive = this.aliveHostileEnemies;
+            if (!alive.length) break;
+            const t = alive[Math.floor(Math.random() * alive.length)];
+            const kind = def.rangedAny ? 'ranged' : 'melee';
+            const d = hit(t, kind);
+            this._addLog(`\u{1FA9E} ${m.name} strikes ${this._eName(t)} as ${def.name || type} for ${d}.`);
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+        }
+    }
+
     _takeSummonTurn(m) {
         const stats = m.summonStats || {};
         const targets = this.aliveHostileEnemies;
@@ -5647,6 +5944,15 @@ export class CombatSystem {
             this._updateShamblingMoundState(m);
         }
         if (targets.length === 0) return;
+
+        if (m.isSummoned && m.summonType === 'illusionary_warrior') {
+            this._processIllusionaryWarriorAttack(m);
+            return;
+        }
+        if (m.isSummoned && m.summonType === 'simulacrum') {
+            this._processSimulacrumAttack(m);
+            return;
+        }
 
         // ── Squire AI (warrior L30 summoned allies) ────────────────────────────
         if (m.isSummoned && m.summonType === 'squire') {
@@ -9110,9 +9416,49 @@ export class CombatSystem {
         const eName = this._eName(e);
         const typeDef = ENEMY_TYPES[e.type] || {};
 
+        if (target && target.type && target.charmedRounds > 0) {
+            const tName = this._eName(target);
+            const kindLabel = opts.aoe ? 'AoE' : attackKind;
+            this._prepareCharmedAlly(target);
+            const dealt = this._damageEnemy(
+                target,
+                Math.max(1, Math.round(rawDmg)),
+                false,
+                attackKind === 'magic' || opts.aoe,
+                0,
+                attackKind === 'ranged',
+                { contactAttacker: e, sourceMember: null },
+            );
+            this._addLog(`🎵 ${eName}'s ${kindLabel} attack hits charmed ${tName} for ${dealt} damage!`);
+            if (target.health <= 0) this._addLog(`🎵 ${tName} is defeated while fighting for the party!`);
+            return target.health > 0 ? target : null;
+        }
+
         // Shadow Step: rogue is completely untargetable — all attacks pass through harmlessly
         if (this._hasShadowStep(target)) {
             this._addLog(`\u{1F311} ${eName}'s attack passes harmlessly through ${target.name}'s shadow!`);
+            return null;
+        }
+
+        if (!opts.aoe && this._hasInvisibility(target) && ['melee', 'ranged', 'magic'].includes(attackKind)) {
+            this._addLog(`\u{1F441} ${eName} cannot find invisible ${target.name}!`);
+            return null;
+        }
+
+        if (target.isSummoned && target.summonStats?.illusionaryWarrior) {
+            const tags = this._getEnemyTags(e);
+            if (tags.includes('undead') || tags.includes('construct') || (ENEMY_TYPES[e.type] || {}).fullMagicImmune) {
+                this._addLog(`${eName} ignores ${target.name}'s illusion.`);
+                return null;
+            }
+            const photoLevel = target.summonStats.photomancerLevel || target.level || 1;
+            const disbelieve = Math.max(0, ((e.level || 1) - Math.floor(photoLevel / 2)) / 100);
+            if (Math.random() < disbelieve) {
+                target.health = 0;
+                this._addLog(`\u{1FA9E} ${eName} disbelieves ${target.name}; the illusion vanishes!`);
+            } else {
+                this._addLog(`\u{1FA9E} ${eName}'s attack passes through ${target.name}!`);
+            }
             return null;
         }
 
@@ -9137,6 +9483,15 @@ export class CombatSystem {
         else if (attackKind === 'ranged') rawDmg = Math.max(1, Math.round(rawDmg * (1 + eLvl * MONSTER_RANGED_DAMAGE_BONUS_PER_LEVEL)));
 
         if (attackKind === 'ranged' && !opts._eagleDeflected) {
+            if (this.prismaticSphere && this.prismaticSphere.hp > 0) {
+                const before = this.prismaticSphere.hp;
+                const absorbed = Math.min(before, rawDmg);
+                this.prismaticSphere.hp = Math.max(0, before - rawDmg);
+                rawDmg = Math.max(0, rawDmg - absorbed);
+                this._addLog(`\u{1F308} Prismatic Sphere absorbs ${absorbed} ranged damage (${Math.max(0, this.prismaticSphere.hp)} left).`);
+                if (this.prismaticSphere.hp <= 0) this._addLog(`\u{1F308} The Prismatic Sphere shatters!`);
+                if (rawDmg <= 0) return null;
+            }
             const eagleRangers = (this.party || []).filter(p =>
                 p && p.health > 0 && !p.isSummoned && p.classId === 'ranger'
                 && p.level >= RANGER_TOTEM_UNLOCK_LEVEL && p.rangerTotem === 'eagle');
@@ -9155,6 +9510,16 @@ export class CombatSystem {
         if (!target.isSummoned && target.classId === 'ranger' && target.rangerTotem === 'pixie'
             && (attackKind === 'magic' || opts.aoe)) {
             rawDmg = Math.max(1, Math.floor(rawDmg * (1 - RANGER_PIXIE_TOTEM_MAGIC_RESIST)));
+        }
+
+        if ((attackKind === 'magic' || opts.aoe) && this.prismaticSphere && this.prismaticSphere.hp > 0) {
+            const before = this.prismaticSphere.hp;
+            const absorbed = Math.min(before, rawDmg);
+            this.prismaticSphere.hp = Math.max(0, before - rawDmg);
+            rawDmg = Math.max(0, rawDmg - absorbed);
+            this._addLog(`\u{1F308} Prismatic Sphere absorbs ${absorbed} ${opts.aoe ? 'AoE' : 'magic'} damage (${Math.max(0, this.prismaticSphere.hp)} left).`);
+            if (this.prismaticSphere.hp <= 0) this._addLog(`\u{1F308} The Prismatic Sphere shatters!`);
+            if (rawDmg <= 0) return null;
         }
 
         // Wild Shape Pixie Form: 50% less magic/AoE damage
@@ -9435,6 +9800,13 @@ export class CombatSystem {
             const lichResist = Math.min(0.90,
                 NECRO_LICH_MAGIC_RESIST_BASE + Math.floor(lichOver / 4) * NECRO_LICH_MAGIC_RESIST_PER_4LV);
             dmg = Math.max(1, Math.floor(dmg * (1 - lichResist)));
+        }
+
+        if ((attackKind === 'melee' || attackKind === 'ranged')
+            && (target.activeEffects || []).some(fx => fx && fx.type === 'blur' && (fx.rounds || 0) > 0)
+            && Math.random() < PHOTOMANCER_BLUR_MISS_CHANCE) {
+            this._addLog(`\u{1F300} ${target.name}'s blur makes ${eName}'s ${attackKind} attack miss!`);
+            return null;
         }
 
         // Warlock L30 abyss form resistances.
@@ -10114,7 +10486,11 @@ export class CombatSystem {
         }
         final = Math.max(1, Math.round(final));
         enemy.health = Math.max(0, enemy.health - final);
-        const src = this.currentMember || null;
+        const src = Object.prototype.hasOwnProperty.call(options, 'sourceMember')
+            ? options.sourceMember
+            : (this.currentMember || null);
+        const damagingActor = options.contactAttacker || src;
+        if (final > 0) this._breakInvisibility(damagingActor);
         if (enemy && enemy.id) {
             this._lastDamageByEnemyId[enemy.id] = {
                 member: src,
@@ -12855,8 +13231,9 @@ export class CombatSystem {
             return false;
         }
         const existing = (targetEnemy.activeEffects || []).find(fx => fx && fx.type === 'wasting_curse');
-        if (existing) {
+        if (existing && (existing.rounds || 0) > 0) {
             this._addLog(`${this._eName(targetEnemy)} is already wasting away.`);
+            this._notify();
             return false;
         }
         if (!opts.free) m.mana -= WARLOCK_CURSE_MANA_COST;
@@ -12905,6 +13282,7 @@ export class CombatSystem {
         const charmChance = Math.min(0.95, BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * (m.level || 1));
         const duration = Math.max(1, Math.floor((m.level || 1) / BARD_CHARM_DURATION_DIVISOR));
         if (Math.random() < charmChance) {
+            this._prepareCharmedAlly(targetEnemy);
             targetEnemy.charmedRounds = duration;
             targetEnemy.charmerId = m.id;
             this._addLog(`\u{1F9FF} ${m.name} binds ${eName}'s infernal will — charmed for ${duration} rounds!`);
@@ -13288,6 +13666,7 @@ export class CombatSystem {
         const charmChance = Math.min(0.95, BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * (m.level || 1));
         const duration    = Math.max(1, Math.floor((m.level || 1) / BARD_CHARM_DURATION_DIVISOR));
         if (Math.random() < charmChance) {
+            this._prepareCharmedAlly(targetEnemy);
             targetEnemy.charmedRounds = duration;
             targetEnemy.charmerId     = m.id;
             this._addLog(`\u{1F577}️ ${m.name} bends the vermin to their will — ${eName} is charmed! (${duration} rounds)`);

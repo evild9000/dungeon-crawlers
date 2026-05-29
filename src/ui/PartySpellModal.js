@@ -28,8 +28,11 @@ import {
     BARD_SONG_MANA_PER_MIN,
     CLERIC_REVIVE_MANA_COST, CLERIC_REVIVE_MIN_LEVEL, CLERIC_REVIVE_HEAL_FRAC,
     CLERIC_HEAL_MANA_COST, CLERIC_HEAL_PERCENT,
+    PHOTOMANCER_SIMULACRUM_UNLOCK_LEVEL, PHOTOMANCER_SIMULACRUM_GOLD_PER_LEVEL,
 } from '../utils/constants.js';
 import { UNDEAD_TIERS, BEAST_TYPES, GOLEM_PRESETS } from '../entities/Summons.js';
+import { ENEMY_TYPES } from '../utils/constants.js';
+import { PartyMember } from '../entities/PartyMember.js';
 import { soundManager } from '../utils/SoundManager.js';
 
 // ── Single combined song definition ──────────────────────────────────────────
@@ -114,8 +117,9 @@ export class PartySpellModal {
         return this._overlay !== null && this._overlay.style.display === 'flex';
     }
 
-    show(party) {
+    show(party, inventory = null) {
         this._party = party;
+        this._inventory = inventory;
         this._render();
         this._overlay.style.display = 'flex';
     }
@@ -156,7 +160,7 @@ export class PartySpellModal {
                     if (member.isSummoned) {
                         const isUndead = UNDEAD_TIERS.some(u => u.id === member.summonType);
                         const isGolem = GOLEM_PRESETS[member.summonType];
-                        if (isUndead || isGolem) continue;
+                        if (isUndead || isGolem || member.summonType === 'simulacrum') continue;
                     }
                     for (const eff of effects) {
                         member.activeEffects.push({ ...eff });
@@ -282,13 +286,102 @@ export class PartySpellModal {
             }
         }
 
+        const photomancers = party.filter(
+            m => m.classId === 'photomancer' && m.health > 0 && m.level >= PHOTOMANCER_SIMULACRUM_UNLOCK_LEVEL,
+        );
+        if (photomancers.length > 0) {
+            hasContent = true;
+            for (const photomancer of photomancers) {
+                this._body.appendChild(this._buildPhotomancerSection(photomancer));
+            }
+        }
+
         if (!hasContent) {
             const empty = document.createElement('p');
             empty.style.color = '#888';
             empty.style.fontStyle = 'italic';
-            empty.textContent = 'No party spells available. (Need a bard, cleric, or L20+ paladin with fallen allies.)';
+            empty.textContent = 'No party spells available. (Need a bard, cleric, L20+ paladin with fallen allies, or L30+ photomancer.)';
             this._body.appendChild(empty);
         }
+    }
+
+    _buildPhotomancerSection(photo) {
+        const section = document.createElement('div');
+        section.style.marginBottom = '18px';
+        const secTitle = document.createElement('div');
+        secTitle.style.cssText = 'font-weight:bold;color:#c77dff;margin-bottom:8px;font-size:16px;';
+        secTitle.textContent = `🌈 ${photo.name} — Simulacrum`;
+        section.appendChild(secTitle);
+
+        const cap = Math.max(1, Math.floor((photo.level || 1) / 10));
+        const owned = (this._party || []).filter(p => p.isSummoned && p.isPersistent && p.summonType === 'simulacrum' && p.summonerId === photo.id);
+        const cost = (photo.level || 1) * PHOTOMANCER_SIMULACRUM_GOLD_PER_LEVEL;
+        const select = document.createElement('select');
+        select.style.cssText = 'width:100%;margin-bottom:8px;background:#201b30;color:#f0e8ff;border:1px solid #6a4a88;padding:6px;';
+        Object.entries(ENEMY_TYPES)
+            .filter(([id, def]) => def && def.name && !def.isSuperBoss)
+            .sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .forEach(([id, def]) => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = def.name;
+                select.appendChild(opt);
+            });
+        section.appendChild(select);
+
+        const btn = document.createElement('button');
+        btn.className = 'party-spell-btn';
+        btn.textContent = `Create Simulacrum (${owned.length}/${cap}) — ${cost.toLocaleString()} gold`;
+        btn.disabled = owned.length >= cap || !this._inventory || (this._inventory.gold || 0) < cost;
+        btn.title = `Creates a permanent front-row monster duplicate. Cannot be healed, cleansed, repaired, revived, or receive living-only buffs. Limit floor(level/10).`;
+        btn.addEventListener('click', () => {
+            this._createSimulacrum(photo, select.value, cost, cap);
+        });
+        section.appendChild(btn);
+        return section;
+    }
+
+    _createSimulacrum(photo, enemyType, cost, cap) {
+        const owned = (this._party || []).filter(p => p.isSummoned && p.isPersistent && p.summonType === 'simulacrum' && p.summonerId === photo.id);
+        if (owned.length >= cap || !this._inventory || !this._inventory.removeGold(cost)) return;
+        const def = ENEMY_TYPES[enemyType] || {};
+        const level = photo.level || 1;
+        const sim = new PartyMember({
+            name: `${photo.name}'s ${def.name || enemyType} Simulacrum`,
+            classId: 'summoned',
+            speciesId: 'human',
+            level,
+            maxHealth: Math.max(1, photo.maxHealth || level * 10),
+            maxStamina: Math.max(1, photo.maxStamina || level * 10),
+            maxMana: Math.max(1, photo.maxMana || level * 10),
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            isPersistent: true,
+            summonType: 'simulacrum',
+            summonerId: photo.id,
+            canBeHealed: false,
+            row: 'front',
+            summonStats: {
+                simulacrum: true,
+                enemyType,
+                defense: level * 2,
+                meleeMin: level,
+                meleeMax: level * 4,
+                rangedMin: level,
+                rangedMax: level * 4,
+                magicMin: level,
+                magicMax: level * 4,
+                photomancerLevel: level,
+                immune: Array.isArray(def.immune) ? [...def.immune] : [],
+                tags: Array.isArray(def.tags) ? [...def.tags] : [],
+            },
+        });
+        sim.health = sim.maxHealth;
+        sim.stamina = sim.maxStamina;
+        sim.mana = sim.maxMana;
+        this._party.push(sim);
+        this._onChanged(this._party);
+        this._render();
     }
 
     // ── Bard section ──────────────────────────────────────────────────────────

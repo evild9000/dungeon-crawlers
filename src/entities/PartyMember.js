@@ -1027,6 +1027,8 @@ export class PartyMember {
      */
     addEffect(effect) {
         if (!effect || !effect.type) return;
+        if (this.isSummoned && this.summonStats?.illusionaryWarrior) return;
+        if (this.isSummoned && this.summonType === 'simulacrum' && effect.source === 'bard_song') return;
         // Shadow Step: immune to all hostile debuffs while vanished
         if (this.activeEffects.some(e => e.type === 'shadow_step' && (e.rounds || 0) > 0)) {
             const _HOSTILE = new Set(['poison','burn','acid_dot','drowning','drown_armor_break',
@@ -1122,6 +1124,7 @@ export class PartyMember {
         this.kiCharges           = 0;
         this.spiritualWeapons    = [];
         this.shadowStepUsed      = false;
+        this.prismaticSphereUsed = false;
         this.hunterMarkEnemyId   = null;
         this.bonusTurnPending    = false;
         this.beastlordActive     = false;

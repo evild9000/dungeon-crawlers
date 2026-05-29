@@ -253,6 +253,20 @@ export const CLASSES = {
         special: 'warlock',
         description: 'Demon-binding occultist. +37.5% HP, -75% ST, +37.5% MP. +1 magic, +1 HP regen, +1 MP regen. Cloth armor only; cannot use shields. New recruits join the back row. Per level: +1 magic damage. L1: Evil Eye Hex is a free action once per round; costs 1 MP/round while active, debuffs one enemy by -floor(level/3) defense, melee, ranged, and magic for floor(level/7) rounds, minimum 1. L1: Eldritch Bolt is a single-target armor-bypassing magic attack using normal magic cost and +level% damage. L3: Tend Cauldron of Summoning toggles an HP-fed cauldron (5 HP to cast, no mana); while on, it auto-summons the selected unlocked demon every round at 100% chance. Each demon costs 3 HP/round to maintain, and a slain warlock loses all bound demons. Demon stats key from the warlock: HP = warlock max HP (doubled while Tentacled Horror form is active), attack and defense = warlock magic skill, and demon variants use their monster-style abilities. L20: Wasting Curse (35 MP) applies one self-maintaining curse per target; it deals 1% of current HP on round 1, +1% each round up to 5%, lasts 4 + floor(level/20) rounds capped at 9, and non-magic-immune targets have a 5% chance per round to shrug it off. L25: Charm Demon (50 MP) charms demon-tagged enemies using bard-style charm rules. L30: Protection from Demons passively reduces all party damage from demons by warlock level%, capped at 66%. L30: Tentacled Horror of the Abyss is a once-per-combat form lasting until killed, toggled off, or combat end: doubles HP, doubles current and future bound demon HP, adds level to defense, keeps the back row, disables melee/ranged/normal magic/Wasting Curse/Charm Demon, grants level/3 back-row tentacle melee attacks using magic damage with level% stun chance and 100%+level×3% damage, halves magic/AoE/acid/cold damage, and grants immunity to psychic, charm, poison, holds, paralysis, and stun. Evil Eye and Cauldron remain available. Eldritch Sign replaces tentacles when ready, applying Wasting Curse to random level/5 enemies; it recharges on a 1-in-3 roll each round.',
     },
+    photomancer: {
+        id: 'photomancer',
+        name: 'Photomancer',
+        icon: '\u{1F308}',
+        hpMod: 0, stMod: -0.75, mpMod: 0.75,
+        regenHp: 0, regenSt: 0, regenMp: 2,
+        meleeBonus: 0, rangedBonus: 0, magicBonus: 0,
+        defenseBonus: 0,
+        armorAllowed: ['cloth'],
+        canUseShield: false,
+        magicPerLevel: MAGE_MAGIC_PER_LEVEL,
+        special: 'photomancer',
+        description: 'Light-and-shadow illusionist. -75% stamina, +75% mana, +2 MP regen. Cloth only; cannot use shields. New recruits join the back row. Per level: +1 magic damage. L1: Color Spray (1 MP) hits level+1 enemies as magic/AoE and has level% stun chance. L3: Mirror Image (35 MP) works like Mage Mirror Image with +1 extra image. L6: Blur (30 MP) gives the party 20% miss chance vs melee/ranged for 3+floor(level/10) rounds; Invisibility (10 MP) hides one ally from melee/ranged/single-target magic for 5+floor(level/10) rounds and ends when that ally damages an enemy. L10: Illusionary Warriors (25 MP) creates floor(level/10) front-row illusions; each is immune to damage/effects, attacks floor(level/5) times using the photomancer magic skill as magic damage, ignores armor/defense, and can be disbelieved by monsters. L20: Improved Invisibility replaces Invisibility and does not break on attack. L25: Disintegrate (100 MP) fires focused magic beams with instant-kill chance 3%+level/2%; bosses take x4 damage instead. L30: Prismatic Sphere (100 MP, once/combat) absorbs level*100 ranged/magic/AoE damage to the party. L30: Simulacrum is created outside combat from lorebook monster types, limited to floor(level/10), costing level*100 gold.',
+    },
     summoned: {
         // Pseudo-class used by all summoned creatures (undead, beasts, golems).
         // Zero stat modifiers so summons are driven entirely by their summonStats.

@@ -551,7 +551,7 @@ export class Game {
         if (this.state !== STATE.PLAYING) return;
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
-        this.partySpellModal.show(this.gameState.party);
+        this.partySpellModal.show(this.gameState.party, this.gameState.inventory);
     }
 
     _onOpenLoreBook() {

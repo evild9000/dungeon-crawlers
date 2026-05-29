@@ -106,6 +106,33 @@ export class Enemy {
         this.sprite = null;
     }
 
+    addEffect(effect) {
+        if (!this.activeEffects) this.activeEffects = [];
+        this.activeEffects.push(effect);
+    }
+
+    getArmorBlocking() {
+        return 0;
+    }
+
+    getTotalDefense() {
+        const effects = this.activeEffects || [];
+        const effectDefense = effects.reduce((sum, fx) => sum + (typeof fx?.defenseBonus === 'number' ? fx.defenseBonus : 0), 0);
+        return Math.max(0, (this.defense || 0) + effectDefense);
+    }
+
+    getEffectiveDodgePct() {
+        return 0;
+    }
+
+    getShieldBlockChance() {
+        return 0;
+    }
+
+    getStunResistChance() {
+        return 0;
+    }
+
     /**
      * Create a *lit* billboard plane for the enemy and add it to the scene.
      *

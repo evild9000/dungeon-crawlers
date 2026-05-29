@@ -124,6 +124,13 @@ import {
     WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
     WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP,
     WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
+    PHOTOMANCER_COLOR_SPRAY_MANA_COST, PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL,
+    PHOTOMANCER_MIRROR_IMAGE_MANA_COST, PHOTOMANCER_BLUR_UNLOCK_LEVEL,
+    PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_INVISIBILITY_MANA_COST,
+    PHOTOMANCER_ILLUSION_UNLOCK_LEVEL, PHOTOMANCER_ILLUSION_MANA_COST,
+    PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL,
+    PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -938,10 +945,15 @@ export class CombatUI {
 
         // ── Magic
         const magicManaCost = this.combat.getMagicManaCost(m);
-        const magicExhausted = m.mana < magicManaCost || inDefendMode || inAbyssForm;
+        const displayedMagicCost = m.classId === 'photomancer' ? PHOTOMANCER_COLOR_SPRAY_MANA_COST : magicManaCost;
+        const magicExhausted = m.mana < displayedMagicCost || inDefendMode || inAbyssForm;
         const magicWeaponBonus = m.getWeaponBonus('magic');
         const magicTotalBonus = magicWeaponBonus + gBonus;
-        let magicLabel = m.classId === 'warlock' ? `\u{1F9FF} Eldritch Bolt (-${magicManaCost} MP)` : `Magic (-${magicManaCost} MP)`;
+        let magicLabel = m.classId === 'warlock'
+            ? `\u{1F9FF} Eldritch Bolt (-${magicManaCost} MP)`
+            : m.classId === 'photomancer'
+                ? `\u{1F308} Color Spray (-${PHOTOMANCER_COLOR_SPRAY_MANA_COST} MP)`
+                : `Magic (-${magicManaCost} MP)`;
         if (magicTotalBonus > 0) magicLabel += ` +${magicTotalBonus}`;
         if (magicExhausted) magicLabel += ' [HALF]';
         const magicBtn = this._addBtn(magicLabel, !inDefendMode && !m.wildShapeForm && !inAbyssForm, () => {
@@ -950,6 +962,8 @@ export class CombatUI {
                 this._pickTarget(e => this.combat.warlockBolt(e), {
                     prompt: '\u{1F9FF} Choose a target for Eldritch Bolt...',
                 });
+            } else if (m.classId === 'photomancer') {
+                this.combat.photomancerColorSpray();
             } else {
                 this.combat.magicAttack();
             }
@@ -958,8 +972,10 @@ export class CombatUI {
         const magicTip = [
             m.classId === 'warlock'
                 ? `Warlock Eldritch Bolt. Costs ${magicManaCost} mana. Single target, bypasses armor/defense, +${m.level || 1}% damage.`
-                : `Magic attack. Costs ${magicManaCost} mana.`,
-            m.classId === 'warlock' ? null : `Hits ALL enemies.`,
+                : m.classId === 'photomancer'
+                    ? `Photomancer Color Spray. Costs ${PHOTOMANCER_COLOR_SPRAY_MANA_COST} mana. Hits ${m.level + 1} targets as magic/AoE with ${m.level}% stun chance.`
+                    : `Magic attack. Costs ${magicManaCost} mana.`,
+            (m.classId === 'warlock' || m.classId === 'photomancer') ? null : `Hits ALL enemies.`,
         ];
         if (gBonus > 0) magicTip.push(`Damage bonus (class/species/level): +${gBonus}`);
         if (magicStunPct > 0) magicTip.push(`Mage: ${magicStunPct.toFixed(0)}% chance to stun foes with magic.`);
@@ -2265,10 +2281,16 @@ export class CombatUI {
             }
 
             if (m.level >= WARLOCK_CURSE_UNLOCK_LEVEL && !inAbyssForm) {
-                const canCurse = m.mana >= WARLOCK_CURSE_MANA_COST;
+                const curseableTargets = (this.combat.aliveHostileEnemies || []).filter(e =>
+                    !(this.combat._enemyHasImmunity(e, 'magic') || (ENEMY_TYPES[e.type] || {}).fullMagicImmune)
+                    && !(e.activeEffects || []).some(fx => fx && fx.type === 'wasting_curse' && (fx.rounds || 0) > 0));
+                const canCurse = m.mana >= WARLOCK_CURSE_MANA_COST && curseableTargets.length > 0;
                 const rounds = Math.min(9, 4 + Math.floor(m.level / 20));
                 const curseBtn = this._addBtn(`\u{1F56F}\uFE0F Wasting Curse (-${WARLOCK_CURSE_MANA_COST} MP)`, canCurse, () => {
-                    this._pickTarget(e => this.combat.warlockWastingCurse(e), { prompt: 'Curse which enemy?' });
+                    this._pickTarget(e => this.combat.warlockWastingCurse(e), {
+                        filter: e => curseableTargets.includes(e),
+                        prompt: 'Curse which enemy?',
+                    });
                 });
                 curseBtn.classList.add('combat-special-btn');
                 curseBtn.title = [
@@ -2276,7 +2298,8 @@ export class CombatUI {
                     `Deals 1% of the target's current HP this round, increasing by 1% per round to a 5% cap.`,
                     `Duration: ${rounds} round(s). Only one Wasting Curse can be active per target.`,
                     'Magic-immune targets are immune. Other targets have a 5% chance each round to shrug it off.',
-                    !canCurse ? `Not enough mana (need ${WARLOCK_CURSE_MANA_COST} MP).` : '',
+                    m.mana < WARLOCK_CURSE_MANA_COST ? `Not enough mana (need ${WARLOCK_CURSE_MANA_COST} MP).` : '',
+                    m.mana >= WARLOCK_CURSE_MANA_COST && curseableTargets.length === 0 ? 'No valid targets: all hostile enemies are already cursed or magic-immune.' : '',
                 ].filter(Boolean).join('\n');
             }
 
@@ -2333,6 +2356,62 @@ export class CombatUI {
                         !m.eldritchSignReady ? 'Not recharged yet.' : 'Ready.',
                     ].join('\n');
                 }
+            }
+        }
+
+        // Photomancer: color, illusion, and light-bending controls
+        if (m.classId === 'photomancer') {
+            if (m.level >= PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL) {
+                const active = (m.mirrorImages || 0) > 0;
+                const can = !active && m.mana >= PHOTOMANCER_MIRROR_IMAGE_MANA_COST;
+                const imgBtn = this._addBtn(active ? `\u{1FA9E} Mirror Image (${m.mirrorImages})` : `\u{1FA9E} Mirror Image (-${PHOTOMANCER_MIRROR_IMAGE_MANA_COST} MP)`, can, () => this.combat.photomancerMirrorImage());
+                imgBtn.classList.add('combat-special-btn');
+                imgBtn.title = `Creates floor(level/7)+1 mirror images. Images absorb incoming hits.`;
+            }
+
+            if (m.level >= PHOTOMANCER_BLUR_UNLOCK_LEVEL) {
+                const blurRounds = 3 + Math.floor(m.level / 10);
+                const blurBtn = this._addBtn(`\u{1F300} Blur Party (-${PHOTOMANCER_BLUR_MANA_COST} MP)`, m.mana >= PHOTOMANCER_BLUR_MANA_COST, () => this.combat.photomancerBlur());
+                blurBtn.classList.add('combat-special-btn');
+                blurBtn.title = `All party members gain 20% miss chance vs melee/ranged for ${blurRounds} rounds.`;
+
+                const invisLabel = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL ? 'Improved Invis' : 'Invisibility';
+                const invisBtn = this._addBtn(`\u{1F441} ${invisLabel} (-${PHOTOMANCER_INVISIBILITY_MANA_COST} MP)`, m.mana >= PHOTOMANCER_INVISIBILITY_MANA_COST, () => {
+                    this._pickPartyTarget(t => this.combat.photomancerInvisibility(t), {
+                        filter: pm => pm.health > 0,
+                        prompt: `Cloak which ally?`,
+                    });
+                });
+                invisBtn.classList.add('combat-special-btn');
+                invisBtn.title = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL
+                    ? 'Target cannot be selected by melee/ranged/single-target magic. Does not break on attack.'
+                    : 'Target cannot be selected by melee/ranged/single-target magic. Breaks when the target damages an enemy.';
+            }
+
+            if (m.level >= PHOTOMANCER_ILLUSION_UNLOCK_LEVEL) {
+                const count = Math.max(1, Math.floor(m.level / 10));
+                const atk = Math.max(1, Math.floor(m.level / 5));
+                const iwBtn = this._addBtn(`\u{1FA9E} Illusion Warriors x${count} (-${PHOTOMANCER_ILLUSION_MANA_COST} MP)`, m.mana >= PHOTOMANCER_ILLUSION_MANA_COST, () => this.combat.photomancerCreateIllusionaryWarriors());
+                iwBtn.classList.add('combat-special-btn');
+                iwBtn.title = `Creates ${count} front-row illusionary warrior(s). Each attacks ${atk} time(s)/round, is immune to all damage/effects, and can be disbelieved.`;
+            }
+
+            if (m.level >= PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) {
+                const beams = 1 + Math.floor(m.level / 33);
+                const kill = Math.round((0.03 + (m.level / 2) / 100) * 100);
+                const disBtn = this._addBtn(`\u{1F52C} Disintegrate (-${PHOTOMANCER_DISINTEGRATE_MANA_COST} MP)`, m.mana >= PHOTOMANCER_DISINTEGRATE_MANA_COST, () => {
+                    this._pickTarget(e => this.combat.photomancerDisintegrate(e), { prompt: 'Disintegrate which enemy?' });
+                });
+                disBtn.classList.add('combat-special-btn');
+                disBtn.title = `${beams} beam(s). ${kill}% instant kill chance; bosses take x4 damage instead. Magic immunity blocks it.`;
+            }
+
+            if (m.level >= PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL) {
+                const activeHp = this.combat.prismaticSphere?.hp || 0;
+                const canSphere = !m.prismaticSphereUsed && activeHp <= 0 && m.mana >= PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST;
+                const sphereBtn = this._addBtn(activeHp > 0 ? `\u{1F308} Sphere (${activeHp})` : `\u{1F308} Prismatic Sphere (-${PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST} MP)`, canSphere, () => this.combat.photomancerPrismaticSphere());
+                sphereBtn.classList.add('combat-special-btn');
+                sphereBtn.title = `Once/combat. Absorbs ${m.level * 100} ranged, magic, and AoE damage before Eagle Totem deflect. Only one party sphere can exist.`;
             }
         }
 
@@ -3213,6 +3292,7 @@ export class CombatUI {
 
     _pickTarget(callback, { filter, prompt, allowCharmed = false } = {}) {
         this._ensureEnemyCards();
+        this._clearTargetable();
         const alive = this.combat.aliveEnemies;
         // By default, exclude charmed enemies from attack targeting
         const base  = allowCharmed ? alive : alive.filter(e => !(e.charmedRounds > 0));
@@ -3223,7 +3303,11 @@ export class CombatUI {
             this._addBlockingNotice('No valid targets for this action.');
             return;
         }
-        if (valid.length === 1) { callback(valid[0]); return; }
+        if (valid.length === 1) {
+            this._actionInProgress = false;
+            callback(valid[0]);
+            return;
+        }
 
         this._actionInProgress = false;
         this._selectingTarget = true;
@@ -3244,7 +3328,8 @@ export class CombatUI {
 
         // Mark only valid targets as clickable; dim invalid ones (uses base, not alive, so charmed are also hidden)
         for (const e of base) {
-            const card = this.enemyCards.querySelector(`[data-enemy-id="${e.id}"]`);
+            const card = this.enemyCards.querySelector(`[data-enemy-id="${e.id}"]`)
+                || (this.charmedCardsEl && this.charmedCardsEl.querySelector(`[data-enemy-id="${e.id}"]`));
             if (!card) continue;
             if (valid.includes(e)) {
                 card.classList.add('targetable');
@@ -3256,7 +3341,11 @@ export class CombatUI {
     }
 
     _clearTargetable() {
-        this.enemyCards.querySelectorAll('.combat-enemy-card').forEach(c => {
+        const cards = [
+            ...this.enemyCards.querySelectorAll('.combat-enemy-card'),
+            ...(this.charmedCardsEl ? this.charmedCardsEl.querySelectorAll('.combat-enemy-card') : []),
+        ];
+        cards.forEach(c => {
             c.classList.remove('targetable');
             c.style.opacity = '';
             c.style.pointerEvents = '';
