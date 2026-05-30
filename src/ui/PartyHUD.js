@@ -117,6 +117,12 @@ export class PartyHUD {
             );
             this._familiarBtn.style.display = hasMage ? '' : 'none';
         }
+        if (this._shadowSimBtn) {
+            const hasPhotomancer = Array.isArray(party) && party.some(
+                m => m && m.classId === 'photomancer' && !m.isSummoned && m.health > 0 && (m.level || 0) >= 30,
+            );
+            this._shadowSimBtn.style.display = hasPhotomancer ? '' : 'none';
+        }
 
         // Remove cards for members no longer in the party
         for (const [id, card] of this.cards) {
@@ -264,6 +270,17 @@ export class PartyHUD {
             if (this._callbacks.onOpenFamiliar) this._callbacks.onOpenFamiliar();
         });
         this._topBar.appendChild(this._familiarBtn);
+
+        this._shadowSimBtn = document.createElement('button');
+        this._shadowSimBtn.className = 'hud-btn';
+        this._shadowSimBtn.textContent = 'Shadow (N)';
+        this._shadowSimBtn.title = 'Open the Shadow Simulacra menu: form or template level-30 photomancer shadow allies.';
+        this._shadowSimBtn.style.display = 'none';
+        this._shadowSimBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this._callbacks.onOpenShadowSimulacra) this._callbacks.onOpenShadowSimulacra();
+        });
+        this._topBar.appendChild(this._shadowSimBtn);
 
         // Light button + status (Phase 10)
         const lightBtn = document.createElement('button');

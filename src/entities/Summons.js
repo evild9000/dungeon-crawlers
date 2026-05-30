@@ -607,13 +607,15 @@ export const ILLUSIONARY_WARRIOR_PRESET = {
 };
 
 export const SIMULACRUM_PRESET = {
-    id: 'simulacrum', name: 'Simulacrum', icon: '\u{1FA9E}',
+    id: 'shadow_simulacra', name: 'Shadow Simulacra', icon: '🌑',
+    enemySprite: 'shadow',
     portraitClass: 'summoned', portraitSpecies: 'human',
-    speciesLabel: 'Simulacrum', kind: 'construct',
+    speciesLabel: 'Shadow Simulacra', kind: 'construct',
     abilities: [
-        'Permanent shadow-magic duplicate of an encountered monster.',
+        'Permanent shadow-magic construct formed outside combat from selected powers.',
         'Cannot be healed, repaired, cleansed, revived, or buffed as a living ally.',
-        'Uses monster-like attacks with photomancer-scaled stats and damage bonus.',
+        'Defense and melee/ranged/magic skill equal photomancer level x2 before selected upgrades.',
+        'Immune to stun, poison, psychic effects, paralyze-style holds, bleed DoTs, and stamina/mana drain.',
     ],
 };
 
@@ -741,7 +743,7 @@ export function getSummonPreset(member) {
     if (member.summonType === 'acid_swarm') return ACID_SWARM_PRESET;
     if (WARLOCK_DEMON_PRESETS[member.summonType]) return WARLOCK_DEMON_PRESETS[member.summonType];
     if (member.summonType === 'illusionary_warrior') return ILLUSIONARY_WARRIOR_PRESET;
-    if (member.summonType === 'simulacrum') return SIMULACRUM_PRESET;
+    if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return SIMULACRUM_PRESET;
     return null;
 }
 

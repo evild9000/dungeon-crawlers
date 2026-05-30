@@ -1028,7 +1028,29 @@ export class PartyMember {
     addEffect(effect) {
         if (!effect || !effect.type) return;
         if (this.isSummoned && this.summonStats?.illusionaryWarrior) return;
-        if (this.isSummoned && this.summonType === 'simulacrum' && effect.source === 'bard_song') return;
+        if (this.isSummoned && (this.summonType === 'simulacrum' || this.summonType === 'shadow_simulacra') && effect.source === 'bard_song') return;
+        if (this.isSummoned && Array.isArray(this.summonStats?.immune)) {
+            const immune = this.summonStats.immune;
+            const byType = {
+                poison: 'poison',
+                vk_poison: 'poison',
+                quasit_poison: 'poison',
+                bloat_poison: 'poison',
+                bleed: 'bleed',
+                ranger_totem_bleed: 'bleed',
+                burn: 'fire',
+                avatar_fire: 'fire',
+                acid_dot: 'acid',
+                vk_acid_dot: 'acid',
+                chilled: 'cold',
+                frost_dot: 'cold',
+                shocked: 'lightning',
+                lightning_dot: 'lightning',
+                psychic_dot: 'psychic',
+            };
+            const immuneTag = byType[effect.type];
+            if (immuneTag && immune.includes(immuneTag)) return;
+        }
         // Shadow Step: immune to all hostile debuffs while vanished
         if (this.activeEffects.some(e => e.type === 'shadow_step' && (e.rounds || 0) > 0)) {
             const _HOSTILE = new Set(['poison','burn','acid_dot','drowning','drown_armor_break',

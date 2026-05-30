@@ -243,6 +243,10 @@ import {
     WARLOCK_DEMON_PRESETS, getWarlockUnlockedDemons, rollWarlockDemonStats,
     ILLUSIONARY_WARRIOR_PRESET,
 } from '../entities/Summons.js';
+import {
+    SHADOW_SIMULACRA_DOT_POWERS,
+    isShadowSimulacra,
+} from '../entities/ShadowSimulacra.js';
 
 function randomInt(min, max) {
     return min + Math.floor(Math.random() * (max - min + 1));
@@ -535,6 +539,7 @@ export class CombatSystem {
     /** Returns true if this party member should be healed by the Righteousness aura (alive, not undead, not golem). */
     _isHealableByRighteousnessAura(member) {
         if (!member || member.health <= 0) return false;
+        if (member.canBeHealed === false || isShadowSimulacra(member)) return false;
         if (member.isLichForm) return false;
         if (!member.isSummoned) return true;
         if (UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich' || member.summonType === 'corpse_horror') return false;
@@ -560,6 +565,9 @@ export class CombatSystem {
 
     _removeClericHarmfulStates(caster, target) {
         if (!caster || caster.classId !== 'cleric' || !target || target.health <= 0) {
+            return { removed: 0, labels: [] };
+        }
+        if (isShadowSimulacra(target)) {
             return { removed: 0, labels: [] };
         }
 
@@ -665,6 +673,7 @@ export class CombatSystem {
         if (!target || target.health <= 0) return false;
         if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
         if (!target.isSummoned) return false;
+        if (Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes('psychic')) return true;
         // Undead summons have no living mind
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         // Construct summons (golems, spiritual weapon) — no organic mind
@@ -728,6 +737,7 @@ export class CombatSystem {
 
     _isFractureImmunePartyMember(target) {
         if (!target || !target.isSummoned) return false;
+        if (Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes('bleed')) return true;
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         if (GOLEM_PRESETS[target.summonType]) return true;
         if (target.summonStats?.incorporeal === true) return true;
@@ -746,6 +756,12 @@ export class CombatSystem {
         return target && target.isSummoned
             && Array.isArray(target.summonStats?.immune)
             && target.summonStats.immune.includes(tag);
+    }
+
+    _isResourceDrainImmunePartyMember(target, resource = 'mana') {
+        if (!target) return false;
+        const immuneTag = resource === 'stamina' ? 'stamina_drain' : 'mana_drain';
+        return Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes(immuneTag);
     }
 
     _isPetrifyImmunePartyMember(target) {
@@ -5954,37 +5970,134 @@ export class CombatSystem {
 
     _processSimulacrumAttack(m) {
         const st = m.summonStats || {};
-        const type = st.enemyType || st.simulacrumType;
-        const def = ENEMY_TYPES[type] || {};
         const targets = this.aliveHostileEnemies;
         if (!targets.length) return;
         const level = st.photomancerLevel || m.level || 1;
-        const dmgMult = 1 + level / 100;
-        const hit = (target, kind = 'melee', mult = 1, ignoreDefense = false) => {
-            const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
-            const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
-            const raw = Math.max(1, Math.round(randomInt(min, max) * mult * dmgMult));
-            return this._damageSummonEnemy(target, raw, ignoreDefense, false, kind === 'melee' ? { contactAttacker: m } : {});
-        };
-        if (def.aoeMagic && m.mana >= MONSTER_MAGIC_MANA_COST) {
-            m.mana = Math.max(0, m.mana - MONSTER_MAGIC_MANA_COST);
-            this._addLog(`\u{1FA9E} ${m.name} echoes ${def.name || type}'s magic across the enemy line!`);
-            for (const e of targets.slice()) {
-                const d = hit(e, 'magic', def.aoeMagicDamageMult || 1);
-                this._addLog(`  \u2192 ${this._eName(e)} takes ${d} simulacrum magic.`);
-                if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
-            }
-            return;
+        const powers = Array.isArray(st.powers) ? st.powers : [];
+        const has = (id) => powers.includes(id);
+        const dmgMult = 1 + (st.damageBonusPct ?? level) / 100;
+
+        if (has('regen') && m.health > 0 && m.health < m.maxHealth) {
+            const regenPct = Math.max(1, Math.floor(level / 3)) / 100;
+            const heal = Math.max(1, Math.floor(m.maxHealth * regenPct));
+            const before = m.health;
+            m.health = Math.min(m.maxHealth, m.health + heal);
+            if (m.health > before) this._addLog(`🌑 ${m.name} knits shadow-stuff for ${m.health - before} HP.`);
         }
-        const attacks = def.multiAttack || def.attacks || (def.isHydraAI ? Math.max(3, Math.floor(level / 5)) : 1);
+
+        if (has('heal_party') && Math.random() < 0.50) {
+            const healPct = Math.max(1, Math.floor(level / 3)) / 100;
+            const healed = [];
+            for (const ally of this.party || []) {
+                if (!ally || ally.health <= 0 || ally.health >= ally.maxHealth) continue;
+                if (ally.canBeHealed === false || isShadowSimulacra(ally)) continue;
+                if (this._isUndeadOrGolemMember(ally) || ally.isLichForm) continue;
+                const amt = Math.max(1, Math.floor(ally.maxHealth * healPct));
+                const before = ally.health;
+                ally.health = Math.min(ally.maxHealth, ally.health + amt);
+                if (ally.health > before) healed.push(`${ally.name} +${ally.health - before}`);
+            }
+            if (healed.length) {
+                this._addLog(`🌑 ${m.name} reshapes shadow into a mass heal: ${healed.join(', ')}.`);
+                return;
+            }
+        }
+
+        let kind = 'melee';
+        if (has('extra_ranged')) kind = 'ranged';
+        else if (has('extra_magic')) kind = 'magic';
+        const extraAttacks = has('extra_melee') || has('extra_ranged') || has('extra_magic')
+            ? Math.max(1, Math.floor(level / 5))
+            : 0;
+        const attacks = 1 + extraAttacks;
+        const targetsPerAttack = has('aoe_attack') ? Math.max(1, Math.floor(level / 5)) : 1;
+        const hitMult = has('aoe_attack') ? 0.66 : 1;
+        this._addLog(`🌑 ${m.name} attacks as a Shadow Simulacra (${attacks} ${kind}${targetsPerAttack > 1 ? `, ${targetsPerAttack} targets each` : ''}).`);
+
         for (let i = 0; i < attacks; i++) {
             const alive = this.aliveHostileEnemies;
             if (!alive.length) break;
-            const t = alive[Math.floor(Math.random() * alive.length)];
-            const kind = def.rangedAny ? 'ranged' : 'melee';
-            const d = hit(t, kind);
-            this._addLog(`\u{1FA9E} ${m.name} strikes ${this._eName(t)} as ${def.name || type} for ${d}.`);
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            const chosen = alive.slice().sort(() => Math.random() - 0.5).slice(0, targetsPerAttack);
+            for (const t of chosen) {
+                if (!t || t.health <= 0) continue;
+                const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
+                const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
+                const baseRaw = Math.max(1, randomInt(min, max));
+                const raw = Math.max(1, Math.round(baseRaw * hitMult * dmgMult));
+                const options = {
+                    sourceMember: m,
+                    isMagic: kind === 'magic',
+                    isRanged: kind === 'ranged',
+                };
+                if (kind === 'melee') options.contactAttacker = m;
+                const dealt = this._damageSummonEnemy(t, raw, has('phase_strike'), false, options);
+                this._addLog(`  \u2192 ${m.name} ${kind === 'magic' ? 'lashes' : kind === 'ranged' ? 'shoots' : 'strikes'} ${this._eName(t)} for ${dealt} damage.`);
+                if (dealt > 0) this._applyShadowSimulacraRiders(m, t, dealt, baseRaw, powers, level);
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            }
+        }
+    }
+
+    _applyShadowSimulacraRiders(m, target, dealt, baseRaw, powers, level) {
+        if (!target || target.health <= 0 || dealt <= 0) return;
+        const has = (id) => powers.includes(id);
+        const dotRounds = Math.max(1, Math.floor(level / 7));
+        for (const id of Object.keys(SHADOW_SIMULACRA_DOT_POWERS)) {
+            if (!has(id)) continue;
+            const dot = SHADOW_SIMULACRA_DOT_POWERS[id];
+            if (this._enemyHasImmunity(target, dot.immune)) {
+                this._addLog(`    ${this._eName(target)} is immune to ${dot.label}.`);
+                continue;
+            }
+            const tick = Math.max(1, Math.floor(dealt * dot.frac));
+            if (!Array.isArray(target.activeEffects)) target.activeEffects = [];
+            target.activeEffects.push({ type: dot.effect, damage: tick, rounds: dotRounds });
+            this._addLog(`    ${dot.icon} ${dot.label}: ${tick}/rd for ${dotRounds} rd${dotRounds !== 1 ? 's' : ''}.`);
+        }
+        if (has('stun_attack') && Math.random() < Math.max(0, level / 3) / 100) {
+            if (this._tryStunEnemy(target)) this._addLog(`    ⚡ ${this._eName(target)} is stunned by the shadow strike!`);
+        }
+        if (has('hold_attack') && Math.random() < Math.max(0, level / 3) / 100) {
+            if (this._tryHoldEnemy(target)) this._addLog(`    ⛓️ ${this._eName(target)} is held by shadow bonds!`);
+        }
+        if (has('resource_drain')) {
+            const tags = this._getEnemyTags(target);
+            if (tags.some(t => ['construct', 'undead', 'elemental'].includes(t))) {
+                this._addLog(`    ${this._eName(target)} cannot have stamina or mana drained.`);
+            } else {
+                const drain = Math.max(1, Math.floor(baseRaw * (level / 100)));
+                if (typeof target.stamina === 'number') target.stamina = Math.max(0, target.stamina - drain);
+                if (typeof target.mana === 'number') target.mana = Math.max(0, target.mana - drain);
+                this._addLog(`    🌑 ${this._eName(target)} loses ${drain} stamina and ${drain} mana.`);
+            }
+        }
+        if (has('life_drain')) {
+            const heal = Math.max(1, Math.floor(dealt * (level / 2) / 100));
+            const before = m.health;
+            m.health = Math.min(m.maxHealth, m.health + heal);
+            if (m.health > before) this._addLog(`    🌑 ${m.name} drains ${m.health - before} HP.`);
+        }
+        const debuffRounds = Math.max(1, Math.floor(level / 10));
+        const penalty = Math.max(1, Math.floor(level / 8));
+        if (has('offense_debuff')) {
+            if (!Array.isArray(target.activeEffects)) target.activeEffects = [];
+            target.activeEffects.push({
+                type: 'shadow_offense_debuff',
+                damageBonus: -penalty,
+                rangedBonus: -penalty,
+                magicBonus: -penalty,
+                rounds: debuffRounds,
+            });
+            this._addLog(`    🌑 ${this._eName(target)} loses ${penalty} melee/ranged/magic for ${debuffRounds} rd${debuffRounds !== 1 ? 's' : ''}.`);
+        }
+        if (has('defense_debuff')) {
+            if (!Array.isArray(target.activeEffects)) target.activeEffects = [];
+            target.activeEffects.push({
+                type: 'shadow_defense_debuff',
+                defenseBonus: -penalty,
+                rounds: debuffRounds,
+            });
+            this._addLog(`    🌑 ${this._eName(target)} loses ${penalty} defense for ${debuffRounds} rd${debuffRounds !== 1 ? 's' : ''}.`);
         }
     }
 
@@ -6000,7 +6113,7 @@ export class CombatSystem {
             this._processIllusionaryWarriorAttack(m);
             return;
         }
-        if (m.isSummoned && m.summonType === 'simulacrum') {
+        if (isShadowSimulacra(m)) {
             this._processSimulacrumAttack(m);
             return;
         }
@@ -8232,9 +8345,13 @@ export class CombatSystem {
                 this._addLog(`\u{1F48B} ${eName} leans close and plants a draining kiss on ${target.name}!`);
                 const _succHit = this._applyEnemyHit(e, target, dmg, 'magic');
                 if (_succHit && _succHit.health > 0 && _succHit.mana > 0) {
-                    const manaDrain = Math.min(_succHit.mana, dmg);
-                    _succHit.mana = Math.max(0, _succHit.mana - manaDrain);
-                    this._addLog(`\u{1F49C} ${_succHit.name} loses ${manaDrain} mana to the succubus!`);
+                    if (this._isResourceDrainImmunePartyMember(_succHit, 'mana')) {
+                        this._addLog(`\u{1F49C} ${_succHit.name} cannot have mana drained!`);
+                    } else {
+                        const manaDrain = Math.min(_succHit.mana, dmg);
+                        _succHit.mana = Math.max(0, _succHit.mana - manaDrain);
+                        this._addLog(`\u{1F49C} ${_succHit.name} loses ${manaDrain} mana to the succubus!`);
+                    }
                 }
                 // 35% chance to charm (skip turn via webbedRounds = 1); psychic — undead/constructs immune
                 if (_succHit && _succHit.health > 0 && Math.random() < 0.35) {
@@ -9012,8 +9129,12 @@ export class CombatSystem {
                 } else if (roll < 0.55) {
                     // Mana drain
                     const drain = Math.max(1, Math.floor(target.maxMana * 0.20));
-                    target.mana = Math.max(0, target.mana - drain);
-                    this._addLog(`⭐ ${target.name}'s mind is hollowed — loses ${drain} mana!`);
+                    if (this._isResourceDrainImmunePartyMember(target, 'mana')) {
+                        this._addLog(`⭐ ${target.name}'s mind cannot be hollowed for mana drain!`);
+                    } else {
+                        target.mana = Math.max(0, target.mana - drain);
+                        this._addLog(`⭐ ${target.name}'s mind is hollowed — loses ${drain} mana!`);
+                    }
                 } else if (roll < 0.75) {
                     // Stat debuff
                     const penalty = Math.max(1, Math.floor(dlvl / 5));
@@ -9046,8 +9167,12 @@ export class CombatSystem {
                     // Drain 25% of dealt as HP and mana
                     const drain = Math.floor(dealt * 0.25);
                     e.health = Math.min(e.maxHealth, e.health + drain);
-                    target.mana = Math.max(0, target.mana - Math.min(target.mana, drain));
-                    this._addLog(`\u{1F573}️ ${eName} drains ${drain} HP and mana from ${target.name}!`);
+                    if (this._isResourceDrainImmunePartyMember(target, 'mana')) {
+                        this._addLog(`\u{1F573}️ ${eName} drains ${drain} HP from ${target.name}, but cannot drain mana!`);
+                    } else {
+                        target.mana = Math.max(0, target.mana - Math.min(target.mana, drain));
+                        this._addLog(`\u{1F573}️ ${eName} drains ${drain} HP and mana from ${target.name}!`);
+                    }
                 }
                 if (target.health <= 0) {
                     e.voidWraithKillBonus = (e.voidWraithKillBonus || 0) + 1;
@@ -9572,6 +9697,26 @@ export class CombatSystem {
             return null;
         }
 
+        if (isShadowSimulacra(target)) {
+            const immune = Array.isArray(target.summonStats?.immune) ? target.summonStats.immune : [];
+            const blocksPsychic = opts.psychic && immune.includes('psychic');
+            const breath = opts.dragonBreath === 'ice' ? 'cold' : opts.dragonBreath;
+            const blocksElement = breath && immune.includes(breath);
+            const blocksFire = opts.fireBurn && immune.includes('fire');
+            if (blocksPsychic || blocksElement || blocksFire) {
+                this._addLog(`🌑 ${target.name}'s semi-real shadow body ignores ${eName}'s ${blocksPsychic ? 'psychic' : (breath || 'fire')} effect!`);
+                return null;
+            }
+            if (!opts.aoe && ['melee', 'ranged', 'magic'].includes(attackKind)
+                && (target.summonStats?.powers || []).includes('block_dodge')) {
+                const chance = Math.min(0.95, ((target.summonStats?.photomancerLevel || target.level || 1) / 2) / 100);
+                if (Math.random() < chance) {
+                    this._addLog(`🌑 ${target.name} flickers aside from ${eName}'s ${attackKind} attack!`);
+                    return null;
+                }
+            }
+        }
+
         if (target.isSummoned && target.summonStats?.illusionaryWarrior) {
             const tags = this._getEnemyTags(e);
             if (tags.includes('undead') || tags.includes('construct') || (ENEMY_TYPES[e.type] || {}).fullMagicImmune) {
@@ -10061,6 +10206,18 @@ export class CombatSystem {
             const reflected = this._damageEnemy(e, reflect);
             this._addLog(`\u{1F9F1} ${target.name}'s hardened shell reflects ${reflected} damage back at ${eName}!`);
             if (e.health <= 0) this._addLog(`${eName} is defeated by their own blow!`);
+        }
+
+        if (attackKind === 'melee'
+            && isShadowSimulacra(target)
+            && (target.summonStats?.powers || []).includes('retributive_damage')
+            && dmg > 0
+            && e && e.health > 0) {
+            const level = target.summonStats?.photomancerLevel || target.level || 1;
+            const reflect = Math.max(1, Math.floor(dmg * (level * 2 / 100)));
+            const reflected = this._damageEnemy(e, reflect, true, false, 0, false, { sourceMember: target });
+            this._addLog(`🌑 ${target.name}'s shadow thorns retaliate for ${reflected} damage against ${eName}!`);
+            if (e.health <= 0) this._addLog(`${eName} is shredded by the backlash!`);
         }
 
         // ── Gelatinous Cube acid body: any melee hit on the cube splashes the
@@ -12504,7 +12661,7 @@ export class CombatSystem {
             // ── Weapon-rider DoTs on enemies (burn, acid_dot, poison_weapon).
             //    Each ticks per player round; damage rolled once per round.
             const effects = e.activeEffects || [];
-            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', quasit_poison: '\u{1F47F} quasit venom', bloat_poison: '\u{1F922} toxic bile', vk_acid_dot: '\u{1F7E2} acid corrosion', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid' };
+            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', quasit_poison: '\u{1F47F} quasit venom', bloat_poison: '\u{1F922} toxic bile', vk_acid_dot: '\u{1F7E2} acid corrosion', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid', shadow_fire_dot: '🌑🔥 shadow fire', shadow_ice_dot: '🌑❄️ shadow ice', shadow_lightning_dot: '🌑⚡ shadow lightning', shadow_acid_dot: '🌑🟢 shadow acid', shadow_poison_dot: '🌑☠️ shadow poison', shadow_psychic_dot: '🌑💜 shadow psychic', shadow_sonic_dot: '🌑🔊 shadow sonic', shadow_bleed_dot: '🌑🩸 shadow bleed' };
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {
@@ -13058,6 +13215,7 @@ export class CombatSystem {
     _damageSummonEnemy(enemy, amount, ignoreDefense = false, halfDefense = false, options = {}) {
         const mult = this._hasSummonBuff() ? 1.2 : 1.0;
         const isMagic = options.isMagic === true;
+        const isRanged = options.isRanged === true;
         if (options.psychic && this._enemyHasImmunity(enemy, 'psychic')) {
             this._addLog(`\u{1F49C} ${this._eName(enemy)} is immune to psychic effects!`);
             return 0;
@@ -13065,11 +13223,11 @@ export class CombatSystem {
         if (halfDefense && !ignoreDefense) {
             const origDef = enemy.defense;
             enemy.defense = Math.floor((enemy.defense || 0) / 2);
-            const result = this._damageEnemy(enemy, Math.round(amount * mult), false, isMagic, 0, false, options);
+            const result = this._damageEnemy(enemy, Math.round(amount * mult), false, isMagic, 0, isRanged, options);
             enemy.defense = origDef;
             return result;
         }
-        return this._damageEnemy(enemy, Math.round(amount * mult), ignoreDefense, isMagic, 0, false, options);
+        return this._damageEnemy(enemy, Math.round(amount * mult), ignoreDefense, isMagic, 0, isRanged, options);
     }
 
     /**

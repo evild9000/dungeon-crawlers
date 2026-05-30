@@ -29,6 +29,7 @@ export class GameState {
         this.discoveredMonsters = new Set(); // monster type keys encountered in combat
         this.tinkererEncountered = false;    // whether the wandering tinkerer has been met
         this.bardMusicEnabled = true;        // whether the bard song loop plays (persisted toggle)
+        this.shadowSimulacraTemplates = [];  // saved Photomancer Shadow Simulacra power templates
         this.achievementStats = GameState.createAchievementStats();
     }
 
@@ -309,6 +310,12 @@ export class GameState {
             discoveredMonsters: [...this.discoveredMonsters],
             tinkererEncountered: this.tinkererEncountered || false,
             bardMusicEnabled: this.bardMusicEnabled !== false,
+            shadowSimulacraTemplates: Array.isArray(this.shadowSimulacraTemplates)
+                ? this.shadowSimulacraTemplates.map(t => ({
+                    name: String(t.name || '').slice(0, 40),
+                    powers: Array.isArray(t.powers) ? t.powers.slice() : [],
+                })).filter(t => t.name)
+                : [],
             achievementStats: this.ensureAchievementStats(),
         };
         // Only include id when updating an existing save;
@@ -342,6 +349,12 @@ export class GameState {
         s.discoveredMonsters = new Set(Array.isArray(data.discoveredMonsters) ? data.discoveredMonsters : []);
         s.tinkererEncountered = data.tinkererEncountered || false;
         s.bardMusicEnabled = data.bardMusicEnabled !== false; // default true for old saves
+        s.shadowSimulacraTemplates = Array.isArray(data.shadowSimulacraTemplates)
+            ? data.shadowSimulacraTemplates.map(t => ({
+                name: String(t.name || '').slice(0, 40),
+                powers: Array.isArray(t.powers) ? t.powers.slice() : [],
+            })).filter(t => t.name)
+            : [];
         s.achievementStats = (data.achievementStats && typeof data.achievementStats === 'object')
             ? data.achievementStats
             : GameState.createAchievementStats();

@@ -57,6 +57,7 @@ import { MinimapUI } from '../ui/MinimapUI.js';
 import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS, CHEST_PROXIMITY, STATUE_PROXIMITY, STATUE_MIN_DUNGEON_LEVEL } from '../utils/constants.js';
 import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
+import { ShadowSimulacraUI } from '../ui/ShadowSimulacraUI.js';
 import { LoreBook } from '../ui/LoreBook.js';
 import { AchievementsUI } from '../ui/AchievementsUI.js';
 import { syncGolemStats } from '../entities/Summons.js';
@@ -179,6 +180,16 @@ export class Game {
             }
             this._saveNow();
         });
+        this.shadowSimulacraUI = new ShadowSimulacraUI(
+            () => this.gameState,
+            () => {
+                if (this.partyHUD && this.gameState) {
+                    this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+                }
+                this._saveNow();
+            },
+            { logger: (msg) => this._log(msg) },
+        );
 
         this.loreBook = new LoreBook();
         this.achievementsUI = new AchievementsUI(() => this.gameState);
@@ -412,6 +423,7 @@ export class Game {
             || (this.pauseLoadPanel && this.pauseLoadPanel.style.display === 'block')
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
             || (this.partySpellModal && this.partySpellModal.isOpen)
+            || (this.shadowSimulacraUI && this.shadowSimulacraUI.isOpen)
             || (this.loreBook && this.loreBook.isOpen)
             || (this.achievementsUI && this.achievementsUI.isOpen);
     }
@@ -482,6 +494,7 @@ export class Game {
                 else if (this._bagpickModal && this._bagpickModal.style.display === 'flex') this._hideBagPicker();
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
+                else if (this.shadowSimulacraUI && this.shadowSimulacraUI.isOpen) this.shadowSimulacraUI.hide();
                 else if (this.loreBook && this.loreBook.isOpen) this.loreBook.hide();
                 else if (this.achievementsUI && this.achievementsUI.isOpen) this.achievementsUI.hide();
             }
@@ -497,6 +510,7 @@ export class Game {
             case 'k': e.preventDefault(); this._onOpenCrafting(); break;
             case 'f': e.preventDefault(); this._onOpenFamiliar(); break;
             case 'v': e.preventDefault(); this._onOpenPartySpells(); break;
+            case 'n': e.preventDefault(); this._onOpenShadowSimulacra(); break;
             case 'x': e.preventDefault(); this._onOpenLoreBook(); break;
             case 'g': e.preventDefault(); this._onOpenAchievements(); break;
         }
@@ -552,6 +566,14 @@ export class Game {
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
         this.partySpellModal.show(this.gameState.party, this.gameState.inventory);
+    }
+
+    _onOpenShadowSimulacra() {
+        if (!this.shadowSimulacraUI || !this.gameState) return;
+        if (this.state !== STATE.PLAYING) return;
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+        this.shadowSimulacraUI.show();
     }
 
     _onOpenLoreBook() {
@@ -1003,6 +1025,9 @@ export class Game {
         this.inventoryUI.hidePersonal();
         this.shopUI.hide();
         if (this.craftingUI) this.craftingUI.hide();
+        if (this.familiarUI) this.familiarUI.hide();
+        if (this.partySpellModal) this.partySpellModal.hide();
+        if (this.shadowSimulacraUI) this.shadowSimulacraUI.hide();
         this._hideHelp();
         this._hideCombatHelp();
         this._hideClassHelp();
@@ -1120,6 +1145,7 @@ export class Game {
             onOpenLightPicker: () => this._onOpenLightPicker(),
             onOpenCrafting: () => this._onOpenCrafting(),
             onOpenFamiliar: () => this._onOpenFamiliar(),
+            onOpenShadowSimulacra: () => this._onOpenShadowSimulacra(),
         });
         this.partyHUD.update(this.gameState.party, this.gameState.inventory);
         this.partyHUD.show();
