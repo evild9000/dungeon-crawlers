@@ -10,6 +10,7 @@ import {
     getShadowSimulacraLimit,
     getShadowSimulacraSlotCount,
     isShadowSimulacra,
+    normalizeShadowSimulacraAttackType,
     normalizeShadowPowers,
 } from '../entities/ShadowSimulacra.js';
 
@@ -20,6 +21,7 @@ export class ShadowSimulacraUI {
         this._log = typeof systems.logger === 'function' ? systems.logger : () => {};
         this._selectedPhotomancerId = null;
         this._selectedPowers = [];
+        this._selectedAttackType = 'melee';
         this._overlay = null;
         this._body = null;
         this._buildDOM();
@@ -157,6 +159,7 @@ export class ShadowSimulacraUI {
         photoSelect.addEventListener('change', () => {
             this._selectedPhotomancerId = photoSelect.value;
             this._selectedPowers = [];
+            this._selectedAttackType = 'melee';
             this._render();
         });
 
@@ -182,6 +185,8 @@ export class ShadowSimulacraUI {
             grid.appendChild(this._buildPowerSelect(i));
         }
         this._body.appendChild(grid);
+
+        this._body.appendChild(this._buildAttackTypeSelect());
 
         const preview = document.createElement('div');
         preview.style.cssText = 'background:#171326;border:1px solid #433665;padding:10px;border-radius:6px;color:#cfc6ec;margin-bottom:12px;white-space:pre-line;';
@@ -225,6 +230,7 @@ export class ShadowSimulacraUI {
             const tmpl = templates.find(t => t.name === loadSelect.value);
             if (!tmpl) return;
             this._selectedPowers = normalizeShadowPowers(tmpl.powers || [], slotCount);
+            this._selectedAttackType = normalizeShadowSimulacraAttackType(tmpl.attackType);
             this._render();
         });
 
@@ -242,8 +248,13 @@ export class ShadowSimulacraUI {
             const powers = normalizeShadowPowers(this._selectedPowers.filter(Boolean), slotCount);
             if (!name || powers.length === 0) return;
             const existing = templates.find(t => t.name.toLowerCase() === name.toLowerCase());
-            if (existing) existing.powers = powers;
-            else templates.push({ name, powers });
+            const attackType = normalizeShadowSimulacraAttackType(this._selectedAttackType);
+            if (existing) {
+                existing.powers = powers;
+                existing.attackType = attackType;
+            } else {
+                templates.push({ name, powers, attackType });
+            }
             this._onChanged();
             this._log(`🌑 Saved Shadow Simulacra template "${name}".`);
             this._render();
@@ -284,13 +295,43 @@ export class ShadowSimulacraUI {
         return wrap;
     }
 
+    _buildAttackTypeSelect() {
+        const wrap = document.createElement('label');
+        wrap.style.cssText = 'display:flex;flex-direction:column;gap:5px;color:#d0c2f5;font-size:12px;margin:4px 0 12px;';
+        wrap.textContent = 'Attack type';
+        const select = document.createElement('select');
+        select.style.cssText = this._selectStyle();
+        const options = [
+            ['melee', 'Melee attacks — front row, melee contact'],
+            ['ranged', 'Ranged attacks — back row'],
+            ['magic', 'Magic attacks — back row, checked against magic immunity'],
+        ];
+        for (const [value, label] of options) {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = label;
+            select.appendChild(opt);
+        }
+        select.value = normalizeShadowSimulacraAttackType(this._selectedAttackType);
+        select.addEventListener('change', () => {
+            this._selectedAttackType = normalizeShadowSimulacraAttackType(select.value);
+            this._render();
+        });
+        wrap.appendChild(select);
+        const desc = document.createElement('span');
+        desc.style.cssText = 'color:#8677ad;font-size:11px;';
+        desc.textContent = 'This final choice controls monster immunity checks and row placement. Selected powers still determine extra attacks, AOE, riders, and defenses.';
+        wrap.appendChild(desc);
+        return wrap;
+    }
+
     _previewText(photo) {
-        const stats = buildShadowSimulacraStats(photo, this._selectedPowers.filter(Boolean));
+        const stats = buildShadowSimulacraStats(photo, this._selectedPowers.filter(Boolean), this._selectedAttackType);
         const st = stats.summonStats;
         const names = (st.powers || []).map(getShadowPowerName);
         return [
             `Preview: HP ${stats.maxHealth}, DEF ${st.defense}, melee/ranged/magic ${st.meleeMin}-${st.meleeMax}`,
-            `Row: ${stats.row}. Damage bonus: +${st.damageBonusPct}%.`,
+            `Attack type: ${st.attackType}. Row: ${stats.row}. Damage bonus: +${st.damageBonusPct}%.`,
             `Base immunities: stun, poison, psychic, paralyze-style holds, bleed, stamina/mana drain.`,
             names.length ? `Powers: ${names.join(', ')}` : 'Powers: none selected',
         ].join('\n');
@@ -308,7 +349,8 @@ export class ShadowSimulacraUI {
         if (typeof state.inventory.removeGold === 'function') state.inventory.removeGold(cost);
         else state.inventory.gold = Math.max(0, (state.inventory.gold || 0) - cost);
 
-        const built = buildShadowSimulacraStats(photo, powers);
+        const attackType = normalizeShadowSimulacraAttackType(this._selectedAttackType);
+        const built = buildShadowSimulacraStats(photo, powers, attackType);
         const num = owned.length + 1;
         const sim = new PartyMember({
             name: `${photo.name}'s Shadow Simulacra #${num}`,

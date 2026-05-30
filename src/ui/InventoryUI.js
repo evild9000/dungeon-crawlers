@@ -1272,9 +1272,18 @@ export class InventoryUI {
             const nameEl = document.createElement('span');
             nameEl.className = 'pinv-equipped-name';
             const icon = def && def.icon ? def.icon + ' ' : '';
-            nameEl.textContent = `${icon}${def ? def.name : itemId}`;
             const enchant = member.equipmentEnchants && member.equipmentEnchants[slot];
-            if (def) nameEl.title = this._getItemTooltip(def, enchant);
+            const effectiveEnchant = {
+                ...(enchant || {}),
+                level: slot === 'shield' && typeof member.getShieldEnchantLevel === 'function'
+                    ? member.getShieldEnchantLevel()
+                    : Math.max((enchant && enchant.level) || 0, (def && def.enchantLevel) || 0),
+            };
+            const shieldEnchantSuffix = slot === 'shield' && def
+                ? ` (Enchant +${effectiveEnchant.level || 0})`
+                : '';
+            nameEl.textContent = `${icon}${def ? def.name : itemId}${shieldEnchantSuffix}`;
+            if (def) nameEl.title = this._getItemTooltip(def, effectiveEnchant);
             row.appendChild(nameEl);
 
             const unequipBtn = document.createElement('button');
@@ -1337,7 +1346,13 @@ export class InventoryUI {
                 lines.push('🛡️ AoE Ward: reduces incoming AoE magic damage.');
             }
         } else if (def.category === ITEM_CATEGORY.SHIELD) {
-            lines.push('25% chance to completely block an attack');
+            const level = Math.max((enchant && enchant.level) || 0, def.enchantLevel || 0);
+            const baseBlock = Math.round(((def.blockChance || 0.25) * 100));
+            lines.push(`${baseBlock}% chance to completely block an attack`);
+            lines.push(`Shield enchant: +${level}`);
+            if (level > 0) {
+                lines.push(`Enchant bonus: +${level}% block chance and +${level} defense`);
+            }
             lines.push('Cannot be used while wielding a ranged weapon.');
             lines.push('Mages, Monks, and Necromancers cannot use shields.');
         } else if (def.category === ITEM_CATEGORY.TRINKET) {

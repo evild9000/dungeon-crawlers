@@ -23,6 +23,10 @@ import {
     MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL,
     MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND,
     MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
+    WARRIOR_FORMATION_MIN_MEMBERS,
+    WARRIOR_SHIELD_WALL_UNLOCK_LEVEL,
+    WARRIOR_SHIELD_WALL_LEVEL_DIVISOR,
+    PHOTOMANCER_BLUR_MISS_CHANCE,
 } from '../utils/constants.js';
 
 /**
@@ -563,6 +567,27 @@ export class PartyHUD {
             bonusMult: best.bonusMult,
             bonusPct: Math.round(best.bonusMult * 100),
         };
+    }
+
+    _getFormationShieldWallState(member, party) {
+        if (!member || !member.isInFormation || member.health <= 0 || member.classId !== 'warrior') return null;
+        const formation = (party || []).filter(m =>
+            m && m.health > 0 && m.isInFormation && m.row === 'front' && m.classId === 'warrior',
+        );
+        if (formation.length < WARRIOR_FORMATION_MIN_MEMBERS || !formation.includes(member)) return null;
+        const eligibleWarriorIds = new Set(formation
+            .filter(m => !m.isSummoned && (m.level || 1) >= WARRIOR_SHIELD_WALL_UNLOCK_LEVEL)
+            .map(m => m.id));
+        const contributors = formation.filter(m => {
+            if (!m.isSummoned) return eligibleWarriorIds.has(m.id);
+            return m.summonType === 'squire' && eligibleWarriorIds.has(m.summonerId);
+        });
+        if (contributors.length === 0) return null;
+        const avg = contributors.reduce((sum, m) => sum + (m.level || 1), 0) / contributors.length;
+        const step = Math.max(0, Math.floor(avg / WARRIOR_SHIELD_WALL_LEVEL_DIVISOR));
+        const total = step * contributors.length;
+        if (total <= 0) return null;
+        return { total, step, count: contributors.length, avg: Math.round(avg) };
     }
 
     _updateBars(card, member, party) {
@@ -1201,6 +1226,28 @@ export class PartyHUD {
             if (encourage) {
                 mkPB('📣', `+${encourage.bonusPct}% DMG`, 'rgba(165,60,20,0.95)',
                     `Barbarian Encouragement: +${encourage.bonusPct}% damage this round.\nSource: ${encourage.sourceName}\nRamp: ${encourage.rounds}/${BARBARIAN_ENCOURAGE_MAX_ROUNDS} rage rounds.`);
+            }
+            const shieldWall = this._getFormationShieldWallState(member, party);
+            if (shieldWall) {
+                mkPB('🛡️', `Wall +${shieldWall.total}`, 'rgba(40,80,150,0.95)',
+                    `Formation Shield Wall: +${shieldWall.total} defense and +${shieldWall.total}% to shield block, intercept, retaliatory strike, squire opportunity strike, and formation crit.\n${shieldWall.count} contributor(s), +${shieldWall.step} each, average contributor level ${shieldWall.avg}.`);
+            }
+            if (member.warriorTauntActive) {
+                mkPB('🛡️', 'Taunt', 'rgba(30,110,150,0.95)',
+                    `Taunt active: costs 1 ST/round. Monsters check this warrior before single-target melee, ranged, and magic attacks.`);
+            }
+            const pblur = pefx.find(x => x && x.type === 'blur' && x.rounds > 0);
+            if (pblur) {
+                const missPct = Math.round(((pblur.missChance ?? PHOTOMANCER_BLUR_MISS_CHANCE) || 0) * 100);
+                mkPB('🌀', 'Blur', 'rgba(45,110,190,0.9)',
+                    `Photomancer Blur: ${missPct}% miss chance against melee and ranged attacks — ${pblur.rounds} rds left.`);
+            }
+            const pinvis = pefx.find(x => x && x.type === 'improved_invisibility' && x.rounds > 0)
+                || pefx.find(x => x && x.type === 'invisibility' && x.rounds > 0);
+            if (pinvis) {
+                const improved = pinvis.type === 'improved_invisibility';
+                mkPB('👁️', improved ? 'Imp Invis' : 'Invisible', improved ? 'rgba(70,35,150,0.92)' : 'rgba(35,75,125,0.92)',
+                    `${improved ? 'Improved Invisibility' : 'Invisibility'}: cannot be targeted by melee, ranged, or single-target magic attacks; AoE still hits.${improved ? ' Does not break on attack.' : ' Breaks when this character damages an enemy.'} ${pinvis.rounds} rds left.`);
             }
             // Webbed / paralyzed / constricted
             if (member.webbedRounds > 0)

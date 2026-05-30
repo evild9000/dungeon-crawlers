@@ -9,7 +9,8 @@ export function isShadowSimulacra(member) {
         && (member.summonType === SHADOW_SIMULACRA_TYPE || member.summonType === LEGACY_SIMULACRUM_TYPE);
 }
 
-export const SHADOW_SIMULACRA_ATTACK_POWER_IDS = ['extra_melee', 'extra_ranged', 'extra_magic'];
+export const SHADOW_SIMULACRA_ATTACK_POWER_IDS = ['extra_melee', 'extra_ranged', 'extra_magic', 'aoe_attack'];
+export const SHADOW_SIMULACRA_ATTACK_TYPES = ['melee', 'ranged', 'magic'];
 
 export const SHADOW_SIMULACRA_DOT_POWERS = {
     dot_fire:      { label: 'Fire DoT',      effect: 'shadow_fire_dot',      immune: 'fire',      frac: 0.40, icon: '🔥' },
@@ -26,7 +27,7 @@ export const SHADOW_SIMULACRA_POWERS = [
     { id: 'extra_melee', name: 'Extra Melee Attacks', group: 'attack_mode', row: 'front', desc: 'Adds floor(level/5) melee attacks beyond the basic attack; counts as melee contact.' },
     { id: 'extra_ranged', name: 'Extra Ranged Attacks', group: 'attack_mode', row: 'back', desc: 'Adds floor(level/5) ranged attacks beyond the basic attack.' },
     { id: 'extra_magic', name: 'Extra Magic Attacks', group: 'attack_mode', row: 'front', desc: 'Adds floor(level/5) single-target magic attacks beyond the basic attack.' },
-    { id: 'aoe_attack', name: 'AOE Attack', desc: 'Each attack hits floor(level/5) enemies for 66% damage.' },
+    { id: 'aoe_attack', name: 'AOE Attack', group: 'attack_mode', desc: 'The basic attack hits floor(level/5) enemies for 66% damage; disables extra melee/ranged/magic attacks.' },
     { id: 'dot_fire', name: 'Fire DoT', desc: 'Hits add a stacking fire DoT for 40% damage per round.' },
     { id: 'dot_ice', name: 'Ice DoT', desc: 'Hits add a stacking ice DoT for 40% damage per round.' },
     { id: 'dot_lightning', name: 'Lightning DoT', desc: 'Hits add a stacking lightning DoT for 40% damage per round.' },
@@ -99,16 +100,21 @@ export function getAvailableShadowPowers(selected, slotIndex) {
     });
 }
 
-export function buildShadowSimulacraStats(photo, selectedPowers) {
+export function normalizeShadowSimulacraAttackType(attackType) {
+    return SHADOW_SIMULACRA_ATTACK_TYPES.includes(attackType) ? attackType : 'melee';
+}
+
+export function buildShadowSimulacraStats(photo, selectedPowers, attackType = 'melee') {
     const level = Math.max(1, photo?.level || 1);
     const powers = normalizeShadowPowers(selectedPowers);
+    const normalizedAttackType = normalizeShadowSimulacraAttackType(attackType);
     const baseSkill = Math.max(1, level * 2);
     const offenseSkill = powers.includes('extra_offense') ? Math.floor(baseSkill * 1.5) : baseSkill;
     const defense = powers.includes('extra_defense') ? Math.floor(baseSkill * 1.5) : baseSkill;
     const healthMult = 1 + 0.5 * shadowPowerCount(powers, 'extra_health');
     const maxHealth = Math.max(1, Math.floor((photo?.maxHealth || level * 10) * healthMult));
     const attackMode = powers.find(id => SHADOW_SIMULACRA_ATTACK_POWER_IDS.includes(id)) || 'basic_melee';
-    const row = attackMode === 'extra_ranged' ? 'back' : 'front';
+    const row = normalizedAttackType === 'melee' ? 'front' : 'back';
     const immune = [
         'stun', 'poison', 'psychic', 'paralyze', 'bleed', 'stamina_drain', 'mana_drain',
     ];
@@ -136,6 +142,7 @@ export function buildShadowSimulacraStats(photo, selectedPowers) {
             magicMax: offenseSkill + 4,
             photomancerLevel: level,
             attackMode,
+            attackType: normalizedAttackType,
             damageBonusPct: level,
             immune: [...new Set(immune)],
             tags: ['construct'],

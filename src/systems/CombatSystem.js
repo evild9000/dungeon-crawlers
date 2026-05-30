@@ -78,6 +78,10 @@ import {
     BARBARIAN_WOUND_MULT_1, BARBARIAN_WOUND_MULT_2, BARBARIAN_WOUND_MULT_3,
     WARRIOR_DEFEND_MODE_UNLOCK_LEVEL, WARRIOR_INTERCEPT_DAMAGE_MULT,
     WARRIOR_RETALIATION_UNLOCK_LEVEL, WARRIOR_RETALIATION_DAMAGE_MULT,
+    WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL,
+    WARRIOR_TAUNT_UNLOCK_LEVEL, WARRIOR_TAUNT_STAMINA_PER_ROUND,
+    WARRIOR_TAUNT_DEFEND_CHANCE_BONUS, WARRIOR_TAUNT_PENALTY_DIVISOR,
+    WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR,
     MONK_QUIVERING_PALM_UNLOCK_LEVEL, MONK_QUIVERING_PALM_DURATION_BASE,
     MONK_QUIVERING_PALM_DURATION_PER_10LV, MONK_QUIVERING_PALM_STACK_CAP_DIVISOR,
     MONK_QUIVERING_PALM_STACK_CAP_MAX,
@@ -138,6 +142,7 @@ import {
     WARRIOR_FORMATION_MIN_MEMBERS, WARRIOR_FORMATION_OPPORTUNITY_OFFSET,
     WARRIOR_FORMATION_CRIT_DIVISOR, WARRIOR_FORMATION_CRIT_BASE,
     WARRIOR_FORMATION_CRIT_PER_LEVEL,
+    WARRIOR_SHIELD_WALL_UNLOCK_LEVEL, WARRIOR_SHIELD_WALL_LEVEL_DIVISOR,
     ENEMY_STAT_MIN, ENEMY_STAT_MAX,
     MONSTER_HP_BONUS_THRESHOLD, MONSTER_HP_BONUS_PER_LEVEL,
     MONSTER_DEFENSE_PER_2_LVL,
@@ -538,13 +543,7 @@ export class CombatSystem {
 
     /** Returns true if this party member should be healed by the Righteousness aura (alive, not undead, not golem). */
     _isHealableByRighteousnessAura(member) {
-        if (!member || member.health <= 0) return false;
-        if (member.canBeHealed === false || isShadowSimulacra(member)) return false;
-        if (member.isLichForm) return false;
-        if (!member.isSummoned) return true;
-        if (UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich' || member.summonType === 'corpse_horror') return false;
-        if (GOLEM_PRESETS[member.summonType]) return false;
-        return true;
+        return this._canReceiveLivingHealOrBuff(member);
     }
 
     /** Paladin L30 aura: heal every eligible party member for 5% of damage the paladin just dealt. */
@@ -667,6 +666,21 @@ export class CombatSystem {
         if (!member || !member.isSummoned) return false;
         if (member.summonStats && member.summonStats.tierId && GOLEM_PRESETS[member.summonType]) return true;
         return UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich' || member.summonType === 'corpse_horror';
+    }
+
+    _isIllusionaryWarriorMember(member) {
+        return !!(member && member.isSummoned && (member.summonType === 'illusionary_warrior' || member.summonStats?.illusionaryWarrior));
+    }
+
+    _canReceiveLivingHealOrBuff(member) {
+        if (!member || member.health <= 0) return false;
+        if (member.type && ENEMY_TYPES[member.type]) {
+            const tags = ENEMY_TYPES[member.type].tags || [];
+            if (tags.includes('undead') || tags.includes('construct') || tags.includes('elemental')) return false;
+        }
+        if (member.canBeHealed === false || isShadowSimulacra(member) || this._isIllusionaryWarriorMember(member)) return false;
+        if (member.isLichForm || this._isUndeadOrGolemMember(member) || this._isRiftElemental(member)) return false;
+        return true;
     }
 
     _isPsychicImmunePartyMember(target) {
@@ -992,6 +1006,48 @@ export class CombatSystem {
         return 1 + WARRIOR_FORMATION_BONUS_PER_MEMBER * n;
     }
 
+    _getFormationShieldWallInfo(member = null) {
+        const members = this._getFormationMembers();
+        if (members.length < WARRIOR_FORMATION_MIN_MEMBERS) {
+            return { active: false, members, contributors: [], averageLevel: 0, step: 0, totalDefense: 0, chanceBonus: 0 };
+        }
+        if (member && !members.includes(member)) {
+            return { active: false, members, contributors: [], averageLevel: 0, step: 0, totalDefense: 0, chanceBonus: 0 };
+        }
+        const eligibleWarriorIds = new Set(members
+            .filter(m => !m.isSummoned && (m.level || 1) >= WARRIOR_SHIELD_WALL_UNLOCK_LEVEL)
+            .map(m => m.id));
+        const contributors = members.filter(m => {
+            if (!m.isSummoned) return eligibleWarriorIds.has(m.id);
+            return m.summonType === 'squire' && eligibleWarriorIds.has(m.summonerId);
+        });
+        if (contributors.length === 0) {
+            return { active: false, members, contributors, averageLevel: 0, step: 0, totalDefense: 0, chanceBonus: 0 };
+        }
+        const averageLevel = contributors.reduce((sum, m) => sum + (m.level || 1), 0) / contributors.length;
+        const step = Math.max(0, Math.floor(averageLevel / WARRIOR_SHIELD_WALL_LEVEL_DIVISOR));
+        const totalDefense = step * contributors.length;
+        return {
+            active: step > 0 && totalDefense > 0,
+            members,
+            contributors,
+            averageLevel,
+            step,
+            totalDefense,
+            chanceBonus: totalDefense / 100,
+        };
+    }
+
+    _getFormationShieldWallDefenseBonus(member) {
+        const info = this._getFormationShieldWallInfo(member);
+        return info.active ? info.totalDefense : 0;
+    }
+
+    _getFormationShieldWallChanceBonus(member) {
+        const info = this._getFormationShieldWallInfo(member);
+        return info.active ? info.chanceBonus : 0;
+    }
+
     /** Returns true if the enemy's slime tag makes it immune to crits. */
     _isCritImmune(enemy) {
         if (!enemy || !enemy.type) return false;
@@ -1002,7 +1058,7 @@ export class CombatSystem {
     /** Roll a Formation crit. Returns { damage, crit }. Crit chance = (level/2)%. Crit damage = base + 100% + level% (e.g. L30: +130% → ×2.30). */
     _applyFormationCrit(attacker, damage) {
         const lvl = attacker.level || 1;
-        const critChance = Math.min(lvl / 2 / 100, 0.95);
+        const critChance = Math.min(lvl / 2 / 100 + this._getFormationShieldWallChanceBonus(attacker), 0.95);
         if (Math.random() < critChance) {
             // damage + 100% + level%  →  damage × (1 + 1.00 + level/100)
             const mult = 1 + WARRIOR_FORMATION_CRIT_BASE + (lvl / 100);
@@ -1028,7 +1084,8 @@ export class CombatSystem {
             && s.isInFormation,
         );
         if (mySquires.length === 0) return;
-        const chance = ((warrior.level || 1) + WARRIOR_FORMATION_OPPORTUNITY_OFFSET) / 100;
+        const chance = Math.min(0.95, ((warrior.level || 1) + WARRIOR_FORMATION_OPPORTUNITY_OFFSET) / 100
+            + this._getFormationShieldWallChanceBonus(warrior));
         for (const sq of mySquires) {
             if (Math.random() >= chance) continue;
             let dmg = Math.max(1, Math.floor(this._rollPlayerMeleeDamage(warrior) * WARRIOR_SQUIRE_MELEE_FRACTION));
@@ -1048,13 +1105,52 @@ export class CombatSystem {
         }
     }
 
+    _getActiveTauntingWarriors() {
+        return (this.party || [])
+            .filter(m => m && m.health > 0 && !m.isSummoned && m.classId === 'warrior'
+                && (m.level || 1) >= WARRIOR_TAUNT_UNLOCK_LEVEL && m.warriorTauntActive)
+            .map(m => ({ member: m, tie: Math.random() }))
+            .sort((a, b) => (b.member.health || 0) - (a.member.health || 0) || a.tie - b.tie)
+            .map(x => x.member);
+    }
+
+    _applyWarriorTauntTargeting(currentTarget, rawDmg, attackKind, opts = {}) {
+        if (opts.aoe || opts.skipTaunt || !['melee', 'ranged', 'magic'].includes(attackKind)) return null;
+        const taunts = this._getActiveTauntingWarriors();
+        if (taunts.length === 0) return null;
+        let chosen = null;
+        for (const warrior of taunts) {
+            const chance = Math.min(0.95, (warrior.level || 1) / 100
+                + (warrior.isDefendMode ? WARRIOR_TAUNT_DEFEND_CHANCE_BONUS : 0));
+            if (warrior === currentTarget || Math.random() < chance) {
+                chosen = warrior;
+                break;
+            }
+        }
+        if (!chosen) return null;
+        const divisor = chosen.isDefendMode ? WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR : WARRIOR_TAUNT_PENALTY_DIVISOR;
+        const penalty = Math.max(1, Math.floor((chosen.level || 1) / divisor));
+        const newRaw = Math.max(1, rawDmg - penalty);
+        if (chosen !== currentTarget) {
+            const oldName = currentTarget?.name || (currentTarget?.type ? this._eName(currentTarget) : 'the original target');
+            this._addLog(`🛡️ ${chosen.name}'s taunt pulls the ${attackKind} attack away from ${oldName}! (-${penalty} attack)`);
+        } else {
+            this._addLog(`🛡️ ${chosen.name}'s taunt rattles the attacker! (-${penalty} attack)`);
+        }
+        return { target: chosen, rawDmg: newRaw };
+    }
+
     _performWarriorRetaliation(warrior, enemy) {
         if (!warrior || !enemy || warrior.health <= 0 || enemy.health <= 0) return;
         if (warrior.classId !== 'warrior' || warrior.level < WARRIOR_RETALIATION_UNLOCK_LEVEL) return;
         const chance = typeof warrior.getRetaliationChance === 'function'
             ? warrior.getRetaliationChance()
             : 0;
-        if (chance <= 0 || Math.random() >= chance) return;
+        const shieldWallRetaliationBonus = warrior.isDefendMode
+            ? this._getFormationShieldWallChanceBonus(warrior)
+            : 0;
+        const finalChance = Math.min(0.95, chance + shieldWallRetaliationBonus);
+        if (finalChance <= 0 || Math.random() >= finalChance) return;
 
         const enemyName = this._eName(enemy);
         let retaliateDamage = Math.max(1, Math.floor(this._rollPlayerMeleeDamage(warrior) * WARRIOR_RETALIATION_DAMAGE_MULT));
@@ -1748,10 +1844,11 @@ export class CombatSystem {
             case 1: { // Heal 5% of missing HP — golems + living non-undead
                 const healable = this.party.filter(p => {
                     if (!p || p.health <= 0 || p.health >= p.maxHealth) return false;
+                    if (this._isIllusionaryWarriorMember(p) || isShadowSimulacra(p)) return false;
                     if (!p.isSummoned) return true;
                     if (GOLEM_PRESETS[p.summonType]) return true;
                     if (UNDEAD_TIERS.some(ut => ut.id === p.summonType) || p.summonType === 'demi_lich') return false;
-                    return true; // beast summons
+                    return p.canBeHealed !== false; // beast and other living summons
                 });
                 if (healable.length === 0) {
                     this._addLog(`${ico} Enchanted Drone fires repair beam — no wounded targets!`);
@@ -1764,7 +1861,7 @@ export class CombatSystem {
                 break;
             }
             case 2: { // 2 Mirror Images on a random living party member
-                const living = this.party.filter(p => p && p.health > 0);
+                const living = this.party.filter(p => this._canReceiveLivingHealOrBuff(p));
                 if (living.length === 0) break;
                 const t = living[Math.floor(Math.random() * living.length)];
                 t.mirrorImages = (t.mirrorImages || 0) + 2;
@@ -2420,8 +2517,8 @@ export class CombatSystem {
         if (m.classId !== 'cleric') return;
         if (!targetMember || targetMember.health <= 0) return;
 
-        if (targetMember.isSummoned && !targetMember.canBeHealed) {
-            this._addLog(`${m.name} cannot heal undead minions.`);
+        if (targetMember.isSummoned && !this._canReceiveLivingHealOrBuff(targetMember)) {
+            this._addLog(`${m.name} cannot heal ${targetMember.name}.`);
             return;
         }
         if (m.mana < CLERIC_HEAL_MANA_COST) {
@@ -2472,14 +2569,14 @@ export class CombatSystem {
         const targets = this.aliveParty;
         let parts = [];
         for (const t of targets) {
-            if (t.isSummoned && (t.summonType === 'demi_lich' || !t.canBeHealed)) continue;
+            if (!this._canReceiveLivingHealOrBuff(t)) continue;
             const amt = Math.max(1, Math.ceil(t.maxHealth * pct));
             const before = t.health;
             t.health = Math.min(t.maxHealth, t.health + amt);
             parts.push(`${t.name} +${t.health - before}`);
         }
         this._addLog(`\u2728 ${m.name} calls down a Mass Heal! (${parts.join(', ')})`);
-        this._maybeTriggerClericCleanse(m, targets.filter(t => !(t.isSummoned && (t.summonType === 'demi_lich' || !t.canBeHealed))));
+        this._maybeTriggerClericCleanse(m, targets.filter(t => this._canReceiveLivingHealOrBuff(t)));
 
         this._advancePlayerTurn();
     }
@@ -2623,11 +2720,8 @@ export class CombatSystem {
         const healPct  = CLERIC_MASS_REGEN_BASE_PCT + Math.floor(m.level / 3) * CLERIC_MASS_REGEN_PER_3_LEVELS;
         const duration = Math.max(1, Math.floor(m.level / 4));   // floor(level/4) rounds
 
-        const isUndead    = (t) => t.isSummoned && (UNDEAD_TIERS.some(u => u.id === t.summonType) || t.summonType === 'demi_lich' || t.summonType === 'corpse_horror');
-        const isGolem     = (t) => t.isSummoned && GOLEM_PRESETS[t.summonType];
-        const isRiftElem  = (t) => this._isRiftElemental(t);
         const eligible = this.party.filter(t =>
-            t.health > 0 && !isUndead(t) && !isGolem(t) && !isRiftElem(t)
+            this._canReceiveLivingHealOrBuff(t)
         );
 
         for (const t of eligible) {
@@ -5078,7 +5172,7 @@ export class CombatSystem {
         if (m.classId !== 'paladin') return;
         if (!targetMember || targetMember.health <= 0) return;
 
-        if (targetMember.isSummoned && !targetMember.canBeHealed) {
+        if (targetMember.isSummoned && !this._canReceiveLivingHealOrBuff(targetMember)) {
             this._addLog(`${m.name}'s prayer cannot mend ${targetMember.name}.`);
             return;
         }
@@ -5900,6 +5994,20 @@ export class CombatSystem {
         this._notify();
     }
 
+    warriorTauntToggle() {
+        const m = this.currentMember;
+        if (!m || m.classId !== 'warrior' || m.isSummoned || m.level < WARRIOR_TAUNT_UNLOCK_LEVEL) return;
+        m.warriorTauntActive = !m.warriorTauntActive;
+        if (m.warriorTauntActive) {
+            const chance = Math.min(95, (m.level || 1) + (m.isDefendMode ? Math.round(WARRIOR_TAUNT_DEFEND_CHANCE_BONUS * 100) : 0));
+            const penalty = Math.max(1, Math.floor((m.level || 1) / (m.isDefendMode ? WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR : WARRIOR_TAUNT_PENALTY_DIVISOR)));
+            this._addLog(`🛡️ ${m.name} begins taunting! (${chance}% draw check, -${penalty} attack on redirected hits, ${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST/round)`);
+        } else {
+            this._addLog(`🛡️ ${m.name} stops taunting.`);
+        }
+        this._notify();
+    }
+
     flee() {
         if (Math.random() < FLEE_CHANCE) {
             this._addLog('Your party flees from combat!');
@@ -6003,9 +6111,12 @@ export class CombatSystem {
             }
         }
 
-        let kind = 'melee';
-        if (has('extra_ranged')) kind = 'ranged';
-        else if (has('extra_magic')) kind = 'magic';
+        let kind = ['melee', 'ranged', 'magic'].includes(st.attackType) ? st.attackType : null;
+        if (!kind) {
+            kind = 'melee';
+            if (has('extra_ranged')) kind = 'ranged';
+            else if (has('extra_magic')) kind = 'magic';
+        }
         const extraAttacks = has('extra_melee') || has('extra_ranged') || has('extra_magic')
             ? Math.max(1, Math.floor(level / 5))
             : 0;
@@ -9667,6 +9778,11 @@ export class CombatSystem {
         const eName = this._eName(e);
         const typeDef = ENEMY_TYPES[e.type] || {};
         rawDmg = this._applyEnemyResourceExhaustion(e, rawDmg);
+        const tauntResult = this._applyWarriorTauntTargeting(target, rawDmg, attackKind, opts);
+        if (tauntResult) {
+            target = tauntResult.target;
+            rawDmg = tauntResult.rawDmg;
+        }
 
         if (target && target.type && target.charmedRounds > 0) {
             const tName = this._eName(target);
@@ -9887,9 +10003,18 @@ export class CombatSystem {
 
         // Shield block — applies to melee, ranged, and magic/AoE (not phaseStrike)
         if (!opts.phaseStrike) {
-            const shieldChance = target.getShieldBlockChance();
+            const shieldWallBlock = target.hasShield && target.hasShield()
+                ? this._getFormationShieldWallChanceBonus(target)
+                : 0;
+            const shieldChance = Math.min(0.95, target.getShieldBlockChance() + shieldWallBlock);
             if (shieldChance > 0 && Math.random() < shieldChance) {
                 this._addLog(`\u{1F6E1}\uFE0F ${target.name}'s shield blocks ${eName}'s attack!`);
+                if (!target.isSummoned
+                    && target.classId === 'warrior'
+                    && (target.level || 1) >= WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL
+                    && e && e.health > 0) {
+                    this._performWarriorRetaliation(target, e);
+                }
                 return null;
             }
         }
@@ -9916,7 +10041,7 @@ export class CombatSystem {
         // Squire: 25% chance to block any incoming attack outright.
         if (target.isSummoned
             && target.summonType === 'squire'
-            && Math.random() < WARRIOR_SQUIRE_SHIELD_BLOCK) {
+            && Math.random() < Math.min(0.95, WARRIOR_SQUIRE_SHIELD_BLOCK + this._getFormationShieldWallChanceBonus(target))) {
             this._addLog(`🛡️ ${target.name} raises their shield and blocks ${eName}'s attack!`);
             return null;
         }
@@ -10001,10 +10126,10 @@ export class CombatSystem {
                 .filter(w => w !== target && w.canIntercept && w.canIntercept())
                 .sort((a, b) => (b.health || 0) - (a.health || 0));
             for (const warrior of interceptors) {
-                const interceptChance = warrior.getAugmentedShieldBlock();
+                const interceptChance = Math.min(0.95, warrior.getAugmentedShieldBlock() + this._getFormationShieldWallChanceBonus(warrior));
                 if (interceptChance > 0 && Math.random() < interceptChance) {
                     const warriorArmor = warrior.getArmorBlocking();
-                    const warriorDef   = warrior.getTotalDefense() + this._getSummonDefenseBonus(warrior);
+                    const warriorDef   = warrior.getTotalDefense() + this._getSummonDefenseBonus(warrior) + this._getFormationShieldWallDefenseBonus(warrior);
                     const postDef      = Math.max(1, rawDmg - warriorArmor - warriorDef);
                     const interceptDmg = Math.max(1, Math.floor(postDef * WARRIOR_INTERCEPT_DAMAGE_MULT));
                     warrior.health = Math.max(0, warrior.health - interceptDmg);
@@ -10025,7 +10150,7 @@ export class CombatSystem {
         // Ghost phaseStrike — bypasses armor and innate defense entirely.
         const armorBlock = opts.phaseStrike ? 0 : target.getArmorBlocking();
         const innateDef  = opts.phaseStrike ? 0
-            : target.getTotalDefense() + this._getSummonDefenseBonus(target);
+            : target.getTotalDefense() + this._getSummonDefenseBonus(target) + this._getFormationShieldWallDefenseBonus(target);
 
         if (opts.phaseStrike) {
             this._addLog(`\u{1F47B} ${eName} phases through ${target.name}'s defences!`);
@@ -11400,6 +11525,17 @@ export class CombatSystem {
                     this._addLog(`⚔️ ${m.name}'s stamina fails — Formation breaks!`);
                 }
             }
+            // Warrior Taunt: 1 ST/round; automatically drops when stamina is gone.
+            if (m.classId === 'warrior' && !m.isSummoned && m.warriorTauntActive && m.health > 0) {
+                if (m.stamina >= WARRIOR_TAUNT_STAMINA_PER_ROUND) {
+                    m.stamina -= WARRIOR_TAUNT_STAMINA_PER_ROUND;
+                    this._addLog(`🛡️ ${m.name}'s Taunt consumes ${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST.`);
+                } else {
+                    m.stamina = 0;
+                    m.warriorTauntActive = false;
+                    this._addLog(`🛡️ ${m.name}'s Taunt drops — no stamina left.`);
+                }
+            }
             // Squire Formation: 10 ST/round; only this squire drops if it can't pay.
             if (m.isSummoned && m.summonType === 'squire' && m.isInFormation && m.health > 0) {
                 if (m.stamina >= WARRIOR_FORMATION_STAMINA_PER_ROUND) {
@@ -11465,6 +11601,10 @@ export class CombatSystem {
             // Combat Regen HoT (Cleric Mass Regen — L20)
             for (const e of effects) {
                 if (e.type === 'combat_regen' && e.rounds > 0 && m.health < m.maxHealth) {
+                    if (!this._canReceiveLivingHealOrBuff(m)) {
+                        e.rounds = 0;
+                        continue;
+                    }
                     const healAmt = Math.max(1, Math.floor(m.maxHealth * (e.healPct || 0)));
                     const healed  = Math.min(healAmt, m.maxHealth - m.health);
                     if (healed > 0) {

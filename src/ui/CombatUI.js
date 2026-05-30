@@ -31,6 +31,10 @@ import {
     BARBARIAN_RAGE_STAMINA_COST,
     GOLEM_TIERS,
     WARRIOR_DEFEND_MODE_UNLOCK_LEVEL,
+    WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL,
+    WARRIOR_TAUNT_UNLOCK_LEVEL, WARRIOR_TAUNT_STAMINA_PER_ROUND,
+    WARRIOR_TAUNT_DEFEND_CHANCE_BONUS, WARRIOR_TAUNT_PENALTY_DIVISOR,
+    WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR,
     MONK_QUIVERING_PALM_UNLOCK_LEVEL,
     MONK_QUIVERING_PALM_DURATION_BASE, MONK_QUIVERING_PALM_DURATION_PER_10LV,
     MONK_QUIVERING_PALM_STAMINA_MULT, MONK_QUIVERING_PALM_MANA_MULT,
@@ -105,6 +109,7 @@ import {
     WARRIOR_FORMATION_UNLOCK_LEVEL, WARRIOR_FORMATION_STAMINA_PER_ROUND,
     WARRIOR_FORMATION_BONUS_PER_MEMBER, WARRIOR_FORMATION_BASE_BONUS,
     WARRIOR_FORMATION_MIN_MEMBERS, WARRIOR_FORMATION_OPPORTUNITY_OFFSET,
+    WARRIOR_SHIELD_WALL_UNLOCK_LEVEL, WARRIOR_SHIELD_WALL_LEVEL_DIVISOR,
     RANGER_HUNTERS_MARK_UNLOCK_LEVEL, RANGER_HUNTERS_MARK_STAMINA_COST,
     RANGER_HUNTERS_MARK_MANA_COST, RANGER_HUNTERS_MARK_DAMAGE_BONUS,
     RANGER_HUNTERS_MARK_UPKEEP_MANA, RANGER_HUNTERS_MARK_UPKEEP_STAMINA,
@@ -2393,7 +2398,7 @@ export class CombatUI {
                 const atk = Math.max(1, Math.floor(m.level / 5));
                 const iwBtn = this._addBtn(`\u{1FA9E} Illusion Warriors x${count} (-${PHOTOMANCER_ILLUSION_MANA_COST} MP)`, m.mana >= PHOTOMANCER_ILLUSION_MANA_COST, () => this.combat.photomancerCreateIllusionaryWarriors());
                 iwBtn.classList.add('combat-special-btn');
-                iwBtn.title = `Creates ${count} front-row illusionary warrior(s). Each attacks ${atk} time(s)/round, is immune to all damage/effects, and can be disbelieved.`;
+                iwBtn.title = `Creates ${count} front-row illusionary warrior(s). Each attacks ${atk} time(s)/round, is immune to all damage/effects, cannot receive healing/regen/cleansing/living buffs, and can be disbelieved.`;
             }
 
             if (m.level >= PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) {
@@ -2824,6 +2829,7 @@ export class CombatUI {
                 'Intercept applies to melee, ranged, and magic/AoE attacks alike.',
                 'Cannot intercept while stunned, held, petrified, or dead.',
                 m.level >= 25 ? `L25 passive: successful intercepts have a ${Math.round(m.getRetaliationChance() * 100)}% chance to retaliate for 75% melee damage.` : 'L25 passive: successful intercepts can trigger a retaliatory strike.',
+                m.level >= WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL ? `L${WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL}: personal shield blocks can also trigger Retaliatory Strike; formation squires may follow with opportunity strikes.` : `L${WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL}: personal shield blocks can also trigger retaliation and squire opportunities.`,
                 'Toggling costs your action for the turn. Use End Turn to pass without toggling.',
                 `⚡ Stun Resistance (L20 passive): ${stunResist}% chance to ignore stun effects.`,
                 defendModeOn ? 'Currently ACTIVE — attacks disabled.' : 'Currently INACTIVE.',
@@ -2875,17 +2881,51 @@ export class CombatUI {
                 ? `×${(1 + WARRIOR_FORMATION_BASE_BONUS + WARRIOR_FORMATION_BONUS_PER_MEMBER * n).toFixed(2)}`
                 : `none yet (need ≥${WARRIOR_FORMATION_MIN_MEMBERS} members)`;
             const oppChance = Math.round(((m.level || 1) + WARRIOR_FORMATION_OPPORTUNITY_OFFSET));
+            const shieldWallMembers = allFormation;
+            const eligibleShieldWallWarriors = new Set(shieldWallMembers
+                .filter(p => !p.isSummoned && (p.level || 1) >= WARRIOR_SHIELD_WALL_UNLOCK_LEVEL)
+                .map(p => p.id));
+            const shieldWallContrib = shieldWallMembers.filter(p => {
+                if (!p.isSummoned) return eligibleShieldWallWarriors.has(p.id);
+                return p.summonType === 'squire' && eligibleShieldWallWarriors.has(p.summonerId);
+            });
+            const shieldWallAvg = shieldWallContrib.length
+                ? shieldWallContrib.reduce((sum, p) => sum + (p.level || 1), 0) / shieldWallContrib.length
+                : 0;
+            const shieldWallStep = shieldWallContrib.length > 0 ? Math.max(0, Math.floor(shieldWallAvg / WARRIOR_SHIELD_WALL_LEVEL_DIVISOR)) : 0;
+            const shieldWallTotal = shieldWallStep * shieldWallContrib.length;
             formBtn.title = [
                 `Warrior L${WARRIOR_FORMATION_UNLOCK_LEVEL}: Formation — FREE action (does not use your turn).`,
                 `With ≥${WARRIOR_FORMATION_MIN_MEMBERS} members: +100% + ${Math.round(WARRIOR_FORMATION_BONUS_PER_MEMBER * 100)}% per member to all formation attacks.`,
                 `Applies to: warrior attacks, extra swings, squire attacks, and retaliatory strikes.`,
                 `Formation crit: (level ÷ 2)% chance for ×(2 + level÷100) damage.`,
+                m.level >= WARRIOR_SHIELD_WALL_UNLOCK_LEVEL
+                    ? `L35 Shield Wall: level 35+ warriors contribute, and each counts their own active formation squires. Contributors add floor(avg contributor level/${WARRIOR_SHIELD_WALL_LEVEL_DIVISOR}) each to formation defense, block/intercept/retaliate/opportunity chances, and formation crit. Current: +${shieldWallTotal} defense and +${shieldWallTotal}% chance bonuses.`
+                    : `L35 Shield Wall: level 35+ warriors and their own active formation squires add defensive and chance bonuses.`,
                 `Costs ${WARRIOR_FORMATION_STAMINA_PER_ROUND} ST/round for you and each squire independently. Warrior failure drops all squires from formation too.`,
                 mySquires.length > 0
                     ? `Your squires: ${mySquires.map(s => s.name).join(', ')} — auto-sync with your formation toggle.`
                     : `No squires present (summon them first for the best bonus).`,
                 `While in BOTH Defend Mode AND Formation: squires get a ${oppChance}% opportunity attack after each retaliatory strike.`,
                 formOn ? `ACTIVE — formation members: ${n}. Damage multiplier: ${multStr}.` : `INACTIVE.`,
+            ].join('\n');
+        }
+
+        // ── Warrior L35: Taunt toggle (FREE action)
+        if (m.classId === 'warrior' && !m.isSummoned && m.level >= WARRIOR_TAUNT_UNLOCK_LEVEL) {
+            const tauntOn = !!m.warriorTauntActive;
+            const drawChance = Math.min(95, (m.level || 1) + (m.isDefendMode ? Math.round(WARRIOR_TAUNT_DEFEND_CHANCE_BONUS * 100) : 0));
+            const penalty = Math.max(1, Math.floor((m.level || 1) / (m.isDefendMode ? WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR : WARRIOR_TAUNT_PENALTY_DIVISOR)));
+            const tauntBtn = this._addBtn(tauntOn ? `🛡️ Taunt: ON (${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST/rnd)` : '🛡️ Taunt: OFF', true, () => this.combat.warriorTauntToggle());
+            tauntBtn.classList.add('combat-special-btn');
+            if (tauntOn) tauntBtn.style.boxShadow = '0 0 8px #66ccff, 0 0 16px #2266aa88';
+            tauntBtn.title = [
+                `Warrior L${WARRIOR_TAUNT_UNLOCK_LEVEL}: Taunt — FREE action toggle.`,
+                `Costs ${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST/round while active.`,
+                `Before single-target melee, ranged, or magic attacks resolve, taunting warriors are checked from highest health to lowest.`,
+                `Current draw chance: ${drawChance}%${m.isDefendMode ? ' (includes +10% from Defend Mode)' : ''}.`,
+                `If selected, the attack is redirected to this warrior and takes -${penalty} attack${m.isDefendMode ? ' (level/4 in Defend Mode)' : ' (level/6)'}.`,
+                tauntOn ? 'Currently ACTIVE.' : 'Currently INACTIVE.',
             ].join('\n');
         }
 

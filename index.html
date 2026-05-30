@@ -2649,6 +2649,9 @@
                 <div class="help-row"><b>Equipped armor</b> reduces incoming damage by its blocking value. See Armor Restrictions below.</div>
                 <div class="help-row"><b>Equipped shields</b> have a base <b>25% chance to completely block</b> a melee, ranged, or magic/AoE hit (legendary shield: 40%). Each Artificer shield enchant rank (+1 to +7) raises block chance by an additional +1% and adds +1 defense. Shields cannot be used with a ranged weapon equipped, and Mages/Monks/Necromancers/Artificers/Warlocks cannot use shields at all.</div>
                 <div class="help-row"><b>Warrior Defend Mode (L20)</b> — A warrior in Defend Mode intercepts attacks targeting any party member (melee, ranged, or magic/AoE). The warrior rolls their augmented block chance (shield base + 1%/3 warrior levels); on a hit, the original target takes no damage and the warrior absorbs <b>40% of the post-defense damage</b> instead. Toggling Defend Mode on/off costs the warrior's action that turn. <b>While in Defend Mode, the warrior's own melee, ranged, and magic attack buttons are all disabled</b> — only special/passive abilities remain available.</div>
+                <div class="help-row"><b>Formation Shield Wall (Warrior L35)</b> — level 35+ real warriors in Formation contribute, and each automatically counts their own active formation squires. Each contributor adds floor(average contributor level/17) to all formation members as defense and as matching percent bonuses to shield block, intercept, retaliatory strike, squire opportunity strike, and formation crit.</div>
+                <div class="help-row"><b>Taunt (Warrior L35)</b> — free toggle costing 1 ST/round. Taunting warriors are checked by highest HP before single-target melee, ranged, and magic attacks; selected taunts redirect the attack and penalize the monster's attack roll.</div>
+                <div class="help-row"><b>Shield Riposte (Warrior L35)</b> — a warrior's own successful shield block can trigger Retaliatory Strike, not only intercept blocks. If that retaliation fires, active formation squires can make their normal opportunity strikes.</div>
                 <div class="help-row"><b>Warrior Stun Resistance</b> — Warriors have a passive <b>level × 2% chance to shrug off any stun</b> (caps at 95% at level 47+). A shrugged stun is fully negated and the warrior acts normally that turn.</div>
                 <div class="help-row"><b>Encounter size</b>: combat always pulls in enough adjacent monsters to match your party size (summons included).</div>
                 <div class="help-row">Fallen allies are <b>not</b> auto-revived at the end of combat — use a Resurrection Potion to bring them back.</div>
@@ -2919,6 +2922,11 @@
                         <td>A rogue in Shadow Step is untargetable. The attack passes through harmlessly — no damage, no riders, no follow-ups.</td>
                     </tr>
                     <tr>
+                        <td class="combat-check-label">Prismatic Sphere</td>
+                        <td class="combat-check-kind">Ranged / Magic / AoE &mdash; absorption</td>
+                        <td>If a Photomancer's Prismatic Sphere is active, it absorbs raw ranged, magic, and AoE damage here, after untargetable checks such as Shadow Step and before Ranger Eagle Totem deflect.</td>
+                    </tr>
+                    <tr>
                         <td class="combat-check-label">Eagle Totem Deflect</td>
                         <td class="combat-check-kind">Ranged only &mdash; full miss + reflect</td>
                         <td>Any ranger with Eagle Totem rolls <b>level &times; rate%</b> (cap 95%). On success, the shot is reflected back at the attacker for a fraction of the raw damage. Attack ends; target is unharmed.</td>
@@ -2979,7 +2987,7 @@
                     <tr>
                         <td class="combat-check-label">Shield Block</td>
                         <td class="combat-check-kind">Melee, Ranged, Magic/AoE</td>
-                        <td>Rolls the target's shield block chance against <b>all</b> attack types. Base 25% (legendary shield: 40%); each Artificer enchant rank adds +1% (max +7%, for up to 32% / 47%). Does not apply to phase strikes. Mages, Monks, Necromancers, and Artificers cannot equip shields.</td>
+                        <td>Rolls the target's shield block chance against <b>all</b> attack types. Base 25% (legendary shield: 40%); each Artificer enchant rank adds +1% (max +7%, for up to 32% / 47%). Does not apply to phase strikes. Level 35+ warriors can riposte from their own successful shield blocks. Mages, Monks, Necromancers, and Artificers cannot equip shields.</td>
                     </tr>
                     <tr>
                         <td class="combat-check-label">Death Knight Spectral Shield</td>
@@ -3175,6 +3183,12 @@
                         <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
                     </tr>
                     <tr>
+                        <td class="combat-check-label">Prismatic Sphere</td>
+                        <td class="combat-check-kind">&#x2014;</td>
+                        <td class="combat-check-kind">&#x2705; yes</td>
+                        <td style="font-size:12px;color:#aa9966;">&#x2705; yes</td>
+                    </tr>
+                    <tr>
                         <td class="combat-check-label">Eagle Totem deflect</td>
                         <td class="combat-check-kind">&#x2014;</td>
                         <td class="combat-check-kind">&#x2705; yes</td>
@@ -3277,6 +3291,9 @@
                     <tr><td class="ability-level">L25</td><td><b>Retaliatory Strike</b> — After each successful intercept: <b>25% + (level/2)%</b> chance to immediately counter with a <b>75% damage melee strike</b> against the attacker.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Summon Squires</b> (10 ST, once/combat) — Summons squires to the front row: <b>1 at L30, 2 at L60, 3 at L90</b>. Each squire attacks floor(level/15) times using 66% of warrior damage, has 66% warrior defense, and a 25% shield-block chance.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Formation</b> (free action toggle, <b>10 ST/rd</b>) — while squires are alive in formation, all warrior melee, retaliatory strikes, and squire attacks deal <b>&times;(1 + 0.15 &times; formation members)</b> damage (e.g. 2 members: &times;1.30, 4 members: &times;1.60). Each formation hit has a <b>(level&divide;2)%</b> crit chance; a crit deals <b>+100% + level%</b> bonus damage (e.g. L30: 100-pt hit &rarr; 230; L60: &rarr; 260; L90: &rarr; 290). Squires also make an opportunity strike after each warrior <b>Retaliatory Strike</b> (requires Defend Mode + Formation active; triggers independently per squire at (level + 10)% chance).</td></tr>
+                    <tr><td class="ability-level">L35</td><td><b>Formation Shield Wall</b> — level 35+ real warriors in formation contribute, and each automatically counts their own active formation squires. Each contributor adds floor(average contributor level/17). The total is added as defense to all formation members, and as the same percent to shield block, defense-mode intercept, defense-mode retaliatory strike, squire opportunity strike, and formation crit chance. HUD cards show a Shield Wall badge while active.</td></tr>
+                    <tr><td class="ability-level">L35</td><td><b>Taunt</b> (free toggle, <b>1 ST/rd</b>) — before single-target melee, ranged, or magic attacks resolve, taunting warriors are checked from highest HP to lowest. Each has level% chance to draw the attack; Defend Mode adds +10%. Redirected attacks suffer -level/6 attack, or -level/4 while the warrior is in Defend Mode.</td></tr>
+                    <tr><td class="ability-level">L35</td><td><b>Shield Riposte</b> — the warrior's own successful shield blocks can now trigger Retaliatory Strike, using the normal retaliation chance and damage. If the warrior is in Formation with squires, those squires can make opportunity strikes after these retaliations just as they do after intercept retaliations.</td></tr>
                 </table>
             </div>
 
@@ -3516,11 +3533,11 @@
                     <tr><td class="ability-level">L3</td><td><b>Mirror Image</b> (35 MP) — same as Mage Mirror Image, but creates one extra image.</td></tr>
                     <tr><td class="ability-level">L6</td><td><b>Blur</b> (30 MP) — all party members gain 20% miss chance against melee/ranged attacks for 3+&lfloor;level/10&rfloor; rounds.</td></tr>
                     <tr><td class="ability-level">L6</td><td><b>Invisibility</b> (10 MP) — one ally cannot be targeted by melee, ranged, or single-target magic for 5+&lfloor;level/10&rfloor; rounds. AoE still hits. Ends when the target damages an enemy.</td></tr>
-                    <tr><td class="ability-level">L10</td><td><b>Illusionary Warriors</b> (25 MP) — creates &lfloor;level/10&rfloor; front-row illusions. Each is immune to all damage/effects, attacks &lfloor;level/5&rfloor; times per turn using photomancer magic as armor/defense-ignoring magic damage, and can be disbelieved by monsters. Undead, constructs, and magic-immune monsters ignore them.</td></tr>
+                    <tr><td class="ability-level">L10</td><td><b>Illusionary Warriors</b> (25 MP) — creates &lfloor;level/10&rfloor; front-row illusions. Each is immune to all damage/effects, cannot receive healing, regeneration, cleansing, or living-only buffs, attacks &lfloor;level/5&rfloor; times per turn using photomancer magic as armor/defense-ignoring magic damage, and can be disbelieved by monsters. Undead, constructs, and magic-immune monsters ignore them.</td></tr>
                     <tr><td class="ability-level">L20</td><td><b>Improved Invisibility</b> — replaces Invisibility; attacking no longer breaks it.</td></tr>
                     <tr><td class="ability-level">L25</td><td><b>Disintegrate</b> (100 MP) — fires focused magic beams. Instant-kill chance is 3%+level/2%; bosses and mega bosses are immune to instant death and take &times;4 beam damage instead. Damage bonus is +200%+level&times;2%; +1 beam every 33 levels.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Prismatic Sphere</b> (100 MP, 1/combat) — one party sphere absorbs level&times;100 ranged, magic, and AoE damage before Eagle Totem deflect. Lasts until destroyed; only one sphere can exist.</td></tr>
-                    <tr><td class="ability-level">L30</td><td><b>Shadow Simulacra</b> (outside combat, N menu) — creates a permanent construct-like shadow ally. Limit &lfloor;level/10&rfloor;; cost level&times;100 gold. The creator gets one selectable power slot per 5 photomancer levels and may save/load templates. Base defense and melee/ranged/magic skill are level&times;2, with level% bonus damage. Shadow Simulacra cannot be healed, repaired, cleansed, revived, or receive living-only buffs, and are immune to stun, poison, psychic effects, paralyze-style holds, bleed DoTs, and stamina/mana drain. Regen or drain powers selected for the simulacra can still heal it.</td></tr>
+                    <tr><td class="ability-level">L30</td><td><b>Shadow Simulacra</b> (outside combat, N menu) — creates a permanent construct-like shadow ally. Limit &lfloor;level/10&rfloor;; cost level&times;100 gold. The creator gets one selectable power slot per 5 photomancer levels, plus a final melee/ranged/magic attack-type choice, and may save/load templates. The attack type determines monster immunity interactions and row placement: melee starts front row, ranged and magic start back row. Base defense and melee/ranged/magic skill are level&times;2, with level% bonus damage. Shadow Simulacra cannot be healed, repaired, cleansed, revived, or receive living-only buffs, and are immune to stun, poison, psychic effects, paralyze-style holds, bleed DoTs, and stamina/mana drain. Regen or drain powers selected for the simulacra can still heal it.</td></tr>
                 </table>
             </div>
 

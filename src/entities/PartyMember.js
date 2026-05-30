@@ -179,6 +179,7 @@ export class PartyMember {
         this.avatarActive = false; // Monk L25: Avatar toggle
         this.avatarElement = 'fire'; // Monk L25: fire | lightning | acid | ice
         this.isDefendMode = false;  // Warrior L20: Defend Mode toggle (persists turn-to-turn)
+        this.warriorTauntActive = false; // Warrior L35: passive taunt toggle
 
         // Druid L30: Wild Shape — combat-only transformation
         this.wildShapeForm    = null;  // 'bear'|'wolf'|'eagle'|'pixie'|'treant'|null
@@ -1140,6 +1141,7 @@ export class PartyMember {
         this.avatarActive = false;
         this.avatarElement = 'fire';
         this.isDefendMode        = false;
+        this.warriorTauntActive  = false;
         this.isInFormation       = false;
         this.squiresSummoned     = false;
         this.divineJudgmentUsed  = false;
@@ -1199,6 +1201,10 @@ export class PartyMember {
 
         // Expire any timed elixir buffs / other wall-clock effects.
         this.expireEffects();
+
+        // Photomancer Illusionary Warriors are not living bodies; they do not
+        // receive passive HP/ST/MP regeneration or healing buffs.
+        if (this.isSummoned && this.summonStats?.illusionaryWarrior) return;
 
         // Dying HP drain — applied even when dead-by-hunger, before regen block.
         if (this.hungerState === 'dying') {

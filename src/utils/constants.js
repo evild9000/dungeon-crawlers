@@ -737,6 +737,12 @@ export const WARRIOR_RETALIATION_UNLOCK_LEVEL   = 25;
 export const WARRIOR_RETALIATION_BASE_CHANCE    = 0.25; // 25% base on successful intercept
 export const WARRIOR_RETALIATION_PER_LEVEL      = 0.005; // +0.5% per level (= level / 2 %)
 export const WARRIOR_RETALIATION_DAMAGE_MULT    = 0.75; // 75% of a normal melee strike
+export const WARRIOR_PERSONAL_BLOCK_RETALIATION_UNLOCK_LEVEL = 35;
+export const WARRIOR_TAUNT_UNLOCK_LEVEL         = 35;
+export const WARRIOR_TAUNT_STAMINA_PER_ROUND    = 1;
+export const WARRIOR_TAUNT_DEFEND_CHANCE_BONUS  = 0.10;
+export const WARRIOR_TAUNT_PENALTY_DIVISOR      = 6;
+export const WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR = 4;
 export const RANGER_CRIT_PER_LEVEL = 0.03;    // +3% ranged crit per level
 export const MAGE_STUN_PER_LEVEL = 0.01;      // +1% magic stun per level
 export const ROGUE_INSTAKILL_PER_LEVEL = 0.01;// +1% backstab instakill per level beyond 1
@@ -1514,6 +1520,8 @@ export const WARRIOR_FORMATION_OPPORTUNITY_OFFSET = 10;
 export const WARRIOR_FORMATION_CRIT_DIVISOR       = 200; // retained for reference; crit = (level/2)%
 export const WARRIOR_FORMATION_CRIT_BASE          = 1.00; // +100% base crit bonus
 export const WARRIOR_FORMATION_CRIT_PER_LEVEL     = 0.01; // +1% per level added to crit mult
+export const WARRIOR_SHIELD_WALL_UNLOCK_LEVEL     = 35;
+export const WARRIOR_SHIELD_WALL_LEVEL_DIVISOR    = 17;
 
 // Ranger L30 abilities
 export const RANGER_HUNTERS_MARK_UNLOCK_LEVEL    = 30;

@@ -601,6 +601,7 @@ export const ILLUSIONARY_WARRIOR_PRESET = {
     speciesLabel: 'Illusion', kind: 'illusion',
     abilities: [
         'Front-row illusion. Immune to all damage, DoTs, and effects.',
+        'Cannot receive healing, regeneration, cleansing, or living-only buffs.',
         'Constructs, undead, and magic-immune enemies ignore or disbelieve it.',
         'Attacks randomly using the photomancer magic skill as armor-ignoring magic damage.',
     ],
@@ -615,6 +616,7 @@ export const SIMULACRUM_PRESET = {
         'Permanent shadow-magic construct formed outside combat from selected powers.',
         'Cannot be healed, repaired, cleansed, revived, or buffed as a living ally.',
         'Defense and melee/ranged/magic skill equal photomancer level x2 before selected upgrades.',
+        'Attack type is selected when formed: melee starts front row; ranged and magic start back row.',
         'Immune to stun, poison, psychic effects, paralyze-style holds, bleed DoTs, and stamina/mana drain.',
     ],
 };
