@@ -183,19 +183,27 @@ export class EnemyManager {
 
                 if (Math.random() < 0.10) {
                     // ── MEGA BOSS (10% chance) ─────────────────────────────────
-                    // 10× HP, defense = base + DL×2, melee/ranged +DL×4, magic +DL×3.
+                    // 10× HP/ST/MP, defense = base + DL×2, melee/ranged +DL×4, magic +DL×3.
                     enemy.isMegaBoss   = true;
                     enemy.health       = Math.round(enemy.health    * 10);
                     enemy.maxHealth    = Math.round(enemy.maxHealth  * 10);
+                    enemy.stamina      = Math.round(enemy.stamina   * 10);
+                    enemy.maxStamina   = Math.round(enemy.maxStamina * 10);
+                    enemy.mana         = Math.round(enemy.mana      * 10);
+                    enemy.maxMana      = Math.round(enemy.maxMana   * 10);
                     enemy.defense      = (enemy.defense || 0) + dlvl * 2;
                     enemy.bossAtkBonus = dlvl * 2;
                     enemy.bossDL       = dlvl;
                     enemy.name = `\u{1F480} Mega ${bTitle} ${bName}`;
                 } else {
                     // ── Normal boss ────────────────────────────────────────────
-                    // 5× HP, defense = base + DL, melee/ranged +DL×3, magic +DL×2.
+                    // 5× HP/ST/MP, defense = base + DL, melee/ranged +DL×3, magic +DL×2.
                     enemy.health       = Math.round(enemy.health    * 5);
                     enemy.maxHealth    = Math.round(enemy.maxHealth  * 5);
+                    enemy.stamina      = Math.round(enemy.stamina   * 5);
+                    enemy.maxStamina   = Math.round(enemy.maxStamina * 5);
+                    enemy.mana         = Math.round(enemy.mana      * 5);
+                    enemy.maxMana      = Math.round(enemy.maxMana   * 5);
                     enemy.defense      = (enemy.defense || 0) + dlvl;
                     enemy.bossAtkBonus = dlvl;
                     enemy.bossDL       = dlvl;

@@ -67,6 +67,10 @@ export class Enemy {
         this.maxStamina = maxStamina ?? this.stamina;
         this.mana       = mana     ?? rM;
         this.maxMana    = maxMana  ?? this.mana;
+        if (this.type === 'hydra' && stamina === undefined && maxStamina === undefined) {
+            this.stamina *= 3;
+            this.maxStamina *= 3;
+        }
 
         // Defense — +1 per 2 levels (floor)
         this.defense = defense ?? Math.floor(this.level / 2) * MONSTER_DEFENSE_PER_2_LVL;

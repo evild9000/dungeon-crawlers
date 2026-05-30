@@ -114,7 +114,7 @@ export const ENEMY_STAT_MAX = 25;
 export const ENEMY_TYPES = {
     // ── Original roster (unbounded dungeon level) ─────────────────────
     skeleton: { name: 'Skeleton', spriteW: 1.4, spriteH: 1.8, tags: ['undead'] },
-    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['slime'], immune: ['acid'] },
+    slime:    { name: 'Slime',    spriteW: 1.2, spriteH: 1.0, poisonChance: 0.25, tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'] },
     goblin:   { name: 'Goblin',   spriteW: 1.2, spriteH: 1.4, tags: ['humanoid'] },
     // Phase 11: spider gains webChance on top of its existing poison bite.
     // The two effects roll independently — a single hit can poison, web,
@@ -145,8 +145,8 @@ export const ENEMY_TYPES = {
     kobold:       { name: 'Kobold',          spriteW: 1.0, spriteH: 1.4, tags: ['humanoid'] },
     kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, tags: ['humanoid'] },
     cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, tags: ['beast', 'vermin'] },
-    stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, regenPercent: 0.10, tags: ['beast', 'vermin'] },
-    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, tags: ['slime'], immune: ['acid'] },
+    stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, isStirgeAI: true, tags: ['beast', 'vermin'] },
+    acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'] },
     flame_imp:    { name: 'Flame Imp',       spriteW: 1.0, spriteH: 1.2, aoeMagic: true, tags: ['demon'], immune: ['fire'] },
     bone_gnasher: { name: 'Bone Gnasher',    spriteW: 1.4, spriteH: 1.4, stunChance: 0.35, tags: ['undead'] },
     blood_wasp:   { name: 'Blood Wasp',      spriteW: 1.4, spriteH: 1.0, poisonChance: 0.40, tags: ['beast', 'vermin'] },
@@ -155,7 +155,7 @@ export const ENEMY_TYPES = {
     ghoul_pup:    { name: 'Ghoul Pup',       spriteW: 1.2, spriteH: 1.2, poisonChance: 0.30, stunChance: 0.20, tags: ['undead'] },
     myconid:      { name: 'Myconid',         spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoePoisonChance: 0.25, tags: ['monster', 'plant'] },
     dust_devil:   { name: 'Dust Devil',      spriteW: 1.4, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.10, tags: ['demon'] },
-    vampire_bat:  { name: 'Vampire Bat',     spriteW: 1.6, spriteH: 1.0, regenPercent: 0.12, tags: ['beast', 'vermin'] },
+    vampire_bat:  { name: 'Vampire Bat',     spriteW: 1.6, spriteH: 1.0, isVampireBatAI: true, tags: ['beast', 'vermin'] },
     tunnel_worm:  { name: 'Tunnel Worm',     spriteW: 1.8, spriteH: 1.0, poisonChance: 0.40, webChance: 0.15, tags: ['beast', 'vermin'] },
 
     // ── New monsters (unbounded dungeon level) ────────────────────────
@@ -178,7 +178,7 @@ export const ENEMY_TYPES = {
     gnoll:           { name: 'Gnoll',            spriteW: 1.4, spriteH: 1.8, rangedAny: true, poisonChance: 0.20, tags: ['humanoid', 'beast'] },
     demon_knight:    { name: 'Demon Knight',     spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['demon', 'humanoid'] },
     naga:            { name: 'Naga',             spriteW: 1.8, spriteH: 1.6, poisonChance: 0.45, constrict: 3, rangedAny: true, tags: ['monster', 'beast'] },
-    gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['slime'], immune: ['acid'] },
+    gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'] },
 
     // ── Elemental triad ───────────────────────────────────────────────
     // earth_elemental: double HP & defense vs a normal high-level mob.
@@ -251,27 +251,27 @@ export const ENEMY_TYPES = {
     // ettin: two-headed giant, attacks twice, can stun.
     ettin:        { name: 'Ettin',        spriteW: 2.0, spriteH: 2.4,
         isEttinAI: true, stunChance: 0.30,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'giant'] },
 
     // fire_giant: melee+10, hits twice, stun, fire DoT.
     fire_giant:   { name: 'Fire Giant',   spriteW: 2.0, spriteH: 2.4,
         isFireGiantAI: true, stunChance: 0.25,
-        tags: ['humanoid'], immune: ['fire'] },
+        tags: ['humanoid', 'giant'], immune: ['fire'] },
 
     // ice_giant: melee+10, hits twice, stun, ice DoT.
     ice_giant:    { name: 'Ice Giant',    spriteW: 2.0, spriteH: 2.4,
         isIceGiantAI: true, stunChance: 0.25,
-        tags: ['humanoid'], immune: ['cold'] },
+        tags: ['humanoid', 'giant'], immune: ['cold'] },
 
     // stone_giant: ranged+10, throws boulders twice, stun, extra defense.
     stone_giant:  { name: 'Stone Giant',  spriteW: 2.0, spriteH: 2.4,
         isStoneGiantAI: true, stunChance: 0.25, defenseMult: 1.5,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'giant'] },
 
     // storm_giant: magic+10, lightning bolt hits 3 random back row + stun.
     storm_giant:  { name: 'Storm Giant',  spriteW: 2.0, spriteH: 2.4,
         isStormGiantAI: true,
-        tags: ['humanoid'], immune: ['lightning'] },
+        tags: ['humanoid', 'giant'], immune: ['lightning'] },
 
     // giant_frog: poison bite + DoT.
     giant_frog:   { name: 'Giant Frog',   spriteW: 1.6, spriteH: 1.2,
@@ -375,7 +375,7 @@ export const ENEMY_TYPES = {
 
     // bone_archer: ranged-any; at lvl 15+ fires 3-arrow volley; 25% fracture DoT per arrow.
     bone_archer: { name: 'Bone Archer', spriteW: 1.2, spriteH: 1.9,
-        isBoneArcherAI: true,
+        isBoneArcherAI: true, rangedAny: true,
         tags: ['undead'],
         minLevel: 4 },
 

@@ -108,10 +108,16 @@ function buildAbilityList(def) {
     if (def.stunChance)       lines.push(`Stunning blow: ${Math.round(def.stunChance * 100)}% chance to stun on melee hit`);
     if (def.attackDebuff)     lines.push(`Icy chill: freezing melee strikes reduce the target\u2019s attack power by ${def.attackDebuff} for 2 rounds`);
     if (def.regenPercent)     lines.push(`Regeneration: heals ${Math.round(def.regenPercent * 100)}% max HP at the start of each round`);
+    if (def.isStirgeAI || def.isVampireBatAI) {
+        const drainName = def.isVampireBatAI ? 'Vampire Bat' : 'Stirge';
+        lines.push(`Blood Drain: melee hit heals the ${drainName} for the damage dealt; bleed-immune targets such as undead, constructs, elementals, incorporeal creatures, and plants cannot be drained`);
+    }
     if (def.aoeMagic)         lines.push('AoE spell: magic attack hits ALL party members (including back row)');
     if (def.aoeFire)          lines.push('Inferno breath: fire AoE attack — hits all party members, may apply burn');
     if (def.aoePoisonChance)  lines.push(`AoE venom cloud: ${Math.round(def.aoePoisonChance * 100)}% chance per party member to poison`);
     if (def.aoeStunChance)    lines.push(`AoE concussion: ${Math.round(def.aoeStunChance * 100)}% chance per target to stun`);
+    if (def.sonic)            lines.push('Sonic Attack: this creature\'s AoE magic/stun effects are sonic; Thunderous Drums can reduce sonic damage and help resist sonic stun effects');
+    if (def.aoeStunPsychic)   lines.push('Psychic Attack: this creature\'s AoE stun effect is psychic; psychic immunity applies and Thunderous Drums can help resist it');
     if (def.earthquakeChance) lines.push(`Earthquake: ${Math.round(def.earthquakeChance * 100)}% chance per melee turn to slam the ground — AoE melee hit to ALL party members${def.stunChance ? ` (${Math.round(def.stunChance * 100)}% stun on single-target hits)` : ''}`);
     if (def.aoeDrowning)      lines.push('Surging torrent: AoE magic attack hits ALL party members — survivors suffer drowning damage over 3 rounds and −2 defense for 3 rounds');
     if (def.lifeDrain)        lines.push(`Life drain: steals ${Math.round(def.lifeDrain * 100)}% of damage dealt as HP for itself`);
@@ -155,7 +161,7 @@ function buildAbilityList(def) {
     if (def.isDeathKnightAI)        lines.push('Dark Blade: attacks twice per turn with +2 bonus; 25% chance to block non-magic attacks with shield; 30% chance per turn to inflict Necrotic Curse (reduces all damage dealt for 2 rounds)');
 
     // Bestiary Expansion — Demons
-    if (def.isSuccubusAI)           lines.push('Drain Kiss: ranged magic attack on any party member — drains mana equal to damage dealt; 35% chance to Charm the target (cannot act 1 round); below 50% HP switches to AoE Psychic Shriek hitting all party members');
+    if (def.isSuccubusAI)           lines.push('Drain Kiss: ranged magic attack on any party member — drains mana equal to damage dealt; 35% chance to Charm the target (psychic effect; cannot act 1 round; Thunderous Drums can help resist); below 50% HP switches to AoE Psychic Shriek hitting all party members');
     if (def.isChainDevilAI)         lines.push('Animated Chains: lashes 2 chain attacks per turn (3 at dungeon level 30+) at any party member; 50% chance per hit to Bind the target in chains (webbed, cannot act for ' + (typeof WEB_DURATION_ROUNDS !== 'undefined' ? WEB_DURATION_ROUNDS : 2) + ' rounds)');
     if (def.isBloodDemonAI)         lines.push('Blood Frenzy: powerful front-row melee +2 bonus; life-steals 40% of damage dealt as HP; on any kill — fully heals to max HP AND gains +2 permanent damage bonus for the rest of combat (stacks)');
     if (def.isPitFiendAI)           lines.push('Hellfire Pillar: 50% chance per turn — calls down an infernal pillar of fire on the ENTIRE party (AoE magic + burn DoT); otherwise delivers 3 crushing melee strikes (+5 bonus) to the front row');
@@ -183,17 +189,17 @@ function buildAbilityList(def) {
     if (def.fullMagicImmune && !def.isGargoyleSentinelAI) lines.push('Total Magic Immunity: completely unaffected by all magical attacks, AoE, and damage-over-time effects');
 
     // Bestiary Expansion — Aberrations
-    if (def.isGibberingMoutherAI)   lines.push('Gibbering Madness: attacks ALL front-row members each turn (individual rolls per target at 75% damage); 30% chance per hit — target is driven to gibbering madness (cannot act 1 round); at 50% HP the original form splits into 2 smaller copies (each with 30% of original HP) — only the original can split');
-    if (def.isAbolethAI)            lines.push('Psychic Domination: AoE psychic assault hits ALL party members; 40% chance per target to mentally enslave them (cannot act for dungeon level ÷ 10 rounds); takes only half damage from physical attacks; Water Elemental Synergy: if a water elemental is present in the same combat, both the aboleth AND the elemental deal +25% damage');
+    if (def.isGibberingMoutherAI)   lines.push('Gibbering Madness: attacks ALL front-row members each turn (individual rolls per target at 75% damage); 30% chance per hit — target is driven to psychic madness (cannot act 1 round; psychic immunity applies and Thunderous Drums can help resist); at 50% HP the original form splits into 2 smaller copies (each with 30% of original HP) — only the original can split');
+    if (def.isAbolethAI)            lines.push('Psychic Domination: AoE psychic assault hits ALL party members; 40% chance per target to mentally enslave them (psychic effect; cannot act for dungeon level ÷ 10 rounds; Thunderous Drums can help resist); takes only half damage from physical attacks; Water Elemental Synergy: if a water elemental is present in the same combat, both the aboleth AND the elemental deal +25% damage');
     if (def.isStarSpawnAI)          lines.push('Reality Distortion: each turn applies a random eldritch effect to EVERY party member independently — 35% magic damage, 20% mana drain (20% max mana), 20% Wither debuff (−damage 2 rds), 25% stun attempt; completely immune to all DoT effects (poison, burn, acid, bleed, etc.)');
 
     // Bestiary Expansion — Mixed
     if (def.isVoidWraithAI)         lines.push('Void Drain: phase-strikes any party member (ignores ALL armor and defense); drains 25% of damage dealt as both HP AND mana simultaneously from the target; takes only half damage from physical attacks; on each kill gains a permanent stacking +10% damage bonus');
-    if (def.isVampireLordAI)        lines.push('Vampire Lord: 40% life drain on melee hits; summons Vampire Spawn (40% per turn); AoE Hypnotic Gaze charms 1-2 party members for 2 rounds (20% per turn); when HP drops below 15% dissolves into Gaseous Form (takes only 1 damage from all sources, regenerates 10% HP per round for 2 rounds, then re-solidifies); Paladin Smite deals triple bonus damage');
+    if (def.isVampireLordAI)        lines.push('Vampire Lord: 40% life drain on melee hits; summons Vampire Spawn (40% per turn); AoE Hypnotic Gaze is a psychic charm effect that charms 1-2 party members for 2 rounds (20% per turn; Thunderous Drums can help resist); when HP drops below 15% dissolves into Gaseous Form (takes only 1 damage from all sources, regenerates 10% HP per round for 2 rounds, then re-solidifies); Paladin Smite deals triple bonus damage');
     if (def.isMyconidSovereignAI)   lines.push('Spore Sovereign: every turn blasts the ENTIRE party with toxic spore cloud (AoE magic + 40% poison DoT); 60% chance per turn to spawn 1-2 Myconid minions; higher HP, defense, and minimum dungeon level than standard Myconid');
 
     // New Monsters
-    if (def.mandrakeScream)         lines.push('Retributive Scream: whenever this creature takes any damage it unleashes a piercing sonic scream — AoE magic sonic blast hits the ENTIRE party for 40% of the damage just dealt (triggers on every hit, including AoE)');
+    if (def.mandrakeScream)         lines.push('Retributive Scream: whenever this creature takes any damage it unleashes a piercing sonic scream — AoE magic sonic blast hits the ENTIRE party for 40% of the damage just dealt (triggers on every hit, including AoE; Thunderous Drums can reduce the sonic damage)');
     if (def.isDarkTreantAI)         lines.push('Branch Barrage: lashes out with 4 powerful branch strikes per turn against random front-row targets; each hit has a 35% chance to hold the target in grasping bark for 2 rounds');
     if (def.isMandrakeRootAI)       lines.push('Gnarled Strike: single melee attack with twisted root fists; see Retributive Scream above — every hit taken triggers an AoE sonic counter-blast');
     if (def.isKillerVineAI)         lines.push('Vine Grasp: extends crushing vines to ensnare up to (dungeon level ÷ 6) targets simultaneously — each grappled target takes thorn and constriction melee damage with a 45% chance per target to be held fast for 2 rounds');

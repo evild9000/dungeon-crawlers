@@ -1258,6 +1258,8 @@ export class PartyMember {
                     ? { ...this.equipmentEnchants.offhand } : null,
                 armor:   this.equipmentEnchants && this.equipmentEnchants.armor
                     ? { ...this.equipmentEnchants.armor }   : null,
+                shield:  this.equipmentEnchants && this.equipmentEnchants.shield
+                    ? { ...this.equipmentEnchants.shield }  : null,
             },
             trinketEnchants: {
                 cloak: this.trinketEnchants && this.trinketEnchants.cloak

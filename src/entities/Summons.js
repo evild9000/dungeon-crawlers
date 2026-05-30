@@ -536,24 +536,24 @@ export const SLIME_PRESETS = {
         enemySprite: 'slime',
         portraitClass: 'summoned', portraitSpecies: 'human',
         speciesLabel: 'Slime', kind: 'slime',
-        immune: ['bleed'],
-        abilities: ['Front-row melee. Engulf: 25% chance to hold target. Immune to bleed and physical stun. Splits: on death spawns a Mini Slime at 50% HP.', 'Can be healed by potions and Cleric heal.'],
+        immune: ['bleed', 'stun', 'hold', 'web', 'paralyze'],
+        abilities: ['Front-row melee. Engulf: 25% chance to hold target. Immune to bleed, stun, holds, webs, and paralysis. Splits: on death spawns a Mini Slime at 50% HP.', 'Can be healed by potions and Cleric heal.'],
     },
     acid_slime: {
         id: 'acid_slime', name: 'Acid Slime', icon: '\u{1FAA1}',
         enemySprite: 'acid_slime',
         portraitClass: 'summoned', portraitSpecies: 'human',
         speciesLabel: 'Acid Slime', kind: 'slime',
-        immune: ['acid', 'bleed'],
-        abilities: ['Front-row melee. Every hit applies an acid DoT (20% dealt/round for 2 rounds). Immune to acid and bleed. Engulf: 25% hold.', 'Can be healed by potions and Cleric heal.'],
+        immune: ['acid', 'bleed', 'stun', 'hold', 'web', 'paralyze'],
+        abilities: ['Front-row melee. Every hit applies an acid DoT (20% dealt/round for 2 rounds). Immune to acid, bleed, stun, holds, webs, and paralysis. Engulf: 25% hold.', 'Can be healed by potions and Cleric heal.'],
     },
     gelatinous_cube: {
         id: 'gelatinous_cube', name: 'Gelatinous Cube', icon: '\u{1FAA1}',
         enemySprite: 'gelatinous_cube',
         portraitClass: 'summoned', portraitSpecies: 'human',
         speciesLabel: 'Gelatinous Cube', kind: 'slime',
-        immune: ['acid', 'poison', 'bleed', 'stun', 'hold', 'web'],
-        abilities: ['Front-row melee. Engulf (50% hold chance). Paralysis on engulf (40%). Acid body: each melee hit on the cube deals acid DoT back to attacker. High HP. Immune to bleed, stun, hold, and poison.', 'Can be healed by potions and Cleric heal.'],
+        immune: ['acid', 'poison', 'bleed', 'stun', 'hold', 'web', 'paralyze'],
+        abilities: ['Front-row melee. Engulf (50% hold chance). Paralysis on engulf (40%). Acid body: each melee hit on the cube deals acid DoT back to attacker. High HP. Immune to acid, poison, bleed, stun, holds, webs, and paralysis.', 'Can be healed by potions and Cleric heal.'],
     },
 };
 
@@ -658,8 +658,18 @@ export function getWarlockUnlockedDemons(level) {
 
 export function rollWarlockDemonStats(warlockLevel = 1, warlockMaxHealth = 20, warlockMagicSkill = 1, demonId = 'imp') {
     const skill = Math.max(1, Math.floor(warlockMagicSkill || 1));
-    const hpMult = demonId === 'pit_fiend' ? 1.5 : 1;
-    const defenseBonus = demonId === 'pit_fiend' ? Math.max(5, Math.floor((warlockLevel || 1) / 2)) : 0;
+    const hpMults = {
+        ice_demon: 2.0,
+        acid_demon: 1.8,
+        bloat_demon: 2.5,
+        pit_fiend: 3.0,
+    };
+    const defenseMults = {
+        ice_demon: 1.5,
+        pit_fiend: 2.0,
+    };
+    const hpMult = hpMults[demonId] || 1;
+    const defenseMult = defenseMults[demonId] || 1;
     return {
         maxHealth: Math.max(1, Math.floor(warlockMaxHealth * hpMult)),
         maxStamina: 0,
@@ -670,10 +680,11 @@ export function rollWarlockDemonStats(warlockLevel = 1, warlockMaxHealth = 20, w
         rangedMax: skill + 4,
         magicMin: skill,
         magicMax: skill + 4,
-        defense: skill + defenseBonus,
+        defense: Math.max(1, Math.floor(skill * defenseMult)),
         warlockLevel: Math.max(1, warlockLevel | 0),
         beastKind: 'warlock_demon',
         demonType: demonId,
+        halfMagicDamage: demonId === 'efreeti',
         immune: (WARLOCK_DEMON_PRESETS[demonId]?.immune || []).slice(),
     };
 }
