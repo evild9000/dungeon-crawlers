@@ -8445,7 +8445,7 @@ export class CombatSystem {
                 if (this._tryStunEnemy(t))
                     this._addLog(`\u2620\uFE0F ${this._eName(t)} is STUNNED by the Death Knight's strike!`);
             }
-            const dkInstakillRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.01);
+            const dkInstakillRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.005);
             if (dkInstakillRoll) {
                 if (t.isBoss || t.isMegaBoss) {
                     // Boss/mega-boss immune to instant death — x4 pre-defense damage instead
