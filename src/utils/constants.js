@@ -1071,6 +1071,21 @@ export const PALADIN_DIVINE_JUDGMENT_PER_LEVEL        = 1 / 300;    // (level/3)
 export const PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR     = 2;          // halved vs bosses
 export const PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR = 4;          // quartered vs mega bosses
 
+// ── Paladin L35 — Summon Steed + Martyr's Covenant ───────────────────────────
+export const PALADIN_L35_UNLOCK_LEVEL                 = 35;
+export const PALADIN_STEED_MANA_COST                  = 100;
+export const PALADIN_STEED_MANA_PER_ROUND             = 10;
+export const PALADIN_STEED_HEALTH_BONUS               = 0.50;
+export const PALADIN_STEED_MELEE_DAMAGE_BASE_BONUS    = 1.00; // +100%
+export const PALADIN_STEED_MELEE_DAMAGE_PER_LEVEL     = 0.01; // +level%
+export const PALADIN_STEED_MELEE_RESIST               = 0.50;
+export const PALADIN_STEED_SMITE_CRIT_BASE            = 0.20;
+export const PALADIN_STEED_SMITE_CRIT_PER_LEVEL       = 0.005; // +level/2%
+export const PALADIN_STEED_SMITE_CRIT_MULT            = 2;
+export const PALADIN_COVENANT_MANA_PER_ROUND          = 8;
+export const PALADIN_COVENANT_TRIGGER_MAX_HP_FRAC     = 0.30;
+export const PALADIN_COVENANT_MIN_HP_FRAC             = 0.10;
+
 // Monk L20 special: Quivering Palm
 export const MONK_QUIVERING_PALM_UNLOCK_LEVEL    = 20;
 export const MONK_QUIVERING_PALM_DURATION_BASE   = 2; // 2 rounds at L20
@@ -1082,6 +1097,20 @@ export const MONK_QUIVERING_PALM_MANA_MULT       = 2;   // costs 2x normal monk 
 
 // Monk L30 special abilities: Ki Charges & Pressure Points
 export const MONK_KI_UNLOCK_LEVEL               = 30;
+
+// Monk L35 special abilities: Kick Trip & Explosive Palm
+export const MONK_L35_UNLOCK_LEVEL              = 35;
+export const MONK_KICK_TRIP_ATTACK_DIVISOR      = 10;
+export const MONK_KICK_TRIP_DAMAGE_BASE_BONUS   = 1.00; // +100%
+export const MONK_KICK_TRIP_DAMAGE_PER_LEVEL    = 0.02; // +level×2%
+export const MONK_KICK_TRIP_CRIT_PER_LEVEL      = 0.005; // level/2%
+export const MONK_KICK_TRIP_STUN_CHANCE         = 0.20;
+export const MONK_KICK_TRIP_PRONE_BASE_CHANCE   = 0.33;
+export const MONK_KICK_TRIP_PRONE_PER_10_LEVELS = 0.01;
+export const MONK_EXPLOSIVE_PALM_MANA_COST      = 20;
+export const MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS  = 3;
+export const MONK_EXPLOSIVE_PALM_STUN_CHANCE    = 0.40;
+export const MONK_EXPLOSIVE_PALM_SHOCKWAVE_FRAC = 0.50;
 
 // Cleric L20 special abilities
 export const CLERIC_MASS_REGEN_UNLOCK_LEVEL      = 20;
@@ -1104,6 +1133,10 @@ export const CLERIC_BANISHMENT_UNLOCK_LEVEL        = 30;
 export const CLERIC_BANISHMENT_MANA_COST           = 50;
 export const CLERIC_BANISHMENT_DAMAGE_MULT         = 20; // × magic roll if not instakilled
 export const CLERIC_BANISHMENT_TAGS                = ['elemental', 'demon'];
+export const CLERIC_L35_UNLOCK_LEVEL               = 35;
+export const CLERIC_DIVINE_SHROUD_MANA_PER_ROUND   = 15;
+export const CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL = 0.005; // level/2 %
+export const CLERIC_DIVINE_SHROUD_REVIVE_HP_FRAC   = 0.50;
 
 // Crafting — enchantment pricing and ingredient costs.
 // Weapons get flat +N damage; armor gets flat +N defense.
@@ -1412,6 +1445,29 @@ export const BARD_SYMPHONY_UNLOCK_LEVEL   = 30;
 export const BARD_SYMPHONY_BASE_MANA_COST = 10; // doubles each round
 export const BARD_SYMPHONY_BASE_STA_COST  = 10; // doubles each round
 
+// ── Bard L35: Quickstep Song ──────────────────────────────────────────────────
+// 100 MP activation — grants haste to all qualifying party members for entire combat.
+// Hasted members make 1 extra melee/ranged/magic attack per turn.
+// Excludes: golems, undead, spiritual weapons, illusionary warriors, simulacra, rift elementals.
+// Includes: all real members + summoned beasts (ranger/druid/VK) + warlock demons.
+// Refreshed each round onto newly-added qualifying combatants.
+export const BARD_QUICKSTEP_SONG_UNLOCK_LEVEL = 35;
+export const BARD_QUICKSTEP_SONG_MANA_COST    = 100;
+
+// ── Bard L35: Soulful Melody (passive reaction) ───────────────────────────────
+// Triggers automatically when any party member dies; costs 20 MP.
+// Bard with most mana plays (must be L35+, not in Symphony).
+// Grants survivors +floor(bardLevel/4) attack and defense for 3 rounds.
+// Stacks: each additional fallen ally +1 atk, +1 def, +1 round to the ongoing anthem.
+// Triggers once per fallen ally per combat.
+export const BARD_SOULFUL_MELODY_UNLOCK_LEVEL    = 35;
+export const BARD_SOULFUL_MELODY_MANA_COST       = 20;
+export const BARD_SOULFUL_MELODY_DURATION        = 3;    // base rounds
+export const BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR = 4;   // floor(bardLevel / 4)
+export const BARD_SOULFUL_MELODY_STACK_ATK_BONUS = 1;   // +1 attack per additional fallen
+export const BARD_SOULFUL_MELODY_STACK_DEF_BONUS = 1;   // +1 defense per additional fallen
+export const BARD_SOULFUL_MELODY_STACK_DUR_BONUS = 1;   // +1 round per additional fallen
+
 // ── Barbarian L30: Blood Frenzy (passive) ───────────────────────────────────
 export const BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL    = 30;
 export const BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED = 0.05; // +5% per bleed DoT on target; cap = level×3%
@@ -1583,6 +1639,24 @@ export const DRUID_WILD_WOLF_CASCADE_BASE           = 0.65;
 // Verdant Surge — L30 enhancement to Entangle
 export const DRUID_VERDANT_SURGE_UNLOCK_LEVEL       = 30;
 export const DRUID_VERDANT_SURGE_ACTION_LOSS_CHANCE = 0.25; // 25%/round action loss
+
+// L35: Nature's Charms — toggle, bypasses plant charm immunity
+export const DRUID_NATURES_CHARM_UNLOCK_LEVEL      = 35;
+export const DRUID_NATURES_CHARM_MANA_COST         = 50;   // activation cost (ends turn)
+export const DRUID_NATURES_CHARM_UPKEEP_PER_ROUND  = 5;    // MP/round per charmed minion
+export const DRUID_NATURES_CHARM_CHANCE_DIVISOR    = 2;    // chance = druidLevel/2 %
+export const DRUID_NATURES_CHARM_TAGS              = ['beast', 'plant'];
+export const DRUID_NATURES_CHARM_RESIST_CAP        = 3;    // 3 resists = immune for this combat
+export const DRUID_NATURES_CHARM_DURATION_BONUS    = 1;    // floor(level/5) + 1 rounds
+export const DRUID_NATURES_CHARM_BOLSTER_PER_LEVEL = 0.01; // +1% dmg per druid level
+
+// L35: Wither Plants — magic AoE vs plants only
+export const DRUID_WITHER_PLANTS_UNLOCK_LEVEL      = 35;
+export const DRUID_WITHER_PLANTS_MANA_COST         = 35;
+export const DRUID_WITHER_PLANTS_DAMAGE_BASE       = 3.0;  // base damage multiplier
+export const DRUID_WITHER_PLANTS_DAMAGE_PER_LEVEL  = 0.01; // +level/100 added to base
+export const DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR = 5;    // level/5 % instakill chance
+export const DRUID_WITHER_PLANTS_TARGET_TAG        = 'plant';
 
 // ── Mage L30 — Arcane Overload ────────────────────────────────────────────────
 export const MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL   = 30;

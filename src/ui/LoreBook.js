@@ -57,7 +57,9 @@ function buildAbilityList(def) {
         lines.push('Demon: vulnerable to Cleric Banishment (L30) — divine power can expel demonic entities; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
     }
     if (tags.includes('plant')) {
-        lines.push('Plant: fungal or plant-type creature — may have special interactions with fire and nature magic');
+        lines.push('Plant: fungal or plant-type creature — vulnerable to fire and nature magic');
+        lines.push('Plant: vulnerable to Druid Wither Plants (L35) — magic AoE at 3× base damage; non-boss plants have a level/5% chance of instant destruction');
+        lines.push('Plant: susceptible to Druid Nature\'s Charms (L35) — charm bypasses normal plant charm immunity; 3 resists grant immunity for the rest of combat');
     }
     if (tags.includes('construct')) {
         lines.push('Construct: immune to Bard Charm Monster — no mind to enchant');

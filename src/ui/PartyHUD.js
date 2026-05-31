@@ -1236,6 +1236,20 @@ export class PartyHUD {
                 mkPB('🛡️', 'Taunt', 'rgba(30,110,150,0.95)',
                     `Taunt active: costs 1 ST/round. Monsters check this warrior before single-target melee, ranged, and magic attacks.`);
             }
+            if (!member.isSummoned && member.classId === 'paladin' && member.paladinSteedActive) {
+                const meleeBonus = 100 + (member.level || 1);
+                mkPB('🐎', 'Steed', 'rgba(135,95,25,0.95)',
+                    `Summoned Steed: +50% max HP, +${meleeBonus}% regular melee damage, half melee damage taken, and Smite/AoE Smite can crit. Costs 10 MP/round.`);
+            }
+            if (!member.isSummoned && member.classId === 'paladin' && member.martyrsCovenantActive) {
+                mkPB('✝️', 'Covenant', 'rgba(135,115,25,0.95)',
+                    `Martyr's Covenant: heavy single hits on recruited living allies transfer to this paladin. Costs 8 MP/round; cannot kill the paladin.`);
+            }
+            if (!member.isSummoned && member.classId === 'cleric' && member.divineShroudActive) {
+                const reduction = Math.round(Math.min(0.95, (member.level || 1) * 0.005) * 100);
+                mkPB('✨', 'Shroud', 'rgba(150,135,35,0.95)',
+                    `Divine Shroud: ${reduction}% all-source damage reduction before armor/defense, including DoTs. Costs 15 MP/round; level% chance to auto-revive at 50% HP if slain.`);
+            }
             const pblur = pefx.find(x => x && x.type === 'blur' && x.rounds > 0);
             if (pblur) {
                 const missPct = Math.round(((pblur.missChance ?? PHOTOMANCER_BLUR_MISS_CHANCE) || 0) * 100);

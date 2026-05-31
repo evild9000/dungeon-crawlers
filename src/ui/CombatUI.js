@@ -38,6 +38,12 @@ import {
     MONK_QUIVERING_PALM_UNLOCK_LEVEL,
     MONK_QUIVERING_PALM_DURATION_BASE, MONK_QUIVERING_PALM_DURATION_PER_10LV,
     MONK_QUIVERING_PALM_STAMINA_MULT, MONK_QUIVERING_PALM_MANA_MULT,
+    MONK_L35_UNLOCK_LEVEL, MONK_KICK_TRIP_ATTACK_DIVISOR,
+    MONK_KICK_TRIP_DAMAGE_BASE_BONUS, MONK_KICK_TRIP_DAMAGE_PER_LEVEL,
+    MONK_KICK_TRIP_CRIT_PER_LEVEL, MONK_KICK_TRIP_STUN_CHANCE,
+    MONK_KICK_TRIP_PRONE_BASE_CHANCE, MONK_KICK_TRIP_PRONE_PER_10_LEVELS,
+    MONK_EXPLOSIVE_PALM_MANA_COST, MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS,
+    MONK_EXPLOSIVE_PALM_STUN_CHANCE, MONK_EXPLOSIVE_PALM_SHOCKWAVE_FRAC,
     PALADIN_L20_UNLOCK_LEVEL,
     PALADIN_AOE_SMITE_MANA_MULT, PALADIN_AOE_SMITE_INSTAKILL_MULT,
     PALADIN_SMITE_DAMAGE_BONUS_MULT,
@@ -46,6 +52,12 @@ import {
     PALADIN_DIVINE_JUDGMENT_STAMINA_COST, PALADIN_DIVINE_JUDGMENT_MANA_COST,
     PALADIN_DIVINE_JUDGMENT_BASE_PCT, PALADIN_DIVINE_JUDGMENT_PER_LEVEL,
     PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR, PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR,
+    PALADIN_L35_UNLOCK_LEVEL, PALADIN_STEED_MANA_COST, PALADIN_STEED_MANA_PER_ROUND,
+    PALADIN_STEED_HEALTH_BONUS, PALADIN_STEED_MELEE_DAMAGE_BASE_BONUS,
+    PALADIN_STEED_MELEE_DAMAGE_PER_LEVEL, PALADIN_STEED_MELEE_RESIST,
+    PALADIN_STEED_SMITE_CRIT_BASE, PALADIN_STEED_SMITE_CRIT_PER_LEVEL,
+    PALADIN_COVENANT_MANA_PER_ROUND, PALADIN_COVENANT_TRIGGER_MAX_HP_FRAC,
+    PALADIN_COVENANT_MIN_HP_FRAC,
     CLERIC_MASS_REGEN_UNLOCK_LEVEL, CLERIC_MASS_REGEN_MANA_COST,
     CLERIC_MASS_REGEN_BASE_PCT, CLERIC_MASS_REGEN_PER_3_LEVELS,
     CLERIC_MASS_REGEN_DURATION_PER_4LV,
@@ -56,7 +68,9 @@ import {
     CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL, CLERIC_SPIRITUAL_WEAPON_SUMMON_COST,
     CLERIC_SPIRITUAL_WEAPON_UPKEEP, CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR,
     CLERIC_BANISHMENT_UNLOCK_LEVEL, CLERIC_BANISHMENT_MANA_COST,
-    CLERIC_BANISHMENT_TAGS,
+    CLERIC_BANISHMENT_TAGS, CLERIC_BANISHMENT_DAMAGE_MULT,
+    CLERIC_L35_UNLOCK_LEVEL, CLERIC_DIVINE_SHROUD_MANA_PER_ROUND,
+    CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL, CLERIC_DIVINE_SHROUD_REVIVE_HP_FRAC,
     BARD_CHARM_UNLOCK_LEVEL, BARD_CHARM_MANA_COST,
     BARD_CHARM_BASE_CHANCE, BARD_CHARM_CHANCE_PER_2_LV,
     BARD_CHARM_DURATION_DIVISOR, BARD_CHARM_IMMUNE_TAGS,
@@ -65,6 +79,9 @@ import {
     BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL, BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND,
     BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
     BARD_SYMPHONY_UNLOCK_LEVEL, BARD_SYMPHONY_BASE_MANA_COST, BARD_SYMPHONY_BASE_STA_COST,
+    BARD_QUICKSTEP_SONG_UNLOCK_LEVEL, BARD_QUICKSTEP_SONG_MANA_COST,
+    BARD_SOULFUL_MELODY_UNLOCK_LEVEL, BARD_SOULFUL_MELODY_MANA_COST,
+    BARD_SOULFUL_MELODY_DURATION, BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR,
     BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL, BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED,
     BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL,
     RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL, RANGER_EXPLOSIVE_ARROW_STAMINA_MULT,
@@ -90,6 +107,11 @@ import {
     DRUID_WILD_PIXIE_MAGIC_RESIST,
     DRUID_WILD_TREANT_ATTACKS_DIVISOR, DRUID_WILD_TREANT_HOLD_BASE, DRUID_WILD_TREANT_HOLD_PER_LEVEL, DRUID_WILD_TREANT_DEFENSE_DIVISOR,
     DRUID_VERDANT_SURGE_UNLOCK_LEVEL, DRUID_VERDANT_SURGE_ACTION_LOSS_CHANCE,
+    DRUID_NATURES_CHARM_UNLOCK_LEVEL, DRUID_NATURES_CHARM_MANA_COST,
+    DRUID_NATURES_CHARM_CHANCE_DIVISOR, DRUID_NATURES_CHARM_RESIST_CAP,
+    DRUID_NATURES_CHARM_UPKEEP_PER_ROUND, DRUID_NATURES_CHARM_TAGS,
+    DRUID_WITHER_PLANTS_UNLOCK_LEVEL, DRUID_WITHER_PLANTS_MANA_COST,
+    DRUID_WITHER_PLANTS_DAMAGE_BASE, DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR,
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
     NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
     ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
@@ -430,6 +452,8 @@ export class CombatUI {
                 };
                 if (enemy.stunned)
                     mkB('⚡', 'Stunned', 'rgba(220,200,0,0.9)', 'Stunned: skips next turn');
+                if ((enemy.proneRounds || 0) > 0)
+                    mkB('⏬', 'Prone', 'rgba(110,70,20,0.9)', `Prone: hold-style trip; skips next turn (${enemy.proneRounds} rd left)`);
                 const ent = efx.find(x => x && x.type === 'entangle' && x.rounds > 0);
                 if (ent) {
                     const entLabel = ent.verdantSurge ? 'Verdant Surge' : 'Entangled';
@@ -1463,28 +1487,56 @@ export class CombatUI {
                     CLERIC_BANISHMENT_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)));
                 const hasTarget = validTargets.length > 0;
                 const canBanish = banCan && hasTarget;
+                const isAoeBanish = m.level >= CLERIC_L35_UNLOCK_LEVEL;
+                const banName = isAoeBanish ? 'AOE Banish' : 'Banishment';
                 const banLabel  = canBanish
-                    ? `✨ Banishment (-${CLERIC_BANISHMENT_MANA_COST} MP)`
+                    ? `✨ ${banName} (-${CLERIC_BANISHMENT_MANA_COST} MP)`
                     : hasTarget
-                        ? `✨ Banishment (need ${CLERIC_BANISHMENT_MANA_COST} MP)`
-                        : `✨ Banishment [no valid targets]`;
+                        ? `✨ ${banName} (need ${CLERIC_BANISHMENT_MANA_COST} MP)`
+                        : `✨ ${banName} [no valid targets]`;
                 const banBtn = this._addBtn(banLabel, canBanish, () => {
-                    this._pickTarget(e => this.combat.clericBanishment(e), {
-                        prompt: '✨ Choose a target for Banishment (elemental or demon)...',
-                        filter: e => CLERIC_BANISHMENT_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)),
-                    });
+                    if (isAoeBanish) this.combat.clericBanishment();
+                    else {
+                        this._pickTarget(e => this.combat.clericBanishment(e), {
+                            prompt: '✨ Choose a target for Banishment (elemental or demon)...',
+                            filter: e => CLERIC_BANISHMENT_TAGS.some(t => (this.combat._getEnemyTags(e) || []).includes(t)),
+                        });
+                    }
                 });
                 banBtn.classList.add('combat-special-btn');
                 const banishChance = Math.min(100, m.level);
+                const bonusDamageText = isAoeBanish ? ` L35 upgrade: affects ALL valid targets and adds +${m.level}% damage on top of the ×${CLERIC_BANISHMENT_DAMAGE_MULT} holy force damage.` : '';
                 banBtn.title = [
-                    `Cleric L${CLERIC_BANISHMENT_UNLOCK_LEVEL}: Banishment.`,
-                    `Costs ${CLERIC_BANISHMENT_MANA_COST} MP. Target must be an elemental or demon.`,
-                    `${banishChance}% chance to instantly destroy the target outright.`,
+                    `Cleric L${CLERIC_BANISHMENT_UNLOCK_LEVEL}${isAoeBanish ? '/L35' : ''}: ${banName}.`,
+                    `Costs ${CLERIC_BANISHMENT_MANA_COST} MP. ${isAoeBanish ? 'Affects every elemental or demon enemy.' : 'Target must be an elemental or demon.'}`,
+                    `${banishChance}% chance per target to instantly destroy outright.`,
                     `Bosses & mega-bosses: immune to instant destruction, but still take the full ×20 holy force damage.`,
-                    `If not destroyed: deals magic roll × 20 holy force damage, bypassing all defense.`,
+                    `If not destroyed: deals magic roll × ${CLERIC_BANISHMENT_DAMAGE_MULT} holy force damage, bypassing all defense.${bonusDamageText}`,
                     `Valid targets currently: ${validTargets.length > 0 ? validTargets.map(e => this.combat._eName(e)).join(', ') : 'none'}.`,
                     !banCan ? `Not enough mana (need ${CLERIC_BANISHMENT_MANA_COST} MP).` : '',
                     !hasTarget ? 'No elemental or demon targets in this fight.' : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            if (m.level >= CLERIC_L35_UNLOCK_LEVEL) {
+                const shroudActive = !!m.divineShroudActive;
+                const shroudCan = shroudActive || m.mana >= CLERIC_DIVINE_SHROUD_MANA_PER_ROUND;
+                const reduction = Math.round(Math.min(0.95, (m.level || 1) * CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL) * 100);
+                const revive = Math.min(100, m.level || 1);
+                const shroudLabel = shroudActive
+                    ? `✨ Divine Shroud: ON (-${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP/round)`
+                    : `✨ Divine Shroud: OFF (-${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP/round)`;
+                const shroudBtn = this._addBtn(shroudLabel, shroudCan, () => this.combat.clericDivineShroudToggle());
+                shroudBtn.classList.add('combat-special-btn');
+                if (shroudActive) shroudBtn.style.boxShadow = '0 0 8px #f7f0a0, 0 0 16px #f7f0a066';
+                shroudBtn.title = [
+                    `Cleric L${CLERIC_L35_UNLOCK_LEVEL}: Divine Shroud (toggle).`,
+                    `Costs ${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP per round.`,
+                    `Reduces all damage from any source, including DoTs, by ${reduction}% before armor and defense.`,
+                    `If slain while active: ${revive}% chance to auto-revive at ${Math.round(CLERIC_DIVINE_SHROUD_REVIVE_HP_FRAC * 100)}% max HP.`,
+                    'If the revival fails, the shroud fades and must be reactivated after someone revives the cleric.',
+                    shroudActive ? 'Currently ACTIVE.' : 'Currently inactive.',
+                    !shroudCan ? `Not enough mana (need ${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP).` : '',
                 ].filter(Boolean).join('\n');
             }
         }
@@ -1843,6 +1895,56 @@ export class CombatUI {
             }
         }
 
+        // Bard L35: Quickstep Song
+        if (m.classId === 'bard' && m.level >= BARD_QUICKSTEP_SONG_UNLOCK_LEVEL) {
+            const baseBonus = Math.max(1, Math.floor(m.level / BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR));
+            if (!m.quickstepSongActive) {
+                const canQS = m.mana >= BARD_QUICKSTEP_SONG_MANA_COST;
+                const qsBtn = this._addBtn(`⚡ Quickstep Song (-${BARD_QUICKSTEP_SONG_MANA_COST} MP)`, canQS, () => this.combat.bardQuickstepSong());
+                qsBtn.classList.add('combat-special-btn');
+                qsBtn.title = [
+                    `Bard L${BARD_QUICKSTEP_SONG_UNLOCK_LEVEL}: Quickstep Song.`,
+                    `Costs ${BARD_QUICKSTEP_SONG_MANA_COST} MP to activate. Lasts entire combat.`,
+                    'Grants haste to all qualifying party members: each hasted member makes 1 extra attack per turn.',
+                    'Extra attack matches the attack type used: melee → bonus melee, ranged → bonus ranged, magic → bonus single bolt.',
+                    'Also affects: barbarian rage attacks, druid wildshape summons, warlock tentacle strikes, warlock demons, ranger/druid/VK summoned beasts.',
+                    'Does NOT affect: AoE abilities, backstab, explosive arrows, golems, undead summons, spiritual weapons, illusionary warriors, simulacra.',
+                    'Refreshed each round — newly summoned qualifying allies automatically gain haste.',
+                    !canQS ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+            } else {
+                const qsActiveBtn = this._addBtn(`⚡ Quickstep Song (ACTIVE)`, false, () => {});
+                qsActiveBtn.classList.add('combat-special-btn');
+                qsActiveBtn.style.background = 'linear-gradient(135deg,#1a4a00,#2a7a00)';
+                qsActiveBtn.title = [
+                    'Quickstep Song is ACTIVE — entire party moves with haste.',
+                    'All qualifying allies make 1 extra attack each turn.',
+                    'Passive: cannot be deactivated once started.',
+                ].filter(Boolean).join('\n');
+            }
+        }
+
+        // Bard L35: Soulful Melody (passive — info display only)
+        if (m.classId === 'bard' && m.level >= BARD_SOULFUL_MELODY_UNLOCK_LEVEL) {
+            const baseBonus = Math.max(1, Math.floor(m.level / BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR));
+            const canAfford = m.mana >= BARD_SOULFUL_MELODY_MANA_COST;
+            const smBtn = this._addBtn(`🎵 Soulful Melody (Passive)`, false, () => {});
+            smBtn.classList.add('combat-special-btn');
+            smBtn.style.background = canAfford
+                ? 'linear-gradient(135deg,#2a1a40,#5a2a80)'
+                : 'linear-gradient(135deg,#2a2a2a,#3a3a3a)';
+            smBtn.title = [
+                `Bard L${BARD_SOULFUL_MELODY_UNLOCK_LEVEL}: Soulful Melody (Passive Reaction).`,
+                `Triggers automatically when any party member dies.`,
+                `Costs ${BARD_SOULFUL_MELODY_MANA_COST} MP — the bard with the most mana plays the anthem.`,
+                `Bard must be L${BARD_SOULFUL_MELODY_UNLOCK_LEVEL}+, not in Symphony, and have ${BARD_SOULFUL_MELODY_MANA_COST} MP.`,
+                `Grants all survivors +${baseBonus} attack and +${baseBonus} defense for ${BARD_SOULFUL_MELODY_DURATION} rounds.`,
+                `Stacks with each fallen ally: +1 atk, +1 def, +1 round per additional death.`,
+                `One trigger per fallen ally per combat.`,
+                !canAfford ? `Currently: not enough mana to play (needs ${BARD_SOULFUL_MELODY_MANA_COST} MP).` : `Currently ready (${m.mana} MP available).`,
+            ].filter(Boolean).join('\n');
+        }
+
         // Druid: Entangle
         if (m.classId === 'druid') {
             const can = m.mana >= DRUID_ENTANGLE_MANA_COST;
@@ -2013,6 +2115,58 @@ export class CombatUI {
                         'HP bonus from Bear/Treant form is removed on exit (HP clamped to new max).',
                     ].join('\n');
                 }
+            }
+
+            // ── Nature's Charms (L35) ─────────────────────────────────────────
+            if (m.level >= DRUID_NATURES_CHARM_UNLOCK_LEVEL) {
+                const ncActive  = !!m.naturesCharmActive;
+                const ncAfford  = m.mana >= DRUID_NATURES_CHARM_MANA_COST;
+                const ncChance  = Math.round(m.level / DRUID_NATURES_CHARM_CHANCE_DIVISOR);
+                const ncCharmed = ncActive
+                    ? (this.combat.enemies || []).filter(e => e.naturesCharmed && e.charmedRounds > 0 && e.charmerId === m.id).length
+                    : 0;
+                const ncLabel   = ncActive
+                    ? `\u{1F33F} Nature's Charms ● ON${ncCharmed > 0 ? ` (${ncCharmed} charmed)` : ''}`
+                    : `\u{1F33F} Nature's Charms (-${DRUID_NATURES_CHARM_MANA_COST} MP)`;
+                const ncBtn = this._addBtn(ncLabel, ncActive || ncAfford, () => this.combat.druidNaturesCharmToggle());
+                ncBtn.classList.add('combat-special-btn');
+                ncBtn.style.borderLeft = ncActive ? '3px solid #6e4' : '3px solid #2a6';
+                if (ncActive) ncBtn.style.background = '#162a10';
+                ncBtn.title = [
+                    `Druid L${DRUID_NATURES_CHARM_UNLOCK_LEVEL}: Nature's Charms (toggle).`,
+                    `Costs ${DRUID_NATURES_CHARM_MANA_COST} MP to activate (ends turn). Deactivating is a free action.`,
+                    `Each round: ${ncChance}% chance per living beast or plant enemy to charm it.`,
+                    `Bypasses normal plant charm immunity. Bosses and mega-bosses are immune.`,
+                    `${DRUID_NATURES_CHARM_RESIST_CAP} resists from the same target = immune for this combat.`,
+                    `Upkeep: ${DRUID_NATURES_CHARM_UPKEEP_PER_ROUND} MP/round per charmed minion. Mana exhaustion releases all and ends toggle.`,
+                    `Bolster: charmed minions deal +${m.level}% bonus damage (level \xd7 1%).`,
+                    ncActive ? `Currently active — ${ncCharmed} minion${ncCharmed !== 1 ? 's' : ''} charmed. Click to deactivate and release.` : '',
+                    !ncActive && !ncAfford ? `Not enough mana (need ${DRUID_NATURES_CHARM_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // ── Wither Plants (L35) ──────────────────────────────────────────
+            if (m.level >= DRUID_WITHER_PLANTS_UNLOCK_LEVEL) {
+                const wpPlants = (this.combat.aliveHostileEnemies || []).filter(e => {
+                    const tags = this.combat._getEnemyTags ? this.combat._getEnemyTags(e) : [];
+                    return tags.includes('plant');
+                });
+                const wpAfford  = m.mana >= DRUID_WITHER_PLANTS_MANA_COST;
+                const wpHas     = wpPlants.length > 0;
+                const wpMult    = (DRUID_WITHER_PLANTS_DAMAGE_BASE + m.level * 0.01).toFixed(2);
+                const wpIK      = Math.round(m.level / DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR);
+                const wpLabel   = `\u{1F342} Wither Plants (-${DRUID_WITHER_PLANTS_MANA_COST} MP)${wpHas ? '' : ' (no plants)'}`;
+                const wpBtn     = this._addBtn(wpLabel, wpAfford && wpHas, () => this.combat.druidWitherPlants());
+                wpBtn.classList.add('combat-special-btn');
+                wpBtn.style.borderLeft = '3px solid #8a4';
+                wpBtn.title = [
+                    `Druid L${DRUID_WITHER_PLANTS_UNLOCK_LEVEL}: Wither Plants.`,
+                    `Costs ${DRUID_WITHER_PLANTS_MANA_COST} MP. Targets ALL plant-tagged enemies.`,
+                    `Magic AoE: base damage \xd7 ${wpMult} (${DRUID_WITHER_PLANTS_DAMAGE_BASE} + level/100).`,
+                    `${wpIK}% instant death chance vs non-boss plants (level / ${DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR}).`,
+                    wpHas ? `${wpPlants.length} plant target${wpPlants.length !== 1 ? 's' : ''} visible.` : 'No plant enemies in combat.',
+                    !wpAfford ? `Not enough mana (need ${DRUID_WITHER_PLANTS_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
             }
         }
 
@@ -2444,6 +2598,50 @@ export class CombatUI {
                 ].filter(Boolean).join('\n');
             }
 
+            if (m.level >= PALADIN_L35_UNLOCK_LEVEL) {
+                const steedActive = !!m.paladinSteedActive;
+                const steedUsed = !!m.paladinSteedUsed;
+                const steedMeleeBonus = Math.round((PALADIN_STEED_MELEE_DAMAGE_BASE_BONUS + m.level * PALADIN_STEED_MELEE_DAMAGE_PER_LEVEL) * 100);
+                const steedCrit = Math.round(Math.min(0.95, PALADIN_STEED_SMITE_CRIT_BASE + m.level * PALADIN_STEED_SMITE_CRIT_PER_LEVEL) * 100);
+                const canSteed = !steedActive && !steedUsed && m.mana >= PALADIN_STEED_MANA_COST;
+                let steedLabel = steedActive
+                    ? `🐎 Steed: ON (-${PALADIN_STEED_MANA_PER_ROUND} MP/round)`
+                    : `🐎 Summon Steed (-${PALADIN_STEED_MANA_COST} MP)`;
+                if (steedUsed && !steedActive) steedLabel += ' [USED]';
+                const steedBtn = this._addBtn(steedLabel, canSteed, () => this.combat.paladinSummonSteed());
+                steedBtn.classList.add('combat-special-btn');
+                if (steedActive) steedBtn.style.boxShadow = '0 0 8px #f7d88a, 0 0 16px #b8892466';
+                steedBtn.title = [
+                    `Paladin L${PALADIN_L35_UNLOCK_LEVEL}: Summon Steed (once/combat).`,
+                    `Costs ${PALADIN_STEED_MANA_COST} MP to summon and ${PALADIN_STEED_MANA_PER_ROUND} MP per round to maintain.`,
+                    `While mounted: +${Math.round(PALADIN_STEED_HEALTH_BONUS * 100)}% max HP, regular melee deals +${steedMeleeBonus}% damage, and incoming melee damage is halved.`,
+                    `Smite and AoE Smite can crit for double damage at ${steedCrit}% chance.`,
+                    steedActive ? 'Currently mounted.' : '',
+                    steedUsed && !steedActive ? 'Already used this combat.' : '',
+                    !steedUsed && !steedActive && m.mana < PALADIN_STEED_MANA_COST ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+
+                const covActive = !!m.martyrsCovenantActive;
+                const covSuppressed = m.martyrsCovenantSuppressedRound === this.combat.turnNumber;
+                const canCovenant = covActive || (!covSuppressed && m.mana >= PALADIN_COVENANT_MANA_PER_ROUND);
+                const covLabel = covActive
+                    ? `✝️ Covenant: ON (-${PALADIN_COVENANT_MANA_PER_ROUND} MP/round)`
+                    : `✝️ Covenant: OFF (-${PALADIN_COVENANT_MANA_PER_ROUND} MP/round)${covSuppressed ? ' [BROKEN]' : ''}`;
+                const covBtn = this._addBtn(covLabel, canCovenant, () => this.combat.paladinMartyrsCovenantToggle());
+                covBtn.classList.add('combat-special-btn');
+                if (covActive) covBtn.style.boxShadow = '0 0 8px #f6f0a0, 0 0 16px #f6f0a066';
+                covBtn.title = [
+                    `Paladin L${PALADIN_L35_UNLOCK_LEVEL}: Martyr's Covenant (free toggle).`,
+                    `Costs ${PALADIN_COVENANT_MANA_PER_ROUND} MP per round while active.`,
+                    `Protects recruited living allies only: if a single hit would deal more than ${Math.round(PALADIN_COVENANT_TRIGGER_MAX_HP_FRAC * 100)}% of their max HP after defenses, the paladin takes the preserved pre-defense hit instead.`,
+                    `Transferred damage bypasses other interceptors but can still be reduced by the paladin's own shield, armor, defense, and buffs.`,
+                    `Covenant transfer cannot kill the paladin; it leaves them at ${Math.round(PALADIN_COVENANT_MIN_HP_FRAC * 100)}% max HP and breaks for the rest of that round.`,
+                    covActive ? 'Currently ACTIVE.' : 'Currently inactive.',
+                    covSuppressed ? 'Broken for this round.' : '',
+                    !covActive && !covSuppressed && m.mana < PALADIN_COVENANT_MANA_PER_ROUND ? 'Not enough mana to anchor.' : '',
+                ].filter(Boolean).join('\n');
+            }
+
             // ── Smite (targets an enemy — undead/demons, plus dragons while Dragonslayer is active)
             const smiteFilter = (e) => this.combat.canPaladinSmiteTarget(m, e);
             const hasSmiteTarget = this.combat.aliveEnemies.some(smiteFilter);
@@ -2807,6 +3005,56 @@ export class CombatUI {
                 'Expends all Ki Charges. Front-row only.',
                 !canMelee ? 'Cannot use from back row.' : '',
                 ki <= 0 ? 'No Ki Charges available.' : '',
+            ].filter(Boolean).join('\n');
+        }
+
+        // ── Monk L35: Kick Trip + Explosive Palm
+        if (isMonk && m.level >= MONK_L35_UNLOCK_LEVEL) {
+            const kicks = Math.max(1, Math.floor((m.level || 1) / MONK_KICK_TRIP_ATTACK_DIVISOR));
+            const kickCan = canMelee && m.stamina >= MELEE_STAMINA_COST && m.mana >= MONK_MELEE_MANA_COST;
+            let kickLabel = `🥾 Kick Trip x${kicks} (-${MELEE_STAMINA_COST} ST / -${MONK_MELEE_MANA_COST} MP)`;
+            if (!canMelee) kickLabel += ' [BACK ROW]';
+            const kickBtn = this._addBtn(kickLabel, kickCan, () => {
+                soundManager.playMelee();
+                this._pickTarget(e => this.combat.monkKickTrip(e), {
+                    prompt: '🥾 Kick Trip which enemy?',
+                });
+            });
+            kickBtn.classList.add('combat-special-btn');
+            const kickBonus = Math.round((MONK_KICK_TRIP_DAMAGE_BASE_BONUS + (m.level || 1) * MONK_KICK_TRIP_DAMAGE_PER_LEVEL) * 100);
+            const kickCrit = Math.round(Math.min(0.95, (m.level || 1) * MONK_KICK_TRIP_CRIT_PER_LEVEL) * 100);
+            const tripChance = Math.round(Math.min(0.95, MONK_KICK_TRIP_PRONE_BASE_CHANCE + ((m.level || 1) / 10) * MONK_KICK_TRIP_PRONE_PER_10_LEVELS) * 100);
+            kickBtn.title = [
+                `Monk L${MONK_L35_UNLOCK_LEVEL}: Kick Trip.`,
+                `Makes ${kicks} heavy rapid kick${kicks !== 1 ? 's' : ''} against one target. Front-row only.`,
+                `Each kick deals +${kickBonus}% damage, can crit at ${kickCrit}%, and has ${Math.round(MONK_KICK_TRIP_STUN_CHANCE * 100)}% normal stun chance.`,
+                `Each kick has ${tripChance}% chance to knock the target prone as a hold-style effect.`,
+                'Trip immunity: incorporeal, vermin, slimes/hold-immune bodies, dragons, bosses. Beasts have an extra 50% chance to ignore the trip after it rolls.',
+                !canMelee ? 'Cannot use from back row.' : '',
+                m.stamina < MELEE_STAMINA_COST ? 'Not enough stamina.' : '',
+                m.mana < MONK_MELEE_MANA_COST ? 'Not enough mana.' : '',
+            ].filter(Boolean).join('\n');
+
+            const explosiveTargets = (this.combat.aliveHostileEnemies || []).filter(e =>
+                this.combat._getExplosivePalmEffect?.(m, e));
+            const canExplode = m.mana >= MONK_EXPLOSIVE_PALM_MANA_COST && explosiveTargets.length > 0;
+            let palmLabel = `💥✋ Explosive Palm (-${MONK_EXPLOSIVE_PALM_MANA_COST} MP)`;
+            if (explosiveTargets.length === 0) palmLabel += ' [NO STACK]';
+            const palmBtn = this._addBtn(palmLabel, canExplode, () => {
+                this._pickTarget(e => this.combat.monkExplosivePalm(e), {
+                    filter: e => explosiveTargets.includes(e),
+                    prompt: '💥 Explode which Quivering Palm?',
+                });
+            });
+            palmBtn.classList.add('combat-special-btn');
+            palmBtn.title = [
+                `Monk L${MONK_L35_UNLOCK_LEVEL}: Explosive Palm.`,
+                `Costs ${MONK_EXPLOSIVE_PALM_MANA_COST} MP. Requires this monk's Quivering Palm on the target to have ${MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS}+ doublings.`,
+                'Accelerates the stack one round ahead, applies that doubled internal damage immediately, then removes the Quivering Palm stack.',
+                `${Math.round(MONK_EXPLOSIVE_PALM_STUN_CHANCE * 100)}% normal stun chance on the primary target.`,
+                `All other enemies take ${Math.round(MONK_EXPLOSIVE_PALM_SHOCKWAVE_FRAC * 100)}% of the accelerated damage as defense-bypassing shockwave damage.`,
+                explosiveTargets.length === 0 ? `No enemy has your Quivering Palm at ${MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS}+ doublings.` : '',
+                m.mana < MONK_EXPLOSIVE_PALM_MANA_COST ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
         }
 

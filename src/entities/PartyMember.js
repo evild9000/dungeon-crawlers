@@ -175,9 +175,15 @@ export class PartyMember {
         this.rageEncourageRounds = 0; // Barbarian L25 party damage aura ramp
         this.fireAuraActive = false; // Paladin: Fire Aura toggle
         this.dragonslayerActive = false; // Paladin L25: Dragonslayer toggle
+        this.paladinSteedActive = false; // Paladin L35: mounted combat
+        this.paladinSteedUsed = false;
+        this.paladinSteedHpBonus = 0;
+        this.martyrsCovenantActive = false; // Paladin L35: damage transfer anchor
+        this.martyrsCovenantSuppressedRound = 0;
         this.rangerTotem = null; // Ranger L25: wolf | bear | eagle | pixie
         this.avatarActive = false; // Monk L25: Avatar toggle
         this.avatarElement = 'fire'; // Monk L25: fire | lightning | acid | ice
+        this.divineShroudActive = false; // Cleric L35: damage reduction + death save
         this.isDefendMode = false;  // Warrior L20: Defend Mode toggle (persists turn-to-turn)
         this.warriorTauntActive = false; // Warrior L35: passive taunt toggle
 
@@ -1137,6 +1143,15 @@ export class PartyMember {
         this.rageEncourageRounds = 0;
         this.fireAuraActive = false;
         this.dragonslayerActive = false;
+        if (this.paladinSteedHpBonus > 0) {
+            this.maxHealth = Math.max(1, this.maxHealth - this.paladinSteedHpBonus);
+            this.health = Math.min(this.health, this.maxHealth);
+        }
+        this.paladinSteedActive = false;
+        this.paladinSteedUsed = false;
+        this.paladinSteedHpBonus = 0;
+        this.martyrsCovenantActive = false;
+        this.martyrsCovenantSuppressedRound = 0;
         this.rangerTotem = null;
         this.avatarActive = false;
         this.avatarElement = 'fire';
@@ -1147,6 +1162,7 @@ export class PartyMember {
         this.divineJudgmentUsed  = false;
         this.kiCharges           = 0;
         this.spiritualWeapons    = [];
+        this.divineShroudActive  = false;
         this.shadowStepUsed      = false;
         this.prismaticSphereUsed = false;
         this.hunterMarkEnemyId   = null;

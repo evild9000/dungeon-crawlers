@@ -86,6 +86,12 @@ import {
     MONK_QUIVERING_PALM_DURATION_PER_10LV, MONK_QUIVERING_PALM_STACK_CAP_DIVISOR,
     MONK_QUIVERING_PALM_STACK_CAP_MAX,
     MONK_QUIVERING_PALM_STAMINA_MULT, MONK_QUIVERING_PALM_MANA_MULT,
+    MONK_L35_UNLOCK_LEVEL, MONK_KICK_TRIP_ATTACK_DIVISOR,
+    MONK_KICK_TRIP_DAMAGE_BASE_BONUS, MONK_KICK_TRIP_DAMAGE_PER_LEVEL,
+    MONK_KICK_TRIP_CRIT_PER_LEVEL, MONK_KICK_TRIP_STUN_CHANCE,
+    MONK_KICK_TRIP_PRONE_BASE_CHANCE, MONK_KICK_TRIP_PRONE_PER_10_LEVELS,
+    MONK_EXPLOSIVE_PALM_MANA_COST, MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS,
+    MONK_EXPLOSIVE_PALM_STUN_CHANCE, MONK_EXPLOSIVE_PALM_SHOCKWAVE_FRAC,
     PALADIN_L20_UNLOCK_LEVEL, PALADIN_AOE_SMITE_MANA_MULT,
     PALADIN_AOE_SMITE_DAMAGE_MULT, PALADIN_AOE_SMITE_INSTAKILL_MULT,
     PALADIN_SMITE_INSTAKILL_CAP, PALADIN_SMITE_BOSS_DAMAGE_MULT,
@@ -95,6 +101,12 @@ import {
     PALADIN_DIVINE_JUDGMENT_STAMINA_COST, PALADIN_DIVINE_JUDGMENT_MANA_COST,
     PALADIN_DIVINE_JUDGMENT_BASE_PCT, PALADIN_DIVINE_JUDGMENT_PER_LEVEL,
     PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR, PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR,
+    PALADIN_L35_UNLOCK_LEVEL, PALADIN_STEED_MANA_COST, PALADIN_STEED_MANA_PER_ROUND,
+    PALADIN_STEED_HEALTH_BONUS, PALADIN_STEED_MELEE_DAMAGE_BASE_BONUS,
+    PALADIN_STEED_MELEE_DAMAGE_PER_LEVEL, PALADIN_STEED_MELEE_RESIST,
+    PALADIN_STEED_SMITE_CRIT_BASE, PALADIN_STEED_SMITE_CRIT_PER_LEVEL,
+    PALADIN_STEED_SMITE_CRIT_MULT, PALADIN_COVENANT_MANA_PER_ROUND,
+    PALADIN_COVENANT_TRIGGER_MAX_HP_FRAC, PALADIN_COVENANT_MIN_HP_FRAC,
     CLERIC_MASS_REGEN_UNLOCK_LEVEL, CLERIC_MASS_REGEN_BASE_PCT,
     CLERIC_MASS_REGEN_PER_3_LEVELS, CLERIC_MASS_REGEN_DURATION_PER_4LV,
     CLERIC_MASS_REGEN_MANA_COST,
@@ -164,11 +176,20 @@ import {
     DRUID_WILD_SUMMON_DEF_BONUS_DIVISOR, DRUID_WILD_SUMMON_DEF_DIVISOR_PIXIE,
     DRUID_WILD_WOLF_CASCADE_BASE,
     DRUID_VERDANT_SURGE_UNLOCK_LEVEL, DRUID_VERDANT_SURGE_ACTION_LOSS_CHANCE,
+    DRUID_NATURES_CHARM_UNLOCK_LEVEL, DRUID_NATURES_CHARM_MANA_COST,
+    DRUID_NATURES_CHARM_UPKEEP_PER_ROUND, DRUID_NATURES_CHARM_CHANCE_DIVISOR,
+    DRUID_NATURES_CHARM_TAGS, DRUID_NATURES_CHARM_RESIST_CAP,
+    DRUID_NATURES_CHARM_DURATION_BONUS, DRUID_NATURES_CHARM_BOLSTER_PER_LEVEL,
+    DRUID_WITHER_PLANTS_UNLOCK_LEVEL, DRUID_WITHER_PLANTS_MANA_COST,
+    DRUID_WITHER_PLANTS_DAMAGE_BASE, DRUID_WITHER_PLANTS_DAMAGE_PER_LEVEL,
+    DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR, DRUID_WITHER_PLANTS_TARGET_TAG,
     MONK_KI_UNLOCK_LEVEL,
     CLERIC_SPIRITUAL_WEAPON_UNLOCK_LEVEL, CLERIC_SPIRITUAL_WEAPON_SUMMON_COST,
     CLERIC_SPIRITUAL_WEAPON_UPKEEP, CLERIC_SPIRITUAL_WEAPON_ATK_DIVISOR,
     CLERIC_BANISHMENT_UNLOCK_LEVEL, CLERIC_BANISHMENT_MANA_COST,
     CLERIC_BANISHMENT_DAMAGE_MULT, CLERIC_BANISHMENT_TAGS,
+    CLERIC_L35_UNLOCK_LEVEL, CLERIC_DIVINE_SHROUD_MANA_PER_ROUND,
+    CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL, CLERIC_DIVINE_SHROUD_REVIVE_HP_FRAC,
     NECRO_DARK_APOTHEOSIS_UNLOCK_LEVEL, NECRO_CORPSE_HORROR_HP_FRACTION,
     NECRO_CORPSE_HORROR_DEF_DIVISOR, NECRO_CORPSE_HORROR_SKILL_PER_CORPSE,
     NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE, NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS,
@@ -183,6 +204,11 @@ import {
     BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL, BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND,
     BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
     BARD_SYMPHONY_UNLOCK_LEVEL, BARD_SYMPHONY_BASE_MANA_COST, BARD_SYMPHONY_BASE_STA_COST,
+    BARD_QUICKSTEP_SONG_UNLOCK_LEVEL, BARD_QUICKSTEP_SONG_MANA_COST,
+    BARD_SOULFUL_MELODY_UNLOCK_LEVEL, BARD_SOULFUL_MELODY_MANA_COST,
+    BARD_SOULFUL_MELODY_DURATION, BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR,
+    BARD_SOULFUL_MELODY_STACK_ATK_BONUS, BARD_SOULFUL_MELODY_STACK_DEF_BONUS,
+    BARD_SOULFUL_MELODY_STACK_DUR_BONUS,
     STATUE_EVENT_ROUND_BOSS, STATUE_EVENT_ROUND_MEGA_BOSS, STATUE_EVENT_ROUND_SUPER_BOSS,
     SUPER_BOSS_HP_MULT, SUPER_BOSS_DEFENSE_PER_DL, SUPER_BOSS_MELEE_PER_DL, SUPER_BOSS_MAGIC_PER_DL,
     SUPER_BOSS_ACTIONS_PER_TURN, SUPER_BOSS_SUMMON_COUNT,
@@ -546,6 +572,39 @@ export class CombatSystem {
         return this._canReceiveLivingHealOrBuff(member);
     }
 
+    _getMountedPaladinMeleeMultiplier(member) {
+        if (!member || member.classId !== 'paladin' || !member.paladinSteedActive) return 1;
+        return 1 + PALADIN_STEED_MELEE_DAMAGE_BASE_BONUS + (member.level || 1) * PALADIN_STEED_MELEE_DAMAGE_PER_LEVEL;
+    }
+
+    _applyMountedPaladinMeleeBonus(member, damage) {
+        const mult = this._getMountedPaladinMeleeMultiplier(member);
+        return mult > 1 ? Math.max(1, Math.floor(damage * mult)) : damage;
+    }
+
+    _maybeMountedSmiteCrit(member, damage) {
+        if (!member || member.classId !== 'paladin' || !member.paladinSteedActive) {
+            return { damage, crit: false, chance: 0 };
+        }
+        const chance = Math.min(0.95, PALADIN_STEED_SMITE_CRIT_BASE + (member.level || 1) * PALADIN_STEED_SMITE_CRIT_PER_LEVEL);
+        if (Math.random() >= chance) return { damage, crit: false, chance };
+        return { damage: Math.max(1, Math.floor(damage * PALADIN_STEED_SMITE_CRIT_MULT)), crit: true, chance };
+    }
+
+    _getMartyrsCovenantAnchor(target) {
+        if (!target || target.isSummoned || target.health <= 0 || !this._canReceiveLivingHealOrBuff(target)) return null;
+        const currentRound = this.turnNumber || 0;
+        const anchors = (this.party || []).filter(p =>
+            p && p !== target && !p.isSummoned && p.health > 0
+            && p.classId === 'paladin'
+            && (p.level || 1) >= PALADIN_L35_UNLOCK_LEVEL
+            && p.martyrsCovenantActive
+            && p.martyrsCovenantSuppressedRound !== currentRound,
+        );
+        if (anchors.length === 0) return null;
+        return anchors.sort((a, b) => (b.health || 0) - (a.health || 0))[0];
+    }
+
     /** Paladin L30 aura: heal every eligible party member for 5% of damage the paladin just dealt. */
     _triggerRighteousnessHeal(paladin, dealtDamage) {
         if (dealtDamage <= 0) return;
@@ -639,6 +698,40 @@ export class CombatSystem {
         }
         target.activeEffects = remaining;
         return { removed, labels };
+    }
+
+    _getDivineShroudReduction(member) {
+        if (!member || member.isSummoned || member.health <= 0) return 0;
+        if (member.classId !== 'cleric' || !member.divineShroudActive || (member.level || 1) < CLERIC_L35_UNLOCK_LEVEL) return 0;
+        return Math.min(0.95, (member.level || 1) * CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL);
+    }
+
+    _applyDivineShroudReduction(member, damage, sourceLabel = 'damage') {
+        const reduction = this._getDivineShroudReduction(member);
+        if (reduction <= 0 || damage <= 0) return Math.max(0, damage);
+        const reduced = Math.max(1, Math.floor(damage * (1 - reduction)));
+        if (reduced < damage) {
+            this._addLog(`✨ ${member.name}'s Divine Shroud reduces ${sourceLabel} by ${Math.round(reduction * 100)}% (${damage}→${reduced}).`);
+        }
+        return reduced;
+    }
+
+    _tryDivineShroudRevive(member) {
+        if (!member || member.isSummoned || member.health > 0) return false;
+        if (member.classId !== 'cleric' || !member.divineShroudActive || (member.level || 1) < CLERIC_L35_UNLOCK_LEVEL) return false;
+        const chance = Math.min(1, (member.level || 1) / 100);
+        if (Math.random() < chance) {
+            const restored = Math.max(1, Math.ceil((member.maxHealth || 1) * CLERIC_DIVINE_SHROUD_REVIVE_HP_FRAC));
+            member.health = restored;
+            member.stunned = false;
+            member.webbedRounds = 0;
+            member.proneRounds = 0;
+            this._addLog(`✨ ${member.name}'s Divine Shroud flares — divine grace revives them at ${restored} HP!`);
+            return true;
+        }
+        member.divineShroudActive = false;
+        this._addLog(`✨ ${member.name}'s Divine Shroud fails to catch their soul and fades.`);
+        return false;
     }
 
     _maybeTriggerClericCleanse(caster, targets) {
@@ -1342,6 +1435,8 @@ export class CombatSystem {
         let base = this._rollPlayerMeleeDamage(m);
         if (exhausted) base = Math.max(1, Math.floor(base / 2));
         base = this._applyOutgoingDamageBonuses(m, base, 'melee');
+        const mountedPaladinMult = this._getMountedPaladinMeleeMultiplier(m);
+        if (mountedPaladinMult > 1) base = this._applyMountedPaladinMeleeBonus(m, base);
 
         // Formation bonus for warriors
         let formMult = 1;
@@ -1370,6 +1465,7 @@ export class CombatSystem {
         const suffix = exhausted ? ' (exhausted!)' : '';
         let meleeLog = `${m.name} strikes ${eName} for ${dealt} damage!${suffix}`;
         if (_bfPct > 0) meleeLog += ` [🩸 Blood Frenzy +${Math.round(_bfPct * 100)}%]`;
+        if (mountedPaladinMult > 1) meleeLog += ` [🐎 Steed +${Math.round((mountedPaladinMult - 1) * 100)}%]`;
         if (formMult > 1) meleeLog += ` [⚔️ Formation +${Math.round((formMult - 1) * 100)}%]`;
         if (formCrit) meleeLog += ` 💥 FORMATION CRIT!`;
         this._addLog(meleeLog);
@@ -1438,6 +1534,7 @@ export class CombatSystem {
             let sdmg = this._rollPlayerMeleeDamage(m);
             if (swingExhausted) sdmg = Math.max(1, Math.floor(sdmg / 2));
             sdmg = this._applyOutgoingDamageBonuses(m, sdmg, 'melee');
+            if (mountedPaladinMult > 1) sdmg = this._applyMountedPaladinMeleeBonus(m, sdmg);
             // Formation bonus for warrior extra attacks
             let swingFormCrit = false;
             if (m.classId === 'warrior' && m.isInFormation) {
@@ -1461,6 +1558,7 @@ export class CombatSystem {
             let swingLog = `\u{1F5E1}\uFE0F ${m.name} follows up on ${swingName} for ${sDealt} damage!${sSuffix}`;
             if (swingFormCrit) swingLog += ` \uD83D\uDCA5 FORMATION CRIT!`;
             if (_swingBfPct > 0) swingLog += ` [\uD83E\uDE78 Blood Frenzy +${Math.round(_swingBfPct * 100)}%]`;
+            if (mountedPaladinMult > 1) swingLog += ` [🐎 Steed +${Math.round((mountedPaladinMult - 1) * 100)}%]`;
             this._addLog(swingLog);
             const sStunChance = MELEE_STUN_CHANCE + m.getMeleeStunBonus();
             if (sDealt > 0 && curTarget.health > 0 && Math.random() < sStunChance) {
@@ -1550,6 +1648,23 @@ export class CombatSystem {
                     this._applyWeaponRider(m, targetEnemy, rrDealt);
                     if (targetEnemy.health <= 0) { this._addLog(`${this._eName(targetEnemy)} is defeated!`); break; }
                 }
+            }
+        }
+
+        // Quickstep Song haste: one extra melee strike (backstab is a separate function, unaffected)
+        if (m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
+            const _qsTarget = targetEnemy.health > 0 ? targetEnemy : this.aliveHostileEnemies[0];
+            if (_qsTarget && _qsTarget.health > 0) {
+                const _qsExh = m.stamina < MELEE_STAMINA_COST;
+                m.stamina = Math.max(0, m.stamina - MELEE_STAMINA_COST);
+                let _qsDmg = this._rollPlayerMeleeDamage(m);
+                if (_qsExh) _qsDmg = Math.max(1, Math.floor(_qsDmg / 2));
+                _qsDmg = this._applyOutgoingDamageBonuses(m, _qsDmg, 'melee');
+                const _qsDealt = this._damageEnemy(_qsTarget, _qsDmg, false, false, 0, false, { contactAttacker: m });
+                this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus strike on ${this._eName(_qsTarget)} for ${_qsDealt}!${_qsExh ? ' (exhausted!)' : ''}`);
+                this._applyWeaponRider(m, _qsTarget, _qsDealt);
+                this._applyWeaponRider(m, _qsTarget, _qsDealt, 'offhand');
+                if (_qsTarget.health <= 0) this._addLog(`${this._eName(_qsTarget)} is defeated!`);
             }
         }
 
@@ -1682,6 +1797,26 @@ export class CombatSystem {
             this._applyWeaponRider(m, curT, sDealt);
             this._applyRangerTotemOnHit(m, curT, sDealt, 'ranged');
             if (curT.health <= 0) { this._addLog(`${sTargetName} is defeated!`); this._checkHunterMarkKill(curT); }
+        }
+
+        // Quickstep Song haste: one extra ranged shot (explosive arrows is a separate function, unaffected)
+        if (m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
+            const _qsrTarget = targetEnemy.health > 0 ? targetEnemy : this.aliveHostileEnemies[0];
+            if (_qsrTarget && _qsrTarget.health > 0) {
+                const _qsrExh = m.stamina < RANGED_STAMINA_COST;
+                m.stamina = Math.max(0, m.stamina - RANGED_STAMINA_COST);
+                let _qsrDmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
+                _qsrDmg += m.getWeaponBonus('ranged');
+                _qsrDmg += m.getClassDamageBonus('ranged');
+                _qsrDmg += this._getPartyMemberDamageMod(m);
+                if (_qsrExh) _qsrDmg = Math.max(1, Math.floor(_qsrDmg / 2));
+                _qsrDmg = this._applyOutgoingDamageBonuses(m, _qsrDmg, 'ranged');
+                const _qsrDealt = this._damageEnemy(_qsrTarget, _qsrDmg, false, false, 0, true);
+                this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus shot at ${this._eName(_qsrTarget)} for ${_qsrDealt}!${_qsrExh ? ' (exhausted!)' : ''}`);
+                this._applyWeaponRider(m, _qsrTarget, _qsrDealt);
+                this._applyRangerTotemOnHit(m, _qsrTarget, _qsrDealt, 'ranged');
+                if (_qsrTarget.health <= 0) this._addLog(`${this._eName(_qsrTarget)} is defeated!`);
+            }
         }
 
         this._advancePlayerTurn();
@@ -2037,6 +2172,29 @@ export class CombatSystem {
                 aoChance -= MAGE_ARCANE_OVERLOAD_BURST_STEP;
                 aoMult *= 1.5;
                 aoBursts++;
+            }
+        }
+
+        // Quickstep Song haste: one extra single-target magic bolt
+        // (AoE named abilities like Wither Plants, Fireball, etc. are separate functions, unaffected)
+        if (m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
+            const _qsmTargets = this.aliveHostileEnemies;
+            const _qsmTarget = _qsmTargets[Math.floor(Math.random() * _qsmTargets.length)];
+            if (_qsmTarget && _qsmTarget.health > 0) {
+                const _qsmCost = this.getMagicManaCost(m);
+                const _qsmExh = m.mana < _qsmCost;
+                m.mana = Math.max(0, m.mana - _qsmCost);
+                let _qsmDmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+                _qsmDmg += m.getWeaponBonus('magic');
+                _qsmDmg += m.getClassDamageBonus('magic');
+                _qsmDmg += this._getPartyMemberDamageMod(m);
+                _qsmDmg = Math.max(1, Math.round(_qsmDmg * (m.getMagicDamageMultiplier?.() || 1)));
+                if (_qsmExh) _qsmDmg = Math.max(1, Math.floor(_qsmDmg / 2));
+                _qsmDmg = this._applyOutgoingDamageBonuses(m, _qsmDmg, 'magic');
+                const _qsmDefIgnore = m.classId === 'mage' ? Math.min(1, (m.level || 1) / 100) : 0;
+                const _qsmDealt = this._damageEnemy(_qsmTarget, _qsmDmg, false, true, _qsmDefIgnore);
+                this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus bolt at ${this._eName(_qsmTarget)} for ${_qsmDealt}!${_qsmExh ? ' (exhausted!)' : ''}`);
+                if (_qsmTarget.health <= 0) this._addLog(`  \u{1F480} ${this._eName(_qsmTarget)} is defeated!`);
             }
         }
 
@@ -2862,13 +3020,46 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
+    _rollClericBanishmentDamage(cleric) {
+        let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        dmg += cleric.getWeaponBonus('magic');
+        dmg += cleric.getClassDamageBonus('magic');
+        dmg += this._getPartyMemberDamageMod(cleric);
+        dmg = Math.max(1, Math.round(dmg * (cleric.getMagicDamageMultiplier?.() || 1)));
+        dmg = this._applyOutgoingDamageBonuses(cleric, dmg, 'magic');
+        let total = Math.max(1, Math.floor(dmg * CLERIC_BANISHMENT_DAMAGE_MULT));
+        if ((cleric.level || 1) >= CLERIC_L35_UNLOCK_LEVEL) {
+            total = Math.max(1, Math.floor(total * (1 + (cleric.level || 1) / 100)));
+        }
+        return total;
+    }
+
+    _resolveClericBanishmentTarget(cleric, targetEnemy, isAoe = false) {
+        const eName = this._eName(targetEnemy);
+        const isBoss = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss);
+        const banishRoll = !isBoss && Math.random() < Math.min(1, (cleric.level || 1) / 100);
+        if (banishRoll) {
+            targetEnemy.health = 0;
+            if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
+            this._addLog(`✨ ${eName} is BANISHED from existence!`);
+            return;
+        }
+        const totalDmg = this._rollClericBanishmentDamage(cleric);
+        const dealt = this._damageEnemy(targetEnemy, totalDmg, true, true);
+        const aoeNote = isAoe ? 'AoE ' : '';
+        if (isBoss) {
+            this._addLog(`✨ ${eName} resists ${aoeNote}Banishment's annihilation but is blasted for ${dealt} holy force damage!`);
+        } else {
+            this._addLog(`✨ ${eName} withstands ${aoeNote}Banishment but suffers ${dealt} holy force damage!`);
+        }
+        if (targetEnemy.health <= 0) this._addLog(`${eName} is obliterated by divine force!`);
+    }
+
     /**
-     * Cleric L30: Banishment.
-     * Costs 50 MP. Target must have 'elemental' or 'demon' tag.
-     * Cleric level% chance to instakill outright (immune: bosses/mega-bosses).
-     * On failure: deals magic roll × 20 force damage, ignoring all defense.
+     * Cleric L30/L35: Banishment.
+     * L30: single target. L35: upgraded to AoE across all valid targets.
      */
-    clericBanishment(targetEnemy) {
+    clericBanishment(targetEnemy = null) {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'cleric') return;
         this._emitTelemetry('abilityUsed', { member: m, abilityId: 'cleric_banishment' });
@@ -2876,43 +3067,54 @@ export class CombatSystem {
             this._addLog(`${m.name} must be level ${CLERIC_BANISHMENT_UNLOCK_LEVEL} to cast Banishment.`);
             return;
         }
-        if (!targetEnemy || targetEnemy.health <= 0) return;
-        const tTags = this._getEnemyTags(targetEnemy);
-        const isValidTarget = CLERIC_BANISHMENT_TAGS.some(t => tTags.includes(t));
-        if (!isValidTarget) {
-            this._addLog(`${m.name}: Banishment only affects elementals and demons!`);
-            return;
-        }
         if (m.mana < CLERIC_BANISHMENT_MANA_COST) {
             this._addLog(`${m.name} needs ${CLERIC_BANISHMENT_MANA_COST} MP to cast Banishment.`);
             return;
         }
-        m.mana -= CLERIC_BANISHMENT_MANA_COST;
-        const eName = this._eName(targetEnemy);
-        const isBoss = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss);
-        const banishRoll = !isBoss && Math.random() < (m.level / 100);
-        if (banishRoll) {
-            targetEnemy.health = 0;
-            if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
-            this._addLog(`✨ ${m.name} calls down divine judgment — ${eName} is BANISHED from existence!`);
-        } else {
-            // Magic damage roll × 20, ignoring all defense
-            let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
-            dmg += m.getWeaponBonus('magic');
-            dmg += m.getClassDamageBonus('magic');
-            dmg += this._getPartyMemberDamageMod(m);
-            dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1)));
-            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
-            const totalDmg = Math.max(1, Math.floor(dmg * CLERIC_BANISHMENT_DAMAGE_MULT));
-            const dealt = this._damageEnemy(targetEnemy, totalDmg, true, true);
-            if (isBoss) {
-                this._addLog(`✨ ${m.name} invokes Banishment! ${eName} resists annihilation but is blasted for ${dealt} holy force damage!`);
-            } else {
-                this._addLog(`✨ ${m.name} invokes Banishment! ${eName} withstands annihilation but suffers ${dealt} holy force damage!`);
+
+        const validTargets = this.aliveHostileEnemies.filter(e =>
+            CLERIC_BANISHMENT_TAGS.some(t => this._getEnemyTags(e).includes(t)));
+        if ((m.level || 1) >= CLERIC_L35_UNLOCK_LEVEL) {
+            if (validTargets.length === 0) {
+                this._addLog(`${m.name}: AoE Banishment finds no elementals or demons!`);
+                return;
             }
-            if (targetEnemy.health <= 0) this._addLog(`${eName} is obliterated by divine force!`);
+            m.mana -= CLERIC_BANISHMENT_MANA_COST;
+            this._addLog(`✨ ${m.name} invokes AOE Banishment over ${validTargets.length} extraplanar foe${validTargets.length !== 1 ? 's' : ''}! (+${m.level}% damage on survivors)`);
+            for (const target of validTargets.slice()) {
+                if (target.health > 0) this._resolveClericBanishmentTarget(m, target, true);
+            }
+        } else {
+            if (!targetEnemy || targetEnemy.health <= 0) return;
+            const tTags = this._getEnemyTags(targetEnemy);
+            const isValidTarget = CLERIC_BANISHMENT_TAGS.some(t => tTags.includes(t));
+            if (!isValidTarget) {
+                this._addLog(`${m.name}: Banishment only affects elementals and demons!`);
+                return;
+            }
+            m.mana -= CLERIC_BANISHMENT_MANA_COST;
+            this._addLog(`✨ ${m.name} invokes Banishment against ${this._eName(targetEnemy)}!`);
+            this._resolveClericBanishmentTarget(m, targetEnemy, false);
         }
         this._advancePlayerTurn();
+    }
+
+    clericDivineShroudToggle() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'cleric' || (m.level || 1) < CLERIC_L35_UNLOCK_LEVEL) return;
+        if (m.divineShroudActive) {
+            m.divineShroudActive = false;
+            this._addLog(`✨ ${m.name} lowers Divine Shroud.`);
+            this._notify();
+            return;
+        }
+        if (m.mana < CLERIC_DIVINE_SHROUD_MANA_PER_ROUND) {
+            this._addLog(`${m.name} needs ${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP to invoke Divine Shroud.`);
+            return;
+        }
+        m.divineShroudActive = true;
+        this._addLog(`✨ ${m.name} invokes Divine Shroud! (${Math.round(this._getDivineShroudReduction(m) * 100)}% all-source damage reduction, ${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP/round)`);
+        this._notify();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -3012,8 +3214,10 @@ export class CombatSystem {
                     bossDmg *= (2 + 0.10 * m.level);
                     bossDmg  = Math.floor(bossDmg * PALADIN_AOE_SMITE_DAMAGE_MULT * PALADIN_SMITE_BOSS_DAMAGE_MULT * PALADIN_SMITE_DAMAGE_BONUS_MULT);
                     bossDmg = this._applyOutgoingDamageBonuses(m, bossDmg, 'aoe');
+                    const bossCrit = this._maybeMountedSmiteCrit(m, bossDmg);
+                    bossDmg = bossCrit.damage;
                     const bossDealt = this._damageEnemy(target, Math.max(1, bossDmg));
-                    this._addLog(`✨ ${eName} resists the holy nova instant-kill! (x4 AoE smite: ${bossDealt} damage)`);
+                    this._addLog(`✨ ${eName} resists the holy nova instant-kill! (x4 AoE smite: ${bossDealt} damage)${bossCrit.crit ? ' 💥 MOUNTED CRIT!' : ''}`);
                     if (target.health <= 0) this._addLog(`${eName} is defeated!`);
                     if (this.aliveEnemies.length === 0) break;
                     continue;
@@ -3031,8 +3235,10 @@ export class CombatSystem {
             dmg    *= (2 + 0.10 * m.level);            // smite scaling
             dmg     = Math.floor(dmg * PALADIN_AOE_SMITE_DAMAGE_MULT * PALADIN_SMITE_DAMAGE_BONUS_MULT);
             dmg = this._applyOutgoingDamageBonuses(m, dmg, 'aoe');
+            const smiteCrit = this._maybeMountedSmiteCrit(m, dmg);
+            dmg = smiteCrit.damage;
             const dealt = this._damageEnemy(target, Math.max(1, dmg));
-            this._addLog(`✨ ${eName} is scorched by the holy nova for ${dealt}!`);
+            this._addLog(`✨ ${eName} is scorched by the holy nova for ${dealt}!${smiteCrit.crit ? ' 💥 MOUNTED CRIT!' : ''}`);
             if (target.health <= 0) this._addLog(`${eName} is defeated!`);
         }
 
@@ -3149,6 +3355,162 @@ export class CombatSystem {
             }
         } else {
             this._addLog(`${eName} is defeated!`);
+        }
+
+        this._advancePlayerTurn();
+    }
+
+    _tryTripEnemy(enemy, monk) {
+        if (!enemy || enemy.health <= 0) return false;
+        const eName = this._eName(enemy);
+        const def = ENEMY_TYPES[enemy.type] || {};
+        const tags = Array.isArray(def.tags) ? def.tags : [];
+        const immune = Array.isArray(def.immune) ? def.immune : [];
+        if (tags.includes('incorporeal')) {
+            this._addLog(`⏬ ${eName} has no solid body to trip — incorporeal immunity.`);
+            return false;
+        }
+        if (tags.includes('vermin')) {
+            this._addLog(`⏬ ${eName} cannot be tripped — vermin are too small, many-legged, flying, or slithery.`);
+            return false;
+        }
+        if (tags.includes('slime') || immune.includes('hold')) {
+            this._addLog(`⏬ ${eName} cannot be tripped — its blobby body ignores hold-style trips.`);
+            return false;
+        }
+        if (tags.includes('dragon')) {
+            this._addLog(`⏬ ${eName} cannot be tripped — dragons have flight, bulk, and too many points of balance.`);
+            return false;
+        }
+        if (enemy.isSuperBoss) {
+            this._addLog(`\u{1F7E3} ${eName} cannot be tripped!`);
+            return false;
+        }
+        if (enemy.isMegaBoss || enemy.isBoss) {
+            this._addLog(`\u{1F451} ${eName} is too powerful to be tripped!`);
+            return false;
+        }
+        if ((enemy.stunImmuneRounds || 0) > 0) {
+            this._addLog(`⏬ ${eName} has recovered its footing too recently to be tripped again.`);
+            return false;
+        }
+        if (tags.includes('beast') && Math.random() < 0.50) {
+            this._addLog(`⏬ ${eName}'s beastly stance absorbs the sweep — many beasts have extra legs or low balance.`);
+            return false;
+        }
+        const levelResist = Math.min(0.90, (enemy.level || 1) * 0.01);
+        if (levelResist > 0 && Math.random() < levelResist) {
+            this._addLog(`⏬ ${eName} keeps its footing — hold resisted!`);
+            return false;
+        }
+        enemy.proneRounds = Math.max(enemy.proneRounds || 0, 1);
+        return true;
+    }
+
+    monkKickTrip(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'monk') return;
+        if ((m.level || 1) < MONK_L35_UNLOCK_LEVEL) return;
+        if (!this.canMelee(m)) {
+            this._addLog(`${m.name} cannot Kick Trip from the back row!`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (m.stamina < MELEE_STAMINA_COST) {
+            this._addLog(`${m.name} does not have enough stamina for Kick Trip.`);
+            return;
+        }
+        if (m.mana < MONK_MELEE_MANA_COST) {
+            this._addLog(`${m.name} does not have enough mana for Kick Trip.`);
+            return;
+        }
+
+        m.stamina = Math.max(0, m.stamina - MELEE_STAMINA_COST);
+        m.mana = Math.max(0, m.mana - MONK_MELEE_MANA_COST);
+
+        const kicks = Math.max(1, Math.floor((m.level || 1) / MONK_KICK_TRIP_ATTACK_DIVISOR));
+        const dmgMult = 1 + MONK_KICK_TRIP_DAMAGE_BASE_BONUS + (m.level || 1) * MONK_KICK_TRIP_DAMAGE_PER_LEVEL;
+        const critChance = Math.min(0.95, (m.level || 1) * MONK_KICK_TRIP_CRIT_PER_LEVEL);
+        const tripChance = Math.min(0.95, MONK_KICK_TRIP_PRONE_BASE_CHANCE + ((m.level || 1) / 10) * MONK_KICK_TRIP_PRONE_PER_10_LEVELS);
+        this._addLog(`🥾 ${m.name} unleashes Kick Trip on ${this._eName(targetEnemy)}! (${kicks} heavy kick${kicks !== 1 ? 's' : ''})`);
+
+        for (let i = 0; i < kicks; i++) {
+            if (!targetEnemy || targetEnemy.health <= 0) break;
+            let dmg = Math.max(1, Math.floor(this._rollPlayerMeleeDamage(m) * dmgMult));
+            let critText = '';
+            if (Math.random() < critChance) {
+                dmg = Math.max(1, Math.floor(dmg * 2));
+                critText = ' CRIT!';
+            }
+            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
+            const dealt = this._damageEnemy(targetEnemy, dmg, false, false, 0, false, { contactAttacker: m, sourceMember: m });
+            this._breakInvisibility(m);
+            this._addLog(`  🥾 Kick ${i + 1}: ${this._eName(targetEnemy)} takes ${dealt} damage.${critText}`);
+            if (targetEnemy.health <= 0) {
+                this._addLog(`${this._eName(targetEnemy)} is kicked down for good!`);
+                break;
+            }
+            if (Math.random() < MONK_KICK_TRIP_STUN_CHANCE) {
+                if (this._tryStunEnemy(targetEnemy)) this._addLog(`  ⚡ ${this._eName(targetEnemy)} is stunned by the crushing kick!`);
+            }
+            if (Math.random() < tripChance) {
+                if (this._tryTripEnemy(targetEnemy, m)) this._addLog(`  ⏬ ${this._eName(targetEnemy)} is swept prone and will lose its next action!`);
+            }
+            this._applyMonkAvatarOnHit(m, targetEnemy, dealt, false);
+        }
+
+        this._advancePlayerTurn();
+    }
+
+    _getExplosivePalmEffect(monk, enemy) {
+        if (!monk || !enemy || !Array.isArray(enemy.activeEffects)) return null;
+        return enemy.activeEffects.find(fx =>
+            fx && fx.type === 'quivering_palm'
+            && (fx.sourceId === monk.id || (!fx.sourceId && fx.sourceName === monk.name))
+            && (fx.rounds || 0) > 0
+            && (fx.doublings || 0) >= MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS);
+    }
+
+    monkExplosivePalm(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'monk') return;
+        if ((m.level || 1) < MONK_L35_UNLOCK_LEVEL) return;
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+        if (m.mana < MONK_EXPLOSIVE_PALM_MANA_COST) {
+            this._addLog(`${m.name} needs ${MONK_EXPLOSIVE_PALM_MANA_COST} MP to trigger Explosive Palm.`);
+            return;
+        }
+        const fx = this._getExplosivePalmEffect(m, targetEnemy);
+        if (!fx) {
+            this._addLog(`${this._eName(targetEnemy)} does not have ${m.name}'s Quivering Palm at ${MONK_EXPLOSIVE_PALM_MIN_DOUBLINGS}+ doublings.`);
+            return;
+        }
+
+        m.mana -= MONK_EXPLOSIVE_PALM_MANA_COST;
+        const accelerated = Math.max(1, Math.round((fx.damage || 1) * (fx.mult || 2)));
+        fx.rounds = 0;
+        fx.damage = 0;
+        const eName = this._eName(targetEnemy);
+        targetEnemy.health = Math.max(0, targetEnemy.health - accelerated);
+        this._addLog(`💥✋ ${m.name} accelerates Explosive Palm in ${eName} for ${accelerated} internal damage! The Quivering Palm stack ends.`);
+        if (targetEnemy.health > 0 && Math.random() < MONK_EXPLOSIVE_PALM_STUN_CHANCE) {
+            if (this._tryStunEnemy(targetEnemy)) this._addLog(`  ⚡ ${eName} is stunned by the internal burst!`);
+        }
+        if (targetEnemy.health <= 0 && !targetEnemy._deathHandled) {
+            targetEnemy._deathHandled = true;
+            this._onEnemyDeath(targetEnemy);
+        }
+
+        const shock = Math.max(1, Math.floor(accelerated * MONK_EXPLOSIVE_PALM_SHOCKWAVE_FRAC));
+        const others = this.aliveHostileEnemies.filter(e => e !== targetEnemy && e.health > 0);
+        if (others.length > 0) this._addLog(`💥 Explosive Palm shockwave erupts for ${shock} damage to other enemies!`);
+        for (const other of others) {
+            const dealt = this._damageEnemy(other, shock, true, true, 0, false, { sourceMember: m });
+            this._addLog(`  → ${this._eName(other)} takes ${dealt} shockwave damage.`);
+            if (other.health <= 0 && !other._deathHandled) {
+                other._deathHandled = true;
+                this._onEnemyDeath(other);
+            }
         }
 
         this._advancePlayerTurn();
@@ -5052,8 +5414,10 @@ export class CombatSystem {
                     bossDmg *= (2 + 0.10 * m.level);
                     bossDmg  = Math.floor(bossDmg * PALADIN_SMITE_BOSS_DAMAGE_MULT * PALADIN_SMITE_DAMAGE_BONUS_MULT);
                     bossDmg = this._applyOutgoingDamageBonuses(m, bossDmg, 'melee');
+                    const bossCrit = this._maybeMountedSmiteCrit(m, bossDmg);
+                    bossDmg = bossCrit.damage;
                     const bossDealt = this._damageEnemy(targetEnemy, Math.max(1, bossDmg), false, false, 0, false, { contactAttacker: m });
-                    this._addLog(`✨ ${m.name}'s divine purge strikes ${eName} — Boss resists instant death! (x4 smite: ${bossDealt} damage)`);
+                    this._addLog(`✨ ${m.name}'s divine purge strikes ${eName} — Boss resists instant death! (x4 smite: ${bossDealt} damage)${bossCrit.crit ? ' 💥 MOUNTED CRIT!' : ''}`);
                     this._applyWeaponRider(m, targetEnemy, bossDealt);
                     this._applyWeaponRider(m, targetEnemy, bossDealt, 'offhand');
                     if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
@@ -5080,13 +5444,15 @@ export class CombatSystem {
         }
         dmg = Math.floor(dmg * PALADIN_SMITE_DAMAGE_BONUS_MULT);
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
+        const smiteCrit = this._maybeMountedSmiteCrit(m, dmg);
+        dmg = smiteCrit.damage;
 
         const dealt = this._damageEnemy(targetEnemy, dmg, false, false, 0, false, { contactAttacker: m });
 
         const flavour = isSmitable
             ? `\u2728 ${m.name} Smites ${eName} with searing holy light for ${dealt}!`
             : `\u2728 ${m.name} Smites ${eName} for ${dealt} damage.`;
-        this._addLog(flavour);
+        this._addLog(flavour + (smiteCrit.crit ? ' 💥 MOUNTED CRIT!' : ''));
 
         this._applyWeaponRider(m, targetEnemy, dealt);
         this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
@@ -5238,6 +5604,65 @@ export class CombatSystem {
 
         m.dragonslayerActive = true;
         this._addLog(`🐉 ${m.name} invokes Dragonslayer! Smite now reaches dragons and the stance costs ${PALADIN_DRAGONSLAYER_MANA_PER_ROUND} MP/round.`);
+        this._notify();
+    }
+
+    _dismissPaladinSteed(paladin, reason = '') {
+        if (!paladin || !paladin.paladinSteedActive) return;
+        if (paladin.paladinSteedHpBonus > 0) {
+            paladin.maxHealth = Math.max(1, paladin.maxHealth - paladin.paladinSteedHpBonus);
+            paladin.health = Math.min(paladin.health, paladin.maxHealth);
+        }
+        paladin.paladinSteedActive = false;
+        paladin.paladinSteedHpBonus = 0;
+        if (reason) this._addLog(`🐎 ${paladin.name}'s summoned steed fades${reason}.`);
+    }
+
+    paladinSummonSteed() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'paladin') return;
+        if ((m.level || 1) < PALADIN_L35_UNLOCK_LEVEL) return;
+        if (m.paladinSteedUsed) {
+            this._addLog(`${m.name} has already summoned a steed this combat.`);
+            return;
+        }
+        if (m.mana < PALADIN_STEED_MANA_COST) {
+            this._addLog(`${m.name} needs ${PALADIN_STEED_MANA_COST} MP to summon a steed.`);
+            return;
+        }
+        m.mana -= PALADIN_STEED_MANA_COST;
+        m.paladinSteedUsed = true;
+        m.paladinSteedActive = true;
+        m.paladinSteedHpBonus = Math.max(1, Math.floor(m.maxHealth * PALADIN_STEED_HEALTH_BONUS));
+        m.maxHealth += m.paladinSteedHpBonus;
+        m.health += m.paladinSteedHpBonus;
+        const meleeBonus = Math.round((this._getMountedPaladinMeleeMultiplier(m) - 1) * 100);
+        const crit = Math.round(Math.min(0.95, PALADIN_STEED_SMITE_CRIT_BASE + (m.level || 1) * PALADIN_STEED_SMITE_CRIT_PER_LEVEL) * 100);
+        this._addLog(`🐎 ${m.name} summons a radiant steed! (+50% max HP, +${meleeBonus}% regular melee damage, ${crit}% Smite crit, ${PALADIN_STEED_MANA_PER_ROUND} MP/round)`);
+        this._advancePlayerTurn();
+    }
+
+    paladinMartyrsCovenantToggle() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'paladin') return;
+        if ((m.level || 1) < PALADIN_L35_UNLOCK_LEVEL) return;
+        if (m.martyrsCovenantActive) {
+            m.martyrsCovenantActive = false;
+            this._addLog(`✝️ ${m.name} releases Martyr's Covenant.`);
+            this._notify();
+            return;
+        }
+        if (m.martyrsCovenantSuppressedRound === (this.turnNumber || 0)) {
+            this._addLog(`✝️ ${m.name}'s Martyr's Covenant is broken for the rest of this round.`);
+            return;
+        }
+        if (m.mana < PALADIN_COVENANT_MANA_PER_ROUND) {
+            this._addLog(`${m.name} needs ${PALADIN_COVENANT_MANA_PER_ROUND} MP to anchor Martyr's Covenant.`);
+            return;
+        }
+        m.martyrsCovenantActive = true;
+        m.martyrsCovenantSuppressedRound = 0;
+        this._addLog(`✝️ ${m.name} anchors Martyr's Covenant! Heavy hits on recruited allies transfer to the paladin (${PALADIN_COVENANT_MANA_PER_ROUND} MP/round).`);
         this._notify();
     }
 
@@ -5453,6 +5878,97 @@ export class CombatSystem {
         if (hit === 0) this._addLog(`  ♪ The symphony echoes — no enemies can be harmed!`);
     }
 
+    // ── Bard L35: Quickstep Song ─────────────────────────────────────────────
+
+    /** Returns true if the party member qualifies for Quickstep Song haste. */
+    _isQuickstepHasteQualifier(m) {
+        if (!m || m.health <= 0) return false;
+        if (!m.isSummoned) return true; // all real party members qualify
+        // For summons: only beasts (ranger/druid/VK) and warlock demons qualify
+        if (BEAST_TYPES[m.summonType]) return true;
+        if (WARLOCK_DEMON_PRESETS[m.summonType]) return true;
+        if (VERMIN_PRESETS[m.summonType]) return true;
+        if (SLIME_PRESETS[m.summonType]) return true;
+        return false;
+    }
+
+    /** Bard L35: Quickstep Song — 100 MP to activate; grants haste to all qualifying party members. */
+    bardQuickstepSong() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'bard') return;
+        if (m.level < BARD_QUICKSTEP_SONG_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${BARD_QUICKSTEP_SONG_UNLOCK_LEVEL} to use Quickstep Song.`);
+            return;
+        }
+        if (m.quickstepSongActive) {
+            this._addLog(`⚡ ${m.name}'s Quickstep Song is already active!`);
+            return;
+        }
+        if (m.mana < BARD_QUICKSTEP_SONG_MANA_COST) {
+            this._addLog(`${m.name} needs ${BARD_QUICKSTEP_SONG_MANA_COST} MP to play Quickstep Song.`);
+            return;
+        }
+        m.mana -= BARD_QUICKSTEP_SONG_MANA_COST;
+        m.quickstepSongActive = true;
+        let hastedCount = 0;
+        for (const p of this.party) {
+            if (p.health <= 0 || p.quickstepHasteActive) continue;
+            if (this._isQuickstepHasteQualifier(p)) {
+                p.quickstepHasteActive = true;
+                hastedCount++;
+            }
+        }
+        this._addLog(`⚡ ${m.name} plays the Quickstep Song! (-${BARD_QUICKSTEP_SONG_MANA_COST} MP) ${hastedCount} ally${hastedCount !== 1 ? 's gain' : ' gains'} haste — bonus attacks this combat!`);
+        this._advancePlayerTurn();
+    }
+
+    // ── Bard L35: Soulful Melody (passive reaction) ───────────────────────────
+
+    /**
+     * Triggers automatically when a non-summoned party member dies.
+     * The bard with the most mana (L35+, not in Symphony) plays a memorial anthem.
+     * Costs BARD_SOULFUL_MELODY_MANA_COST MP.
+     * Grants survivors +floor(bardLevel/4) atk/def for BARD_SOULFUL_MELODY_DURATION rounds.
+     * Stacks: each successive fallen ally enhances the existing anthem rather than starting fresh.
+     */
+    _triggerSoulfulMelody(deceased) {
+        if (!deceased || deceased.soulfulMelodyPlayed) return;
+        deceased.soulfulMelodyPlayed = true;
+
+        const bards = (this.party || []).filter(p =>
+            p && p.health > 0 && !p.isSummoned && p.classId === 'bard'
+            && (p.level || 1) >= BARD_SOULFUL_MELODY_UNLOCK_LEVEL
+            && !p.symphonyActive
+            && p.mana >= BARD_SOULFUL_MELODY_MANA_COST
+        );
+        if (bards.length === 0) return;
+
+        const bard = bards.reduce((best, b) => b.mana > best.mana ? b : best, bards[0]);
+        bard.mana -= BARD_SOULFUL_MELODY_MANA_COST;
+
+        const baseBonus = Math.max(1, Math.floor((bard.level || 1) / BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR));
+        const survivors = (this.party || []).filter(p => p && p.health > 0 && p !== deceased);
+
+        for (const survivor of survivors) {
+            if (!Array.isArray(survivor.activeEffects)) survivor.activeEffects = [];
+            const existing = survivor.activeEffects.find(e => e && e.type === 'soulful_melody_anthem');
+            if (existing) {
+                existing.damageBonus = (existing.damageBonus || 0) + BARD_SOULFUL_MELODY_STACK_ATK_BONUS;
+                existing.defenseBonus = (existing.defenseBonus || 0) + BARD_SOULFUL_MELODY_STACK_DEF_BONUS;
+                existing.rounds = (existing.rounds || 0) + BARD_SOULFUL_MELODY_STACK_DUR_BONUS;
+            } else {
+                survivor.activeEffects.push({
+                    type: 'soulful_melody_anthem',
+                    damageBonus: baseBonus,
+                    defenseBonus: baseBonus,
+                    rounds: BARD_SOULFUL_MELODY_DURATION,
+                });
+            }
+        }
+        const bonusNote = `+${baseBonus} atk/def, ${BARD_SOULFUL_MELODY_DURATION} rds`;
+        this._addLog(`\u{1F3B5} ${bard.name} plays a Soulful Melody for the fallen ${deceased.name}! (-${BARD_SOULFUL_MELODY_MANA_COST} MP) [${bonusNote}] — ${survivors.length} surviving ${survivors.length !== 1 ? 'allies' : 'ally'} inspired!`);
+    }
+
     /**
      * Druid Entangle — 50% chance per enemy to apply -2 defense / -2 damage
      * debuff for POISON_DURATION_ROUNDS rounds (we reuse the rounds counter).
@@ -5575,6 +6091,108 @@ export class CombatSystem {
         if (!m || !m.wildShapeForm) return;
         this._exitWildShape(m);
         this._notify();
+    }
+
+    /**
+     * Druid L35 Nature's Charms — toggle.
+     * Activation costs DRUID_NATURES_CHARM_MANA_COST and ends the druid's turn.
+     * Deactivation is a free action (no turn advance) and releases all charmed minions.
+     * Per-round charm attempts and upkeep are handled in _tickPartyEffects.
+     */
+    druidNaturesCharmToggle() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'druid') return;
+        if (m.level < DRUID_NATURES_CHARM_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${DRUID_NATURES_CHARM_UNLOCK_LEVEL} to use Nature's Charms.`);
+            return;
+        }
+        if (m.naturesCharmActive) {
+            // Deactivate — free action, releases all charmed minions
+            m.naturesCharmActive = false;
+            for (const e of this.enemies) {
+                if (e.naturesCharmed && e.charmerId === m.id && e.charmedRounds > 0) {
+                    e.charmedRounds = 0;
+                    e.charmerId = null;
+                    e.naturesCharmed = false;
+                    this._addLog(`\u{1F33F} ${this._eName(e)} returns to the enemy ranks.`);
+                }
+            }
+            this._addLog(`\u{1F33F} ${m.name} releases Nature's Charms.`);
+            this._notify();
+            return;
+        }
+        if (m.mana < DRUID_NATURES_CHARM_MANA_COST) {
+            this._addLog(`${m.name} needs ${DRUID_NATURES_CHARM_MANA_COST} MP to activate Nature's Charms.`);
+            return;
+        }
+        m.mana -= DRUID_NATURES_CHARM_MANA_COST;
+        m.naturesCharmActive = true;
+        this._addLog(`\u{1F33F} ${m.name} opens their spirit to the wild — Nature's Charms active! (-${DRUID_NATURES_CHARM_MANA_COST} MP)`);
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Druid L35 Wither Plants — magic AoE targeting all plant-tagged enemies.
+     * Damage = base_magic × (DRUID_WITHER_PLANTS_DAMAGE_BASE + level/100).
+     * level/5 % instakill chance vs non-boss/mega-boss/super-boss plants.
+     */
+    druidWitherPlants() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'druid') return;
+        if (m.level < DRUID_WITHER_PLANTS_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${DRUID_WITHER_PLANTS_UNLOCK_LEVEL} to use Wither Plants.`);
+            return;
+        }
+        if (m.mana < DRUID_WITHER_PLANTS_MANA_COST) {
+            this._addLog(`${m.name} needs ${DRUID_WITHER_PLANTS_MANA_COST} MP to cast Wither Plants.`);
+            return;
+        }
+
+        const targets = this.aliveHostileEnemies.filter(e => {
+            const tags = this._getEnemyTags(e);
+            return tags.includes(DRUID_WITHER_PLANTS_TARGET_TAG);
+        });
+
+        if (targets.length === 0) {
+            this._addLog(`\u{1F342} ${m.name} calls upon Wither Plants… but there are no plant enemies to wither!`);
+            return;
+        }
+
+        m.mana -= DRUID_WITHER_PLANTS_MANA_COST;
+
+        let baseHit = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
+        baseHit += m.getWeaponBonus('magic');
+        baseHit += m.getClassDamageBonus('magic');
+        baseHit += this._getPartyMemberDamageMod(m);
+        baseHit = Math.max(1, baseHit);
+
+        const mult = DRUID_WITHER_PLANTS_DAMAGE_BASE + m.level * DRUID_WITHER_PLANTS_DAMAGE_PER_LEVEL;
+        const instakillChance = Math.min(0.95, (m.level / DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR) / 100);
+
+        this._addLog(`\u{1F342} ${m.name} channels nature's decay — Wither Plants strikes all plants! (-${DRUID_WITHER_PLANTS_MANA_COST} MP)`);
+
+        for (const target of targets) {
+            if (target.health <= 0) continue;
+            const tName = this._eName(target);
+            const canInstakill = !target.isBoss && !target.isMegaBoss && !target.isSuperBoss;
+
+            if (canInstakill && instakillChance > 0 && Math.random() < instakillChance) {
+                this._addLog(`\u{1F342} ${tName} withers to dust! (instant death)`);
+                target.health = 0;
+                if (!target._deathHandled) { target._deathHandled = true; this._onEnemyDeath(target); }
+                continue;
+            }
+
+            const rawDmg = Math.max(1, Math.round(baseHit * mult));
+            const dmg = this._applyOutgoingDamageBonuses(m, rawDmg, 'magic');
+            const dealt = this._damageEnemy(target, dmg, false, true);
+            this._addLog(`\u{1F342} ${tName} takes ${dealt} magic damage from Wither Plants!`);
+            if (target.health <= 0 && !target._deathHandled) { target._deathHandled = true; this._onEnemyDeath(target); }
+        }
+
+        this._advancePlayerTurn();
     }
 
     /** Internal: clean up a druid's wild shape state. Called on deactivate, upkeep fail, or death. */
@@ -7439,6 +8057,15 @@ export class CombatSystem {
                 } catch (err) {
                     this._handleAutoTurnError(slot, err);
                 }
+                // Quickstep Song haste: qualifying summons get one bonus auto-attack
+                if (m.health > 0 && m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
+                    try {
+                        this._addLog(`⚡ ${m.name} moves with supernatural speed — bonus attack!`);
+                        this._takeSummonTurn(m);
+                    } catch (_err) {
+                        // ignore errors on haste bonus turn
+                    }
+                }
                 if (this.aliveHostileEnemies.length === 0) { this._finishVictory(); return; }
                 if (this.allRealMembersDefeated) {
                     this.phase = 'DEFEAT';
@@ -7603,6 +8230,11 @@ export class CombatSystem {
         if (e.webbedRounds > 0) {
             this._addLog(`\u{1F578}️ ${eName} is webbed and cannot act! (${e.webbedRounds} rd left)`);
             e.webbedRounds--;
+            return;
+        }
+        if ((e.proneRounds || 0) > 0) {
+            this._addLog(`⏬ ${eName} is prone and cannot act! (${e.proneRounds} rd left)`);
+            e.proneRounds = Math.max(0, (e.proneRounds || 0) - 1);
             return;
         }
 
@@ -9778,7 +10410,7 @@ export class CombatSystem {
         const eName = this._eName(e);
         const typeDef = ENEMY_TYPES[e.type] || {};
         rawDmg = this._applyEnemyResourceExhaustion(e, rawDmg);
-        const tauntResult = this._applyWarriorTauntTargeting(target, rawDmg, attackKind, opts);
+        const tauntResult = opts.covenantTransfer ? null : this._applyWarriorTauntTargeting(target, rawDmg, attackKind, opts);
         if (tauntResult) {
             target = tauntResult.target;
             rawDmg = tauntResult.rawDmg;
@@ -9803,12 +10435,12 @@ export class CombatSystem {
         }
 
         // Shadow Step: rogue is completely untargetable — all attacks pass through harmlessly
-        if (this._hasShadowStep(target)) {
+        if (!opts.covenantTransfer && this._hasShadowStep(target)) {
             this._addLog(`\u{1F311} ${eName}'s attack passes harmlessly through ${target.name}'s shadow!`);
             return null;
         }
 
-        if (!opts.aoe && this._hasInvisibility(target) && ['melee', 'ranged', 'magic'].includes(attackKind)) {
+        if (!opts.covenantTransfer && !opts.aoe && this._hasInvisibility(target) && ['melee', 'ranged', 'magic'].includes(attackKind)) {
             this._addLog(`\u{1F441} ${eName} cannot find invisible ${target.name}!`);
             return null;
         }
@@ -9853,7 +10485,7 @@ export class CombatSystem {
         // Boss aura: alive boss = +25% dmg, mega boss = +50% (stack; self excluded)
         rawDmg = Math.max(1, Math.round(rawDmg * this._getBossAuraMult(e)));
 
-        if (this._isDragonEnemy(e) && (attackKind === 'magic' || opts.aoe)) {
+        if (!opts.covenantTransfer && this._isDragonEnemy(e) && (attackKind === 'magic' || opts.aoe)) {
             const protector = this._getDragonAuraProtector();
             if (protector) {
                 const reducedBy = protector.getDragonAuraReduction();
@@ -9870,7 +10502,7 @@ export class CombatSystem {
         if (attackKind === 'melee')       rawDmg = Math.max(1, Math.round(rawDmg * (1 + eLvl * MONSTER_MELEE_DAMAGE_BONUS_PER_LEVEL)));
         else if (attackKind === 'ranged') rawDmg = Math.max(1, Math.round(rawDmg * (1 + eLvl * MONSTER_RANGED_DAMAGE_BONUS_PER_LEVEL)));
 
-        if (attackKind === 'ranged' && !opts._eagleDeflected) {
+        if (!opts.covenantTransfer && attackKind === 'ranged' && !opts._eagleDeflected) {
             if (this.prismaticSphere && this.prismaticSphere.hp > 0) {
                 const before = this.prismaticSphere.hp;
                 const absorbed = Math.min(before, rawDmg);
@@ -9900,7 +10532,7 @@ export class CombatSystem {
             rawDmg = Math.max(1, Math.floor(rawDmg * (1 - RANGER_PIXIE_TOTEM_MAGIC_RESIST)));
         }
 
-        if ((attackKind === 'magic' || opts.aoe) && this.prismaticSphere && this.prismaticSphere.hp > 0) {
+        if (!opts.covenantTransfer && (attackKind === 'magic' || opts.aoe) && this.prismaticSphere && this.prismaticSphere.hp > 0) {
             const before = this.prismaticSphere.hp;
             const absorbed = Math.min(before, rawDmg);
             this.prismaticSphere.hp = Math.max(0, before - rawDmg);
@@ -9952,6 +10584,9 @@ export class CombatSystem {
             const _auraPct = this._getPaladinAuraDamageReduction();
             if (_auraPct > 0) rawDmg = Math.max(1, Math.floor(rawDmg * (1 - _auraPct)));
         }
+
+        // Cleric L35 Divine Shroud: all-source reduction before armor/defense.
+        rawDmg = this._applyDivineShroudReduction(target, rawDmg, `${attackKind}${opts.aoe ? '/AoE' : ''} hit`);
 
         // Wild Shape Storm Eagle Form: ranged evasion
         if (!target.isSummoned && target.classId === 'druid' && target.wildShapeForm === 'eagle'
@@ -10156,12 +10791,19 @@ export class CombatSystem {
             this._addLog(`\u{1F47B} ${eName} phases through ${target.name}'s defences!`);
         }
 
+        const prePersonalDefenseDamage = Math.max(1, Math.round(rawDmg));
         let dmg = rawDmg;
         if (target._defending) dmg = Math.max(1, Math.floor(dmg / 2));
         dmg = Math.max(1, dmg - armorBlock - innateDef);
         // Barbarian rage halves all incoming damage
         if (target.classId === 'barbarian' && target.isRaging) {
             dmg = Math.max(1, Math.floor(dmg / 2));
+        }
+        if (!target.isSummoned
+            && target.classId === 'paladin'
+            && target.paladinSteedActive
+            && attackKind === 'melee') {
+            dmg = Math.max(1, Math.floor(dmg * PALADIN_STEED_MELEE_RESIST));
         }
 
         // Phase 8 rule 6: monks reduce all incoming damage by their current dodge %.
@@ -10205,7 +10847,8 @@ export class CombatSystem {
             dmg = Math.max(1, Math.floor(dmg * (1 - lichResist)));
         }
 
-        if ((attackKind === 'melee' || attackKind === 'ranged')
+        if (!opts.covenantTransfer
+            && (attackKind === 'melee' || attackKind === 'ranged')
             && (target.activeEffects || []).some(fx => fx && fx.type === 'blur' && (fx.rounds || 0) > 0)
             && Math.random() < PHOTOMANCER_BLUR_MISS_CHANCE) {
             this._addLog(`\u{1F300} ${target.name}'s blur makes ${eName}'s ${attackKind} attack miss!`);
@@ -10283,8 +10926,48 @@ export class CombatSystem {
             }
         }
 
+        if (!opts.covenantTransfer
+            && !opts.aoe
+            && target && !target.isSummoned
+            && target.health > 0
+            && this._canReceiveLivingHealOrBuff(target)
+            && ['melee', 'ranged', 'magic', 'weak'].includes(attackKind)
+            && dmg > Math.max(1, Math.floor((target.maxHealth || 1) * PALADIN_COVENANT_TRIGGER_MAX_HP_FRAC))) {
+            const anchor = this._getMartyrsCovenantAnchor(target);
+            if (anchor) {
+                this._addLog(`✝️ ${anchor.name}'s Martyr's Covenant takes ${target.name}'s grievous wound! ${dmg} damage is prevented; ${prePersonalDefenseDamage} raw damage transfers to the paladin.`);
+                this._applyEnemyHit(e, anchor, prePersonalDefenseDamage, attackKind, {
+                    ...opts,
+                    aoe: false,
+                    covenantTransfer: true,
+                    skipInterceptors: true,
+                    skipTaunt: true,
+                    phaseStrike: false,
+                });
+                return anchor.health > 0 ? anchor : null;
+            }
+        }
+
+        if (opts.covenantTransfer
+            && !target.isSummoned
+            && target.classId === 'paladin'
+            && target.health - dmg <= 0) {
+            const minHp = Math.max(1, Math.ceil((target.maxHealth || 1) * PALADIN_COVENANT_MIN_HP_FRAC));
+            const applied = Math.max(0, target.health - minHp);
+            target.health = Math.max(minHp, target.health - applied);
+            target.martyrsCovenantActive = false;
+            target.martyrsCovenantSuppressedRound = this.turnNumber || 0;
+            this._emitTelemetry('damageTaken', { target, enemy: e, amount: applied, attackKind, intercepted: true, covenantTransfer: true });
+            this._addLog(`✝️ ${target.name}'s Martyr's Covenant shatters before death, leaving them at ${target.health} HP. It cannot be re-anchored until next round.`);
+            return target;
+        }
+
         target.health = Math.max(0, target.health - dmg);
-        this._emitTelemetry('damageTaken', { target, enemy: e, amount: dmg, attackKind, intercepted: false });
+        this._emitTelemetry('damageTaken', { target, enemy: e, amount: dmg, attackKind, intercepted: !!opts.covenantTransfer, covenantTransfer: !!opts.covenantTransfer });
+
+        if (target.health <= 0 && this._tryDivineShroudRevive(target)) {
+            return target;
+        }
 
         // ── Wild Shape: druid falls — exit form immediately ──────────────────
         if (target.health <= 0 && !target.isSummoned && target.classId === 'druid' && target.wildShapeForm) {
@@ -10297,6 +10980,11 @@ export class CombatSystem {
             target.warlockCauldronOpen = false;
         }
 
+        if (target.health <= 0 && !target.isSummoned && target.classId === 'paladin') {
+            if (target.paladinSteedActive) this._dismissPaladinSteed(target, ' as they fall');
+            target.martyrsCovenantActive = false;
+        }
+
         // ── Lich Phial: necromancer in lich form caught at 0 HP ─────────────────
         if (target.health <= 0 && !target.isSummoned && target.isLichForm && !target.lichPhial) {
             target.lichPhial = true;
@@ -10304,6 +10992,11 @@ export class CombatSystem {
             target.health = 0;
             this._addLog(`💀 ${target.name}'s soul retreats to their Lich Phial! (returns in ${NECRO_LICH_REVIVE_ROUNDS} rounds)`);
             return target; // don't process further damage effects
+        }
+
+        // ── Soulful Melody: trigger on real (non-summoned) party member death ────
+        if (target.health <= 0 && !target.isSummoned) {
+            this._triggerSoulfulMelody(target);
         }
 
         // ── Vampire gaseous form: triggered when the vampire would die ────────
@@ -11142,7 +11835,6 @@ export class CombatSystem {
         for (const m of this.party) {
             if (m.health <= 0) continue;
             const effects = m.activeEffects || [];
-            if (effects.length === 0) continue;
 
             // Necromancer undead summons are immune to poison.
             const isNecroUndead = m.isSummoned && (UNDEAD_TIERS.some(ut => ut.id === m.summonType) || m.summonType === 'demi_lich' || m.summonType === 'corpse_horror');
@@ -11284,8 +11976,10 @@ export class CombatSystem {
                 }
             }
             if (totalFracture > 0 && m.health > 0) {
+                totalFracture = this._applyDivineShroudReduction(m, totalFracture, 'fracture DoT');
                 m.health = Math.max(0, m.health - totalFracture);
                 this._addLog(`🦴 ${m.name} bleeds from fractures — ${totalFracture} damage!`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has succumbed to the fracture wounds!`);
             }
             // Quasit venom: armor-ignoring poison DoT (summed after fracture)
@@ -11296,8 +11990,10 @@ export class CombatSystem {
                 }
             }
             if (totalQuasitPoison > 0 && m.health > 0) {
+                totalQuasitPoison = this._applyDivineShroudReduction(m, totalQuasitPoison, 'quasit venom');
                 m.health = Math.max(0, m.health - totalQuasitPoison);
                 this._addLog(`\u{1F47F} ${m.name} writhes in quasit venom — ${totalQuasitPoison} poison damage! (armor-ignoring)`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has succumbed to quasit venom!`);
             }
             if (totalPoison > 0) {
@@ -11306,16 +12002,20 @@ export class CombatSystem {
                     totalPoison = Math.max(1, Math.floor(totalPoison * (1 - resist)));
                     this._addLog(`\u{1F577}️ ${m.name}'s toxin affinity reduces the poison! (${Math.round(resist * 100)}% resist)`);
                 }
+                totalPoison = this._applyDivineShroudReduction(m, totalPoison, 'poison DoT');
                 m.health = Math.max(0, m.health - totalPoison);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalPoison} poison damage!`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has fallen to the poison!`);
             }
             if (totalBurn > 0 && m.health > 0) {
                 // Plant summons (treants, shambling mounds) take double fire DoT damage
                 const isPlantSummon = m.isSummoned && ['treant', 'shambling_mound'].includes(m.summonStats?.beastKind);
-                const effectiveBurn = isPlantSummon ? Math.round(totalBurn * 2.0) : totalBurn;
+                let effectiveBurn = isPlantSummon ? Math.round(totalBurn * 2.0) : totalBurn;
+                effectiveBurn = this._applyDivineShroudReduction(m, effectiveBurn, 'burn DoT');
                 m.health = Math.max(0, m.health - effectiveBurn);
                 this._addLog(`\u{1F525} ${m.name} takes ${effectiveBurn} burn damage!${isPlantSummon ? ' \u{1F333} (plant vulnerability!)' : ''}`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has been consumed by the flames!`);
             }
             if (totalAcid > 0 && m.health > 0) {
@@ -11324,18 +12024,24 @@ export class CombatSystem {
                     totalAcid = Math.max(1, Math.floor(totalAcid * (1 - resist)));
                     this._addLog(`\u{1F577}️ ${m.name}'s corrosion resistance blunts the acid! (${Math.round(resist * 100)}% resist)`);
                 }
+                totalAcid = this._applyDivineShroudReduction(m, totalAcid, 'acid DoT');
                 m.health = Math.max(0, m.health - totalAcid);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalAcid} acid damage!`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has been dissolved by the acid!`);
             }
             if (totalDrowning > 0 && m.health > 0) {
+                totalDrowning = this._applyDivineShroudReduction(m, totalDrowning, 'drowning DoT');
                 m.health = Math.max(0, m.health - totalDrowning);
                 this._addLog(`\u{1F30A} ${m.name} chokes on water, taking ${totalDrowning} drowning damage!`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has drowned!`);
             }
             if (totalFrost > 0 && m.health > 0) {
+                totalFrost = this._applyDivineShroudReduction(m, totalFrost, 'frost DoT');
                 m.health = Math.max(0, m.health - totalFrost);
                 this._addLog(`❄️ ${m.name} suffers ${totalFrost} frost damage!`);
+                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has been frozen solid!`);
             }
             // Barbarian rage: regenerate 5% max HP per round
@@ -11455,6 +12161,52 @@ export class CombatSystem {
                     this._exitWildShape(m);
                 }
             }
+            // Druid L35 Nature's Charms: per-charmed-minion upkeep + per-round charm attempts
+            if (m.classId === 'druid' && m.naturesCharmActive && m.health > 0) {
+                const _ncCharmed = this.enemies.filter(e => e.naturesCharmed && e.charmedRounds > 0 && e.charmerId === m.id);
+                const _ncUpkeep  = _ncCharmed.length * DRUID_NATURES_CHARM_UPKEEP_PER_ROUND;
+                if (_ncUpkeep > 0) {
+                    if (m.mana >= _ncUpkeep) {
+                        m.mana -= _ncUpkeep;
+                        this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms maintains ${_ncCharmed.length} minion${_ncCharmed.length > 1 ? 's' : ''} (-${_ncUpkeep} MP).`);
+                    } else {
+                        m.mana = 0;
+                        m.naturesCharmActive = false;
+                        for (const _nce of _ncCharmed) {
+                            _nce.charmedRounds = 0;
+                            _nce.charmerId     = null;
+                            _nce.naturesCharmed = false;
+                            this._addLog(`\u{1F33F} ${this._eName(_nce)} breaks free — ${m.name}'s mana is exhausted!`);
+                        }
+                        this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms fades — no mana left!`);
+                    }
+                }
+                // Attempt to charm eligible plant/beast enemies this round
+                if (m.naturesCharmActive) {
+                    const _ncChance   = Math.min(0.95, (m.level / DRUID_NATURES_CHARM_CHANCE_DIVISOR) / 100);
+                    const _ncDuration = Math.max(1, Math.floor(m.level / BARD_CHARM_DURATION_DIVISOR) + DRUID_NATURES_CHARM_DURATION_BONUS);
+                    for (const _nce of this.aliveHostileEnemies.slice()) {
+                        if (_nce.health <= 0 || _nce.charmedRounds > 0 || _nce.naturesCharmImmune) continue;
+                        if (_nce.isBoss || _nce.isMegaBoss || _nce.isSuperBoss) continue;
+                        const _ncTags = this._getEnemyTags(_nce);
+                        if (!DRUID_NATURES_CHARM_TAGS.some(t => _ncTags.includes(t))) continue;
+                        if (Math.random() < _ncChance) {
+                            this._prepareCharmedAlly(_nce);
+                            _nce.charmedRounds        = _ncDuration;
+                            _nce.charmerId            = m.id;
+                            _nce.naturesCharmed       = true;
+                            _nce.naturesCharmBolster  = m.level * DRUID_NATURES_CHARM_BOLSTER_PER_LEVEL;
+                            this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms wins over ${this._eName(_nce)}! (${_ncDuration} rds, +${Math.round(_nce.naturesCharmBolster * 100)}% dmg)`);
+                        } else {
+                            _nce.naturesCharmResists = (_nce.naturesCharmResists || 0) + 1;
+                            if (_nce.naturesCharmResists >= DRUID_NATURES_CHARM_RESIST_CAP) {
+                                _nce.naturesCharmImmune = true;
+                                this._addLog(`\u{1F33F} ${this._eName(_nce)} resists Nature's Charms ${_nce.naturesCharmResists}× — now immune this combat!`);
+                            }
+                        }
+                    }
+                }
+            }
             if (m.classId === 'monk' && m.avatarActive && m.health > 0) {
                 if (m.mana >= MONK_AVATAR_MANA_PER_ROUND) {
                     m.mana -= MONK_AVATAR_MANA_PER_ROUND;
@@ -11491,6 +12243,35 @@ export class CombatSystem {
                     m.mana = 0;
                     m.dragonslayerActive = false;
                     this._addLog(`🐉 ${m.name}'s Dragonslayer stance fades — no mana left!`);
+                }
+            }
+            if (m.classId === 'paladin' && m.paladinSteedActive && m.health > 0) {
+                if (m.mana >= PALADIN_STEED_MANA_PER_ROUND) {
+                    m.mana -= PALADIN_STEED_MANA_PER_ROUND;
+                    this._addLog(`🐎 ${m.name}'s summoned steed draws ${PALADIN_STEED_MANA_PER_ROUND} MP.`);
+                } else {
+                    m.mana = 0;
+                    this._dismissPaladinSteed(m, ' as their mana runs dry');
+                }
+            }
+            if (m.classId === 'paladin' && m.martyrsCovenantActive && m.health > 0) {
+                if (m.mana >= PALADIN_COVENANT_MANA_PER_ROUND) {
+                    m.mana -= PALADIN_COVENANT_MANA_PER_ROUND;
+                    this._addLog(`✝️ ${m.name}'s Martyr's Covenant draws ${PALADIN_COVENANT_MANA_PER_ROUND} MP.`);
+                } else {
+                    m.mana = 0;
+                    m.martyrsCovenantActive = false;
+                    this._addLog(`✝️ ${m.name}'s Martyr's Covenant breaks — no mana left!`);
+                }
+            }
+            if (m.classId === 'cleric' && m.divineShroudActive && m.health > 0) {
+                if (m.mana >= CLERIC_DIVINE_SHROUD_MANA_PER_ROUND) {
+                    m.mana -= CLERIC_DIVINE_SHROUD_MANA_PER_ROUND;
+                    this._addLog(`✨ ${m.name}'s Divine Shroud draws ${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP.`);
+                } else {
+                    m.mana = 0;
+                    m.divineShroudActive = false;
+                    this._addLog(`✨ ${m.name}'s Divine Shroud fades — no mana left!`);
                 }
             }
             // Lich Form: 15 MP/round upkeep; stamina→mana conversion on mana exhaustion
@@ -11571,6 +12352,16 @@ export class CombatSystem {
                     m.mana = 0;
                     m.thunderousDrumsActive = false;
                     this._addLog(`🥁 ${m.name}'s Thunderous Drums fade — no mana left!`);
+                }
+            }
+            // Quickstep Song (Bard L35): refresh haste onto newly-added qualifying combatants each round
+            if (m.classId === 'bard' && m.quickstepSongActive && m.health > 0) {
+                for (const _qsp of this.party) {
+                    if (_qsp.health <= 0 || _qsp.quickstepHasteActive) continue;
+                    if (this._isQuickstepHasteQualifier(_qsp)) {
+                        _qsp.quickstepHasteActive = true;
+                        this._addLog(`⚡ ${_qsp.name} steps into ${m.name}'s Quickstep rhythm!`);
+                    }
                 }
             }
             // Necromancer undead upkeep: 1 MP per living undead per round
@@ -11719,6 +12510,8 @@ export class CombatSystem {
             if (!target || target.health <= 0) return 0;
             const options = contactAttacker ? { contactAttacker } : {};
             dmg = this._applyEnemyResourceExhaustion(e, dmg);
+            // Nature's Charms bolster: +1% per druid level bonus damage
+            if (e.naturesCharmBolster > 0) dmg = Math.max(1, Math.round(dmg * (1 + e.naturesCharmBolster)));
             const dealt = this._damageEnemy(target, dmg, false, isMagic, 0, false, options);
             this._addLog(`  \u2192 ${eN(target)} takes ${dealt}${isMagic ? ' magic' : ''} damage.`);
             return dealt;
@@ -13897,6 +14690,24 @@ export class CombatSystem {
             }
             if (t.health <= 0 && !t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
         }
+
+        // Quickstep Song haste: one extra round of tentacle attacks
+        if (m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
+            const _qstCount = Math.max(1, Math.floor((m.level || 1) / 3));
+            const _qstMult  = 1 + ((m.level || 1) * 3) / 100;
+            this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus tentacle strike!`);
+            for (let _qi = 0; _qi < _qstCount && this.aliveHostileEnemies.length > 0; _qi++) {
+                const _qstTgts = this.aliveHostileEnemies;
+                const _qstT = _qstTgts[Math.floor(Math.random() * _qstTgts.length)];
+                let _qstDmg = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX) + this._getWarlockMagicSkill(m);
+                _qstDmg = Math.max(1, Math.round(_qstDmg * _qstMult));
+                _qstDmg = this._applyOutgoingDamageBonuses(m, _qstDmg, 'melee');
+                const _qstDealt = this._damageEnemy(_qstT, _qstDmg, false, false, 0, false, { contactAttacker: m });
+                this._addLog(`  \u{1F9D0} Haste tentacle hits ${this._eName(_qstT)} for ${_qstDealt}.`);
+                if (_qstT.health <= 0 && !_qstT._deathHandled) { _qstT._deathHandled = true; this._onEnemyDeath(_qstT); }
+            }
+        }
+
         this._advancePlayerTurn();
     }
 
