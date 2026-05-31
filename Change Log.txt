@@ -2605,40 +2605,105 @@ d. apply a penalty to defense skill = rogue level/4.  this might require setting
 2. Extra Loot (passive):  the rogue adds rogue level/2% to any gold obtained at the end.  multiple rogues are additive not multiplicative.  three level 33 rogues add 33+33+33 = 99% more treasure.  
 
 
+
+new level 35 abilties
+1. Beast Mastery.  The ranger can select a permanent beast companion out of combat.  within the new modal selected by pressing the 'P' key out of combat (similar set up to photomancer simulacrum picker). choose one type from a dropdown.  selecting a type displays its abilities and stats.  Choices are from the following:
+- Dire wolf: abiltiies: melee bite attacks number: ranger level/10, each bite inflicts bleed DoT for 100% of the damage for (ranger level/6) rounds. (all attacks target the same foe)
+- Cave Bear: abilities: melee bite or claw attacks (50/50%)  number: ranger level/10.  the claws inflicts bleed DoT for 100% of the damage for (ranger level/6) rounds.  the bite has a chance to hold the target = (ranger level)% for 2 rounds.  normal resists apply. (all attacks target the same foe)
+- Roc: ranged claw attacks number: ranger level/10.  each has a chance to crit = the ranger's chance to crit. crit damage is +300% + plus ranger level x2) %. (all attacks target the same foe)
+- Sabre Tooth Cat: melee bite or claw attacks (50/50%)  number: ranger level/10.  the claws inflicts bleed DoT for 100% of the damage for (ranger level/6) rounds.  the bite attack has a ranger level/3% chance to instant kill any living target (undead, elementals, constructs, incorporeal and plants are immune). (all attacks target the same foe)
+- Mega-conda: single target constrict attack, does damage = 300% + 100% more for each ranger level/10 . applies a hold to the target (normal resistances).  hold lasts for ranger level/5 rounds. along with a successful hold (and only with a successful hold) is a constricting DoT.  it does base damage / round to the targtet.  increasing by an additional 50% from of base each round. 
+- Megaloceros: melee aoe attack charge that hits number of targets = ranger level/5.  each target has a chance to be knocked prone (equivalent to a hold) and lose its turn for 1 round.  damage = (100% + (ranger levelx2)%) 
+- Sasquatch:   abilities: melee fist or ranged boulder attacks (50/50%)  number: ranger level/6.  the fist or boulders boulders have a 20% chance + (ranger level/3)% chance to stun a foe.  fist attacks are against the same target, boulders can be against any target.  fist and boulder attacks do (100% + (ranger levelx2)%) more damage
+
+a. the melee, or ranged stat for these perma beasts = ranger level x2. 
+b. defense = ranger level x2
+c.  health = ranger max health x1.5
+
+if the beast dies during combat the ranger can reform it after before the next combat for a cost of ranger level x 100 gold
+2. ricochet shot (passive).  For all normal ranged shots, each arrow has a 50% chance to richochet to some other random enemy doing 50% damage, ricochets can crit and also have a chance to instakill favored enemies. a shot that ricochets can richochet again at 25%, again at 12% chance, and so one 6%, 3% and 1% chance.
+an extremely lucky arrow ricochets 6 additional times.  each ricochet arrow only does 50% of the base damage.  ricochets can crit at the normal chance.  they can also instant kill favored enemies albeit at only 50% chance less than a regular shot.  ricochets can apply weapon riders as well as totem effects.  an arrow that ricochets consume 1MP for each ricochet.  Each arrow attack for a normal ranged attack is checked.  each arrow will not richochet to the same target twice, but each arrow is checked separately.  the ricochet from a second arrow can hit the same target as a ricochet from the first arrow.
+a. richochets do not happen on explosive arrow attacks because the arrow explodes.
+
+
+confirm:
+1. simulacra with aoe should overwrite the default number of attacks and hit all targets
+2. reduce extra defense of simulacra from +50% to +25%.  this fix needs to go to active simulacra (sims) and thus i need a fix pass on next load of the game to adjust the abilities of active ones
+3. mandrake root scream should be considered sonic and thus mitigated by thundrous drums
+
+
+barbarian: 
+new level 35 abilities
+1. Odin's ravens (new passive): During combat, if the barbarian dies, has 10% + level% chance (max 90) to summon a valkyrie that joins the battle and resses the barbarian at 25% hit points and continues fighting. 
+the valkyrie = barbarian level, 
+a. has barbarian health
+b. has barbarian level x2 in defense
+c. attacks / round = barbarian level/7.  
+d. damage = base 5-10 + barbarian level x2. 
+e. uses a spear, has a 20% chance to crit.  
+f. summoned to front row.  is race valkyrie.  
+g. is considered 'non-living' for purposes of other buffs, healing, regen etc.
+h. has a shield, 25% chance to block any melee, ranged or magic/aoe attack.  
+i. takes 2/3 damage from any magic/aoe.
+
+2. Werebear:(cost 50 Stamina) + 5 stamina per round. usable 1/combat - the barbarian shapechanges to a werebear.  
+a. weapon riders no longer apply (probably requires custom code), 
+b. but the werebear form has a barbarian level% to apply a separate bleed DoT with each attack. 
+- the DoT does 50% base damage/round. 
+- bleed Dots last barbarian level/7 rounds.  
+c. in werebear form normal cap to blood frenzy % level bonus to damage cap is increased by (barbarian level/2)%.
+d. gain 50% max hit points. 
+e. regen increases to 10% per round instead of 5.  
+f. (barbarian level/3) added to defense.
+the form disappears if the barbarian dies and cannot be reused that combat.
+
 ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
 
 
 =========================================================================================
-level 35 ideas:
 
-druid:  
-new level 35 abilities
-1. Nature's Charms - 50 MP to activate (toggle): mass plant and beast charm.  each round it has a (druid level/2)% chance to charm any plant of beast tag.  each is checked separately.  The plant charm is special and bypasses plants normal immunity to charms.  a target that resists 3 times is immune for the rest of the combat.  When a target is charmed it costs the druid 5 mana per turn to maintain the charmed minion.  a druid who runs out of mana releases all charmed minions back to the enemy ranks/
-1a. All charmed plant or beast minions are Bolstered: receiving a (1%/druid level) bonus to damage (this bolster disappears once the charm ends). the charm length = the same as a bard with a +1 round duration
-2. Wither Plants (a magic attack vs all plants, damage = normal magic attack (+200% + druid level%).  druid level/5% chance to instantly slay any non boss/mega boss/super boss.
 
-3. thorn spikes/barksin?
-
-warrior: 
-1. formation shield wall.  every warrior and squire in formation also add to defense and (if using one) shield % block and intercept.  per warrior/squire add to defense: 2, +3% to shield block %, intercept, and retaliatory strike
-2. taunt (free action - toggle passive - cost 1 Stamina/round): makes the warrior more likely to be chosen for a melee, ranged or single target magical attack.  create a new mechanic in the target selection phase of combat that does a check first for taunting warriors.  each warrior taunting has a warrior level% to be chosen over any other target for the attack.  the warrior with the most health is checked first, followed by the warrior with the second most health, then third most, etc, until all taunting warriors are checked.  if there are one or more warriors with the same health, the order is random.  Once a warrior is selected for the attack.  the monster attacks, but does so at a penalty to their melee, ranged, or single target attack = warrior level/6.  a warrior in defense mode adds 10% to the chance to be selected, and then penalty for the monster's attack is warrior level/4 instead.  
-
-cleric: 
-new level 35 cleric abilities:
-1. AOE Banish. This upgrades and replaces the cleric's former Banish power. It now is an AOE effect.  It can affect all creatures targetable by a banish.  furthermore there is a bonus to the damage equal to (cleric level)% on top of the prior amount. (check what it is now)
-2. Divine Shroud (15 mana per round): Click button to activate.  By maintaining a direct link to their deity the cleric is covered in a protective shroud that reduces all damage from any source by (cleric level/2)% including DoTs.  This shroud's effect is checked and applied before armor+defense.  Furthermore and Cleric slain while the shroud is active has a (cleric level)% chance to be auto-revived at 50% health.  
-
-bard: 
-1. Quickstep Song: haste (+1 melee attacks and ranged attacks to all living, ignores elementals, golems, undead, spiritual weapons).  not to aoe attacks.  not to backstab or explosive arrow.  only special abilities: rage, wildshape attacks. 100 mp.  lasts entire combat. refreshed each round onto new combatants.
-2.  Theme gap: The bard has buffs, disruption, charm, and group healing — but nothing reactive that responds to the flow of battle rather than initiating it.
-
-Ability: When a party member dies during combat, the bard may immediately play a brief memorial melody as a free reaction (does not cost the bard's turn, triggers automatically on death). This costs 20 MP and grants all surviving party members +floor(bard level/4) attack and defense for 3 rounds, as the fallen hero's sacrifice inspires the party. Can trigger once per fallen ally per combat.  the bard with the most mana plays the tune, and a bard already engaged in a symphony cannot perform this anthem.  multiple anthems stack in a special manner: the duration is increased by 1 round and incresaed by 1 attack (melee, ranged and magic) and 1 defense for each fallen ally.  a bard without enough mana cannot play the anthem.
-
-Why it works: It's completely reactive — doesn't duplicate proactive abilities. It turns the worst moment in combat (a party death) into a tactical moment. It rewards keeping the bard alive. The passive nature means it fires even if the bard hasn't acted yet this round. At L35 that's +8 attack and defense — meaningful but not unbalanced since it requires someone to actually die.
 
 barbarian: 
-1. Odin's ravens: ignore fatal blows.  if barbarian dies, has 10% + level (max 90) to summon a valkyrie that joins the battle and resses the barbarian at 25% hit points and continue fighting.  the valkyrie = barbarian level, has barbarian health, has barbarian level x2 in defense, attacks / round = barbarian level/7.  damage = base 5-10 + barbarian level x2. uses a spear, has a 20% chance to crit.  summoned to front row.  is race valkyrie.  is considered 'non-living' for purposes of other buffs, healing, regen etc. has a shield, 25% chance to block any melee, ranged or magic/aoe attack.  takes 2/3 damage from any magic/aoe.
-2. werebear: 1/combat -  shapechange to werebear.  weapon riders no longer apply, but the werebear form has a barbarian level% to apply a separate bleed DoT with each attack.  the normal blood frenzy level bonus to damage cap is increased by (barbarian level/2)%.  bleed Dots last barbarian level/7 rounds.  gain 50% max hit points. regen increases to 10% per round instead of 5.  + barbarian level/3 to defense.
+new level 35 abilities
+1. Odin's ravens (new passive): During combat, if the barbarian dies, has 10% + level% chance (max 90) to summon a valkyrie that joins the battle and resses the barbarian at 25% hit points and continues fighting. 
+the valkyrie = barbarian level, 
+a. has barbarian health
+b. has barbarian level x2 in defense
+c. attacks / round = barbarian level/7.  
+d. damage = base 5-10 + barbarian level x2. 
+e. uses a spear, has a 20% chance to crit.  
+f. summoned to front row.  is race valkyrie.  
+g. is considered 'non-living' for purposes of other buffs, healing, regen etc.
+h. has a shield, 25% chance to block any melee, ranged or magic/aoe attack.  
+i. takes 2/3 damage from any magic/aoe.
+
+2. Werebear:(cost 50 Stamina) + 5 stamina per round. usable 1/combat - the barbarian shapechanges to a werebear.  
+a. weapon riders no longer apply (probably requires custom code), 
+b. but the werebear form has a barbarian level% to apply a separate bleed DoT with each attack. 
+- the DoT does 50% base damage/round. 
+- bleed Dots last barbarian level/7 rounds.  
+c. in werebear form normal cap to blood frenzy % level bonus to damage cap is increased by (barbarian level/2)%.
+d. gain 50% max hit points. 
+e. regen increases to 10% per round instead of 5.  
+f. (barbarian level/3) added to defense.
+the form disappears if the barbarian dies and cannot be reused that combat.
+
+
+
+artificer:
+1. instakill golem? heals all golems to full
+2. craft special items (see below)
+
+Option 2: "Emergency Protocol" (Passive)
+Passive. When any of the artificer's golems drops to 25% HP or below, it automatically enters Emergency Protocol: gains +75% damage output but takes +50% incoming damage. When an Emergency Protocol golem is destroyed, it self-destructs — dealing artificer level × 3 magic damage to all enemies (ignores half defense). This detonation cannot be cancelled or prevented once triggered.
+
+Why it works: Turns golem death from a pure loss into a tactical tool. Enemies that kill your golems do so at a cost. Pairs with Overclock interestingly — an overclocked golem taking heat damage might intentionally trigger Emergency Protocol. Completely passive, no button to press, but changes how you think about golem positioning entirely.
+
+Option 3: "Resonance Cannon" (Personal Nuke)
+Once per combat. Costs 40 MP + 15 stamina. The artificer assembles a makeshift cannon from workshop components and fires a single devastating shot. Base damage = artificer level × 4, plus golem tier bonus (each active golem adds its tier number × 8 to the damage). Ignores half the target's defense. Against bosses and mega-bosses, deals 3× damage instead of instakilling. Against normal enemies, has a flat 10% instakill chance.
+
+Why it works: Rewards having multiple high-tier golems active — a full team of Divine Soul golems adds enormous bonus damage. It's the artificer's one "personal" moment of destroying something themselves rather than through constructs. Once per combat keeps it from being spammable. The boss damage multiplier means it remains useful against the toughest targets.
 
 
 mage: 
@@ -2648,52 +2713,6 @@ mage:
 necromancer: 
 1. take control of undead (charm) - same chances and duration as bard charm
 2. stamina and mana drain - aoe - drains enemies of ST/MP - amount = random amount per target of (necro level/2) to (necro level *2).  undead, constructs, elementals immune.  
-
-paladin:
-New level 35 abilties 
-1. "Summon Steed". 1/combat. 
-	a. While mounted on steed the paladins regular melee hits do damage +100% + paladin level%. 
-	b. The paladin takes half from melee attacks (code this up in the phase 5 of combat, this goes right by the barbarian rage halving.  add this to the combat help as well. 
-	c. A Steed lasts the entire combat or until paladin dies. 
-	d. costs 100 MP to summon and +10MP/turn to maintain. 
-	e. smites and aoe smites can crit at 20% + (paladin level/2)%.  
-	f. paladin gains +50% max health while mounted (remove on death or end of combat)
-
-2. "Martyr's Covenant"
-a. Free Toggle (8 MP/round). The paladin designates themselves as the Covenant Anchor.
-b. While active: any single hit that would deal more than 30% of a party member's max HP after all defenses and before the final application of damage (this is in phase 6 of the combat right after barbarian temp HP is checked and right before the HP damage is applied) is automatically intercepted by the paladin — this damage transfers directly to the paladin (no roll, always triggers).  for this, the original damage of the hit before personal defense reduction must be preserved.  this is the damage transferred, we preserve the original damage before defenses so that the damage is not reduced twice by two different characters' defense.  For purposes of this action, the paladin will only protect recruited living characters.  the paladin will not save golems, summoned minions of any type, ranger beasts, etc, only recruited characters. 
-c. Any transfered damage received by the paladin is rerouted back through the personal defense checks phase so that they can block it by their shield.  it bypasses interceptors though, warriors cannot intercept covenent transfer damage.  it then must be applied to the paladin, and their buffs, defense and armor may reduce the damage to less than what would be taken by the original recipient
-d. The paladin cannot be killed by Covenant transfer damage — if they would be killed they are instead reduced to 10% of their max HP, at which point the Covenant breaks automatically for the rest of that round (it can be retoggled next round). 
-
-
-
-monk: 
-level 35 monk abilities
-1. Kick Trip - 1 heavy rapid kick/10 levels.  single target.  damage = 100% + (monk level x2)%.  can crit (monk level/2)% and stun normally (20%).  each kick has a 33% (+monk level/10) chance to trip the the target prone.  this is a HOLD type attack.  incoporeal are immune to the trip portion.  vermin TAGS are immune (they tend to be small, flying or have many legs or slithery).  slimes are immune as they are blobby.  dragons are immune due to flight/many legs.  beasts have a 50% chance to ignore the effect even if successfully rolled (many have multiple legs also).  Make sure to indicate these immunities and reasons when the trip party fails to affect the target.
-
-2. Ability: Explosive Palm.  Enhancement to Quivering Palm. When a Quivering Palm target has accumulated 3 or more doublings, the monk may spend 20 MP on their turn to Accelerate the damage. Instead of doing the damage that would apply in the current round by adding another stack of regular quivering palm, they jump ahead one round and apply another doubling but end the stack.  Additionally: the burst explosion of internal energy has a 40% chance to stun the target (resisted normally), and the shockwave deals 50% of accelerated damage to all other enemies. Burning the palm this way removes its stack from that target.  
-
-Why it works: Creates a meaningful decision — wait for maximum damage at 10 doublings, or cash out early at 5+ for reliable burst damage plus the stun chance and splash. At 5 doublings you've built 32× the original damage which is already enormous. Adds party-facing value (adjacent splash). Doesn't introduce a new mechanic — builds entirely on the existing Palm system in a way that changes its strategic character.
-
-
-
-rogue:
-1. Trap Mastery.  Trap damage is doubled (and therefore the DoT) and duration is extended by 2 rounds.  Furthermore traps have a chance to do one of the following random effects when the DoT damage is processed on the target:
-a. stun 1 round (normal resistances apply to this for monster types and recent stuns)
-b. hold 1 round (normal resistances apply to this for monster types and recent holds)
-c. apply a penalty to offensive melee, ranged or magic/aoe attacks = rogue level/4.  this might require setting a level of the trap = the rogue level so this variable can be checked each round vs traps set by other rogues.
-d. apply a penalty to defense skill = rogue level/4.  this might require setting a level of the trap = the rogue level so this variable can be checked each round vs traps set by other rogues.
-
-2. Extra Loot (passive):  the rogue adds rogue level/2% to any gold obtained at the end.  multiple rogues are additive not multiplicative.  three level 33 rogues add 33+33+33 = 99% more treasure.  
-
-
-ranger:
-1. perma beast companion out of combat, choose one type  (in V spell modal) and summon a super wolf, bear, eagle, panther, snake, stag, ape etc.  has varying stats and abilities.  high offense/defense and health - if dies during combat can reform a new after combat and chose a new type.
-2. ricochet shot (passive).  for a normal ranged shot, each arrow has a 50% chance to richochet to some other random enemy doing 50% damage, ricochets can crit and also have a chance to instakill favored enemies. a shot that ricochets can richochet again st 25%, again at 12% chance, 6%, 3% and 1% chance.
-an extremely lucky arrow ricochets 6 additional times.  each ricochet arrow only does 50% of the base damage.  ricochets can crit at the normal chance.  they can also instant kill favored enemies albeit at only 50% chance less than a regular shot.  ricochets can apply weapon riders as well as totem effects.  an arrow that ricochets consume 1MP for each ricochet.  Each arrow attack for a normal ranged attack is checked.  each arrow will not richochet to the same target twice, but each arrow is checked separately.  the ricochet from a second arrow can hit the same target as a ricochet from the first arrow.
-3. richochets do not happen on explosive arrow attacks because the arrow explodes.
-
-
 
 vermin keeper:
 1. vermin frenzy (passive): any vermin or slimes summoned or charmed have a (vermin keeper level)% chance to gain a second action each round.  the vermin or slimes also do (VK level x2)% + 100% more damage.
@@ -2709,19 +2728,8 @@ warlock:
 the demon lord has high attack, defense, powers, immunities, etc
 2. Hooked tentacles:  adds a warlock level% chance for a tentacle hit to crit for x2 damage.  each hit also has a separate warlock level% chance to apply a bleed DoT (normal check for monster resists).  The DoT does damage/2 each round for (warlock level/7) rounds. This counts as a bleed dot like other bleed DoTs for purpose of barbarian bleed frenzy
 
-artificer:
-1. instakill golem? heals all golems to full
-2. craft special items (see below)
 
-Option 2: "Emergency Protocol" (Passive)
-Passive. When any of the artificer's golems drops to 25% HP or below, it automatically enters Emergency Protocol: gains +75% damage output but takes +50% incoming damage. When an Emergency Protocol golem is destroyed, it self-destructs — dealing artificer level × 3 magic damage to all enemies (ignores half defense). This detonation cannot be cancelled or prevented once triggered.
 
-Why it works: Turns golem death from a pure loss into a tactical tool. Enemies that kill your golems do so at a cost. Pairs with Overclock interestingly — an overclocked golem taking heat damage might intentionally trigger Emergency Protocol. Completely passive, no button to press, but changes how you think about golem positioning entirely.
-
-Option 3: "Resonance Cannon" (Personal Nuke)
-Once per combat. Costs 40 MP + 15 stamina. The artificer assembles a makeshift cannon from workshop components and fires a single devastating shot. Base damage = artificer level × 4, plus golem tier bonus (each active golem adds its tier number × 8 to the damage). Ignores half the target's defense. Against bosses and mega-bosses, deals 3× damage instead of instakilling. Against normal enemies, has a flat 10% instakill chance.
-
-Why it works: Rewards having multiple high-tier golems active — a full team of Divine Soul golems adds enormous bonus damage. It's the artificer's one "personal" moment of destroying something themselves rather than through constructs. Once per combat keeps it from being spammable. The boss damage multiplier means it remains useful against the toughest targets.
 
 
 =========================================================================================
