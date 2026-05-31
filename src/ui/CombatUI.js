@@ -2753,10 +2753,14 @@ export class CombatUI {
 
                 const invisLabel = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL ? 'Improved Invis' : 'Invisibility';
                 const invisBtn = this._addBtn(`\u{1F441} ${invisLabel} (-${PHOTOMANCER_INVISIBILITY_MANA_COST} MP)`, m.mana >= PHOTOMANCER_INVISIBILITY_MANA_COST, () => {
-                    this._pickPartyTarget(t => this.combat.photomancerInvisibility(t), {
-                        filter: pm => pm.health > 0,
-                        prompt: `Cloak which ally?`,
-                    });
+                    if (m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL) {
+                        this._showImprovedInvisTargetDropdown();
+                    } else {
+                        this._pickPartyTarget(t => this.combat.photomancerInvisibility(t), {
+                            filter: pm => pm.health > 0,
+                            prompt: 'Cloak which ally?',
+                        });
+                    }
                 });
                 invisBtn.classList.add('combat-special-btn');
                 invisBtn.title = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL
@@ -3915,6 +3919,61 @@ export class CombatUI {
             btn.addEventListener('click', () => callback(pm));
             this.actionsEl.appendChild(btn);
         }
+
+        const cancel = document.createElement('button');
+        cancel.className = 'combat-action-btn';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', () => this._refresh());
+        this.actionsEl.appendChild(cancel);
+    }
+
+    _showImprovedInvisTargetDropdown() {
+        this._actionInProgress = false;
+        const candidates = (this.combat.party || []).filter(pm => pm && pm.health > 0);
+        if (candidates.length === 0) {
+            this._addBlockingNotice('No valid targets.');
+            return;
+        }
+
+        this.actionsEl.innerHTML = '';
+        this.turnInfo.textContent = 'Cloak which ally?';
+
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '6px';
+        row.style.alignItems = 'center';
+        row.style.flexWrap = 'wrap';
+
+        const select = document.createElement('select');
+        select.className = 'combat-action-btn combat-special-btn';
+        select.style.minWidth = '240px';
+
+        for (const pm of candidates) {
+            const icon = pm.classDef ? pm.classDef.icon : '👥';
+            const pct = pm.maxHealth > 0 ? Math.round((pm.health / pm.maxHealth) * 100) : 0;
+            const opt = document.createElement('option');
+            opt.value = String(pm.id);
+            opt.textContent = `${icon} ${pm.name} (${pm.health}/${pm.maxHealth} HP - ${pct}%)`;
+            if (pm.id === this.combat.currentMember?.id) opt.selected = true;
+            select.appendChild(opt);
+        }
+
+        const castBtn = document.createElement('button');
+        castBtn.className = 'combat-action-btn combat-special-btn';
+        castBtn.textContent = 'Cast Improved Invis';
+        castBtn.addEventListener('click', () => {
+            const id = Number(select.value);
+            const target = (this.combat.party || []).find(pm => pm && pm.id === id && pm.health > 0);
+            if (!target) {
+                this._addBlockingNotice('Selected target is no longer valid.');
+                return;
+            }
+            this.combat.photomancerInvisibility(target);
+        });
+
+        row.appendChild(select);
+        row.appendChild(castBtn);
+        this.actionsEl.appendChild(row);
 
         const cancel = document.createElement('button');
         cancel.className = 'combat-action-btn';
