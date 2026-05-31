@@ -104,6 +104,8 @@ import {
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
     MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
+    MAGE_L35_UNLOCK_LEVEL, MAGE_MANA_SHIELD_MANA_COST,
+    MAGE_DEATH_BURST_DAMAGE_BASE_MULT, MAGE_DEATH_BURST_DAMAGE_PER_LEVEL,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_ROUNDS,
     DRUID_COMMUNE_UNLOCK_LEVEL, DRUID_COMMUNE_FAE_TOKENS_NEEDED,
@@ -1132,6 +1134,45 @@ export class CombatUI {
                     riftUsed ? 'Already used this combat.' : '',
                     !riftAfford && !riftUsed ? `Not enough mana (needs ${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP).` : '',
                 ].filter(Boolean).join('\n');
+            }
+
+            // ── Mage L35: Mana Shield (free action, once per combat)
+            if (m.level >= MAGE_L35_UNLOCK_LEVEL) {
+                const msActive = !!m.manaShieldActive;
+                const msUsed = !!m.manaShieldUsed;
+                const msAfford = m.mana >= MAGE_MANA_SHIELD_MANA_COST;
+                const msCan = !msActive && !msUsed && msAfford;
+                const msPool = Math.max(0, m.manaShieldHp || 0);
+                const msLabel = msActive
+                    ? `🧿 Mana Shield (${msPool} shield HP)`
+                    : msUsed
+                        ? '🧿 Mana Shield (spent)'
+                        : `🧿 Mana Shield (-${MAGE_MANA_SHIELD_MANA_COST} MP)`;
+                const msBtn = this._addBtn(msLabel, msCan, () => this.combat.mageManaShield());
+                msBtn.classList.add('combat-special-btn');
+                if (msActive) msBtn.style.boxShadow = '0 0 8px #77ddff, 0 0 18px #2299dd66';
+                msBtn.title = [
+                    `Mage L${MAGE_L35_UNLOCK_LEVEL}: Mana Shield (free action, once per combat).`,
+                    `Costs ${MAGE_MANA_SHIELD_MANA_COST} MP and grants shield HP equal to max mana (${m.maxMana}).`,
+                    'It is checked as the final pre-HP step and absorbs incoming damage first; overflow hits normal HP.',
+                    msUsed ? 'Already used this combat.' : '',
+                    !msAfford && !msUsed ? `Not enough mana (needs ${MAGE_MANA_SHIELD_MANA_COST} MP).` : '',
+                ].filter(Boolean).join('\n');
+
+                const burstMult = MAGE_DEATH_BURST_DAMAGE_BASE_MULT + (m.level || 1) * MAGE_DEATH_BURST_DAMAGE_PER_LEVEL;
+                const burstDmg = Math.max(1, Math.round((m.maxMana || 0) * burstMult));
+                const dbInfo = document.createElement('div');
+                dbInfo.style.cssText = `
+                    margin-top:4px; padding:4px 8px; font-size:11px; color:#ffd7a6;
+                    border:1px solid #8a6230; border-radius:4px; background:#3a220d55;
+                `;
+                dbInfo.textContent = `💥 Death Burst passive — on death: ${burstDmg} magic damage to non-immune enemies`;
+                dbInfo.title = [
+                    `Mage L${MAGE_L35_UNLOCK_LEVEL}: Death Burst (passive).`,
+                    'When the mage dies, all enemies not immune to magic are hit.',
+                    `Damage formula: max mana × (2 + level × 2%) = ${burstDmg} at current stats.`,
+                ].join('\n');
+                this.actionsEl.appendChild(dbInfo);
             }
         }
 

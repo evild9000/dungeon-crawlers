@@ -75,6 +75,8 @@ import {
     MAGE_AOE_CRIT_CHANCE_PER_2LV, MAGE_AOE_CRIT_DAMAGE_BASE, MAGE_AOE_CRIT_DAMAGE_PER_LV,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
     MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
+    MAGE_L35_UNLOCK_LEVEL, MAGE_MANA_SHIELD_MANA_COST,
+    MAGE_DEATH_BURST_DAMAGE_BASE_MULT, MAGE_DEATH_BURST_DAMAGE_PER_LEVEL,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_HP_BASE, NECRO_LICH_REVIVE_HP_PER_2LV, NECRO_LICH_REVIVE_ROUNDS,
     NECRO_LICH_MAGIC_RESIST_BASE, NECRO_LICH_MAGIC_RESIST_PER_4LV,
@@ -4381,6 +4383,92 @@ export class CombatSystem {
 
         this._addLog(`\u{1F6E1}\uFE0F ${m.name} raises an Arcane Shield! Entire party gains +${bonus} def for ${rounds} rounds.`);
         this._advancePlayerTurn();
+    }
+
+    /** Mage L35: Mana Shield (free action, once per combat). */
+    mageManaShield() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'mage') return;
+        if ((m.level || 0) < MAGE_L35_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${MAGE_L35_UNLOCK_LEVEL} to cast Mana Shield.`);
+            return;
+        }
+        if (m.manaShieldUsed) {
+            this._addLog(`🧿 ${m.name} has already used Mana Shield this combat.`);
+            return;
+        }
+        if (m.mana < MAGE_MANA_SHIELD_MANA_COST) {
+            this._addLog(`${m.name} needs ${MAGE_MANA_SHIELD_MANA_COST} MP to cast Mana Shield.`);
+            return;
+        }
+        m.mana -= MAGE_MANA_SHIELD_MANA_COST;
+        m.manaShieldActive = true;
+        m.manaShieldUsed = true;
+        m.manaShieldHp = Math.max(1, Math.round(m.maxMana || 0));
+        this._addLog(`🧿 ${m.name} weaves Mana Shield! (${m.manaShieldHp} shield HP)`);
+        this._notify(); // free action
+    }
+
+    /**
+     * Final pre-HP damage gate for Mage L35 Mana Shield.
+     * Returns remaining damage after shield absorption.
+     */
+    _absorbMageManaShield(target, dmg, sourceLabel = 'damage') {
+        if (!target || dmg <= 0) return Math.max(0, Math.round(dmg || 0));
+        if (target.isSummoned || target.classId !== 'mage') return dmg;
+        if (!target.manaShieldActive || (target.manaShieldHp || 0) <= 0) return dmg;
+
+        const pool = Math.max(0, target.manaShieldHp || 0);
+        if (pool >= dmg) {
+            target.manaShieldHp = pool - dmg;
+            this._addLog(`🧿 ${target.name}'s Mana Shield absorbs ${dmg} ${sourceLabel}! (${target.manaShieldHp} shield HP left)`);
+            if (target.manaShieldHp <= 0) {
+                target.manaShieldActive = false;
+                this._addLog(`🧿 ${target.name}'s Mana Shield shatters!`);
+            }
+            return 0;
+        }
+
+        const overflow = dmg - pool;
+        target.manaShieldHp = 0;
+        target.manaShieldActive = false;
+        this._addLog(`🧿 ${target.name}'s Mana Shield absorbs ${pool} ${sourceLabel} and shatters! (${overflow} gets through)`);
+        return overflow;
+    }
+
+    /** Mage L35 passive: on death, blast all enemies not immune to magic. */
+    _triggerMageDeathBurst(mage, sourceLabel = '') {
+        if (!mage || mage.isSummoned || mage.classId !== 'mage') return;
+        if ((mage.level || 0) < MAGE_L35_UNLOCK_LEVEL) return;
+        if (mage.health > 0 || mage.mageDeathBurstTriggered) return;
+
+        mage.mageDeathBurstTriggered = true;
+        const mult = MAGE_DEATH_BURST_DAMAGE_BASE_MULT + (mage.level || 1) * MAGE_DEATH_BURST_DAMAGE_PER_LEVEL;
+        const baseDamage = Math.max(1, Math.round((mage.maxMana || 0) * mult));
+        const cause = sourceLabel ? ` (${sourceLabel})` : '';
+        this._addLog(`💥 ${mage.name}'s Death Burst detonates${cause}!`);
+
+        const targets = this.aliveHostileEnemies.filter(e => {
+            if (!e || e.health <= 0) return false;
+            const def = ENEMY_TYPES[e.type] || {};
+            return !def.fullMagicImmune && !this._enemyHasImmunity(e, 'magic');
+        });
+
+        if (targets.length === 0) {
+            this._addLog(`💥 No valid enemies are vulnerable to ${mage.name}'s Death Burst.`);
+            return;
+        }
+
+        let total = 0;
+        for (const e of targets) {
+            const dealt = this._damageEnemy(e, baseDamage, true, true);
+            if (dealt > 0) total += dealt;
+            if (e.health <= 0 && !e._deathHandled) {
+                e._deathHandled = true;
+                this._onEnemyDeath(e);
+            }
+        }
+        this._addLog(`💥 Death Burst hits ${targets.length} target${targets.length === 1 ? '' : 's'} for ${total} total damage.`);
     }
 
     /** Remove mage shield effects for a given caster (called when caster is defeated). */
@@ -11461,6 +11549,13 @@ export class CombatSystem {
             return target;
         }
 
+        // Mage L35 Mana Shield: final pre-HP check for all incoming damage.
+        dmg = this._absorbMageManaShield(target, dmg, 'damage');
+        if (dmg <= 0) {
+            this._emitTelemetry('damageTaken', { target, enemy: e, amount: 0, attackKind, intercepted: false, manaShieldAbsorb: true });
+            return target;
+        }
+
         target.health = Math.max(0, target.health - dmg);
         this._emitTelemetry('damageTaken', { target, enemy: e, amount: dmg, attackKind, intercepted: !!opts.covenantTransfer, covenantTransfer: !!opts.covenantTransfer });
 
@@ -11502,6 +11597,7 @@ export class CombatSystem {
 
         // ── Soulful Melody: trigger on real (non-summoned) party member death ────
         if (target.health <= 0 && !target.isSummoned) {
+            this._triggerMageDeathBurst(target, `${eName} ${attackKind} attack`);
             this._triggerSoulfulMelody(target);
         }
 
@@ -12483,10 +12579,15 @@ export class CombatSystem {
             }
             if (totalFracture > 0 && m.health > 0) {
                 totalFracture = this._applyDivineShroudReduction(m, totalFracture, 'fracture DoT');
+                totalFracture = this._absorbMageManaShield(m, totalFracture, 'fracture damage');
+                if (totalFracture <= 0) continue;
                 m.health = Math.max(0, m.health - totalFracture);
                 this._addLog(`🦴 ${m.name} bleeds from fractures — ${totalFracture} damage!`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has succumbed to the fracture wounds!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'fracture wounds');
+                    this._addLog(`${m.name} has succumbed to the fracture wounds!`);
+                }
             }
             // Quasit venom: armor-ignoring poison DoT (summed after fracture)
             let totalQuasitPoison = 0;
@@ -12497,10 +12598,15 @@ export class CombatSystem {
             }
             if (totalQuasitPoison > 0 && m.health > 0) {
                 totalQuasitPoison = this._applyDivineShroudReduction(m, totalQuasitPoison, 'quasit venom');
+                totalQuasitPoison = this._absorbMageManaShield(m, totalQuasitPoison, 'quasit venom');
+                if (totalQuasitPoison <= 0) continue;
                 m.health = Math.max(0, m.health - totalQuasitPoison);
                 this._addLog(`\u{1F47F} ${m.name} writhes in quasit venom — ${totalQuasitPoison} poison damage! (armor-ignoring)`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has succumbed to quasit venom!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'quasit venom');
+                    this._addLog(`${m.name} has succumbed to quasit venom!`);
+                }
             }
             if (totalPoison > 0) {
                 if (!m.isSummoned && m.classId === 'verminkeeper') {
@@ -12509,20 +12615,30 @@ export class CombatSystem {
                     this._addLog(`\u{1F577}️ ${m.name}'s toxin affinity reduces the poison! (${Math.round(resist * 100)}% resist)`);
                 }
                 totalPoison = this._applyDivineShroudReduction(m, totalPoison, 'poison DoT');
+                totalPoison = this._absorbMageManaShield(m, totalPoison, 'poison damage');
+                if (totalPoison <= 0) continue;
                 m.health = Math.max(0, m.health - totalPoison);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalPoison} poison damage!`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has fallen to the poison!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'poison');
+                    this._addLog(`${m.name} has fallen to the poison!`);
+                }
             }
             if (totalBurn > 0 && m.health > 0) {
                 // Plant summons (treants, shambling mounds) take double fire DoT damage
                 const isPlantSummon = m.isSummoned && ['treant', 'shambling_mound'].includes(m.summonStats?.beastKind);
                 let effectiveBurn = isPlantSummon ? Math.round(totalBurn * 2.0) : totalBurn;
                 effectiveBurn = this._applyDivineShroudReduction(m, effectiveBurn, 'burn DoT');
+                effectiveBurn = this._absorbMageManaShield(m, effectiveBurn, 'burn damage');
+                if (effectiveBurn <= 0) continue;
                 m.health = Math.max(0, m.health - effectiveBurn);
                 this._addLog(`\u{1F525} ${m.name} takes ${effectiveBurn} burn damage!${isPlantSummon ? ' \u{1F333} (plant vulnerability!)' : ''}`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has been consumed by the flames!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'burn');
+                    this._addLog(`${m.name} has been consumed by the flames!`);
+                }
             }
             if (totalAcid > 0 && m.health > 0) {
                 if (!m.isSummoned && m.classId === 'verminkeeper') {
@@ -12531,24 +12647,39 @@ export class CombatSystem {
                     this._addLog(`\u{1F577}️ ${m.name}'s corrosion resistance blunts the acid! (${Math.round(resist * 100)}% resist)`);
                 }
                 totalAcid = this._applyDivineShroudReduction(m, totalAcid, 'acid DoT');
+                totalAcid = this._absorbMageManaShield(m, totalAcid, 'acid damage');
+                if (totalAcid <= 0) continue;
                 m.health = Math.max(0, m.health - totalAcid);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalAcid} acid damage!`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has been dissolved by the acid!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'acid');
+                    this._addLog(`${m.name} has been dissolved by the acid!`);
+                }
             }
             if (totalDrowning > 0 && m.health > 0) {
                 totalDrowning = this._applyDivineShroudReduction(m, totalDrowning, 'drowning DoT');
+                totalDrowning = this._absorbMageManaShield(m, totalDrowning, 'drowning damage');
+                if (totalDrowning <= 0) continue;
                 m.health = Math.max(0, m.health - totalDrowning);
                 this._addLog(`\u{1F30A} ${m.name} chokes on water, taking ${totalDrowning} drowning damage!`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has drowned!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'drowning');
+                    this._addLog(`${m.name} has drowned!`);
+                }
             }
             if (totalFrost > 0 && m.health > 0) {
                 totalFrost = this._applyDivineShroudReduction(m, totalFrost, 'frost DoT');
+                totalFrost = this._absorbMageManaShield(m, totalFrost, 'frost damage');
+                if (totalFrost <= 0) continue;
                 m.health = Math.max(0, m.health - totalFrost);
                 this._addLog(`❄️ ${m.name} suffers ${totalFrost} frost damage!`);
                 if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
-                if (m.health <= 0) this._addLog(`${m.name} has been frozen solid!`);
+                if (m.health <= 0) {
+                    this._triggerMageDeathBurst(m, 'frost');
+                    this._addLog(`${m.name} has been frozen solid!`);
+                }
             }
             if (m.classId === 'barbarian' && m.werebearActive && m.health > 0) {
                 if ((m.stamina || 0) >= BARBARIAN_WEREBEAR_STAMINA_PER_ROUND) {

@@ -46,6 +46,8 @@ import {
     BARD_RALLYING_MELODY_RESTORE_FRACTION,
     CLERIC_CLEANSE_UNLOCK_LEVEL, CLERIC_CLEANSE_MANA_PER_STATE,
     MAGE_FAMILIAR_UNLOCK_LEVEL, MAGE_FAMILIAR_GOLD_PER_LEVEL,
+    MAGE_L35_UNLOCK_LEVEL, MAGE_MANA_SHIELD_MANA_COST,
+    MAGE_DEATH_BURST_DAMAGE_BASE_MULT, MAGE_DEATH_BURST_DAMAGE_PER_LEVEL,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS,
     BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL,
@@ -999,6 +1001,14 @@ export class InventoryUI {
                 perk.push(`Familiar cap: L${cap}`);
                 perkDetails.push(`Mage L25 Familiar: summon outside combat with the Familiar menu.\n  First summon costs ${MAGE_FAMILIAR_GOLD_PER_LEVEL.toLocaleString()} gold and starts at level 1.\n  Each familiar level grants +10% magic/AoE damage and +1 defense.`);
             }
+        }
+        if (member.classId === 'mage' && member.level >= MAGE_L35_UNLOCK_LEVEL) {
+            const burstMult = MAGE_DEATH_BURST_DAMAGE_BASE_MULT + (member.level || 1) * MAGE_DEATH_BURST_DAMAGE_PER_LEVEL;
+            const burstDmg = Math.max(1, Math.round((member.maxMana || 0) * burstMult));
+            perk.push(`Mana Shield: ${MAGE_MANA_SHIELD_MANA_COST} MP, 1/combat`);
+            perk.push(`Death Burst: ${burstDmg} dmg on death`);
+            perkDetails.push(`Mage L${MAGE_L35_UNLOCK_LEVEL} Mana Shield:\n  Free action in combat, once per combat, costs ${MAGE_MANA_SHIELD_MANA_COST} MP.\n  Grants temporary shield HP equal to max mana.\n  Incoming damage is checked against shield HP last, right before HP damage is applied; overflow hits normal HP.`);
+            perkDetails.push(`Mage L${MAGE_L35_UNLOCK_LEVEL} Death Burst (passive):\n  Triggers when this mage dies.\n  Hits all enemies not immune to magic for ${burstDmg} damage.\n  Formula: max mana × (2 + level × 2%).`);
         }
         if (cls.drainPerLevel) {
             const drainPct = Math.round((0.05 + ((member.level || 1) / 2) / 100) * 100);

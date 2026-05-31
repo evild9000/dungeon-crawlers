@@ -3116,6 +3116,11 @@
                         <td>After defenses and Barbarian temp HP, before HP damage is applied, an active paladin Covenant redirects any single hit over <b>30% of a recruited living ally's max HP</b>. The transferred hit uses the preserved pre-personal-defense damage, bypasses other interceptors, then runs through the paladin's own shield, armor, defense, and buffs. Covenant transfer cannot kill the paladin; it leaves them at 10% max HP and breaks for the rest of the round.</td>
                     </tr>
                     <tr>
+                        <td class="combat-check-label">Mage Mana Shield (L35)</td>
+                        <td class="combat-check-kind">Mage only</td>
+                        <td>Final pre-HP check for mages: active Mana Shield temporary HP absorbs incoming damage first. If the shield pool is exhausted, remaining overflow is applied to mage HP.</td>
+                    </tr>
+                    <tr>
                         <td class="combat-check-label">HP Damage Applied</td>
                         <td class="combat-check-kind">All types</td>
                         <td>Final damage is subtracted from target HP. Minimum 1 after all reductions. Special on-death effects (Lich Phial, druid wild shape exit, vampire gaseous form) trigger here.</td>
@@ -3344,6 +3349,8 @@
                     <tr><td class="ability-level">L25</td><td><b>Familiar</b> (F key, out of combat) — permanent companion (10,000g per level). Level capped at mage level&minus;24 (max 20). Grants +10% magic/AoE damage and +1 defense per familiar level.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Arcane Overload</b> (passive) — after every Magic Barrage, a cascade of additional bursts may follow. First extra burst has (40% + level)% chance; each costs &times;1.5 the previous spell's mana; up to &lfloor;level/6&rfloor; extra bursts (5 at L30). Each burst hits the same number of random targets and applies AoE crit rules. Collapses early if mana runs out.</td></tr>
                     <tr><td class="ability-level">L30</td><td><b>Elemental Rift</b> (free action, 1&times;/combat, 100 MP initial + 10 MP/round) — tears open a planar rift. Each round has (20% + mage level)% chance to summon a random elemental ally (fire, water, earth, or air) that fights for the party. Rift stays open until mana runs dry or the mage falls.</td></tr>
+                    <tr><td class="ability-level">L35</td><td><b>Mana Shield</b> (free action, 1&times;/combat, 50 MP) — creates temporary shield HP equal to the mage's max mana. This is checked as the final pre-HP step on incoming damage; shield HP is depleted first and any overflow damages real HP.</td></tr>
+                    <tr><td class="ability-level">L35</td><td><b>Death Burst</b> (passive) — when the mage dies, all enemies that are not magic-immune take damage equal to max mana &times; (2 + level&times;0.02).</td></tr>
                 </table>
             </div>
 

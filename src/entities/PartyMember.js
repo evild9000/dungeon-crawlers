@@ -201,6 +201,10 @@ export class PartyMember {
         // Mage L30: Elemental Rift — once-per-combat free-action toggle
         this.elementalRiftOpen = false;
         this.elementalRiftUsed = false;
+        this.manaShieldActive = false;      // Mage L35: Mana Shield active this combat
+        this.manaShieldUsed = false;        // Mage L35: once-per-combat tracker
+        this.manaShieldHp = 0;              // Mage L35: temporary shield pool
+        this.mageDeathBurstTriggered = false; // Mage L35: passive trigger lock
 
         // Warlock: demon cauldron and L30 abyss form are combat-only.
         this.warlockCauldronOpen = false;
@@ -1173,6 +1177,10 @@ export class PartyMember {
         this.warriorTauntActive  = false;
         this.isInFormation       = false;
         this.squiresSummoned     = false;
+        this.manaShieldActive    = false;
+        this.manaShieldUsed      = false;
+        this.manaShieldHp        = 0;
+        this.mageDeathBurstTriggered = false;
         this.divineJudgmentUsed  = false;
         this.kiCharges           = 0;
         this.spiritualWeapons    = [];

@@ -1737,6 +1737,12 @@ export const MAGE_ELEMENTAL_RIFT_MANA_INITIAL    = 100;
 export const MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND  = 10;
 export const MAGE_ELEMENTAL_RIFT_SUMMON_BASE     = 20;    // base% + mageLevel; cap 100
 
+// ── Mage L35 — Mana Shield & Death Burst ──────────────────────────────────────
+export const MAGE_L35_UNLOCK_LEVEL               = 35;
+export const MAGE_MANA_SHIELD_MANA_COST          = 50;
+export const MAGE_DEATH_BURST_DAMAGE_BASE_MULT   = 2.0;   // maxMana * (2 + level*0.02)
+export const MAGE_DEATH_BURST_DAMAGE_PER_LEVEL   = 0.02;
+
 // ── Statue Event System (DL30+) ──────────────────────────────────────────────
 // Mysterious statues spawn at DL30+. Activating one starts a 15-wave gauntlet
 // themed around a random monster tag. Waves clear → next wave spawns;
