@@ -27,7 +27,7 @@ export const SHADOW_SIMULACRA_POWERS = [
     { id: 'extra_melee', name: 'Extra Melee Attacks', group: 'attack_mode', row: 'front', desc: 'Adds floor(level/5) melee attacks beyond the basic attack; counts as melee contact.' },
     { id: 'extra_ranged', name: 'Extra Ranged Attacks', group: 'attack_mode', row: 'back', desc: 'Adds floor(level/5) ranged attacks beyond the basic attack.' },
     { id: 'extra_magic', name: 'Extra Magic Attacks', group: 'attack_mode', row: 'front', desc: 'Adds floor(level/5) single-target magic attacks beyond the basic attack.' },
-    { id: 'aoe_attack', name: 'AOE Attack', group: 'attack_mode', desc: 'The basic attack hits floor(level/5) enemies for 66% damage; disables extra melee/ranged/magic attacks.' },
+    { id: 'aoe_attack', name: 'AOE Attack', group: 'attack_mode', desc: 'The basic attack hits ALL enemies for 66% damage; disables extra melee/ranged/magic attacks.' },
     { id: 'dot_fire', name: 'Fire DoT', desc: 'Hits add a stacking fire DoT for 40% damage per round.' },
     { id: 'dot_ice', name: 'Ice DoT', desc: 'Hits add a stacking ice DoT for 40% damage per round.' },
     { id: 'dot_lightning', name: 'Lightning DoT', desc: 'Hits add a stacking lightning DoT for 40% damage per round.' },
@@ -39,7 +39,7 @@ export const SHADOW_SIMULACRA_POWERS = [
     { id: 'stun_attack', name: 'Stun Attack', desc: 'Hits have level/3% chance to stun for 1 round through normal stun resistance.' },
     { id: 'hold_attack', name: 'Hold Attack', desc: 'Hits have level/3% chance to hold through normal hold resistance.' },
     { id: 'extra_offense', name: 'Extra Offense', desc: '+50% melee, ranged, and magic skill.' },
-    { id: 'extra_defense', name: 'Extra Defense', desc: '+50% defense.' },
+    { id: 'extra_defense', name: 'Extra Defense', desc: '+25% defense.' },
     { id: 'extra_health', name: 'Extra Health', repeatable: true, desc: '+50% max health. Can be selected multiple times.' },
     { id: 'regen', name: 'Regen', desc: 'Regenerates floor(level/3)% of max HP on its turn.' },
     { id: 'immune_fire', name: 'Immunity: Fire', desc: 'Immune to fire damage and fire DoTs.' },
@@ -110,7 +110,7 @@ export function buildShadowSimulacraStats(photo, selectedPowers, attackType = 'm
     const normalizedAttackType = normalizeShadowSimulacraAttackType(attackType);
     const baseSkill = Math.max(1, level * 2);
     const offenseSkill = powers.includes('extra_offense') ? Math.floor(baseSkill * 1.5) : baseSkill;
-    const defense = powers.includes('extra_defense') ? Math.floor(baseSkill * 1.5) : baseSkill;
+    const defense = powers.includes('extra_defense') ? Math.floor(baseSkill * 1.25) : baseSkill;
     const healthMult = 1 + 0.5 * shadowPowerCount(powers, 'extra_health');
     const maxHealth = Math.max(1, Math.floor((photo?.maxHealth || level * 10) * healthMult));
     const attackMode = powers.find(id => SHADOW_SIMULACRA_ATTACK_POWER_IDS.includes(id)) || 'basic_melee';
@@ -161,4 +161,16 @@ export function getShadowSimulacraLimit(photo) {
 
 export function getShadowSimulacraSlotCount(photo) {
     return Math.max(1, Math.floor(Math.max(1, photo?.level || 1) / 5));
+}
+
+// One-time migration: fix existing simulacra built with the old 1.5× defense multiplier.
+export function fixSimulacraExtraDefense(party) {
+    if (!Array.isArray(party)) return;
+    for (const m of party) {
+        if (!m.isSummoned || !m.summonStats?.shadowSimulacra) continue;
+        if (!Array.isArray(m.summonStats.powers) || !m.summonStats.powers.includes('extra_defense')) continue;
+        const level = m.summonStats.photomancerLevel || 1;
+        const baseSkill = Math.max(1, level * 2);
+        m.summonStats.defense = Math.floor(baseSkill * 1.25);
+    }
 }

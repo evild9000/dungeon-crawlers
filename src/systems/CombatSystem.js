@@ -6828,9 +6828,10 @@ export class CombatSystem {
             ? Math.max(1, Math.floor(level / 5))
             : 0;
         const attacks = 1 + extraAttacks;
-        const targetsPerAttack = has('aoe_attack') ? Math.max(1, Math.floor(level / 5)) : 1;
-        const hitMult = has('aoe_attack') ? 0.66 : 1;
-        this._addLog(`🌑 ${m.name} attacks as a Shadow Simulacra (${attacks} ${kind}${targetsPerAttack > 1 ? `, ${targetsPerAttack} targets each` : ''}).`);
+        const isAoe = has('aoe_attack');
+        const targetsPerAttack = isAoe ? Infinity : 1;
+        const hitMult = isAoe ? 0.66 : 1;
+        this._addLog(`🌑 ${m.name} attacks as a Shadow Simulacra (${attacks} ${kind}${isAoe ? ', all enemies' : ''}).`);
 
         for (let i = 0; i < attacks; i++) {
             const alive = this.aliveHostileEnemies;
@@ -11162,7 +11163,7 @@ export class CombatSystem {
         }
 
         // ── Bard L30 Thunderous Drums: reduce sonic or psychic damage (all active drums combined, applied once) ───
-        if (typeDef.sonic || opts.psychic) {
+        if (typeDef.sonic || opts.sonic || opts.psychic) {
             const _drumBards = this._getAllBardsWithDrums();
             if (_drumBards.length > 0) {
                 const _drumReduction = Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
@@ -11171,7 +11172,7 @@ export class CombatSystem {
                 dmg = Math.max(1, Math.floor(dmg * (1 - _drumReduction)));
                 if (_dmgBefore !== dmg) {
                     const _drumLabel = _drumBards.length > 1 ? `Thunderous Drums (×${_drumBards.length})` : 'Thunderous Drums';
-                    this._addLog(`🥁 ${_drumLabel} absorbs ${Math.round(_drumReduction * 100)}% of ${eName}'s ${typeDef.sonic ? 'sonic' : 'psychic'} blast on ${target.name}!`);
+                    this._addLog(`🥁 ${_drumLabel} absorbs ${Math.round(_drumReduction * 100)}% of ${eName}'s ${(typeDef.sonic || opts.sonic) ? 'sonic' : 'psychic'} blast on ${target.name}!`);
                     soundManager.playThunderousDrums();
                 }
             }
@@ -11939,7 +11940,7 @@ export class CombatSystem {
             this._addLog(`😱 ${this._eName(enemy)} SHRIEKS in agony — a sonic blast erupts!`);
             for (const _screamTarget of this.aliveParty.slice()) {
                 if (_screamTarget.health <= 0) continue;
-                this._applyEnemyHit(enemy, _screamTarget, _screamDmg, 'magic', { aoe: true });
+                this._applyEnemyHit(enemy, _screamTarget, _screamDmg, 'magic', { aoe: true, sonic: true });
                 if (this.aliveParty.length === 0) break;
             }
         }

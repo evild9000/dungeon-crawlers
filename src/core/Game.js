@@ -59,6 +59,7 @@ import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKE
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { ShadowSimulacraUI } from '../ui/ShadowSimulacraUI.js';
 import { BeastMasteryUI } from '../ui/BeastMasteryUI.js';
+import { fixSimulacraExtraDefense } from '../entities/ShadowSimulacra.js';
 import { LoreBook } from '../ui/LoreBook.js';
 import { AchievementsUI } from '../ui/AchievementsUI.js';
 import { syncGolemStats, syncBeastCompanionStats } from '../entities/Summons.js';
@@ -933,6 +934,7 @@ export class Game {
         const data = await this.saveManager.load(saveId);
         if (!data) return;
         this.gameState = GameState.fromSaveData(data);
+        fixSimulacraExtraDefense(this.gameState.party);
         this._hidePauseLoadPicker();
         this._enterGame(false);
     }
