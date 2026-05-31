@@ -124,6 +124,8 @@ import {
     DRUID_WITHER_PLANTS_DAMAGE_BASE, DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR,
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
     NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
+    NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
+    NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
     ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
@@ -1757,6 +1759,46 @@ export class CombatUI {
                     'Immune: undead, constructs, elementals, incorporeal, plants.',
                     'When a plague-infected enemy dies, it explodes — dealing necrotic damage to all other enemies (chain reaction).',
                     m.mana < NECRO_PLAGUE_BRINGER_MANA_COST ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            if (m.level >= NECRO_L35_UNLOCK_LEVEL) {
+                const controlChancePct = Math.round(Math.min(95, (BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * m.level) * 100));
+                const controlDur = Math.max(1, Math.floor(m.level / BARD_CHARM_DURATION_DIVISOR));
+                const controlCan = m.mana >= NECRO_CONTROL_DEAD_MANA_COST;
+                const controlBtn = this._addBtn(`🧟 Control the Dead (-${NECRO_CONTROL_DEAD_MANA_COST} MP)`, controlCan, () => {
+                    this._pickTarget(e => this.combat.necroControlTheDead(e), {
+                        prompt: '🧟 Dominate which undead enemy?',
+                        filter: e => {
+                            const tags = this.combat._getEnemyTags(e);
+                            return tags.includes('undead')
+                                && !(e.charmedRounds > 0)
+                                && !e.isBoss && !e.isMegaBoss && !e.isSuperBoss;
+                        },
+                    });
+                });
+                controlBtn.classList.add('combat-special-btn');
+                controlBtn.title = [
+                    `Necromancer L${NECRO_L35_UNLOCK_LEVEL}: Control the Dead (${NECRO_CONTROL_DEAD_MANA_COST} MP).`,
+                    'Dominate one undead target and force it to fight for your party.',
+                    `${controlChancePct}% chance to succeed (same scaling as Bard Charm).`,
+                    `Duration: ${controlDur} round(s) (same as Bard Charm).`,
+                    'Bypasses normal undead charm immunity.',
+                    'Bosses, mega-bosses, and super bosses remain immune.',
+                    !controlCan ? 'Not enough mana.' : '',
+                ].filter(Boolean).join('\n');
+
+                const siphonCan = m.mana >= NECRO_SIPHON_POWER_MANA_COST;
+                const minDrain = Math.max(1, Math.floor(m.level / NECRO_SIPHON_POWER_MIN_DIVISOR));
+                const maxDrain = Math.max(minDrain, Math.floor(m.level * NECRO_SIPHON_POWER_MAX_MULT));
+                const siphonBtn = this._addBtn(`🧿 Siphon Power (-${NECRO_SIPHON_POWER_MANA_COST} MP)`, siphonCan, () => this.combat.necroSiphonPower());
+                siphonBtn.classList.add('combat-special-btn');
+                siphonBtn.title = [
+                    `Necromancer L${NECRO_L35_UNLOCK_LEVEL}: Siphon Power (${NECRO_SIPHON_POWER_MANA_COST} MP).`,
+                    `AoE drain: each enemy loses random ST and MP from ${minDrain} to ${maxDrain}.`,
+                    'Uses your turn.',
+                    'Immune: undead, constructs, elementals, and drain-immune enemies.',
+                    !siphonCan ? 'Not enough mana.' : '',
                 ].filter(Boolean).join('\n');
             }
         }

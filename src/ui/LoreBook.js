@@ -45,8 +45,10 @@ function buildAbilityList(def) {
         lines.push('Undead: immune to Ranger Beast Companion Sabre Tooth Cat instakill — undead cannot be slain by a physical killing bite; normal damage applies');
         // ghoul paralysis immunity covered by stun+paralysis line above
         lines.push('Undead: immune to Bard Charm Monster — cannot be mind-controlled');
+        lines.push('Undead: exception — Necromancer Control the Dead (L35) can dominate non-boss undead');
         lines.push('Undead: immune to all psychic effects — fear, charm, mental enslavement, and psychic stun have no effect on the mindless undead');
         lines.push('Undead: immune to Necromancer Plague Bringer (L30) — cannot be infected with necrotic plague');
+        lines.push('Undead: immune to Necromancer Siphon Power (L35) — no living vigor to drain');
         lines.push('Undead: cannot be stitched by Necromancer Dark Apotheosis (L30) — already animated; no suitable remains to repurpose');
     }
     if (tags.includes('elemental')) {
@@ -54,6 +56,7 @@ function buildAbilityList(def) {
         lines.push('Elemental: immune to stun and paralysis — no nervous system to disrupt; Trap Mastery stun procs will be resisted');
         lines.push('Elemental: immune to poison — pure elemental energy has no biology to corrupt');
         lines.push('Elemental: immune to mummy rot — no living flesh to decay');
+        lines.push('Elemental: immune to Necromancer Siphon Power (L35) — no mortal stamina/mana reserves to drain');
         lines.push('Elemental: immune to Ranger Beast Companion Sabre Tooth Cat instakill — elemental energy cannot be slain by a physical killing bite; normal damage applies');
         lines.push('Elemental: vulnerable to Cleric Banishment (L30) — elemental energy can be torn from the mortal plane; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
     }
@@ -73,6 +76,7 @@ function buildAbilityList(def) {
         lines.push('Construct: immune to stun and paralysis — mechanical body resists physical disruption; Trap Mastery stun procs will be resisted');
         lines.push('Construct: immune to poison — no biology to corrupt');
         lines.push('Construct: immune to mummy rot — no living flesh to decay');
+        lines.push('Construct: immune to Necromancer Siphon Power (L35) — no living stamina/mana to siphon');
         lines.push('Construct: immune to Ranger Beast Companion Sabre Tooth Cat instakill — mechanical construction cannot be slain by a physical killing bite; normal damage applies');
         lines.push('Construct: vulnerable to Artificer Deconstruct (L30) — Scatter Shot hits deal +200% bonus damage; 50% chance each hit scavenges parts to repair the artificer\'s own golems for 5% max HP');
         lines.push('Construct: cannot be stitched by Necromancer Dark Apotheosis (L30) — no flesh to animate as a Corpse Horror');

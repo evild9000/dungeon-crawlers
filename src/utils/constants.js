@@ -1363,6 +1363,13 @@ export const NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS  = 0;
 export const NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL     = 30;
 export const NECRO_PLAGUE_BRINGER_MANA_COST        = 35;
 
+// ── Necromancer L35 — Control the Dead & Siphon Power ───────────────────────
+export const NECRO_L35_UNLOCK_LEVEL                = 35;
+export const NECRO_CONTROL_DEAD_MANA_COST          = 50;
+export const NECRO_SIPHON_POWER_MANA_COST          = 35;
+export const NECRO_SIPHON_POWER_MIN_DIVISOR        = 2; // min drain = floor(level/2)
+export const NECRO_SIPHON_POWER_MAX_MULT           = 2; // max drain = level*2
+
 // ── Artificer L30 — Golem Berserk Mode ───────────────────────────────────────
 export const ARTIFICER_BERSERK_UNLOCK_LEVEL  = 30;
 export const ARTIFICER_BERSERK_DMG_PER_LEVEL = 0.02;   // +2% per artificer level

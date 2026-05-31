@@ -204,6 +204,8 @@ import {
     NECRO_CORPSE_HORROR_DEF_DIVISOR, NECRO_CORPSE_HORROR_SKILL_PER_CORPSE,
     NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE, NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS,
     NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
+    NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
+    NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
     ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
@@ -894,6 +896,13 @@ export class CombatSystem {
         if (!target) return false;
         const immuneTag = resource === 'stamina' ? 'stamina_drain' : 'mana_drain';
         return Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes(immuneTag);
+    }
+
+    _isEnemySiphonPowerImmune(enemy) {
+        if (!enemy || enemy.health <= 0) return true;
+        const tags = this._getEnemyTags(enemy);
+        if (tags.some(t => ['undead', 'construct', 'elemental'].includes(t))) return true;
+        return this._enemyHasImmunity(enemy, 'stamina_drain') || this._enemyHasImmunity(enemy, 'mana_drain');
     }
 
     _isPetrifyImmunePartyMember(target) {
@@ -5695,6 +5704,109 @@ export class CombatSystem {
             this._addLog(`  ↪️ 💀 ${this._eName(t)} is infected with Mummy Rot (${rotDmg}/round) and Plague Infection!`);
         }
 
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Necromancer L35: Control the Dead.
+     * Single-target undead charm that bypasses undead charm immunity.
+     * Chance and duration use Bard charm scaling.
+     */
+    necroControlTheDead(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'necromancer') return;
+        if ((m.level || 1) < NECRO_L35_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must reach level ${NECRO_L35_UNLOCK_LEVEL} to control the dead.`);
+            return;
+        }
+        if (m.mana < NECRO_CONTROL_DEAD_MANA_COST) {
+            this._addLog(`${m.name} needs ${NECRO_CONTROL_DEAD_MANA_COST} MP to cast Control the Dead.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0) return;
+
+        const eName = this._eName(targetEnemy);
+        const tTags = this._getEnemyTags(targetEnemy);
+        if (!tTags.includes('undead')) {
+            this._addLog(`${eName} is not undead and cannot be dominated by Control the Dead.`);
+            return;
+        }
+        if (targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss) {
+            m.mana -= NECRO_CONTROL_DEAD_MANA_COST;
+            this._addLog(`💀 ${m.name} invokes Control the Dead, but ${eName} is too powerful to dominate!`);
+            this._advancePlayerTurn();
+            return;
+        }
+        if ((targetEnemy.charmedRounds || 0) > 0) {
+            this._addLog(`${eName} is already charmed.`);
+            return;
+        }
+
+        m.mana -= NECRO_CONTROL_DEAD_MANA_COST;
+        const charmChance = Math.min(0.95, BARD_CHARM_BASE_CHANCE + BARD_CHARM_CHANCE_PER_2_LV * (m.level || 1));
+        const duration = Math.max(1, Math.floor((m.level || 1) / BARD_CHARM_DURATION_DIVISOR));
+
+        if (Math.random() < charmChance) {
+            this._prepareCharmedAlly(targetEnemy);
+            targetEnemy.charmedRounds = duration;
+            targetEnemy.charmerId = m.id;
+            this._addLog(`💀 ${m.name} dominates ${eName}'s undead will! (${duration} rounds)`);
+        } else {
+            this._addLog(`💀 ${m.name} reaches into ${eName}'s dead mind, but it resists! (${Math.round(charmChance * 100)}% chance)`);
+        }
+
+        this._advancePlayerTurn();
+    }
+
+    /**
+     * Necromancer L35: Siphon Power.
+     * AoE stamina/mana drain vs all enemies, except undead/construct/elemental.
+     */
+    necroSiphonPower() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'necromancer') return;
+        if ((m.level || 1) < NECRO_L35_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must reach level ${NECRO_L35_UNLOCK_LEVEL} to use Siphon Power.`);
+            return;
+        }
+        if (m.mana < NECRO_SIPHON_POWER_MANA_COST) {
+            this._addLog(`${m.name} needs ${NECRO_SIPHON_POWER_MANA_COST} MP to cast Siphon Power.`);
+            return;
+        }
+
+        const targets = this.aliveHostileEnemies.slice();
+        if (targets.length === 0) {
+            this._addLog('No enemies to siphon.');
+            return;
+        }
+
+        m.mana -= NECRO_SIPHON_POWER_MANA_COST;
+        const minDrain = Math.max(1, Math.floor((m.level || 1) / NECRO_SIPHON_POWER_MIN_DIVISOR));
+        const maxDrain = Math.max(minDrain, Math.floor((m.level || 1) * NECRO_SIPHON_POWER_MAX_MULT));
+        this._addLog(`💀🧿 ${m.name} unleashes Siphon Power! (-${NECRO_SIPHON_POWER_MANA_COST} MP)`);
+
+        let affected = 0;
+        for (const t of targets) {
+            if (!t || t.health <= 0) continue;
+            if (this._isEnemySiphonPowerImmune(t)) {
+                this._addLog(`  ↪️ ${this._eName(t)} is immune to Siphon Power.`);
+                continue;
+            }
+
+            const roll = randomInt(minDrain, maxDrain);
+            const beforeSt = Math.max(0, t.stamina || 0);
+            const beforeMp = Math.max(0, t.mana || 0);
+            const stDrained = Math.min(beforeSt, roll);
+            const mpDrained = Math.min(beforeMp, roll);
+            t.stamina = Math.max(0, beforeSt - stDrained);
+            t.mana = Math.max(0, beforeMp - mpDrained);
+            affected++;
+            this._addLog(`  ↪️ ${this._eName(t)} loses ${stDrained} ST and ${mpDrained} MP.`);
+        }
+
+        if (affected === 0) {
+            this._addLog('💀🧿 The siphon finds no vulnerable minds to drain.');
+        }
         this._advancePlayerTurn();
     }
 

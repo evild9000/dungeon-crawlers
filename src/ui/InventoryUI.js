@@ -55,6 +55,8 @@ import {
     BARBARIAN_WEREBEAR_STAMINA_PER_ROUND, BARBARIAN_WEREBEAR_HP_BONUS_FRAC,
     BARBARIAN_WEREBEAR_REGEN,
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
+    NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
+    NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
 } from '../utils/constants.js';
@@ -982,6 +984,16 @@ export class InventoryUI {
         if (member.classId === 'necromancer' && member.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
             perk.push(`Demi-Lich: ${NECRO_DEMI_LICH_MANA_COST} MP`);
             perkDetails.push(`Necromancer L25 Demi-Lich:\n  Requires Lich Form. Costs ${NECRO_DEMI_LICH_MANA_COST} MP.\n  Summons a back-row undead caster with defense 10 + level × 2, HP equal to current necromancer HP, defense-ignoring AoE magic, Ghost Fear, half magic/AoE damage, and immunity to stun/web/holds/poison.`);
+        }
+        if (member.classId === 'necromancer' && member.level >= NECRO_L35_UNLOCK_LEVEL) {
+            const controlChancePct = Math.round(Math.min(95, (0.50 + 0.005 * (member.level || 1)) * 100));
+            const controlDur = Math.max(1, Math.floor((member.level || 1) / 5));
+            const minDrain = Math.max(1, Math.floor((member.level || 1) / NECRO_SIPHON_POWER_MIN_DIVISOR));
+            const maxDrain = Math.max(minDrain, Math.floor((member.level || 1) * NECRO_SIPHON_POWER_MAX_MULT));
+            perk.push(`Control the Dead: ${NECRO_CONTROL_DEAD_MANA_COST} MP`);
+            perk.push(`Siphon Power: ${NECRO_SIPHON_POWER_MANA_COST} MP AoE drain`);
+            perkDetails.push(`Necromancer L${NECRO_L35_UNLOCK_LEVEL} Control the Dead:\n  Costs ${NECRO_CONTROL_DEAD_MANA_COST} MP and uses your turn.\n  Targets undead only, bypasses undead charm immunity, and uses Bard Charm scaling (${controlChancePct}% chance, ${controlDur} rounds).\n  Bosses, mega-bosses, and super bosses are immune.`);
+            perkDetails.push(`Necromancer L${NECRO_L35_UNLOCK_LEVEL} Siphon Power:\n  Costs ${NECRO_SIPHON_POWER_MANA_COST} MP and uses your turn.\n  AoE drains each vulnerable enemy for ${minDrain}-${maxDrain} ST and MP (rolled separately per target).\n  Undead, constructs, and elementals are immune.`);
         }
         if (member.classId === 'ranger' && member.level >= RANGER_TOTEM_UNLOCK_LEVEL) {
             perk.push(`Animal Totem: ${RANGER_TOTEM_MANA_PER_ROUND} MP/rd`);
