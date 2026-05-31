@@ -1,0 +1,82 @@
+
+
+1. make sure the warlock summoned dust devil aoe can apply a 10% chance to stun enemies, passing through the normal resist function
+2. make sure warlock summoned quasit applies a poison DoT for each hit, track separately. duration = level/4 
+3. make sure warlock summoned efreeti take half damage from magic or magic aoe
+4. make sure warlock summoned ice demon has x2 health and 1.5 defense after normal calcs
+5. make sure warlock summoned acid demon has x1.8 health.  also give warlock summoned acid demons the 50% chance to summon an acid slime (use the same slimes summoned by vermin keeper) warlock acid demon summoned slimes have half the health of the acid demon summoning it,have offensive skill set to the same as the acid demon summoning it and defense set to the same as the acid demon summoning it) 
+6. make sure warlock summoned toxic bloat demon have x2.5 health.  remove the .8 penalty for damage.  make sure it still does 6 ranged bile attacks against random foes.  and applies a dot for level/7 rounds for 33% damage.
+7. change warlock summoned succubus to mimic monster succubus by having a magic single target attack that does damage as normal but also drains an equal amount of mana from the monster unless it is construct, elemental or undead.  the 35% chacne to charm-daze the target still applies, but it counts as a paralyze style hold.  adhering to all target immunities for its effect.  at 50% or less health switch to a psychic style AOE shriek that targets all enemy monsters.  this attack is considered magic and psychic for monster immunities.
+8. warlock summoned pit fiend should have x3 hit points and x2 defense.
+
+work up all these special scenarios
+
+
+ok here is a big change:
+lets rework the simulacrum framework
+1. rename it to 'Shadow Simulacra'
+2. the shadow simulacra are created only outside of combat.  same limit = photomancer level/10 - cost = level * 100 in gold
+a. this framework we dont choose a creature from the lorebook as that takes too much to wire up.
+b. instead use a new graphic for the party HUD card for it. Something shadowy looking.
+c. the photomancer still creates a permanent party member
+d. instead of mimicking the powers and abilities of a monster exactly, the photomancer will mimick ones they pick and choose from a list, simulating powers tehy have encountered.  Since this is a level 30 power, by this point they have likely met all monsters in the lore book, so its mute that they wouldnt be able to choose anything.
+e. the simulacra has, as before its defense = photomancer level *2 
+f. and has melee, ranged and magic skill = photomancer level *2 
+g. the following all still apply so you dont need to change this:
+- cannot be healed by any party members or receive regen. cannot be repaired or healed at all. once it dies it is gone.
+- debuffs or detrimental effects cannot be removed either (such as from mass heal)
+- cannot be revived.
+- cannot benefit from bard melodies or other effects that only affect living targets (similar to undead or golems)
+- simulacrums of monsters that have regen or drain powers CAN heal the simulacrum 
+- receive a damage bonus = photomancer level %
+h. in addition simulacra are semi realistic illusions but they are mindless and considered constructs and as such
+are immune to:
+- stun
+- poison/poison DoTs
+- psychic damage or effects
+- paralyze style holds
+- bleed DoTs
+- stamina or mana drain
+
+Simulacra are created from a new modal accessed by the 'N' key. It is set up similar to the artificer crafting.
+1. There is a dropdown to select which photomancer is creating the simulacrum.  next there are a number of dropdowns to select its special powers beyond basic attack and defense.  A photomancer gains a dropdown to select a special power for every 5 levels of photomancer. When a power is selected from a dropdown it disappears from the options of other dropdowns, unless specificed as a power that can be selected more than once.  Once a photomancer has selected all available powers, they click the 'Form' button at the bottom and the simulacrum is created with all the associated powers.  The photomancer has the option to 'save' the selected powers as a template to use in the future, giving it a unique name which can be recalled from a special 'load template' button in the same modal to preload all the dropdowns to save time manually selecting.  Once the Form button is pressed the simulacrum is created.  To support the various powers one can have, you need to create a framework to allow for all the different powers.  however is the most efficient way to handle this you will decide.  Here are the different abilties a photomancer can select from the dropdowns and their effects.
+
+1. extra melee attacks.  add extra attacks in addition to the basic single attack.  photomancer level/5.  chosing this puts the simulacrum in the front row.
+2. extra ranged attacks.  add extra attacks in addition to the basic single attack.  photomancer level/5.  the only difference this is between the extra melee attacks is that some monsters respond differently to ranged vs melee (rhemoraz for example).  chosing this puts the simulacrum in the back row.
+3. extra magic attacks.  add extra single target magic attacks in addition to the basic single attack.  photomancer level/5.  the only difference this is between this and the extra melee or ranged attacks is that some monsters respond differently to magic vs ranged vs melee (some monsters are immune to magic attacks like clockwork horror).   chosing this puts the simulacrum in the front row.
+
+Note: chosing any one of the first three disable the other two.
+4. AOE attack.  the monster's attacks hit a number of enemies = photomancer level/5.  damage however is 66%
+5. Fire DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 40% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack.
+6. Ice DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 40% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack.
+7. Lightning DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 40% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack.
+8. Acid DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 40% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack.
+9. Poison DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 60% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack.  This DoT does more damage since the amount of monsters typically immune to poison is higher than other types.
+10. Psychic DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 60% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack. This DoT does more damage since the amount of monsters typically immune to psychic is higher than other types.
+11. Sonic DoT: any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 60% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack. This DoT does more damage since the amount of monsters typically immune to sonic is higher than other types.
+12. Bleed DoT any attack, whether melee, ranged or magic, single target or AOE leaves a Fire DoT that does 60% damage per round for photomancer level/7 rounds.  these DoTs stacks like other DoTs that stack. This DoT does more damage since the amount of monsters typically immune to bleed is higher than other types.
+Note: Multiple DoTs may be selected, only DoTs of the same type cannot be chosen more than once.  but a player could chose both Fire and Ice DoTs 
+13. Stun attack:  The simulacrum's attacks, have a photomancer level/3% chance to stun the target adhering to normal stun checks for Tag immunity or Boss immunity. stun duration is 1 round
+13. Hold attack:  The simulacrum's attacks, have a photomancer level/3% chance to hold the target adhering to normal hold checks for Tag immunity or Boss immunity.
+Note: A player may chose both stun and hold, but chosing one disables selecting the same type again.
+14. Extra Offense:  the simulacrum adds 50% to its offensive stats of melee, ranged and magic. 
+15. Extra Defense: the simulacrum adds 50% to its defense score.
+16. Extra Health: the simulacrum has a bonus of 50% to its health.  This may be chosen more than once.
+17. Regen:  The simulacrum regenerates (photomancer level/3)% of its health per round.
+18. Immunity: Fire - takes no damage from attacks that specify they are fire damage or fire DoTs
+19. Immunity: Ice - takes no damage from attacks that specify they are ice damage or ice DoTs
+20. Immunity: Lightning - takes no damage from attacks that specify they are lightning damage or lightning DoTs
+21. Immunity: Acid - takes no damage from attacks that specify they are acid damage or acid DoTs
+22. Stamina and Mana Drain: drains stamina and mana from the target(s) equal to base damage x (photomancer level)%
+23. Life Drain: converts damage dealth into restored health at a percentage = (photomancer level/2)%
+24. Immunity to Holds:  cannot be held by monsters that inflict these style of attacks
+25. Phase strike attacks:  The simulacrum's attacks ignore target's armor/defense
+26. Offense Debuff:  any target hit by the simulacrum's attacks suffer a penalty to all of its melee, ranged and magic stats = (photomancer level/8) for (photomancer level/10) rounds
+27. Defense Debuff:  any target hit by the simulacrum's attacks suffer a penalty to defense stat = (photomancer level/8) for (photomancer level/10) rounds
+28. Heal Party: has a 50% chance instead of attacking to mass heal the party (acceptable targets only).  healed amount = (photomancer level/3)%
+29. Block or Dodge: (photomancer level/2)% chance to avoid a single target, ranged or magic attack avoiding damage entirely
+30. Retributive damage: Any melee damage suffered reflects back the damage suffered = (photomancer level*2)% 
+
+ ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
+ 
+ 

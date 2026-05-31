@@ -58,9 +58,10 @@ import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON
 import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { ShadowSimulacraUI } from '../ui/ShadowSimulacraUI.js';
+import { BeastMasteryUI } from '../ui/BeastMasteryUI.js';
 import { LoreBook } from '../ui/LoreBook.js';
 import { AchievementsUI } from '../ui/AchievementsUI.js';
-import { syncGolemStats } from '../entities/Summons.js';
+import { syncGolemStats, syncBeastCompanionStats } from '../entities/Summons.js';
 import { Enemy } from '../entities/Enemy.js';
 import { ENEMY_TYPES, WANDERER_BASE_CHANCE, WANDERER_CHANCE_PER_CELL, WANDERER_MAX_DISTANCE, WANDERER_ROUND_CHANCE_BONUS, WANDERER_ROUND_DIST_BONUS } from '../utils/constants.js';
 
@@ -181,6 +182,17 @@ export class Game {
             this._saveNow();
         });
         this.shadowSimulacraUI = new ShadowSimulacraUI(
+            () => this.gameState,
+            () => {
+                if (this.partyHUD && this.gameState) {
+                    this.partyHUD.update(this.gameState.party, this.gameState.inventory);
+                }
+                this._saveNow();
+            },
+            { logger: (msg) => this._log(msg) },
+        );
+
+        this.beastMasteryUI = new BeastMasteryUI(
             () => this.gameState,
             () => {
                 if (this.partyHUD && this.gameState) {
@@ -424,6 +436,7 @@ export class Game {
             || (this.lightPickerUI && this.lightPickerUI.isOpen)
             || (this.partySpellModal && this.partySpellModal.isOpen)
             || (this.shadowSimulacraUI && this.shadowSimulacraUI.isOpen)
+            || (this.beastMasteryUI && this.beastMasteryUI.isOpen)
             || (this.loreBook && this.loreBook.isOpen)
             || (this.achievementsUI && this.achievementsUI.isOpen);
     }
@@ -495,6 +508,7 @@ export class Game {
                 else if (this.lightPickerUI && this.lightPickerUI.isOpen) this.lightPickerUI.hide();
                 else if (this.partySpellModal && this.partySpellModal.isOpen) this.partySpellModal.hide();
                 else if (this.shadowSimulacraUI && this.shadowSimulacraUI.isOpen) this.shadowSimulacraUI.hide();
+                else if (this.beastMasteryUI && this.beastMasteryUI.isOpen) this.beastMasteryUI.hide();
                 else if (this.loreBook && this.loreBook.isOpen) this.loreBook.hide();
                 else if (this.achievementsUI && this.achievementsUI.isOpen) this.achievementsUI.hide();
             }
@@ -511,6 +525,7 @@ export class Game {
             case 'f': e.preventDefault(); this._onOpenFamiliar(); break;
             case 'v': e.preventDefault(); this._onOpenPartySpells(); break;
             case 'n': e.preventDefault(); this._onOpenShadowSimulacra(); break;
+            case 'p': e.preventDefault(); this._onOpenBeastMastery(); break;
             case 'x': e.preventDefault(); this._onOpenLoreBook(); break;
             case 'g': e.preventDefault(); this._onOpenAchievements(); break;
         }
@@ -574,6 +589,14 @@ export class Game {
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
         this.shadowSimulacraUI.show();
+    }
+
+    _onOpenBeastMastery() {
+        if (!this.beastMasteryUI || !this.gameState) return;
+        if (this.state !== STATE.PLAYING) return;
+        if (document.pointerLockElement) document.exitPointerLock();
+        this.pauseOverlay.style.display = 'none';
+        this.beastMasteryUI.show();
     }
 
     _onOpenLoreBook() {
@@ -1604,12 +1627,13 @@ export class Game {
         this.gameState.party = this.gameState.party.filter(m => {
             if (!m.isSummoned) return true;
             if (m.isPersistent && m.health > 0) return true;
+            if (m.isPersistent && m.summonStats?.isBeastCompanion) return true; // keep dead for gold revival
             return false;
         });
-        // If any party member leveled up this combat, re-sync golem stats to the
-        // new artificer level (HP, damage, defense all scale with artificer level).
+        // If any party member leveled up this combat, re-sync golem and beast companion stats.
         if (this.combatSystem.levelUpLogs && this.combatSystem.levelUpLogs.length > 0) {
             syncGolemStats(this.gameState.party);
+            syncBeastCompanionStats(this.gameState.party);
         }
         for (const m of this.gameState.party) {
             if (typeof m.clearCombatState === 'function') m.clearCombatState();

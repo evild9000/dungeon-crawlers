@@ -30,15 +30,19 @@ function buildAbilityList(def) {
         lines.push('Incorporeal: immune to mummy rot — no living flesh to decay');
         lines.push('Incorporeal: immune to Rogue Backstab Bleed — has no blood to shed');
         lines.push('Incorporeal: immune to Rogue Captured Traps — mechanisms pass through the creature');
+        lines.push('Incorporeal: immune to Trap Mastery stun and hold procs — incorporeal form cannot be physically stunned or held');
         lines.push('Incorporeal: immune to Web and constrict effects — ethereal form cannot be physically ensnared');
         lines.push('Incorporeal: immune to Artificer Drone Arcane Bindings — no physical form to ensnare');
+        lines.push('Incorporeal: immune to Ranger Beast Companion Sabre Tooth Cat instakill — ethereal form cannot be slain by a physical bite; normal damage applies');
+        lines.push('Incorporeal: immune to Ranger Beast Companion Mega-conda hold and constrict — ethereal form cannot be physically grasped');
         // stun+paralysis already covered in the combined line above
     }
     if (tags.includes('undead')) {
-        lines.push('Undead: immune to stun and paralysis — undead physiology resists physical disruption');
+        lines.push('Undead: immune to stun and paralysis — undead physiology resists physical disruption; Trap Mastery stun procs will be resisted');
         lines.push('Undead: immune to mummy rot — no living flesh to decay');
         lines.push('Undead: can be held by treant or faerie queen — hold bypasses stun immunity');
         lines.push('Undead: immune to bleed and poison effects — no living blood or metabolism');
+        lines.push('Undead: immune to Ranger Beast Companion Sabre Tooth Cat instakill — undead cannot be slain by a physical killing bite; normal damage applies');
         // ghoul paralysis immunity covered by stun+paralysis line above
         lines.push('Undead: immune to Bard Charm Monster — cannot be mind-controlled');
         lines.push('Undead: immune to all psychic effects — fear, charm, mental enslavement, and psychic stun have no effect on the mindless undead');
@@ -47,9 +51,10 @@ function buildAbilityList(def) {
     }
     if (tags.includes('elemental')) {
         lines.push('Elemental: immune to Bard Charm Monster — pure elemental energy resists mind magic');
-        lines.push('Elemental: immune to stun and paralysis — no nervous system to disrupt');
+        lines.push('Elemental: immune to stun and paralysis — no nervous system to disrupt; Trap Mastery stun procs will be resisted');
         lines.push('Elemental: immune to poison — pure elemental energy has no biology to corrupt');
         lines.push('Elemental: immune to mummy rot — no living flesh to decay');
+        lines.push('Elemental: immune to Ranger Beast Companion Sabre Tooth Cat instakill — elemental energy cannot be slain by a physical killing bite; normal damage applies');
         lines.push('Elemental: vulnerable to Cleric Banishment (L30) — elemental energy can be torn from the mortal plane; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
     }
     if (tags.includes('demon')) {
@@ -60,13 +65,15 @@ function buildAbilityList(def) {
         lines.push('Plant: fungal or plant-type creature — vulnerable to fire and nature magic');
         lines.push('Plant: vulnerable to Druid Wither Plants (L35) — magic AoE at 3× base damage; non-boss plants have a level/5% chance of instant destruction');
         lines.push('Plant: susceptible to Druid Nature\'s Charms (L35) — charm bypasses normal plant charm immunity; 3 resists grant immunity for the rest of combat');
+        lines.push('Plant: immune to Ranger Beast Companion Sabre Tooth Cat instakill — plant physiology resists a predator\'s killing bite; normal damage applies');
     }
     if (tags.includes('construct')) {
         lines.push('Construct: immune to Bard Charm Monster — no mind to enchant');
         lines.push('Construct: immune to all psychic effects — fear, charm, mental enslavement, and psychic stun cannot affect mechanical or magically-animated beings');
-        lines.push('Construct: immune to stun and paralysis — mechanical body resists physical disruption');
+        lines.push('Construct: immune to stun and paralysis — mechanical body resists physical disruption; Trap Mastery stun procs will be resisted');
         lines.push('Construct: immune to poison — no biology to corrupt');
         lines.push('Construct: immune to mummy rot — no living flesh to decay');
+        lines.push('Construct: immune to Ranger Beast Companion Sabre Tooth Cat instakill — mechanical construction cannot be slain by a physical killing bite; normal damage applies');
         lines.push('Construct: vulnerable to Artificer Deconstruct (L30) — Scatter Shot hits deal +200% bonus damage; 50% chance each hit scavenges parts to repair the artificer\'s own golems for 5% max HP');
         lines.push('Construct: cannot be stitched by Necromancer Dark Apotheosis (L30) — no flesh to animate as a Corpse Horror');
     }

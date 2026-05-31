@@ -1545,6 +1545,47 @@ export const ROGUE_SHADOW_STEP_STAMINA_COST    = 50;
 export const ROGUE_SHADOW_STEP_DURATION        = 2;    // 2 rounds untargetable
 export const ROGUE_SHADOW_STEP_BACKSTAB_MULT   = 2;    // ×2 backstab damage while in Shadow Step
 
+// ── Rogue L35 — Trap Mastery & Extra Loot ────────────────────────────────────
+export const ROGUE_TRAP_MASTERY_UNLOCK_LEVEL    = 35;
+export const ROGUE_TRAP_MASTERY_DAMAGE_MULT     = 2;   // ×2 on top of existing ×2 = ×4 total
+export const ROGUE_TRAP_MASTERY_EXTRA_ROUNDS    = 2;   // DoT lasts +2 rounds (3 → 5)
+export const ROGUE_TRAP_MASTERY_PENALTY_DIVISOR = 4;   // floor(rogueLevel/4) atk/def penalty
+export const ROGUE_EXTRA_LOOT_UNLOCK_LEVEL      = 35;
+// Extra Loot gold bonus = rogueLevel% per living L35+ rogue, additive across rogues
+
+// ── Ranger L35 — Beast Mastery & Ricochet Shot ────────────────────────────────
+export const RANGER_L35_UNLOCK_LEVEL                  = 35;
+export const RANGER_BEAST_MASTERY_HEALTH_MULT         = 1.5;
+export const RANGER_BEAST_MASTERY_STAT_MULT           = 2;
+export const RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV  = 100;
+export const RANGER_RICOCHET_CHANCES    = [0.50, 0.25, 0.12, 0.06, 0.03, 0.01];
+export const RANGER_RICOCHET_DAMAGE_MULT              = 0.50;
+export const RANGER_RICOCHET_MP_COST                  = 1;
+export const RANGER_RICOCHET_INSTAKILL_MULT           = 0.50;
+export const RANGER_BEAST_COMPANION_TYPES = {
+    dire_wolf:   { id: 'dire_wolf',   summonType: 'bc_dire_wolf',   beastKind: 'bc_dire_wolf',
+        name: 'Dire Wolf',       icon: '🐺', row: 'front', attackType: 'melee',
+        description: 'Pack predator. floor(level/10) melee bite attacks, all targeting the same foe. Each bite inflicts 100%-of-damage Bleed DoT for floor(level/6) rounds.' },
+    cave_bear:   { id: 'cave_bear',   summonType: 'bc_cave_bear',   beastKind: 'bc_cave_bear',
+        name: 'Cave Bear',       icon: '🐻', row: 'front', attackType: 'melee',
+        description: 'Hulking predator. floor(level/10) melee attacks, all same foe. Claw (50%): 100% damage Bleed for floor(level/6) rds. Bite (50%): level% hold chance for 2 rounds (normal resistances).' },
+    roc:         { id: 'roc',         summonType: 'bc_roc',         beastKind: 'bc_roc',
+        name: 'Roc',             icon: '🦅', row: 'back',  attackType: 'ranged',
+        description: 'Colossal bird of prey. floor(level/10) ranged claw attacks, all same foe. Crit chance = ranger crit chance. Crit multiplier = ×(4 + level×0.02).' },
+    sabre_tooth: { id: 'sabre_tooth', summonType: 'bc_sabre_tooth', beastKind: 'bc_sabre_tooth',
+        name: 'Sabre Tooth Cat', icon: '🐯', row: 'front', attackType: 'melee',
+        description: 'Apex ambush predator. floor(level/10) attacks, all same foe. Claw (50%): 100% damage Bleed for floor(level/6) rds. Bite (50%): floor(level/3)% instakill chance. Bosses: ×4 dmg. Immune types (undead/elemental/construct/incorporeal/plant): normal damage.' },
+    megaconda:   { id: 'megaconda',   summonType: 'bc_megaconda',   beastKind: 'bc_megaconda',
+        name: 'Mega-conda',      icon: '🐍', row: 'front', attackType: 'melee',
+        description: 'Titanic serpent. Single-target constrict: (300%+100%×floor(level/10)) base damage. Attempts hold for floor(level/5) rounds (normal resistances). On successful hold: escalating crush DoT (base→×1.5→×2.0... per tick).' },
+    megaloceros: { id: 'megaloceros', summonType: 'bc_megaloceros', beastKind: 'bc_megaloceros',
+        name: 'Megaloceros',     icon: '🦌', row: 'front', attackType: 'melee',
+        description: 'Ancient war-elk. AOE charge hitting floor(level/5) targets. Damage: base×(1+level×0.02). Each hit: 100% prone attempt (1-round hold, normal hold resistances apply).' },
+    sasquatch:   { id: 'sasquatch',   summonType: 'bc_sasquatch',   beastKind: 'bc_sasquatch',
+        name: 'Sasquatch',       icon: '🦍', row: 'front', attackType: 'melee',
+        description: 'Primordial giant. floor(level/6) attacks. Each: 50/50 Fist (same target) or Boulder (any target). Both: base×(1+level×0.02) damage, 20%+floor(level/3)% stun chance.' },
+};
+
 // ── Necromancer L20 — Lich Form ──────────────────────────────────────────────
 export const NECRO_LICH_FORM_UNLOCK_LEVEL    = 20;
 export const NECRO_LICH_FORM_MANA_PER_ROUND  = 15;   // mana upkeep per round in lich form

@@ -129,6 +129,9 @@ import {
     ROGUE_TWIN_FANGS_UNLOCK_LEVEL, ROGUE_TWIN_FANGS_OFFHAND_MULT, ROGUE_TWIN_FANGS_INSTAKILL_MULT,
     ROGUE_SHADOW_STEP_UNLOCK_LEVEL, ROGUE_SHADOW_STEP_STAMINA_COST,
     ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
+    ROGUE_TRAP_MASTERY_UNLOCK_LEVEL, ROGUE_TRAP_MASTERY_DAMAGE_MULT,
+    ROGUE_TRAP_MASTERY_EXTRA_ROUNDS, ROGUE_TRAP_MASTERY_PENALTY_DIVISOR,
+    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL,
     GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT, GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS, BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT,
@@ -257,6 +260,12 @@ import {
     PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
     calcScrollBonus,
+    RANGER_L35_UNLOCK_LEVEL,
+    RANGER_BEAST_COMPANION_TYPES,
+    RANGER_RICOCHET_CHANCES,
+    RANGER_RICOCHET_DAMAGE_MULT,
+    RANGER_RICOCHET_MP_COST,
+    RANGER_RICOCHET_INSTAKILL_MULT,
 } from '../utils/constants.js';
 import { soundManager } from '../utils/SoundManager.js';
 import {
@@ -1029,6 +1038,55 @@ export class CombatSystem {
         }
     }
 
+    _applyRangedRicochet(shooter, origDmg, favoredTags, initialHitEnemy) {
+        if (!shooter || shooter.classId !== 'ranger' || (shooter.level || 0) < RANGER_L35_UNLOCK_LEVEL) return;
+        if (!Array.isArray(this.aliveHostileEnemies) || this.aliveHostileEnemies.length < 2) return;
+        const alreadyHit = new Set();
+        if (initialHitEnemy) alreadyHit.add(initialHitEnemy.id);
+        for (const chance of RANGER_RICOCHET_CHANCES) {
+            if ((shooter.mana || 0) < RANGER_RICOCHET_MP_COST) break;
+            if (Math.random() >= chance) break;
+            const validTargets = this.aliveHostileEnemies.filter(e => !alreadyHit.has(e.id) && e.health > 0);
+            if (validTargets.length === 0) break;
+            shooter.mana = Math.max(0, (shooter.mana || 0) - RANGER_RICOCHET_MP_COST);
+            const rTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
+            alreadyHit.add(rTarget.id);
+            let rDmg = Math.max(1, Math.round(origDmg * RANGER_RICOCHET_DAMAGE_MULT));
+            let rCrit = false;
+            const rCritChance = RANGED_CRIT_CHANCE + shooter.getRangedCritBonus();
+            if (Math.random() < rCritChance && !this._isCritImmune(rTarget)) { rDmg *= 2; rCrit = true; }
+            const rTargetDef = ENEMY_TYPES[rTarget.type];
+            const rTargetTags = (rTargetDef && rTargetDef.tags) ? rTargetDef.tags : [];
+            const rIsFavored = favoredTags.length > 0 && favoredTags.some(tag => rTargetTags.includes(tag));
+            if (rIsFavored) {
+                const rInstakill = shooter.getFavoredEnemyInstakillChance() * RANGER_RICOCHET_INSTAKILL_MULT;
+                if (rInstakill > 0 && Math.random() < rInstakill) {
+                    if (rTarget.isBoss || rTarget.isMegaBoss || rTarget.isSuperBoss) {
+                        const bDmg = Math.max(1, Math.round(origDmg * 4));
+                        const bDealt = this._damageEnemy(rTarget, bDmg, true, false, 0, true);
+                        this._addLog(`🏹 Ricochet! ${shooter.name}'s arrow strikes ${this._eName(rTarget)} — Boss resists! (×4: ${bDealt})`);
+                        this._applyWeaponRider(shooter, rTarget, bDealt);
+                        this._applyRangerTotemOnHit(shooter, rTarget, bDealt, 'ranged');
+                        if (rTarget.health <= 0) { this._addLog(`${this._eName(rTarget)} is defeated!`); this._checkHunterMarkKill(rTarget); }
+                    } else {
+                        rTarget.health = 0;
+                        if (!rTarget._deathHandled) { rTarget._deathHandled = true; this._onEnemyDeath(rTarget); }
+                        this._addLog(`🏹 Ricochet LETHAL SHOT on ${this._eName(rTarget)}! (Favored Enemy)`);
+                        this._checkHunterMarkKill(rTarget);
+                    }
+                    continue;
+                }
+            }
+            const rDealt = this._damageEnemy(rTarget, rDmg, rIsFavored, false, 0, true);
+            const rCritStr = rCrit ? ' 💥 CRIT!' : '';
+            const rFavStr = rIsFavored ? ' [Favored]' : '';
+            this._addLog(`🏹 Ricochet! ${shooter.name}'s arrow strikes ${this._eName(rTarget)} for ${rDealt}!${rCritStr}${rFavStr}`);
+            this._applyWeaponRider(shooter, rTarget, rDealt);
+            this._applyRangerTotemOnHit(shooter, rTarget, rDealt, 'ranged');
+            if (rTarget.health <= 0) { this._addLog(`${this._eName(rTarget)} is defeated!`); this._checkHunterMarkKill(rTarget); }
+        }
+    }
+
     _applyMonkAvatarOnHit(monk, enemy, dealt, isQuivering = false) {
         if (!monk || monk.classId !== 'monk' || monk.level < MONK_AVATAR_UNLOCK_LEVEL) return;
         if (!monk.avatarActive || isQuivering || !enemy || enemy.health <= 0 || dealt <= 0) return;
@@ -1741,6 +1799,7 @@ export class CombatSystem {
 
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
         this._checkHunterMarkKill(targetEnemy);
+        this._applyRangedRicochet(m, dmg, favoredTags, targetEnemy);
 
         // Ranger extra shots — +1 per 5 levels. Each shot pays stamina,
         // rolls fresh damage + crit independently. Retargets if dead.
@@ -1797,6 +1856,7 @@ export class CombatSystem {
             this._applyWeaponRider(m, curT, sDealt);
             this._applyRangerTotemOnHit(m, curT, sDealt, 'ranged');
             if (curT.health <= 0) { this._addLog(`${sTargetName} is defeated!`); this._checkHunterMarkKill(curT); }
+            this._applyRangedRicochet(m, sdmg, favoredTags, curT);
         }
 
         // Quickstep Song haste: one extra ranged shot (explosive arrows is a separate function, unaffected)
@@ -1816,6 +1876,7 @@ export class CombatSystem {
                 this._applyWeaponRider(m, _qsrTarget, _qsrDealt);
                 this._applyRangerTotemOnHit(m, _qsrTarget, _qsrDealt, 'ranged');
                 if (_qsrTarget.health <= 0) this._addLog(`${this._eName(_qsrTarget)} is defeated!`);
+                this._applyRangedRicochet(m, _qsrDmg, favoredTags, _qsrTarget);
             }
         }
 
@@ -2642,8 +2703,12 @@ export class CombatSystem {
 
         if (!m.removeItem('captured_trap', 1)) return;
 
-        const raw = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(this._rollPlayerMeleeDamage(m) * 2)), 'melee');
-        this._addLog(`🪤 ${m.name} springs a recovered trap across the battlefield!`);
+        const isMastery = m.level >= ROGUE_TRAP_MASTERY_UNLOCK_LEVEL;
+        const dmgMult   = isMastery ? 2 * ROGUE_TRAP_MASTERY_DAMAGE_MULT : 2;
+        const dotRounds = ROGUE_TRAP_DOT_ROUNDS + (isMastery ? ROGUE_TRAP_MASTERY_EXTRA_ROUNDS : 0);
+
+        const raw = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(this._rollPlayerMeleeDamage(m) * dmgMult)), 'melee');
+        this._addLog(`🪤 ${m.name} springs a recovered trap${isMastery ? ' (Trap Mastery!)' : ''} across the battlefield!`);
         for (const enemy of [...targets]) {
             if (!enemy || enemy.health <= 0) continue;
             const tags = this._getEnemyTags(enemy);
@@ -2659,14 +2724,38 @@ export class CombatSystem {
                 enemy.activeEffects.push({
                     type: 'rogue_trap_dot',
                     damage: dotDamage,
-                    rounds: ROGUE_TRAP_DOT_ROUNDS,
+                    rounds: dotRounds,
+                    rogueLevel: isMastery ? m.level : undefined,
                 });
-                this._addLog(`    🪤 Wounding mechanism: ${dotDamage}/round for ${ROGUE_TRAP_DOT_ROUNDS} rounds.`);
+                this._addLog(`    🪤 Wounding mechanism: ${dotDamage}/round for ${dotRounds} rounds${isMastery ? ' + random effect each tick' : ''}.`);
             }
             if (enemy.health <= 0) this._addLog(`${this._eName(enemy)} is defeated!`);
         }
 
         this._advancePlayerTurn();
+    }
+
+    /**
+     * L35 Trap Mastery: applies a random effect on each DoT tick.
+     * Called from _tickEnemyEffects when fx.rogueLevel is set.
+     */
+    _applyTrapMasteryProc(enemy, rogueLevel) {
+        const penalty = Math.floor(rogueLevel / ROGUE_TRAP_MASTERY_PENALTY_DIVISOR);
+        const roll    = Math.floor(Math.random() * 4);
+        const eName   = this._eName(enemy);
+        if (roll === 0) {
+            if (this._tryStunEnemy(enemy)) this._addLog(`🪤 Trap Mastery: ${eName} is stunned!`);
+        } else if (roll === 1) {
+            if (this._tryHoldEnemy(enemy)) this._addLog(`🪤 Trap Mastery: ${eName} is held!`);
+        } else if (roll === 2) {
+            if (!Array.isArray(enemy.activeEffects)) enemy.activeEffects = [];
+            enemy.activeEffects.push({ type: 'trap_mastery_atk_pen', damageBonus: -penalty, rounds: 2 });
+            this._addLog(`🪤 Trap Mastery: ${eName} suffers −${penalty} attack penalty!`);
+        } else {
+            if (!Array.isArray(enemy.activeEffects)) enemy.activeEffects = [];
+            enemy.activeEffects.push({ type: 'trap_mastery_def_pen', defenseBonus: -penalty, rounds: 2 });
+            this._addLog(`🪤 Trap Mastery: ${eName} suffers −${penalty} defense penalty!`);
+        }
     }
 
     clericHeal(targetMember) {
@@ -7291,6 +7380,215 @@ export class CombatSystem {
                 const alive = this.aliveHostileEnemies;
                 if (alive.length === 0) break;
                 _bearMaul(alive[Math.floor(Math.random() * alive.length)]);
+            }
+            return;
+        }
+
+        // ── Beast Companion attacks (Ranger L35 Beast Mastery) ────────────────
+        if (beastKind === 'bc_dire_wolf') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const numAttacks = Math.max(1, Math.floor(rl / 10));
+            const bleedRounds = Math.max(1, Math.floor(rl / 6));
+            const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            for (let i = 0; i < numAttacks; i++) {
+                if (t.health <= 0) break;
+                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+                this._addLog(`🐺 ${m.name} bites ${this._eName(t)} for ${dealt}!`);
+                const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
+                if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
+                    t.activeEffects = t.activeEffects || [];
+                    t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
+                    this._addLog(`🟥 ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
+                }
+            }
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        if (beastKind === 'bc_cave_bear') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const numAttacks = Math.max(1, Math.floor(rl / 10));
+            const bleedRounds = Math.max(1, Math.floor(rl / 6));
+            const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            for (let i = 0; i < numAttacks; i++) {
+                if (t.health <= 0) break;
+                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+                if (Math.random() < 0.5) {
+                    // Claw: bleed
+                    this._addLog(`🐻 ${m.name} claws ${this._eName(t)} for ${dealt}!`);
+                    const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
+                    if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
+                        t.activeEffects = t.activeEffects || [];
+                        t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
+                        this._addLog(`🟥 ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
+                    }
+                } else {
+                    // Bite: hold chance = rl%
+                    this._addLog(`🐻 ${m.name} bites ${this._eName(t)} for ${dealt}!`);
+                    if (t.health > 0 && Math.random() < rl / 100) {
+                        if (this._tryHoldEnemy(t)) {
+                            t.stunned = false;
+                            t.webbedRounds = Math.max(t.webbedRounds || 0, 2);
+                            this._addLog(`🐻 ${this._eName(t)} is held in the bear's jaws! (2 rounds)`);
+                        }
+                    }
+                }
+            }
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        if (beastKind === 'bc_roc') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const numAttacks = Math.max(1, Math.floor(rl / 10));
+            const critChance = RANGED_CRIT_CHANCE + (ranger ? ranger.getRangedCritBonus() : 0);
+            const critMult = 4 + rl * 0.02;
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            for (let i = 0; i < numAttacks; i++) {
+                if (t.health <= 0) break;
+                let dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 8);
+                const isCrit = Math.random() < critChance && !this._isCritImmune(t);
+                if (isCrit) dmg = Math.round(dmg * critMult);
+                const dealt = this._damageSummonEnemy(t, dmg);
+                const critLabel = isCrit ? ` 💥 CRIT! (×${critMult.toFixed(1)})` : '';
+                this._addLog(`🦅 ${m.name} dives on ${this._eName(t)} for ${dealt}!${critLabel}`);
+            }
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        if (beastKind === 'bc_sabre_tooth') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const numAttacks = Math.max(1, Math.floor(rl / 10));
+            const bleedRounds = Math.max(1, Math.floor(rl / 6));
+            const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
+            const instakillImmune = ['undead', 'elemental', 'construct', 'incorporeal', 'plant'];
+            const instakillChance = Math.floor(rl / 3) / 100;
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            for (let i = 0; i < numAttacks; i++) {
+                if (t.health <= 0) break;
+                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+                if (Math.random() < 0.5) {
+                    // Claw: bleed
+                    this._addLog(`🐯 ${m.name} claws ${this._eName(t)} for ${dealt}!`);
+                    const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
+                    if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
+                        t.activeEffects = t.activeEffects || [];
+                        t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
+                        this._addLog(`🟥 ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
+                    }
+                } else {
+                    // Bite: instakill check
+                    this._addLog(`🐯 ${m.name} bites ${this._eName(t)} for ${dealt}!`);
+                    if (t.health > 0 && instakillChance > 0) {
+                        const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
+                        const isImmune = tTags.some(tag => instakillImmune.includes(tag));
+                        if (!isImmune && Math.random() < instakillChance) {
+                            if (t.isBoss || t.isMegaBoss || t.isSuperBoss) {
+                                const bDmg = Math.max(1, Math.round(dmg * 4));
+                                const bDealt = this._damageSummonEnemy(t, bDmg);
+                                this._addLog(`🐯 Boss resists the killing bite! (×4: ${bDealt})`);
+                            } else {
+                                t.health = 0;
+                                if (!t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
+                                this._addLog(`🐯 ${m.name}'s KILLING BITE slays ${this._eName(t)}!`);
+                            }
+                        }
+                    }
+                }
+            }
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        if (beastKind === 'bc_megaconda') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const holdRounds = Math.max(1, Math.floor(rl / 5));
+            const baseDmgMult = 3 + Math.floor(rl / 10);
+            const t = targets[Math.floor(Math.random() * targets.length)];
+            const baseDmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+            const constrictDmg = Math.max(1, Math.round(baseDmg * baseDmgMult));
+            const dealt = this._damageSummonEnemy(t, constrictDmg, false, false, { contactAttacker: m });
+            this._addLog(`🐍 ${m.name} constricts ${this._eName(t)} for ${dealt}! (${baseDmgMult}× base)`);
+            if (t.health > 0) {
+                // Try hold for holdRounds
+                const held = this._tryHoldEnemy(t);
+                if (held) {
+                    t.stunned = false;
+                    t.webbedRounds = Math.max(t.webbedRounds || 0, holdRounds);
+                    this._addLog(`🐍 ${this._eName(t)} is CONSTRICTED for ${holdRounds} rounds! Escalating crush DoT begins!`);
+                    t.activeEffects = t.activeEffects || [];
+                    t.activeEffects.push({ type: 'megaconda_constrict', baseDamage: baseDmg, rounds: holdRounds, mcTickNum: 0 });
+                } else {
+                    this._addLog(`🐍 ${this._eName(t)} wrenches free of the coils!`);
+                }
+            }
+            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            return;
+        }
+
+        if (beastKind === 'bc_megaloceros') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const numTargets = Math.max(1, Math.floor(rl / 5));
+            const dmgMult = 1 + rl * 0.02;
+            const alive = this.aliveHostileEnemies.slice();
+            const chargeTargets = alive.length <= numTargets ? alive : alive.sort(() => Math.random() - 0.5).slice(0, numTargets);
+            this._addLog(`🦌 ${m.name} charges into the fray!`);
+            for (const ct of chargeTargets) {
+                if (ct.health <= 0) continue;
+                const baseDmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dmg = Math.max(1, Math.round(baseDmg * dmgMult));
+                const dealt = this._damageSummonEnemy(ct, dmg, false, false, { contactAttacker: m });
+                this._addLog(`  🦌 ${m.name} smashes ${this._eName(ct)} for ${dealt}!`);
+                if (ct.health > 0) {
+                    if (this._tryHoldEnemy(ct)) {
+                        this._addLog(`  🦌 ${this._eName(ct)} is knocked prone! (1 round)`);
+                    }
+                }
+                if (ct.health <= 0) this._addLog(`  ${this._eName(ct)} is defeated!`);
+            }
+            return;
+        }
+
+        if (beastKind === 'bc_sasquatch') {
+            const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
+            const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
+            const numAttacks = Math.max(1, Math.floor(rl / 6));
+            const dmgMult = 1 + rl * 0.02;
+            const stunChance = Math.min(0.95, 0.20 + Math.floor(rl / 3) / 100);
+            for (let i = 0; i < numAttacks; i++) {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) break;
+                const isBoulder = Math.random() < 0.5;
+                const at = isBoulder
+                    ? alive[Math.floor(Math.random() * alive.length)]
+                    : (targets[0] && targets[0].health > 0 ? targets[0] : alive[0]);
+                if (!at || at.health <= 0) continue;
+                const baseDmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dmg = Math.max(1, Math.round(baseDmg * dmgMult));
+                const dealt = this._damageSummonEnemy(at, dmg, false, false, isBoulder ? undefined : { contactAttacker: m });
+                if (isBoulder) {
+                    this._addLog(`🦍 ${m.name} hurls a boulder at ${this._eName(at)} for ${dealt}!`);
+                } else {
+                    this._addLog(`🦍 ${m.name} punches ${this._eName(at)} for ${dealt}!`);
+                }
+                if (at.health > 0 && Math.random() < stunChance) {
+                    if (this._tryStunEnemy(at)) {
+                        this._addLog(`⚡ ${this._eName(at)} is stunned!`);
+                    }
+                }
+                if (at.health <= 0) this._addLog(`${this._eName(at)} is defeated!`);
             }
             return;
         }
@@ -13605,6 +13903,10 @@ export class CombatSystem {
                     if (fx.type === 'burn' && Array.isArray(typeDef.tags) && typeDef.tags.includes('plant')) tickDmg *= 2;
                     e.health = Math.max(0, e.health - tickDmg);
                     this._addLog(`${DOT_TYPES[fx.type]}: ${this._eName(e)} suffers ${tickDmg} damage!`);
+                    // Trap Mastery (L35): every tick triggers a random debuff effect
+                    if (fx.type === 'rogue_trap_dot' && fx.rogueLevel && e.health > 0) {
+                        this._applyTrapMasteryProc(e, fx.rogueLevel);
+                    }
                     if (e.health <= 0) {
                         this._addLog(`${this._eName(e)} is consumed by the ${fx.type.replace(/_/g, ' ')}!`);
                         if (!e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
@@ -13669,6 +13971,20 @@ export class CombatSystem {
                         this._addLog(`${this._eName(e)} collapses from the Quivering Palm!`);
                         break;
                     }
+                }
+            }
+
+            // Mega-conda escalating crush DoT
+            const megaCondaDoT = effects.find(fx => fx && fx.type === 'megaconda_constrict' && fx.rounds > 0);
+            if (megaCondaDoT && e.health > 0) {
+                const tickNum = megaCondaDoT.mcTickNum || 0;
+                const tickDmg = Math.max(1, Math.floor(megaCondaDoT.baseDamage * (1 + 0.5 * tickNum)));
+                e.health = Math.max(0, e.health - tickDmg);
+                megaCondaDoT.mcTickNum = tickNum + 1;
+                this._addLog(`🐍 Constrict: ${this._eName(e)} is crushed for ${tickDmg} damage! (×${(1 + 0.5 * tickNum).toFixed(1)})`);
+                if (e.health <= 0) {
+                    this._addLog(`${this._eName(e)} is crushed to death!`);
+                    if (!e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
                 }
             }
 
@@ -13946,6 +14262,18 @@ export class CombatSystem {
             items.push({ itemId: guaranteedLeg, quantity: 1 });
         }
 
+        // Rogue Extra Loot (L35+): each living L35+ rogue adds rogueLevel% gold (additive)
+        const _extraLootRogues = this.party.filter(
+            m => !m.isSummoned && m.health > 0 && m.classId === 'rogue' && m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
+        );
+        if (_extraLootRogues.length > 0 && totalGold > 0) {
+            const _extraPct  = _extraLootRogues.reduce((s, m) => s + m.level, 0);
+            const _extraGold = Math.floor(totalGold * _extraPct / 100);
+            const _rNames    = _extraLootRogues.map(m => m.name).join(' & ');
+            totalGold += _extraGold;
+            this._addLog(`🪙 Extra Loot (${_rNames}): +${_extraPct}% gold bonus! (+${_extraGold})`);
+        }
+
         this.loot = { gold: totalGold, items };
 
         if (totalGold > 0) this._addLog(`Found ${totalGold} gold!`);
@@ -14190,6 +14518,8 @@ export class CombatSystem {
                 && m.summonStats
                 && m.summonStats.gaseousForm;
             if (isGaseousVampire) continue;
+            // Beast companions persist after death for gold revival
+            if (m.isPersistent && m.summonStats && m.summonStats.isBeastCompanion) continue;
             // Slime split: generation-0 slimes spawn a mini at 50% HP on death
             if (SLIME_PRESETS[m.summonType]
                 && m.summonStats

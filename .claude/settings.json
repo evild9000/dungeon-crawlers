@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(node -e ' *)",
-      "Bash(not exist *)"
+      "Bash(not exist *)",
+      "Bash(node --check src/ui/BeastMasteryUI.js)"
     ],
     "additionalDirectories": [
       "c:\\Users\\evild\\.claude\\projects\\c--Users-evild-OneDrive-Desktop-Game-test"

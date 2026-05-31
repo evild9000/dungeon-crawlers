@@ -93,6 +93,8 @@ import {
     ROGUE_TWIN_FANGS_UNLOCK_LEVEL, ROGUE_TWIN_FANGS_OFFHAND_MULT, ROGUE_TWIN_FANGS_INSTAKILL_MULT,
     ROGUE_SHADOW_STEP_UNLOCK_LEVEL, ROGUE_SHADOW_STEP_STAMINA_COST,
     ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
+    ROGUE_TRAP_MASTERY_UNLOCK_LEVEL, ROGUE_TRAP_MASTERY_EXTRA_ROUNDS,
+    ROGUE_TRAP_MASTERY_PENALTY_DIVISOR, ROGUE_EXTRA_LOOT_UNLOCK_LEVEL,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
     MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
@@ -158,6 +160,11 @@ import {
     PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL,
     PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL,
     PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
+    RANGER_L35_UNLOCK_LEVEL,
+    RANGER_RICOCHET_CHANCES,
+    RANGER_RICOCHET_MP_COST,
+    RANGER_BEAST_COMPANION_TYPES,
+    RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -526,7 +533,15 @@ export class CombatUI {
                     },
                     rogue_trap_dot: {
                         icon: '🪤', label: 'Trap Wound', bg: 'rgba(150,100,30,0.9)',
-                        tip: (fx) => 'Trap Wound: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                        tip: (fx) => 'Trap Wound: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left' + (fx.rogueLevel ? ' (Mastery: random effect each tick)' : '')
+                    },
+                    trap_mastery_atk_pen: {
+                        icon: '🪤', label: 'Trap: −Atk', bg: 'rgba(120,60,0,0.9)',
+                        tip: (fx) => 'Trap Mastery: −' + Math.abs(fx.damageBonus||0) + ' to attacks — ' + fx.rounds + ' rds left'
+                    },
+                    trap_mastery_def_pen: {
+                        icon: '🪤', label: 'Trap: −Def', bg: 'rgba(80,40,0,0.9)',
+                        tip: (fx) => 'Trap Mastery: −' + Math.abs(fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
                     },
                     mummy_rot: {
                         icon: '🟤', label: 'Rotting', bg: 'rgba(110,55,0,0.9)',
@@ -599,6 +614,10 @@ export class CombatUI {
                     wasting_curse: {
                         icon: '\u{1F56F}\uFE0F', label: 'Wasting', bg: 'rgba(80,0,20,0.95)',
                         tip: (fx) => 'Wasting Curse: ' + Math.round((fx.pct || 0.01) * 100) + '% current HP this round — ' + fx.rounds + ' rds left'
+                    },
+                    megaconda_constrict: {
+                        icon: "🐍", label: "Constricted", bg: "rgba(20,100,20,0.95)",
+                        tip: (fx) => "Mega-conda Constrict: " + Math.max(1, Math.floor((fx.baseDamage||1) * (1 + 0.5 * (fx.mcTickNum||0)))) + " crush dmg next tick (escalating) — " + fx.rounds + " rds left"
                     }
                 };
 
@@ -1156,15 +1175,40 @@ export class CombatUI {
                 const trapCount = (m.inventory || []).reduce((sum, item) =>
                     sum + (item && item.itemId === 'captured_trap' ? item.quantity || 0 : 0), 0);
                 const canTrap = trapCount > 0 && this.combat.aliveHostileEnemies.length > 0;
-                const trapBtn = this._addBtn(`🪤 Spring Trap (${trapCount})`, canTrap, () => this.combat.rogueSetTrap());
+                const isMastery = m.level >= ROGUE_TRAP_MASTERY_UNLOCK_LEVEL;
+                const masteryDotRounds = ROGUE_TRAP_DOT_ROUNDS + ROGUE_TRAP_MASTERY_EXTRA_ROUNDS;
+                const masteryPenalty   = Math.floor(m.level / ROGUE_TRAP_MASTERY_PENALTY_DIVISOR);
+                const trapBtn = this._addBtn(`🪤 Spring Trap (${trapCount})${isMastery ? ' ✦' : ''}`, canTrap, () => this.combat.rogueSetTrap());
                 trapBtn.classList.add('combat-special-btn');
                 trapBtn.title = [
                     `Rogue L${ROGUE_TRAP_UNLOCK_LEVEL}: Spring Captured Trap.`,
                     'Consumes one Captured Trap from this rogue.',
-                    'Hits ALL hostile monsters for melee-type damage equal to twice a normal rogue melee roll.',
-                    `Applies a trap wound DoT for ${Math.round(ROGUE_TRAP_DOT_FRACTION * 100)}% of initial damage per round for ${ROGUE_TRAP_DOT_ROUNDS} rounds; newer trap wounds overwrite older ones.`,
+                    isMastery
+                        ? `L${ROGUE_TRAP_MASTERY_UNLOCK_LEVEL} Trap Mastery: hits ALL enemies for ×4 base melee damage (doubled again).`
+                        : 'Hits ALL hostile monsters for melee-type damage equal to twice a normal rogue melee roll.',
+                    isMastery
+                        ? `Trap Mastery DoT: ${Math.round(ROGUE_TRAP_DOT_FRACTION * 100)}% of initial damage/round for ${masteryDotRounds} rounds.`
+                        : `Applies a trap wound DoT for ${Math.round(ROGUE_TRAP_DOT_FRACTION * 100)}% of initial damage per round for ${ROGUE_TRAP_DOT_ROUNDS} rounds.`,
+                    isMastery
+                        ? `Every DoT tick triggers one random effect: stun (1 rd), hold (1 rd), −${masteryPenalty} attack, or −${masteryPenalty} defense. Normal resistances apply to stun/hold.`
+                        : '',
                     'Incorporeal enemies are immune.',
                     trapCount <= 0 ? 'No Captured Traps in this rogue inventory.' : '',
+                ].filter(Boolean).join('\n');
+            }
+
+            // L35 Extra Loot passive display
+            if (m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL) {
+                const goldPct = m.level;
+                const elBtn = this._addBtn(`🪙 Extra Loot (+${goldPct}% gold)`, false, null);
+                elBtn.classList.add('combat-special-btn');
+                elBtn.style.cssText += '; background: linear-gradient(135deg,#4a3800,#7a5c00); color:#ffd700; opacity:0.85; cursor:default;';
+                elBtn.title = [
+                    `Rogue L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL}: Extra Loot (passive).`,
+                    `${m.name} adds +${goldPct}% to all gold found at the end of combat.`,
+                    'Multiple rogues are additive (three L35 rogues = +105% gold).',
+                    'Applies to all gold including boss multipliers and statue-event bonuses.',
+                    'Only living rogues contribute at the end of combat.',
                 ].filter(Boolean).join('\n');
             }
 
@@ -1778,6 +1822,60 @@ export class CombatUI {
                 blActive ? `Active — ${blBeastCount} Beastlord beast(s) alive. Total upkeep: ${blTotalUpkeep} MP/round.` : 'Not active.',
                 !blCanActivate && !blActive ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');
+        }
+
+        // Ranger L35: Ricochet Shot passive info
+        if (m.classId === 'ranger' && m.level >= RANGER_L35_UNLOCK_LEVEL) {
+            const ricBtn = this._addBtn(`🏹 Ricochet Shot (passive)`, false, null);
+            ricBtn.classList.add('combat-special-btn');
+            ricBtn.style.cssText += '; background:linear-gradient(135deg,#1a2a0a,#2e4a10);color:#b8e870;opacity:0.85;cursor:default;';
+            const ricChances = RANGER_RICOCHET_CHANCES.map((c, i) => `${Math.round(c * 100)}%`).join('→');
+            ricBtn.title = [
+                `Ranger L${RANGER_L35_UNLOCK_LEVEL}: Ricochet Shot (passive, always active).`,
+                `Each normal ranged arrow has a 50% chance to ricochet to a random other enemy for 50% damage.`,
+                `Chain chances: ${ricChances} (up to 6 additional hits per arrow).`,
+                `Each ricochet costs ${RANGER_RICOCHET_MP_COST} MP — chain halts if ranger has insufficient mana.`,
+                'Ricochets can crit at normal crit chance. Can instakill favored enemies at 50% of normal instakill chance.',
+                'Applies weapon riders and totem effects on every ricochet hit.',
+                'Each arrow tracked independently — same arrow never hits the same target twice per chain.',
+                'Does NOT apply to Explosive Arrow attacks.',
+            ].filter(Boolean).join('\n');
+        }
+
+        // Ranger L35: Beast companion status in combat
+        if (m.classId === 'ranger' && m.level >= RANGER_L35_UNLOCK_LEVEL) {
+            const companion = Array.isArray(this.combat.party)
+                ? this.combat.party.find(p => p.isSummoned && p.isPersistent && p.summonStats && p.summonStats.isBeastCompanion && p.summonStats.summonerId === m.id)
+                : null;
+            if (companion) {
+                const bdef = RANGER_BEAST_COMPANION_TYPES[companion.summonStats.beastTypeId];
+                const alive = companion.health > 0;
+                const icon = bdef ? bdef.icon : '🐾';
+                const bcLabel = alive
+                    ? `${icon} ${companion.name} (${companion.health}/${companion.maxHealth} HP)`
+                    : `${icon} ${companion.name} — Dead`;
+                const bcBtn = this._addBtn(bcLabel, false, null);
+                bcBtn.classList.add('combat-special-btn');
+                bcBtn.style.cssText += alive
+                    ? '; background:linear-gradient(135deg,#122010,#1e3a14);color:#90d870;opacity:0.85;cursor:default;'
+                    : '; background:linear-gradient(135deg,#250c0c,#3a1010);color:#d87070;opacity:0.85;cursor:default;';
+                const reviveCost = m.level * RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV;
+                bcBtn.title = alive
+                    ? [
+                        `Beast Companion: ${bdef ? bdef.name : companion.name}.`,
+                        bdef ? bdef.description : '',
+                        `HP: ${companion.health}/${companion.maxHealth}. If slain, revive for ${reviveCost} gold out of combat [P].`,
+                    ].filter(Boolean).join('\n')
+                    : [
+                        `Beast Companion: ${bdef ? bdef.name : companion.name} — has fallen in combat.`,
+                        `Revive out of combat for ${reviveCost} gold by pressing [P].`,
+                    ].filter(Boolean).join('\n');
+            } else {
+                const bcBtn = this._addBtn(`🐾 No Beast Companion bonded — [P] to select`, false, null);
+                bcBtn.classList.add('combat-special-btn');
+                bcBtn.style.cssText += '; background:#111a0a;color:#7ab870;opacity:0.75;cursor:default;';
+                bcBtn.title = `Press [P] out of combat to bond with a beast companion (Ranger L${RANGER_L35_UNLOCK_LEVEL} Beast Mastery).`;
+            }
         }
 
         // Bard: AoE Disrupt (once per combat)

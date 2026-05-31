@@ -34,6 +34,9 @@ import {
     VK_SWARM_HP_MULT, VK_SWARM_DEFENSE_PER_LEVEL,
     WARLOCK_DEMON_TYPES,
     ENEMY_TYPES,
+    RANGER_BEAST_MASTERY_HEALTH_MULT,
+    RANGER_BEAST_MASTERY_STAT_MULT,
+    RANGER_BEAST_COMPANION_TYPES,
 } from '../utils/constants.js';
 
 // ────────────────────────────────────────────
@@ -959,5 +962,61 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
             };
         default:
             return rollBeastStats('bear', rangerLevel);
+    }
+}
+
+/**
+ * Build stat block for a beast companion (L35 Ranger Beast Mastery).
+ * melee/ranged stat = rangerLevel×2, defense = rangerLevel×2, health = rangerMaxHealth×1.5
+ * @param {object} ranger — PartyMember
+ * @param {string} beastTypeId — key in RANGER_BEAST_COMPANION_TYPES
+ */
+export function buildBeastCompanionStats(ranger, beastTypeId) {
+    const def = RANGER_BEAST_COMPANION_TYPES[beastTypeId];
+    if (!def) throw new Error(`Unknown beast companion type: ${beastTypeId}`);
+    const rl = ranger.level || 1;
+    const stat = rl * RANGER_BEAST_MASTERY_STAT_MULT;
+    const maxHp = Math.max(1, Math.floor((ranger.maxHealth || 1) * RANGER_BEAST_MASTERY_HEALTH_MULT));
+    return {
+        maxHealth:  maxHp,
+        maxStamina: 0,
+        maxMana:    0,
+        meleeMin:   stat,
+        meleeMax:   stat * 2,
+        rangedMin:  stat,
+        rangedMax:  stat * 2,
+        defense:    stat,
+        beastKind:  def.beastKind,
+        beastTypeId,
+        summonerId: ranger.id,
+        isBeastCompanion: true,
+        rangerLevel: rl,
+    };
+}
+
+/**
+ * Sync every living beast companion in `party` to its owning ranger's current level.
+ * Dead companions are intentionally skipped — they keep their last stats until revived.
+ * @param {import('../entities/PartyMember.js').PartyMember[]} party
+ */
+export function syncBeastCompanionStats(party) {
+    for (const beast of party) {
+        if (!beast.isSummoned || !beast.isPersistent) continue;
+        if (!beast.summonStats || !beast.summonStats.isBeastCompanion) continue;
+        if (beast.health <= 0) continue;
+        const ranger = party.find(m => m.id === beast.summonStats.summonerId && !m.isSummoned);
+        if (!ranger) continue;
+        const newLevel = ranger.level;
+        if (beast.summonStats.rangerLevel === newLevel) continue;
+        const s = buildBeastCompanionStats(ranger, beast.summonStats.beastTypeId);
+        beast.maxHealth          = s.maxHealth;
+        if (beast.health > s.maxHealth) beast.health = s.maxHealth;
+        beast.level              = newLevel;
+        beast.summonStats.meleeMin   = s.meleeMin;
+        beast.summonStats.meleeMax   = s.meleeMax;
+        beast.summonStats.rangedMin  = s.rangedMin;
+        beast.summonStats.rangedMax  = s.rangedMax;
+        beast.summonStats.defense    = s.defense;
+        beast.summonStats.rangerLevel = newLevel;
     }
 }

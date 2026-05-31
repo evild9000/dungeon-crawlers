@@ -2500,18 +2500,123 @@ Note: A player may chose both stun and hold, but chosing one disables selecting 
 
  ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
  
- 
+in progress:
+Here are two new abilities to implement for the warrior class at level 35
+warrior: 
+1. Formation Shield Wall.  Every warrior and squire in formation also add to each others defense and (if using one) shield % block and intercept.  Each warrior and/or squire in the formation add the following to all other formation members' 
+a. defense: +(average level of all formation members/17)
+b. shield block%: +(average level of all formation members/17)% 
+c. warrior defense mode intercept%: +(average level of all formation members/17)% 
+d. warrior defense mode retaliatory strike%: +(average level of all formation members/17)% 
+e. squire opportunity strike chance%: +(average level of all formation members/17)% 
+f. crit chance while information of all members: +(average level of all formation members/17)% 
+The bonuses are added per member, so for example a formation with 4 warriors and 4 squires all level 35 add +2 defense PER MEMBER for a total of +16 defense to all formation members (create a formation defense buff note on the HUD card).  this same formation also adds 2% per formation member(or 16%) to shield block % chance, warrior intercept% chance while in defense mode, retaliatory strike % while in defense mode and squire opportunity strike % chance while the warrior is in defensive mode. It also adds to critical hit chance while in formation mode by the same amount.
+
+2. taunt (free action - toggle passive - cost 1 Stamina/round): makes the warrior more likely to be chosen for a melee, ranged or single target magical attack.  create a new mechanic in the target selection phase of combat that does a check first for taunting warriors.  each warrior taunting has a warrior level% to be chosen over any other target for the attack.  in the case of multiple warriors, the warrior with the most health is checked first, followed by the warrior with the second most health, then third most, etc, until all taunting warriors are checked.  if there are one or more warriors with the same health, the order is random.  Once a warrior is selected for the attack, the monster attacks, but does so at a penalty to their melee, ranged, or single target attack = warrior level/6.  a warrior in defense mode adds 10% to the chance to be selected, and the penalty for the monster's attack is warrior level/4 instead.  
+
+ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
 
 
+confirm:
+1. follow up note.  for Formation Shield Wall bonus, the bonus is only awarded if other warriors also have the Shield Formation Wall ability (they must be level 35+).  Any warrior with this ability automatically counts any personal squires they have active as part of their shield formation.
+
+confirm:
+1. make sure the prismatic sphere check piece of attack resolution order is added to the combat help where it is procssed in the code.  it should be between rogue shadow step and ranger eagle totem deflect
+2. photomancer blur should appear as a HUD buff note for the party members
+
+confirm:
+photomancer illusionary warriors should be treated as constructs, elementals, undead etc when receiving buffs light regen or heals.  they should be exempt
+
+confirm:
+be sure to indicte the enchant level of shields in a characters 'B' inventory screen
+
+confirm:
+in the Simulacra screen 'N' in addition to the powers selected by the photomancer, add a final drop down to select from one of three types of attack: melee, ranged, or magic.  this determines what type of attack the simulacrums attacks do for purposes of certain monster immunities.  it also determine if they are placed in the front or back row (melee attacks go to the front)
+
+confirm:
+1. allow warriors a retaliatory strike when they personally block an attack vs just when they intercept an attack on others.  this is important because the taunt mechanic will pull attacks to the warrior now vs them attackoing the original target.  also allow squires to opportunity strike on these blocks as well.  These expanded shield block abilities are only for warriors level 35 and up.  and should be noted in the warrior class help as a separate ability and expansion to shield blocks.
+
+confirm:
+create a buff note on the characters HUD card when they are invisible - also denoting the type of invisibility
+
+confirm:
+paladin:
+New level 35 abilties 
+1. "Summon Steed". 1/combat. 
+	a. While mounted on steed the paladins regular melee hits do damage +100% + paladin level%. 
+	b. The paladin takes half from melee attacks (code this up in the phase 5 of combat, this goes right by the barbarian rage halving.  add this to the combat help as well. 
+	c. A Steed lasts the entire combat or until paladin dies. 
+	d. costs 100 MP to summon and +10MP/turn to maintain. 
+	e. smites and aoe smites can crit at 20% + (paladin level/2)%.  
+	f. paladin gains +50% max health while mounted (remove on death or end of combat)
+
+2. "Martyr's Covenant"
+a. Free Toggle (8 MP/round). The paladin designates themselves as the Covenant Anchor.
+b. While active: any single hit that would deal more than 30% of a party member's max HP after all defenses and before the final application of damage (this is in phase 6 of the combat right after barbarian temp HP is checked and right before the HP damage is applied) is automatically intercepted by the paladin — this damage transfers directly to the paladin (no roll, always triggers).  for this, the original damage of the hit before personal defense reduction must be preserved.  this is the damage transferred, we preserve the original damage before defenses so that the damage is not reduced twice by two different characters' defense.  For purposes of this action, the paladin will only protect recruited living characters.  the paladin will not save golems, summoned minions of any type, ranger beasts, etc, only recruited characters. 
+c. Any transfered damage received by the paladin is rerouted back through the personal defense checks phase so that they can block it by their shield.  it bypasses interceptors though, warriors cannot intercept covenent transfer damage.  it then must be applied to the paladin, and their buffs, defense and armor may reduce the damage to less than what would be taken by the original recipient
+d. The paladin cannot be killed by Covenant transfer damage — if they would be killed they are instead reduced to 10% of their max HP, at which point the Covenant breaks automatically for the rest of that round (it can be retoggled next round). 
+
+confirm:
+level 35 monk abilities
+1. Kick Trip - 1 heavy rapid kick/10 levels.  single target.  damage = 100% + (monk level x2)%.  can crit (monk level/2)% and stun normally (20%).  each kick has a 33% (+monk level/10) chance to trip the the target prone.  this is a HOLD type attack.  incoporeal are immune to the trip portion.  vermin TAGS are immune (they tend to be small, flying or have many legs or slithery).  slimes are immune as they are blobby.  dragons are immune due to flight/many legs.  beasts have a 50% chance to ignore the effect even if successfully rolled (many have multiple legs also).  Make sure to indicate these immunities and reasons when the trip party fails to affect the target.
+
+2. Ability: Explosive Palm.  Enhancement to Quivering Palm. When a Quivering Palm target has accumulated 3 or more doublings, the monk may spend 20 MP on their turn to Accelerate the damage. Instead of doing the damage that would apply in the current round by adding another stack of regular quivering palm, they jump ahead one round and apply another doubling but end the stack.  Additionally: the burst explosion of internal energy has a 40% chance to stun the target (resisted normally), and the shockwave deals 50% of accelerated damage to all other enemies. Burning the palm this way removes its stack from that target.  
+
+
+todo:
+new level 35 cleric abilities:
+1. AOE Banish. This upgrades and replaces the cleric's former Banish power. It now is an AOE effect.  It can affect all creatures targetable by a banish.  furthermore there is a bonus to the damage equal to (cleric level)% on top of the prior amount. (check what it is now)
+2. Divine Shroud (15 mana per round): Click button to activate.  By maintaining a direct link to their deity the cleric is covered in a protective shroud that reduces all damage from any source by (cleric level/2)% including DoTs.  This shroud's effect is checked and applied before armor+defense.  Furthermore and Cleric slain while the shroud is active has a (cleric level)% chance to be auto-revived at 50% health.  a cleric who fails the revival effect, and dies must reactivate the shroud after being revived by others.
+
+
+todo:
+druid:  
+new level 35 abilities
+1. Nature's Charms - 50 MP to activate (toggle): mass plant and beast charm.  each round it has a (druid level/2)% chance to charm any plant of beast tag.  each is checked separately.  The plant charm is special and bypasses plants normal immunity to charms.  a target that resists 3 times is immune for the rest of the combat.  When a target is charmed it costs the druid 5 mana per turn to maintain the charmed minion.  a druid who runs out of mana releases all charmed minions back to the enemy ranks/
+1a. All charmed plant or beast minions are Bolstered: receiving a (1%/druid level) bonus to damage (this bolster disappears once the charm ends). the charm length = the same as a bard with a +1 round duration
+2. Wither Plants (a magic attack vs all plants, damage = normal magic attack (+200% + druid level%).  druid level/5% chance to instantly slay any non boss/mega boss/super boss.
+
+
+bard: 
+new level 35 abiltiies
+1. Quickstep Song: (100MP) grants a haste ability to the party.  hasted members make 1 extra melee, ranged or single target magic attack.  AOE abilities do not get extra attacks. Only affects all living party members. ignores elementals, golems, undead, spiritual weapons, ilusionary warriors, simulacra.  it doesnt affect backstab or explosive arrows.  only special abilities it affects are: barbarian rage attacks, druid wildshape bear, wolf, eagle or treant attacks, warlock abyss form tentacle attacks.  it affects ranger, druid, vermin keeper summoned beasts, and warlock devils, but not AOE attacks they may have like pixies, pixie princess aoe or pixie queen aoe.  doesnt affect aoe demon powers like pit fiend, hell hound, succubus shriek or others.  lasts entire combat. refreshed each round onto new combatants that meet the qualifications.
+2. Souful Melody (Passive Ability): When a party member dies during combat, the bard may immediately play a brief memorial melody as a free reaction (does not cost the bard's turn, triggers automatically on death). This costs 20 MP and grants all surviving party members +floor(bard level/4) attack and defense for 3 rounds, as the fallen hero's sacrifice inspires the party. Can trigger once per fallen ally per combat.  the bard with the most mana plays the tune, and a bard already engaged in a symphony cannot perform this anthem.  multiple anthems stack in a special manner: the duration is increased by 1 round and the bonuses are increased by 1 attack (melee, ranged and magic) and 1 defense for each fallen ally.  a bard without enough mana cannot play the anthem.
+
+ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
+
+
+
+todo:
+bard: 
+new level 35 abiltiies
+1. Quickstep Song: (100MP) grants a haste ability to the party.  hasted members make 1 extra melee, ranged or single target magic attack.  AOE abilities do not get extra attacks. Only affects all living party members. ignores elementals, golems, undead, spiritual weapons, ilusionary warriors, simulacra.  it doesnt affect backstab or explosive arrows.  only special abilities it affects are: barbarian rage attacks, druid wildshape bear, wolf, eagle or treant attacks, warlock abyss form tentacle attacks.  it affects ranger, druid, vermin keeper summoned beasts, and warlock devils, but not AOE attacks they may have like pixies, pixie princess aoe or pixie queen aoe.  doesnt affect aoe demon powers like pit fiend, hell hound, succubus shriek or others.  lasts entire combat. refreshed each round onto new combatants that meet the qualifications.
+2. Souful Melody (Passive Ability): When a party member dies during combat, the bard may immediately play a brief memorial melody as a free reaction (does not cost the bard's turn, triggers automatically on death). This costs 20 MP and grants all surviving party members +floor(bard level/4) attack and defense for 3 rounds, as the fallen hero's sacrifice inspires the party. Can trigger once per fallen ally per combat.  the bard with the most mana plays the tune, and a bard already engaged in a symphony cannot perform this anthem.  multiple anthems stack in a special manner: the duration is increased by 1 round and the bonuses are increased by 1 attack (melee, ranged and magic) and 1 defense for each fallen ally.  a bard without enough mana cannot play the anthem.
+
+
+
+todo:
+level 35 rogue abilities:
+1. Trap Mastery.  Trap damage is doubled (and therefore the DoT) and duration is extended by 2 rounds.  Furthermore traps have a chance to do one of the following random effects when the DoT damage is processed on the target:
+a. stun 1 round (normal resistances apply to this for monster types and recent stuns)
+b. hold 1 round (normal resistances apply to this for monster types and recent holds)
+c. apply a penalty to offensive melee, ranged or magic/aoe attacks = rogue level/4.  this might require setting a level of the trap = the rogue level so this variable can be checked each round vs traps set by other rogues.
+d. apply a penalty to defense skill = rogue level/4.  this might require setting a level of the trap = the rogue level so this variable can be checked each round vs traps set by other rogues.
+
+2. Extra Loot (passive):  the rogue adds rogue level/2% to any gold obtained at the end.  multiple rogues are additive not multiplicative.  three level 33 rogues add 33+33+33 = 99% more treasure.  
+
+
+ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
 
 
 =========================================================================================
 level 35 ideas:
 
 druid:  
-1. aoe charm toggle: mass plant (bypass normal immunity)/charm beasts: level/2 % chance.  a target that resists 3 times is immune for the rest of the combat.
-1a. Bolster charmed beasts/plants: 1% / level extra damage (this bolster disappears once the charm ends). charm length = bard +1
-2. wither plants (magic attack vs all plants, damage = x2)
+new level 35 abilities
+1. Nature's Charms - 50 MP to activate (toggle): mass plant and beast charm.  each round it has a (druid level/2)% chance to charm any plant of beast tag.  each is checked separately.  The plant charm is special and bypasses plants normal immunity to charms.  a target that resists 3 times is immune for the rest of the combat.  When a target is charmed it costs the druid 5 mana per turn to maintain the charmed minion.  a druid who runs out of mana releases all charmed minions back to the enemy ranks/
+1a. All charmed plant or beast minions are Bolstered: receiving a (1%/druid level) bonus to damage (this bolster disappears once the charm ends). the charm length = the same as a bard with a +1 round duration
+2. Wither Plants (a magic attack vs all plants, damage = normal magic attack (+200% + druid level%).  druid level/5% chance to instantly slay any non boss/mega boss/super boss.
+
 3. thorn spikes/barksin?
 
 warrior: 
@@ -2519,8 +2624,9 @@ warrior:
 2. taunt (free action - toggle passive - cost 1 Stamina/round): makes the warrior more likely to be chosen for a melee, ranged or single target magical attack.  create a new mechanic in the target selection phase of combat that does a check first for taunting warriors.  each warrior taunting has a warrior level% to be chosen over any other target for the attack.  the warrior with the most health is checked first, followed by the warrior with the second most health, then third most, etc, until all taunting warriors are checked.  if there are one or more warriors with the same health, the order is random.  Once a warrior is selected for the attack.  the monster attacks, but does so at a penalty to their melee, ranged, or single target attack = warrior level/6.  a warrior in defense mode adds 10% to the chance to be selected, and then penalty for the monster's attack is warrior level/4 instead.  
 
 cleric: 
-1. the cleric's banish power now is an AOE effect.  It can affect all creatures targetable by a banish.  furthermore there is a bonus to the damage equal to (cleric level)% more.
-2. divine shroud (15 mana per round): By maintaining a direct link to their deity the cleric is covered in a  protective shroud that reduces all damage from any source by (cleric level/2)% from any source, including DoTs.  This shroud effects is checked and applied before armor+defense.  Furthermore and Cleric slain while the shroud is active has a (cleric level)% chance to be auto-revived at 50% health.  
+new level 35 cleric abilities:
+1. AOE Banish. This upgrades and replaces the cleric's former Banish power. It now is an AOE effect.  It can affect all creatures targetable by a banish.  furthermore there is a bonus to the damage equal to (cleric level)% on top of the prior amount. (check what it is now)
+2. Divine Shroud (15 mana per round): Click button to activate.  By maintaining a direct link to their deity the cleric is covered in a protective shroud that reduces all damage from any source by (cleric level/2)% including DoTs.  This shroud's effect is checked and applied before armor+defense.  Furthermore and Cleric slain while the shroud is active has a (cleric level)% chance to be auto-revived at 50% health.  
 
 bard: 
 1. Quickstep Song: haste (+1 melee attacks and ranged attacks to all living, ignores elementals, golems, undead, spiritual weapons).  not to aoe attacks.  not to backstab or explosive arrow.  only special abilities: rage, wildshape attacks. 100 mp.  lasts entire combat. refreshed each round onto new combatants.
@@ -2543,27 +2649,36 @@ necromancer:
 1. take control of undead (charm) - same chances and duration as bard charm
 2. stamina and mana drain - aoe - drains enemies of ST/MP - amount = random amount per target of (necro level/2) to (necro level *2).  undead, constructs, elementals immune.  
 
-paladin: 
-1. Summon Steed. 1/combat while mounted on steed regular melee hits do double damage. take half from melee damage. Steed lasts combat or until paladin dies.  costs 100 MP +10MP to maintain.  smites and aoe smites can crit at 20% + 1/2 paladin level.  paladin gains 50% health while mounted
+paladin:
+New level 35 abilties 
+1. "Summon Steed". 1/combat. 
+	a. While mounted on steed the paladins regular melee hits do damage +100% + paladin level%. 
+	b. The paladin takes half from melee attacks (code this up in the phase 5 of combat, this goes right by the barbarian rage halving.  add this to the combat help as well. 
+	c. A Steed lasts the entire combat or until paladin dies. 
+	d. costs 100 MP to summon and +10MP/turn to maintain. 
+	e. smites and aoe smites can crit at 20% + (paladin level/2)%.  
+	f. paladin gains +50% max health while mounted (remove on death or end of combat)
+
 2. "Martyr's Covenant"
-Theme gap: The paladin protects, smites, and counters — but has no ultimate sacrifice/martyrdom expression, which is core to the paladin archetype.
+a. Free Toggle (8 MP/round). The paladin designates themselves as the Covenant Anchor.
+b. While active: any single hit that would deal more than 30% of a party member's max HP after all defenses and before the final application of damage (this is in phase 6 of the combat right after barbarian temp HP is checked and right before the HP damage is applied) is automatically intercepted by the paladin — this damage transfers directly to the paladin (no roll, always triggers).  for this, the original damage of the hit before personal defense reduction must be preserved.  this is the damage transferred, we preserve the original damage before defenses so that the damage is not reduced twice by two different characters' defense.  For purposes of this action, the paladin will only protect recruited living characters.  the paladin will not save golems, summoned minions of any type, ranger beasts, etc, only recruited characters. 
+c. Any transfered damage received by the paladin is rerouted back through the personal defense checks phase so that they can block it by their shield.  it bypasses interceptors though, warriors cannot intercept covenent transfer damage.  it then must be applied to the paladin, and their buffs, defense and armor may reduce the damage to less than what would be taken by the original recipient
+d. The paladin cannot be killed by Covenant transfer damage — if they would be killed they are instead reduced to 10% of their max HP, at which point the Covenant breaks automatically for the rest of that round (it can be retoggled next round). 
 
-Ability: Free Toggle (8 MP/round). The paladin designates themselves as the Covenant Anchor. While active: any single hit that would deal more than 30% of a party member's max HP is automatically intercepted by the paladin — the excess above 30% transfers directly to the paladin (no roll, always triggers). However, the paladin cannot be killed by Covenant overflow damage — if they would be killed they are instead reduced to 10% or their max HP, at which point the Covenant breaks automatically for that round (it can be restarted next round).  Covenent damage can be blocked by a shield, and passes through all the normal pre-damage defense (including buffs)+ armor as well as steed melee damage reduction.  
 
-Why it works: Distinct from warrior intercept (which is chance-based and partial) — this is guaranteed threshold-based magical protection. It's distinct from Dragonslayer (which is dragon-specific). The "can't die from it but breaks at 1 HP" creates natural balance — the paladin becomes a damage sponge that eventually collapses under sustained pressure. Thematically: the ultimate expression of holy self-sacrifice.
 
 monk: 
-1. Kick Trip - 1 heavy rapid kick/10 levels.  single target.  damage = 100% + monk level x2.  can crit (monk level/2)% and stun normally (20%).  each kick has a 33% chance to trip the the target prone.  this is a HOLD type attack.  incoporeal are immune to the trip portion.  vermin are immune (they tend to be small, flying or have many legs or slithery).  slimes are immune as they are blobby.  dragons are immune due to flight/many legs.  beasts have a 50% chance to ignore the effect even if successfully rolled (many have multiple legs also).  
-2. Theme gap: Quivering Palm is a slow patient kill. The monk has no ability to trade patience for burst, and nothing that creates party synergy.
+level 35 monk abilities
+1. Kick Trip - 1 heavy rapid kick/10 levels.  single target.  damage = 100% + (monk level x2)%.  can crit (monk level/2)% and stun normally (20%).  each kick has a 33% (+monk level/10) chance to trip the the target prone.  this is a HOLD type attack.  incoporeal are immune to the trip portion.  vermin TAGS are immune (they tend to be small, flying or have many legs or slithery).  slimes are immune as they are blobby.  dragons are immune due to flight/many legs.  beasts have a 50% chance to ignore the effect even if successfully rolled (many have multiple legs also).  Make sure to indicate these immunities and reasons when the trip party fails to affect the target.
 
-Ability: Passive enhancement to Quivering Palm. When a Quivering Palm target has accumulated 5 or more doublings, the monk may spend 20 MP on their turn to Accelerate — instantly converting all accumulated doublings into immediate damage this round using the damage that would be applied next round. rather than waiting for the 10th. Additionally: the burst explosion of internal energy has a 40% chance to stun the target (resisted normally), and the shockwave deals 50% of the burst damage to all other enemies. Burning the palm this way removes its stack from that target.  
+2. Ability: Explosive Palm.  Enhancement to Quivering Palm. When a Quivering Palm target has accumulated 3 or more doublings, the monk may spend 20 MP on their turn to Accelerate the damage. Instead of doing the damage that would apply in the current round by adding another stack of regular quivering palm, they jump ahead one round and apply another doubling but end the stack.  Additionally: the burst explosion of internal energy has a 40% chance to stun the target (resisted normally), and the shockwave deals 50% of accelerated damage to all other enemies. Burning the palm this way removes its stack from that target.  
 
 Why it works: Creates a meaningful decision — wait for maximum damage at 10 doublings, or cash out early at 5+ for reliable burst damage plus the stun chance and splash. At 5 doublings you've built 32× the original damage which is already enormous. Adds party-facing value (adjacent splash). Doesn't introduce a new mechanic — builds entirely on the existing Palm system in a way that changes its strategic character.
 
 
 
 rogue:
-1. Trap Mastery.  Trap damage is doubled (and therefore the DoT) and duration is extended by 2 rounds.  Furthermore traps have a chance to do one of the following random effects when the DoT damage is processes on the target:
+1. Trap Mastery.  Trap damage is doubled (and therefore the DoT) and duration is extended by 2 rounds.  Furthermore traps have a chance to do one of the following random effects when the DoT damage is processed on the target:
 a. stun 1 round (normal resistances apply to this for monster types and recent stuns)
 b. hold 1 round (normal resistances apply to this for monster types and recent holds)
 c. apply a penalty to offensive melee, ranged or magic/aoe attacks = rogue level/4.  this might require setting a level of the trap = the rogue level so this variable can be checked each round vs traps set by other rogues.
