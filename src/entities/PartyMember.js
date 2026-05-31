@@ -173,6 +173,11 @@ export class PartyMember {
         this.isRaging = false;   // Barbarian: active rage flag
         this.usedRage = false;   // Barbarian: once-per-combat rage tracker
         this.rageEncourageRounds = 0; // Barbarian L25 party damage aura ramp
+        this.werebearActive = false;  // Barbarian L35: Werebear form active
+        this.werebearUsed = false;    // Barbarian L35: once-per-combat tracker
+        this.werebearHpBonus = 0;
+        this.werebearDefenseBonus = 0;
+        this.odinsRavensTriggered = false; // Barbarian L35: successful proc this combat
         this.fireAuraActive = false; // Paladin: Fire Aura toggle
         this.dragonslayerActive = false; // Paladin L25: Dragonslayer toggle
         this.paladinSteedActive = false; // Paladin L35: mounted combat
@@ -1141,6 +1146,15 @@ export class PartyMember {
         this.isRaging = false;
         this.usedRage = false;
         this.rageEncourageRounds = 0;
+        if (this.werebearHpBonus > 0) {
+            this.maxHealth = Math.max(1, this.maxHealth - this.werebearHpBonus);
+            this.health = Math.min(this.health, this.maxHealth);
+        }
+        this.werebearActive = false;
+        this.werebearUsed = false;
+        this.werebearHpBonus = 0;
+        this.werebearDefenseBonus = 0;
+        this.odinsRavensTriggered = false;
         this.fireAuraActive = false;
         this.dragonslayerActive = false;
         if (this.paladinSteedHpBonus > 0) {

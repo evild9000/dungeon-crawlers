@@ -540,6 +540,7 @@ export class PartyHUD {
 
     _isUndeadOrGolemMember(member) {
         if (!member || !member.isSummoned) return false;
+        if (member.summonStats?.nonLiving) return true;
         if (member.summonStats && member.summonStats.tierId && GOLEM_PRESETS[member.summonType]) return true;
         return UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich';
     }
@@ -1226,6 +1227,10 @@ export class PartyHUD {
             if (encourage) {
                 mkPB('📣', `+${encourage.bonusPct}% DMG`, 'rgba(165,60,20,0.95)',
                     `Barbarian Encouragement: +${encourage.bonusPct}% damage this round.\nSource: ${encourage.sourceName}\nRamp: ${encourage.rounds}/${BARBARIAN_ENCOURAGE_MAX_ROUNDS} rage rounds.`);
+            }
+            if (!member.isSummoned && member.classId === 'barbarian' && member.werebearActive) {
+                mkPB('🐻', 'Werebear', 'rgba(120,70,20,0.95)',
+                    `Werebear active: +50% max/current HP, bonus defense, 10% HP regen/round, and weapon riders suppressed.`);
             }
             const shieldWall = this._getFormationShieldWallState(member, party);
             if (shieldWall) {

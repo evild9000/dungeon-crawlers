@@ -84,6 +84,12 @@ import {
     BARD_SOULFUL_MELODY_DURATION, BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR,
     BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL, BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED,
     BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL,
+    BARBARIAN_WEREBEAR_UNLOCK_LEVEL, BARBARIAN_WEREBEAR_STAMINA_COST,
+    BARBARIAN_WEREBEAR_STAMINA_PER_ROUND, BARBARIAN_WEREBEAR_HP_BONUS_FRAC,
+    BARBARIAN_WEREBEAR_REGEN, BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR,
+    BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL, BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC,
+    BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR,
+    BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL,
     RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL, RANGER_EXPLOSIVE_ARROW_STAMINA_MULT,
     RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT, RANGER_EXPLOSIVE_ARROW_CRIT_MULT,
     ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL, ROGUE_BACKSTAB_BLEED_FRAC,
@@ -1236,7 +1242,7 @@ export class CombatUI {
             }        }
 
         if (m.classId === 'barbarian') {
-            const rageExtraAttacks = Math.floor((m.level || 1) / 3);
+            const rageExtraAttacks = Math.floor((m.level || 1) / 4);
             const rageDisabled = m.usedRage || false;
             const rageLabel = rageDisabled
                 ? '\u{1F534} Rage (used)'
@@ -1262,8 +1268,38 @@ export class CombatUI {
                 m.level >= BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL
                     ? `L${BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL} Blood Frenzy: +${Math.round(BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED * 100)}% melee damage per bleed DoT on target while raging (cap: level×3%).`
                     : null,
+                m.level >= BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL
+                    ? `L${BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL} Odin's Ravens: on death, chance to summon a Valkyrie and revive you once per combat.`
+                    : null,
                 rageDisabled ? 'Already used this combat.' : 'Lasts until end of combat.',
             ].filter(Boolean).join('\n');
+
+            if (m.level >= BARBARIAN_WEREBEAR_UNLOCK_LEVEL) {
+                const werebearDisabled = m.werebearActive || m.werebearUsed || (m.stamina || 0) < BARBARIAN_WEREBEAR_STAMINA_COST;
+                const werebearLabel = m.werebearActive
+                    ? '🐻 Werebear (active)'
+                    : (m.werebearUsed ? '🐻 Werebear (used)' : `🐻 Werebear (-${BARBARIAN_WEREBEAR_STAMINA_COST} ST)`);
+                const werebearBtn = this._addBtn(werebearLabel, !werebearDisabled, () => {
+                    this.combat.barbarianWerebear();
+                    this._refresh();
+                });
+                werebearBtn.classList.add('combat-special-btn');
+                const defBonus = Math.max(1, Math.floor((m.level || 1) / BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR));
+                const bleedChance = Math.round((m.level || 1) * BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL * 100);
+                const bleedRounds = Math.max(1, Math.floor((m.level || 1) / BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR));
+                werebearBtn.title = [
+                    `Barbarian L${BARBARIAN_WEREBEAR_UNLOCK_LEVEL}: Werebear (once per combat).`,
+                    `Costs ${BARBARIAN_WEREBEAR_STAMINA_COST} ST to activate, then ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST each round to sustain.`,
+                    `Gain +${Math.round(BARBARIAN_WEREBEAR_HP_BONUS_FRAC * 100)}% max/current HP and +${defBonus} defense while active.`,
+                    `Regenerates ${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% max HP per round while active.`,
+                    `Melee applies Werebear bleed on hit chance (${bleedChance}%): ${Math.round(BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC * 100)}% of dealt damage per round for ${bleedRounds} round(s).`,
+                    'Weapon elemental riders are suppressed while in Werebear form.',
+                    m.werebearActive ? 'Currently active.' : (m.werebearUsed ? 'Already used this combat.' : ''),
+                    (!m.werebearUsed && !m.werebearActive && (m.stamina || 0) < BARBARIAN_WEREBEAR_STAMINA_COST)
+                        ? `Need ${BARBARIAN_WEREBEAR_STAMINA_COST} stamina (have ${m.stamina || 0}).`
+                        : '',
+                ].filter(Boolean).join('\n');
+            }
 
             // Heroic Deeds (L30)
             if (m.level >= BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL) {

@@ -26,6 +26,11 @@ import {
     NECRO_UNDEAD_MANA_UPKEEP,
     NECRO_DARK_HARVEST_HP_FRAC, NECRO_DARK_HARVEST_ST_FRAC, NECRO_DARK_HARVEST_MANA_FRAC,
     BARBARIAN_RAGE_STAMINA_COST, BARBARIAN_RAGE_HP_REGEN,
+    BARBARIAN_WEREBEAR_UNLOCK_LEVEL, BARBARIAN_WEREBEAR_STAMINA_COST,
+    BARBARIAN_WEREBEAR_STAMINA_PER_ROUND, BARBARIAN_WEREBEAR_HP_BONUS_FRAC,
+    BARBARIAN_WEREBEAR_REGEN, BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR,
+    BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL, BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC,
+    BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR, BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL,
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
     RANGER_SUMMON_MANA_COST,
@@ -204,6 +209,13 @@ import {
     ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE, ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT,
     BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL, BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED,
     BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL,
+    BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL, BARBARIAN_ODINS_RAVENS_BASE_CHANCE,
+    BARBARIAN_ODINS_RAVENS_LEVEL_CHANCE, BARBARIAN_ODINS_RAVENS_MAX_CHANCE,
+    BARBARIAN_ODINS_RAVENS_REVIVE_FRAC, BARBARIAN_VALKYRIE_DEF_PER_LEVEL,
+    BARBARIAN_VALKYRIE_ATK_PER_ROUND_DIVISOR, BARBARIAN_VALKYRIE_DAMAGE_MIN,
+    BARBARIAN_VALKYRIE_DAMAGE_MAX, BARBARIAN_VALKYRIE_DAMAGE_PER_LEVEL,
+    BARBARIAN_VALKYRIE_CRIT_CHANCE, BARBARIAN_VALKYRIE_BLOCK_CHANCE,
+    BARBARIAN_VALKYRIE_MAGIC_AOE_DAMAGE_MULT,
     BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL, BARD_THUNDEROUS_DRUMS_MANA_PER_ROUND,
     BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
     BARD_SYMPHONY_UNLOCK_LEVEL, BARD_SYMPHONY_BASE_MANA_COST, BARD_SYMPHONY_BASE_STA_COST,
@@ -766,6 +778,7 @@ export class CombatSystem {
 
     _isUndeadOrGolemMember(member) {
         if (!member || !member.isSummoned) return false;
+        if (member.summonStats?.nonLiving) return true;
         if (member.summonStats && member.summonStats.tierId && GOLEM_PRESETS[member.summonType]) return true;
         return UNDEAD_TIERS.some(ut => ut.id === member.summonType) || member.summonType === 'demi_lich' || member.summonType === 'corpse_horror';
     }
@@ -781,6 +794,7 @@ export class CombatSystem {
             if (tags.includes('undead') || tags.includes('construct') || tags.includes('elemental')) return false;
         }
         if (member.canBeHealed === false || isShadowSimulacra(member) || this._isIllusionaryWarriorMember(member)) return false;
+        if (member.summonStats?.nonLiving) return false;
         if (member.isLichForm || this._isUndeadOrGolemMember(member) || this._isRiftElemental(member)) return false;
         return true;
     }
@@ -915,7 +929,11 @@ export class CombatSystem {
             fx && (fx.type === 'bleed' || fx.type === 'ranger_totem_bleed')
         );
         const raw = bleeds.length * BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED;
-        return Math.min(raw, barbarian.level * 0.03);
+        let cap = barbarian.level * 0.03;
+        if (barbarian.werebearActive) {
+            cap += (barbarian.level || 1) * BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL;
+        }
+        return Math.min(raw, cap);
     }
 
     _getBarbarianEncourageMultiplier(attacker) {
@@ -1542,9 +1560,14 @@ export class CombatSystem {
             m.tempHp = (m.tempHp || 0) + gain;
         }
 
+        const suppressWeaponRiders = m.classId === 'barbarian' && m.werebearActive;
+
         // Weapon rider proc (fire/acid/poison/lightning/ice) — main-hand then off-hand
-        this._applyWeaponRider(m, targetEnemy, dealt);
-        this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
+        if (!suppressWeaponRiders) {
+            this._applyWeaponRider(m, targetEnemy, dealt);
+            this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
+        }
+        if (m.classId === 'barbarian') this._applyWerebearBleedOnHit(m, targetEnemy, dealt);
         this._applyMonkAvatarOnHit(m, targetEnemy, dealt);
 
         if (targetEnemy.health <= 0) { this._addLog(`${eName} is defeated!`); this._checkHunterMarkKill(targetEnemy); }
@@ -1569,8 +1592,11 @@ export class CombatSystem {
                     dmg = Math.round(dmg * (1 + m.level * 0.005));
                     const d = this._damageEnemy(other, dmg, false, false, 0, false, { contactAttacker: m });
                     this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}! [+${Math.floor(m.level / 2)}% level bonus]`);
-                    this._applyWeaponRider(m, other, d);
-                    this._applyWeaponRider(m, other, d, 'offhand');
+                    if (!suppressWeaponRiders) {
+                        this._applyWeaponRider(m, other, d);
+                        this._applyWeaponRider(m, other, d, 'offhand');
+                    }
+                    if (m.classId === 'barbarian') this._applyWerebearBleedOnHit(m, other, d);
                     this._applyMonkAvatarOnHit(m, other, d);
                     if (other.health <= 0) this._addLog(`${this._eName(other)} is defeated!`);
                 }
@@ -1623,8 +1649,11 @@ export class CombatSystem {
                 if (this._tryStunEnemy(curTarget))
                     this._addLog(`\u26A1 ${swingName} is STUNNED and will skip next turn!`);
             }
-            this._applyWeaponRider(m, curTarget, sDealt);
-            this._applyWeaponRider(m, curTarget, sDealt, 'offhand');
+            if (!suppressWeaponRiders) {
+                this._applyWeaponRider(m, curTarget, sDealt);
+                this._applyWeaponRider(m, curTarget, sDealt, 'offhand');
+            }
+            if (m.classId === 'barbarian') this._applyWerebearBleedOnHit(m, curTarget, sDealt);
             this._applyMonkAvatarOnHit(m, curTarget, sDealt);
             if (curTarget.health <= 0) this._addLog(`${swingName} is defeated!`);
             // Paladin L30 Aura of Righteousness: also heals on iterative attacks
@@ -1657,7 +1686,8 @@ export class CombatSystem {
                 const rageSfx = !hasStamina ? ' (exhausted!)' : '';
                 const _rageBfSuffix = _rageBfPct > 0 ? ` [🩸 Blood Frenzy +${Math.round(_rageBfPct * 100)}%]` : '';
                 this._addLog(`\u{1F534} ${m.name} rage-strikes ${this._eName(targetEnemy)} for ${rageDealt}!${rageSfx}${_rageBfSuffix}`);
-                this._applyWeaponRider(m, targetEnemy, rageDealt);
+                if (!suppressWeaponRiders) this._applyWeaponRider(m, targetEnemy, rageDealt);
+                this._applyWerebearBleedOnHit(m, targetEnemy, rageDealt);
                 // Blood Rage: gain temp HP per rage hit (if stamina OK)
                 if (m.level >= BARBARIAN_BLOOD_RAGE_UNLOCK_LEVEL && hasStamina) {
                     const rGain = Math.max(1, Math.floor(m.maxHealth * BARBARIAN_TEMP_HP_PER_HIT_FRAC));
@@ -1686,7 +1716,8 @@ export class CombatSystem {
             let raLog = `${m.name} strikes ${this._eName(targetEnemy)} for ${raDealt}!${raSuffix}`;
             if (raBfPct > 0) raLog += ` [🩸 Blood Frenzy +${Math.round(raBfPct * 100)}%]`;
             this._addLog(raLog);
-            this._applyWeaponRider(m, targetEnemy, raDealt);
+            if (!suppressWeaponRiders) this._applyWeaponRider(m, targetEnemy, raDealt);
+            if (m.classId === 'barbarian') this._applyWerebearBleedOnHit(m, targetEnemy, raDealt);
             if (targetEnemy.health <= 0) {
                 this._addLog(`${this._eName(targetEnemy)} is defeated!`);
             } else if (m.isRaging) {
@@ -1703,7 +1734,8 @@ export class CombatSystem {
                     if (rrBfPct > 0) rrDmg = Math.max(1, Math.round(rrDmg * (1 + rrBfPct)));
                     const rrDealt = this._damageEnemy(targetEnemy, rrDmg, false, false, 0, false, { contactAttacker: m });
                     this._addLog(`🔴 ${m.name} rage-strikes ${this._eName(targetEnemy)} for ${rrDealt}!${!rrSta ? ' (exhausted!)' : ''}`);
-                    this._applyWeaponRider(m, targetEnemy, rrDealt);
+                    if (!suppressWeaponRiders) this._applyWeaponRider(m, targetEnemy, rrDealt);
+                    this._applyWerebearBleedOnHit(m, targetEnemy, rrDealt);
                     if (targetEnemy.health <= 0) { this._addLog(`${this._eName(targetEnemy)} is defeated!`); break; }
                 }
             }
@@ -1720,8 +1752,11 @@ export class CombatSystem {
                 _qsDmg = this._applyOutgoingDamageBonuses(m, _qsDmg, 'melee');
                 const _qsDealt = this._damageEnemy(_qsTarget, _qsDmg, false, false, 0, false, { contactAttacker: m });
                 this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus strike on ${this._eName(_qsTarget)} for ${_qsDealt}!${_qsExh ? ' (exhausted!)' : ''}`);
-                this._applyWeaponRider(m, _qsTarget, _qsDealt);
-                this._applyWeaponRider(m, _qsTarget, _qsDealt, 'offhand');
+                if (!suppressWeaponRiders) {
+                    this._applyWeaponRider(m, _qsTarget, _qsDealt);
+                    this._applyWeaponRider(m, _qsTarget, _qsDealt, 'offhand');
+                }
+                if (m.classId === 'barbarian') this._applyWerebearBleedOnHit(m, _qsTarget, _qsDealt);
                 if (_qsTarget.health <= 0) this._addLog(`${this._eName(_qsTarget)} is defeated!`);
             }
         }
@@ -2306,6 +2341,133 @@ export class CombatSystem {
         // Rage is a free action — the UI will immediately prompt the player to
         // pick a target and strike. Turn advances after the melee resolves.
         this._notify();
+    }
+
+    _endWerebearForm(m, reason = '') {
+        if (!m || !m.werebearActive) return;
+        if (m.werebearHpBonus > 0) {
+            m.maxHealth = Math.max(1, (m.maxHealth || 1) - m.werebearHpBonus);
+            m.health = Math.min(Math.max(0, m.health || 0), m.maxHealth);
+        }
+        m.werebearActive = false;
+        m.werebearHpBonus = 0;
+        m.werebearDefenseBonus = 0;
+        m.activeEffects = (m.activeEffects || []).filter(fx => !(fx && fx.type === 'werebear_defense'));
+        if (reason) this._addLog(`🐻 ${m.name}'s Werebear form fades${reason}.`);
+    }
+
+    barbarianWerebear() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'barbarian') return;
+        if ((m.level || 1) < BARBARIAN_WEREBEAR_UNLOCK_LEVEL) return;
+        if (m.werebearActive) {
+            this._addLog(`🐻 ${m.name} is already in Werebear form.`);
+            return;
+        }
+        if (m.werebearUsed) {
+            this._addLog(`🐻 ${m.name} has already used Werebear this combat.`);
+            return;
+        }
+        if ((m.stamina || 0) < BARBARIAN_WEREBEAR_STAMINA_COST) {
+            this._addLog(`🐻 ${m.name} needs ${BARBARIAN_WEREBEAR_STAMINA_COST} stamina for Werebear (has ${m.stamina || 0}).`);
+            return;
+        }
+
+        m.stamina = Math.max(0, (m.stamina || 0) - BARBARIAN_WEREBEAR_STAMINA_COST);
+        m.werebearUsed = true;
+        m.werebearActive = true;
+        m.werebearHpBonus = Math.max(1, Math.floor((m.maxHealth || 1) * BARBARIAN_WEREBEAR_HP_BONUS_FRAC));
+        m.maxHealth += m.werebearHpBonus;
+        m.health += m.werebearHpBonus;
+
+        const defBonus = Math.max(1, Math.floor((m.level || 1) / BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR));
+        m.werebearDefenseBonus = defBonus;
+        m.activeEffects = (m.activeEffects || []).filter(fx => !(fx && fx.type === 'werebear_defense'));
+        m.activeEffects.push({ type: 'werebear_defense', defenseBonus: defBonus, permanent: true, rounds: 9999 });
+
+        this._emitTelemetry('abilityUsed', { member: m, abilityId: 'barbarian_werebear' });
+        this._addLog(`🐻 ${m.name} transforms into a Werebear! (-${BARBARIAN_WEREBEAR_STAMINA_COST} ST, +${m.werebearHpBonus} max/current HP, +${defBonus} DEF, +${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% HP regen/round, -${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST/round).`);
+        this._notify();
+    }
+
+    _applyWerebearBleedOnHit(barbarian, enemy, dealt) {
+        if (!barbarian || !barbarian.werebearActive || !enemy || enemy.health <= 0 || dealt <= 0) return;
+        const chance = Math.min(1, Math.max(0, (barbarian.level || 1) * BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL));
+        if (Math.random() >= chance) return;
+        if (this._enemyHasImmunity(enemy, 'bleed')) {
+            this._addLog(`🩸 ${this._eName(enemy)} is immune to Werebear bleeding wounds!`);
+            return;
+        }
+        const rounds = Math.max(1, Math.floor((barbarian.level || 1) / BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR));
+        const bleedDmg = Math.max(1, Math.floor(dealt * BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC));
+        enemy.activeEffects = enemy.activeEffects || [];
+        enemy.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds });
+        this._addLog(`🩸 Werebear maul opens a deep wound on ${this._eName(enemy)}! (${bleedDmg}/rd × ${rounds} rds)`);
+    }
+
+    _tryOdinsRavens(member) {
+        if (!member || member.health > 0 || member.isSummoned) return false;
+        if (member.classId !== 'barbarian' || (member.level || 1) < BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL) return false;
+        if (member.odinsRavensTriggered) return false;
+
+        const chance = Math.min(
+            BARBARIAN_ODINS_RAVENS_MAX_CHANCE,
+            BARBARIAN_ODINS_RAVENS_BASE_CHANCE + (member.level || 1) * BARBARIAN_ODINS_RAVENS_LEVEL_CHANCE,
+        );
+        if (Math.random() >= chance) return false;
+
+        member.odinsRavensTriggered = true;
+        this._endWerebearForm(member);
+
+        const lvl = Math.max(1, member.level || 1);
+        const valkMin = BARBARIAN_VALKYRIE_DAMAGE_MIN + lvl * BARBARIAN_VALKYRIE_DAMAGE_PER_LEVEL;
+        const valkMax = BARBARIAN_VALKYRIE_DAMAGE_MAX + lvl * BARBARIAN_VALKYRIE_DAMAGE_PER_LEVEL;
+        const valkyrie = new PartyMember({
+            name: `${member.name}'s Valkyrie`,
+            classId: 'summoned',
+            speciesId: 'human',
+            level: lvl,
+            maxHealth: Math.max(1, member.maxHealth || 1),
+            maxStamina: 0,
+            maxMana: 0,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            summonType: 'valkyrie',
+            summonerId: member.id,
+            canBeHealed: false,
+            row: 'front',
+            summonStats: {
+                beastKind: 'valkyrie',
+                race: 'valkyrie',
+                nonLiving: true,
+                defense: lvl * BARBARIAN_VALKYRIE_DEF_PER_LEVEL,
+                meleeMin: valkMin,
+                meleeMax: valkMax,
+                attacksPerRound: Math.max(1, Math.floor(lvl / BARBARIAN_VALKYRIE_ATK_PER_ROUND_DIVISOR)),
+                critChance: BARBARIAN_VALKYRIE_CRIT_CHANCE,
+                shieldBlockChance: BARBARIAN_VALKYRIE_BLOCK_CHANCE,
+                magicAoeDamageMult: BARBARIAN_VALKYRIE_MAGIC_AOE_DAMAGE_MULT,
+            },
+        });
+        valkyrie.health = valkyrie.maxHealth;
+        this.party.push(valkyrie);
+        this._registerNewSummon(valkyrie);
+
+        const reviveHp = Math.max(1, Math.ceil((member.maxHealth || 1) * BARBARIAN_ODINS_RAVENS_REVIVE_FRAC));
+        member.health = reviveHp;
+        member.stunned = false;
+        member.webbedRounds = 0;
+        member.proneRounds = 0;
+
+        this._addLog(`🦅 ${member.name}'s Odin's Ravens answer the call! A Valkyrie descends, revives ${member.name} at ${reviveHp} HP, and joins the front line.`);
+        return true;
+    }
+
+    _tryHandlePartyDeathRescue(member) {
+        if (!member || member.health > 0) return false;
+        if (this._tryOdinsRavens(member)) return true;
+        if (this._tryDivineShroudRevive(member)) return true;
+        return false;
     }
 
     // ── Barbarian L30: Heroic Deeds ──────────────────────────────────────────
@@ -7208,6 +7370,27 @@ export class CombatSystem {
 
         const beastKind = stats.beastKind;
 
+        if (beastKind === 'valkyrie') {
+            const attacks = Math.max(1, stats.attacksPerRound || 1);
+            const critChance = Math.max(0, Math.min(1, stats.critChance || 0));
+            this._addLog(`🪽 ${m.name} dives from above (${attacks} strike${attacks !== 1 ? 's' : ''})!`);
+            for (let i = 0; i < attacks; i++) {
+                const alive = this.aliveHostileEnemies;
+                if (!alive.length) break;
+                const t = alive[Math.floor(Math.random() * alive.length)];
+                let dmg = randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 3);
+                let crit = false;
+                if (Math.random() < critChance && !this._isCritImmune(t)) {
+                    dmg *= 2;
+                    crit = true;
+                }
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+                this._addLog(`  ↪️ ${m.name} cleaves ${this._eName(t)} for ${dealt}!${crit ? ' 💥 CRIT!' : ''}`);
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            }
+            return;
+        }
+
         if (beastKind === 'pixie') {
             const dmgMult    = stats.wildShapeDmgMult || 1;
             let baseDmg      = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 3);
@@ -10858,6 +11041,14 @@ export class CombatSystem {
             this._addLog(`\u{1F4A0} ${target.name}'s infernal ward halves the magic damage!`);
         }
 
+        if (target.isSummoned
+            && target.summonStats?.beastKind === 'valkyrie'
+            && (attackKind === 'magic' || opts.aoe)) {
+            const mult = Math.max(0, target.summonStats.magicAoeDamageMult || BARBARIAN_VALKYRIE_MAGIC_AOE_DAMAGE_MULT);
+            rawDmg = Math.max(1, Math.floor(rawDmg * mult));
+            this._addLog(`🪽 ${target.name} turns the blast aside with divine wings.`);
+        }
+
         // ── Armor special quality: AoE Ward (applies before mitigation) ───────
         // +4 armor → 10%, +5 → 20%, +6 → 30%, +7 → 40% reduction to AoE hits.
         if (opts.aoe && !target.isSummoned) {
@@ -10978,6 +11169,15 @@ export class CombatSystem {
             && Math.random() < Math.min(0.95, WARRIOR_SQUIRE_SHIELD_BLOCK + this._getFormationShieldWallChanceBonus(target))) {
             this._addLog(`🛡️ ${target.name} raises their shield and blocks ${eName}'s attack!`);
             return null;
+        }
+
+        if (target.isSummoned
+            && target.summonStats?.beastKind === 'valkyrie') {
+            const valkBlock = Math.max(0, Math.min(0.95, target.summonStats.shieldBlockChance || BARBARIAN_VALKYRIE_BLOCK_CHANCE));
+            if (Math.random() < valkBlock) {
+                this._addLog(`🪽 ${target.name} parries ${eName}'s attack with a shining shield!`);
+                return null;
+            }
         }
 
         // Pixie / Pixie Princess dodge — 25% + summoner level%, capped at 90%.
@@ -11264,8 +11464,15 @@ export class CombatSystem {
         target.health = Math.max(0, target.health - dmg);
         this._emitTelemetry('damageTaken', { target, enemy: e, amount: dmg, attackKind, intercepted: !!opts.covenantTransfer, covenantTransfer: !!opts.covenantTransfer });
 
-        if (target.health <= 0 && this._tryDivineShroudRevive(target)) {
+        if (target.health <= 0 && this._tryHandlePartyDeathRescue(target)) {
             return target;
+        }
+
+        if (target.health <= 0
+            && !target.isSummoned
+            && target.classId === 'barbarian'
+            && target.werebearActive) {
+            this._endWerebearForm(target);
         }
 
         // ── Wild Shape: druid falls — exit form immediately ──────────────────
@@ -12278,7 +12485,7 @@ export class CombatSystem {
                 totalFracture = this._applyDivineShroudReduction(m, totalFracture, 'fracture DoT');
                 m.health = Math.max(0, m.health - totalFracture);
                 this._addLog(`🦴 ${m.name} bleeds from fractures — ${totalFracture} damage!`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has succumbed to the fracture wounds!`);
             }
             // Quasit venom: armor-ignoring poison DoT (summed after fracture)
@@ -12292,7 +12499,7 @@ export class CombatSystem {
                 totalQuasitPoison = this._applyDivineShroudReduction(m, totalQuasitPoison, 'quasit venom');
                 m.health = Math.max(0, m.health - totalQuasitPoison);
                 this._addLog(`\u{1F47F} ${m.name} writhes in quasit venom — ${totalQuasitPoison} poison damage! (armor-ignoring)`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has succumbed to quasit venom!`);
             }
             if (totalPoison > 0) {
@@ -12304,7 +12511,7 @@ export class CombatSystem {
                 totalPoison = this._applyDivineShroudReduction(m, totalPoison, 'poison DoT');
                 m.health = Math.max(0, m.health - totalPoison);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalPoison} poison damage!`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has fallen to the poison!`);
             }
             if (totalBurn > 0 && m.health > 0) {
@@ -12314,7 +12521,7 @@ export class CombatSystem {
                 effectiveBurn = this._applyDivineShroudReduction(m, effectiveBurn, 'burn DoT');
                 m.health = Math.max(0, m.health - effectiveBurn);
                 this._addLog(`\u{1F525} ${m.name} takes ${effectiveBurn} burn damage!${isPlantSummon ? ' \u{1F333} (plant vulnerability!)' : ''}`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has been consumed by the flames!`);
             }
             if (totalAcid > 0 && m.health > 0) {
@@ -12326,28 +12533,43 @@ export class CombatSystem {
                 totalAcid = this._applyDivineShroudReduction(m, totalAcid, 'acid DoT');
                 m.health = Math.max(0, m.health - totalAcid);
                 this._addLog(`\u{1F7E2} ${m.name} suffers ${totalAcid} acid damage!`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has been dissolved by the acid!`);
             }
             if (totalDrowning > 0 && m.health > 0) {
                 totalDrowning = this._applyDivineShroudReduction(m, totalDrowning, 'drowning DoT');
                 m.health = Math.max(0, m.health - totalDrowning);
                 this._addLog(`\u{1F30A} ${m.name} chokes on water, taking ${totalDrowning} drowning damage!`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has drowned!`);
             }
             if (totalFrost > 0 && m.health > 0) {
                 totalFrost = this._applyDivineShroudReduction(m, totalFrost, 'frost DoT');
                 m.health = Math.max(0, m.health - totalFrost);
                 this._addLog(`❄️ ${m.name} suffers ${totalFrost} frost damage!`);
-                if (m.health <= 0 && this._tryDivineShroudRevive(m)) continue;
+                if (m.health <= 0 && this._tryHandlePartyDeathRescue(m)) continue;
                 if (m.health <= 0) this._addLog(`${m.name} has been frozen solid!`);
             }
-            // Barbarian rage: regenerate 5% max HP per round
-            if (m.classId === 'barbarian' && m.isRaging && m.health > 0) {
-                if (m.level >= BARBARIAN_ENCOURAGE_UNLOCK_LEVEL) {
-                    m.rageEncourageRounds = Math.min(BARBARIAN_ENCOURAGE_MAX_ROUNDS, (m.rageEncourageRounds || 0) + 1);
+            if (m.classId === 'barbarian' && m.werebearActive && m.health > 0) {
+                if ((m.stamina || 0) >= BARBARIAN_WEREBEAR_STAMINA_PER_ROUND) {
+                    m.stamina = Math.max(0, (m.stamina || 0) - BARBARIAN_WEREBEAR_STAMINA_PER_ROUND);
+                } else {
+                    this._endWerebearForm(m, ' from exhaustion');
                 }
+            }
+            if (m.classId === 'barbarian' && m.werebearActive && m.health > 0) {
+                const regenAmt = Math.max(1, Math.floor(m.maxHealth * BARBARIAN_WEREBEAR_REGEN));
+                const healed = Math.min(regenAmt, m.maxHealth - m.health);
+                if (healed > 0) {
+                    m.health += healed;
+                    this._addLog(`🐻 ${m.name}'s Werebear vitality restores ${healed} HP!`);
+                }
+            }
+            if (m.classId === 'barbarian' && m.isRaging && m.health > 0 && m.level >= BARBARIAN_ENCOURAGE_UNLOCK_LEVEL) {
+                m.rageEncourageRounds = Math.min(BARBARIAN_ENCOURAGE_MAX_ROUNDS, (m.rageEncourageRounds || 0) + 1);
+            }
+            // Barbarian rage: regenerate 5% max HP per round
+            if (m.classId === 'barbarian' && m.isRaging && !m.werebearActive && m.health > 0) {
                 const regenAmt = Math.max(1, Math.floor(m.maxHealth * BARBARIAN_RAGE_HP_REGEN));
                 const healed = Math.min(regenAmt, m.maxHealth - m.health);
                 if (healed > 0) {

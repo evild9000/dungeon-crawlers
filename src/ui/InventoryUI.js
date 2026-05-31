@@ -48,6 +48,10 @@ import {
     MAGE_FAMILIAR_UNLOCK_LEVEL, MAGE_FAMILIAR_GOLD_PER_LEVEL,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS,
+    BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL,
+    BARBARIAN_WEREBEAR_UNLOCK_LEVEL, BARBARIAN_WEREBEAR_STAMINA_COST,
+    BARBARIAN_WEREBEAR_STAMINA_PER_ROUND, BARBARIAN_WEREBEAR_HP_BONUS_FRAC,
+    BARBARIAN_WEREBEAR_REGEN,
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
@@ -964,6 +968,14 @@ export class InventoryUI {
             const maxPct = Math.round(BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND * BARBARIAN_ENCOURAGE_MAX_ROUNDS * 100);
             perk.push(`Rage encouragement: up to +${maxPct}%`);
             perkDetails.push(`Barbarian L25 Encouragement:\n  While raging, other living party members gain cumulative +${Math.round(BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND * 100)}% damage per round.\n  Caps after ${BARBARIAN_ENCOURAGE_MAX_ROUNDS} rounds. Multiple barbarians do not stack on the same recipient.`);
+        }
+        if (member.classId === 'barbarian' && member.level >= BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL) {
+            perk.push(`Odin's Ravens (L${BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL})`);
+            perkDetails.push(`Barbarian L${BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL} Odin's Ravens:\n  On death, one-time per combat chance to summon a Valkyrie and revive the barbarian at 25% HP.`);
+        }
+        if (member.classId === 'barbarian' && member.level >= BARBARIAN_WEREBEAR_UNLOCK_LEVEL) {
+            perk.push(`Werebear: ${BARBARIAN_WEREBEAR_STAMINA_COST} ST + ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST/rd`);
+            perkDetails.push(`Barbarian L${BARBARIAN_WEREBEAR_UNLOCK_LEVEL} Werebear:\n  Once per combat. +${Math.round(BARBARIAN_WEREBEAR_HP_BONUS_FRAC * 100)}% max/current HP, ${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% max HP regen per round, weapon riders suppressed while active.\n  Costs ${BARBARIAN_WEREBEAR_STAMINA_COST} ST to activate and ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST each round to sustain.`);
         }
         if (member.classId === 'necromancer' && member.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
             perk.push(`Demi-Lich: ${NECRO_DEMI_LICH_MANA_COST} MP`);

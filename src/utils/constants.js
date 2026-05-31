@@ -1475,6 +1475,33 @@ export const BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED = 0.05; // +5% per bleed Do
 // ── Barbarian L30: Heroic Deeds ──────────────────────────────────────────────
 export const BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL = 30;
 
+// ── Barbarian L35: Odin's Ravens (passive) ───────────────────────────────────
+export const BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL = 35;
+export const BARBARIAN_ODINS_RAVENS_BASE_CHANCE = 0.10;   // 10%
+export const BARBARIAN_ODINS_RAVENS_LEVEL_CHANCE = 0.01;  // +level%
+export const BARBARIAN_ODINS_RAVENS_MAX_CHANCE = 0.90;    // cap 90%
+export const BARBARIAN_ODINS_RAVENS_REVIVE_FRAC = 0.25;   // revive at 25% HP
+export const BARBARIAN_VALKYRIE_DEF_PER_LEVEL = 2;        // defense = level * 2
+export const BARBARIAN_VALKYRIE_ATK_PER_ROUND_DIVISOR = 7; // attacks/round = floor(level/7)
+export const BARBARIAN_VALKYRIE_DAMAGE_MIN = 5;
+export const BARBARIAN_VALKYRIE_DAMAGE_MAX = 10;
+export const BARBARIAN_VALKYRIE_DAMAGE_PER_LEVEL = 2;      // +level*2 to min/max
+export const BARBARIAN_VALKYRIE_CRIT_CHANCE = 0.20;
+export const BARBARIAN_VALKYRIE_BLOCK_CHANCE = 0.25;
+export const BARBARIAN_VALKYRIE_MAGIC_AOE_DAMAGE_MULT = 2 / 3;
+
+// ── Barbarian L35: Werebear ──────────────────────────────────────────────────
+export const BARBARIAN_WEREBEAR_UNLOCK_LEVEL = 35;
+export const BARBARIAN_WEREBEAR_STAMINA_COST = 50;
+export const BARBARIAN_WEREBEAR_STAMINA_PER_ROUND = 5;
+export const BARBARIAN_WEREBEAR_HP_BONUS_FRAC = 0.50;
+export const BARBARIAN_WEREBEAR_REGEN = 0.10;
+export const BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR = 3; // +floor(level/3) defense
+export const BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL = 0.01; // level%
+export const BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC = 0.50;       // 50% of dealt damage per round
+export const BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR = 7;     // floor(level/7) rounds
+export const BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL = 0.005; // +(level/2)% cap
+
 // ── Ranger L20: Explosive Arrow ───────────────────────────────────────────
 // Hits ALL alive enemies at half post-defense damage.
 // Half normal crit chance and half normal instakill chance vs favored enemies.
