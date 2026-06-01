@@ -129,7 +129,9 @@ import {
     ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
     ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
-    ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL,
+    ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL, ARTIFICER_DECONSTRUCT_BONUS_MULT,
+    ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL,
+    ARTIFICER_SABOTAGE_UNLOCK_LEVEL, ARTIFICER_SABOTAGE_CHANCE_DIVISOR,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     RANGER_TOTEM_DURATION_DIVISOR, RANGER_BEAR_TOTEM_DEFENSE_DIVISOR,
     RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL, RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL,
@@ -992,6 +994,15 @@ export class CombatUI {
                 `${crit.toFixed(0)}% crit chance on each shot.`,
                 ...(m.level >= ARTIFICER_DRONE_UNLOCK_LEVEL ? [
                     `L25 Enchanted Drone: each splash has a ${Math.round(Math.min(ARTIFICER_DRONE_CHANCE_CAP, m.level / 100) * 100)}% chance to spawn a drone. Drone randomly: revives a fallen ally, heals 5% missing HP (non-undead), grants 2 mirror images to a party member, AoE blasts all enemies, stuns a random enemy, crits a random enemy (×4), or ensnares a random enemy in bindings (-${Math.max(1,Math.floor(m.level/6))} atk/def for ${Math.max(1,Math.floor(m.level/6))} rds; incorporeal immune).`,
+                ] : []),
+                ...(m.level >= ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL ? [
+                    `L35 Dual Drone: when a splash successfully procs a drone, it rolls one additional drone proc at the same chance.`,
+                ] : []),
+                ...(m.level >= ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL ? [
+                    `L25 Deconstruct: Scatter Shot vs constructs gains +${Math.round((0.20 + m.level * 0.005) * 100)}% crit chance and deals ×${ARTIFICER_DECONSTRUCT_BONUS_MULT} bonus armor-ignoring damage; each hit has a 50% scavenge chance to repair your golems for 5% max HP.`,
+                ] : []),
+                ...(m.level >= ARTIFICER_SABOTAGE_UNLOCK_LEVEL ? [
+                    `L25 Sabotage: each construct hit adds a sabotage stack and immediately checks instant-destroy. Each stack rolls ${(m.level / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2)}% (bosses immune). On sabotage kill, your golems are fully repaired.`,
                 ] : []),
             ]
             : [

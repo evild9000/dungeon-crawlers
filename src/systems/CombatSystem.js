@@ -56,6 +56,8 @@ import {
     REAGENT_BOSS_HIGH_TIER_AMOUNT, REAGENT_MEGABOSS_HIGH_TIER_AMOUNT,
     SCATTER_SPLASH_BASE, SCATTER_SPLASH_EVERY, SCATTER_SPLASH_FRACTION,
     ARTIFICER_DRONE_UNLOCK_LEVEL, ARTIFICER_DRONE_CHANCE_CAP,
+    ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL,
+    ARTIFICER_SABOTAGE_UNLOCK_LEVEL, ARTIFICER_SABOTAGE_CHANCE_DIVISOR,
     ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
     PALADIN_SMITE_MANA_COST,
     PALADIN_SMITE_INSTAKILL_BASE, PALADIN_SMITE_INSTAKILL_PER_LEVEL,
@@ -596,6 +598,62 @@ export class CombatSystem {
 
     _isDemonEnemy(enemy) {
         return this._getEnemyTags(enemy).includes('demon');
+    }
+
+    _healArtificerOwnedGolemsToFull(artificer) {
+        if (!artificer) return 0;
+        const golems = (this.party || []).filter(p =>
+            p && p.isSummoned && p.summonerId === artificer.id && GOLEM_PRESETS[p.summonType] && p.health > 0
+        );
+        let healedCount = 0;
+        for (const g of golems) {
+            if (g.health >= g.maxHealth) continue;
+            g.health = g.maxHealth;
+            healedCount++;
+        }
+        if (healedCount > 0) {
+            this._addLog(`🔧⚙️ Sabotage cascade: ${artificer.name}'s golems are restored to full integrity! (${healedCount} healed)`);
+        }
+        return healedCount;
+    }
+
+    _applyArtificerSabotage(artificer, enemy) {
+        if (!artificer || !enemy || enemy.health <= 0) return false;
+        if ((artificer.level || 1) < ARTIFICER_SABOTAGE_UNLOCK_LEVEL) return false;
+        const tags = this._getEnemyTags(enemy);
+        if (!tags.includes('construct')) return false;
+
+        if (enemy.isBoss || enemy.isMegaBoss || enemy.isSuperBoss) {
+            this._addLog(`🛠️ Sabotage fails to compromise ${this._eName(enemy)} — boss-tier frame is immune to instant destruction.`);
+            return false;
+        }
+
+        enemy.sabotageCountersByArtificerId = enemy.sabotageCountersByArtificerId || {};
+        const key = String(artificer.id);
+        const counters = (enemy.sabotageCountersByArtificerId[key] || 0) + 1;
+        enemy.sabotageCountersByArtificerId[key] = counters;
+
+        const perCounterChance = Math.min(0.95, Math.max(0, (artificer.level || 1) / (ARTIFICER_SABOTAGE_CHANCE_DIVISOR * 100)));
+        const totalChance = 1 - Math.pow(1 - perCounterChance, counters);
+        this._addLog(`🛠️ Sabotage stack ${counters} on ${this._eName(enemy)} (${Math.round(perCounterChance * 100)}% per stack, ${Math.round(totalChance * 100)}% total).`);
+
+        let detonate = false;
+        for (let i = 0; i < counters; i++) {
+            if (Math.random() < perCounterChance) {
+                detonate = true;
+                break;
+            }
+        }
+        if (!detonate) return false;
+
+        enemy.health = 0;
+        if (!enemy._deathHandled) {
+            enemy._deathHandled = true;
+            this._onEnemyDeath(enemy);
+        }
+        this._addLog(`💥🛠️ SABOTAGE DETONATION! ${this._eName(enemy)} catastrophically fails and is instantly destroyed!`);
+        this._healArtificerOwnedGolemsToFull(artificer);
+        return true;
     }
 
     _getWarlockDemonProtectionReduction() {
@@ -2027,7 +2085,7 @@ export class CombatSystem {
         const exhausted = m.stamina < RANGED_STAMINA_COST;
         m.stamina = Math.max(0, m.stamina - RANGED_STAMINA_COST);
 
-        // Deconstruct (L30) crit bonus: +20% + level/2% when primary target is a construct.
+        // Deconstruct (L25) crit bonus: +20% + level/2% when primary target is a construct.
         const primaryTargetDef  = ENEMY_TYPES[targetEnemy.type] || {};
         const primaryIsConstruct = m.level >= ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL &&
             Array.isArray(primaryTargetDef.tags) && primaryTargetDef.tags.includes('construct');
@@ -2055,23 +2113,28 @@ export class CombatSystem {
         this._applyRangerTotemOnHit(m, targetEnemy, dealt, 'ranged');
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
 
-        // L30 Deconstruct — bonus damage vs constructs + scavenge heal on own golems
+        // L25 Deconstruct — bonus damage vs constructs + scavenge heal on own golems
         if (m.level >= ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL && targetEnemy.health > 0) {
             const primaryDef  = ENEMY_TYPES[targetEnemy.type] || {};
             const primaryTags = Array.isArray(primaryDef.tags) ? primaryDef.tags : [];
             if (primaryTags.includes('construct')) {
-                const bonusDmg = dealt * ARTIFICER_DECONSTRUCT_BONUS_MULT;
-                this._damageEnemy(targetEnemy, bonusDmg, true);
-                this._addLog(`\u{1F527} DECONSTRUCT! ${m.name} exploits ${eName}'s weak points for ${bonusDmg} bonus damage! [×${ARTIFICER_DECONSTRUCT_BONUS_MULT}, ignores armor]`);
-                if (targetEnemy.health <= 0) this._addLog(`${eName} is torn apart!`);
-                if (Math.random() < ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE) {
-                    const myGolems = (this.party || []).filter(p =>
-                        p && p.isSummoned && p.summonerId === m.id && GOLEM_PRESETS[p.summonType] && p.health > 0 && p.health < p.maxHealth
-                    );
-                    for (const g of myGolems) {
-                        const healAmt = Math.max(1, Math.ceil(g.maxHealth * ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT));
-                        g.health = Math.min(g.maxHealth, g.health + healAmt);
-                        this._addLog(`\u{1F527} ${m.name} scavenges parts — ${g.name} repairs ${healAmt} HP!`);
+                this._applyArtificerSabotage(m, targetEnemy);
+                if (targetEnemy.health <= 0) {
+                    this._addLog(`${eName} is torn apart!`);
+                } else {
+                    const bonusDmg = dealt * ARTIFICER_DECONSTRUCT_BONUS_MULT;
+                    this._damageEnemy(targetEnemy, bonusDmg, true);
+                    this._addLog(`\u{1F527} DECONSTRUCT! ${m.name} exploits ${eName}'s weak points for ${bonusDmg} bonus damage! [×${ARTIFICER_DECONSTRUCT_BONUS_MULT}, ignores armor]`);
+                    if (targetEnemy.health <= 0) this._addLog(`${eName} is torn apart!`);
+                    if (Math.random() < ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE) {
+                        const myGolems = (this.party || []).filter(p =>
+                            p && p.isSummoned && p.summonerId === m.id && GOLEM_PRESETS[p.summonType] && p.health > 0 && p.health < p.maxHealth
+                        );
+                        for (const g of myGolems) {
+                            const healAmt = Math.max(1, Math.ceil(g.maxHealth * ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT));
+                            g.health = Math.min(g.maxHealth, g.health + healAmt);
+                            this._addLog(`\u{1F527} ${m.name} scavenges parts — ${g.name} repairs ${healAmt} HP!`);
+                        }
                     }
                 }
             }
@@ -2107,23 +2170,28 @@ export class CombatSystem {
             this._applyRangerTotemOnHit(m, t, sDealt, 'ranged');
             if (t.health <= 0) this._addLog(`${sName} is defeated!`);
 
-            // L30 Deconstruct — bonus damage vs constructs on splash hits
+            // L25 Deconstruct — bonus damage vs constructs on splash hits
             if (m.level >= ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL && t.health > 0) {
                 const sDef  = ENEMY_TYPES[t.type] || {};
                 const sTags = Array.isArray(sDef.tags) ? sDef.tags : [];
                 if (sTags.includes('construct')) {
-                    const sBonusDmg = sDealt * ARTIFICER_DECONSTRUCT_BONUS_MULT;
-                    this._damageEnemy(t, sBonusDmg, true);
-                    this._addLog(`  \u{1F527} DECONSTRUCT! ${m.name} exploits ${sName}'s weak points for ${sBonusDmg} bonus damage! [×${ARTIFICER_DECONSTRUCT_BONUS_MULT}, ignores armor]`);
-                    if (t.health <= 0) this._addLog(`${sName} is torn apart!`);
-                    if (Math.random() < ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE) {
-                        const myGolems = (this.party || []).filter(p =>
-                            p && p.isSummoned && p.summonerId === m.id && GOLEM_PRESETS[p.summonType] && p.health > 0 && p.health < p.maxHealth
-                        );
-                        for (const g of myGolems) {
-                            const sHealAmt = Math.max(1, Math.ceil(g.maxHealth * ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT));
-                            g.health = Math.min(g.maxHealth, g.health + sHealAmt);
-                            this._addLog(`  🔧 ${m.name} scavenges parts — ${g.name} repairs ${sHealAmt} HP!`);
+                    this._applyArtificerSabotage(m, t);
+                    if (t.health <= 0) {
+                        this._addLog(`${sName} is torn apart!`);
+                    } else {
+                        const sBonusDmg = sDealt * ARTIFICER_DECONSTRUCT_BONUS_MULT;
+                        this._damageEnemy(t, sBonusDmg, true);
+                        this._addLog(`  \u{1F527} DECONSTRUCT! ${m.name} exploits ${sName}'s weak points for ${sBonusDmg} bonus damage! [×${ARTIFICER_DECONSTRUCT_BONUS_MULT}, ignores armor]`);
+                        if (t.health <= 0) this._addLog(`${sName} is torn apart!`);
+                        if (Math.random() < ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE) {
+                            const myGolems = (this.party || []).filter(p =>
+                                p && p.isSummoned && p.summonerId === m.id && GOLEM_PRESETS[p.summonType] && p.health > 0 && p.health < p.maxHealth
+                            );
+                            for (const g of myGolems) {
+                                const sHealAmt = Math.max(1, Math.ceil(g.maxHealth * ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT));
+                                g.health = Math.min(g.maxHealth, g.health + sHealAmt);
+                                this._addLog(`  🔧 ${m.name} scavenges parts — ${g.name} repairs ${sHealAmt} HP!`);
+                            }
                         }
                     }
                 }
@@ -2132,7 +2200,13 @@ export class CombatSystem {
             // L25 Enchanted Drone — checked per splash independently
             if (m.level >= ARTIFICER_DRONE_UNLOCK_LEVEL) {
                 const dChance = Math.min(ARTIFICER_DRONE_CHANCE_CAP, m.level / 100);
-                if (Math.random() < dChance) this._fireEnchantedDrone(m);
+                if (Math.random() < dChance) {
+                    this._fireEnchantedDrone(m);
+                    if (m.level >= ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL && Math.random() < dChance) {
+                        this._addLog(`⚙️⚙️ Dual Drone triggers — a second drone activates!`);
+                        this._fireEnchantedDrone(m);
+                    }
+                }
             }
         }
 

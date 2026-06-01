@@ -1052,6 +1052,9 @@ export const SCATTER_SPLASH_EVERY   = 5;
 export const SCATTER_SPLASH_FRACTION = 0.5; // splash damage = half
 export const ARTIFICER_DRONE_UNLOCK_LEVEL = 25;
 export const ARTIFICER_DRONE_CHANCE_CAP   = 0.75; // level% chance, capped at 75%
+export const ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL = 35;
+export const ARTIFICER_SABOTAGE_UNLOCK_LEVEL    = 25;
+export const ARTIFICER_SABOTAGE_CHANCE_DIVISOR  = 33; // each counter rolls at (artificerLevel / 33)%
 
 // Paladin class
 export const PALADIN_MELEE_PER_LEVEL   = 1;
@@ -1400,8 +1403,8 @@ export const ARTIFICER_BERSERK_MIN_HP_PCT    = 0.10;   // auto-stop at 10% max H
 // ── Artificer L30 — Multi Golem Protocol ─────────────────────────────────────
 export const ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL = 30;
 
-// ── Artificer L30 — Deconstruct ──────────────────────────────────────────────
-export const ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL    = 30;
+// ── Artificer L25 — Deconstruct ──────────────────────────────────────────────
+export const ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL    = 25;
 export const ARTIFICER_DECONSTRUCT_BONUS_MULT      = 3;    // ×3 bonus damage (ignores armor)
 export const ARTIFICER_DECONSTRUCT_SCAVENGE_CHANCE = 0.50;
 export const ARTIFICER_DECONSTRUCT_GOLEM_HEAL_PCT  = 0.05;

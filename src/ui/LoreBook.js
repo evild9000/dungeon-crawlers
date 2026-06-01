@@ -78,7 +78,8 @@ function buildAbilityList(def) {
         lines.push('Construct: immune to mummy rot — no living flesh to decay');
         lines.push('Construct: immune to Necromancer Siphon Power (L35) — no living stamina/mana to siphon');
         lines.push('Construct: immune to Ranger Beast Companion Sabre Tooth Cat instakill — mechanical construction cannot be slain by a physical killing bite; normal damage applies');
-        lines.push('Construct: vulnerable to Artificer Deconstruct (L30) — Scatter Shot hits deal +200% bonus damage; 50% chance each hit scavenges parts to repair the artificer\'s own golems for 5% max HP');
+        lines.push('Construct: vulnerable to Artificer Deconstruct (L25) — Scatter Shot hits gain bonus crit chance and deal +200% bonus damage; 50% chance each hit scavenges parts to repair the artificer\'s own golems for 5% max HP');
+        lines.push('Construct: vulnerable to Artificer Sabotage (L25) — each Scatter hit adds sabotage counters with immediate instant-destroy checks; bosses, mega-bosses, and super-bosses are immune to sabotage instakill');
         lines.push('Construct: cannot be stitched by Necromancer Dark Apotheosis (L30) — no flesh to animate as a Corpse Horror');
     }
     if (tags.includes('dragon')) {
