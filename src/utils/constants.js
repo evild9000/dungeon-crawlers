@@ -2057,6 +2057,13 @@ export const VK_SWARM_PROTECT_BASE_CHANCE = 0.50;
 export const VK_SWARM_PROTECT_LEVEL_DIV   = 300;
 export const VK_SWARM_PROTECT_MANA_COST   = 25;  // MP to toggle swarm protect
 
+// L35: Minions' Frenzy + Hive Mind Control
+export const VK_L35_UNLOCK_LEVEL            = 35;
+export const VK_FRENZY_DAMAGE_BASE_MULT     = 2.0; // +100% base => x2.0
+export const VK_FRENZY_DAMAGE_PER_LEVEL     = 0.02; // +2% per VK level
+export const VK_HIVE_MIND_UPKEEP_MANA       = 2;
+export const VK_FRENZY_EXTRA_ACTION_CHANCES = [0.50, 0.25, 0.12, 0.06, 0.03, 0.01];
+
 // ── Warlock ────────────────────────────────────────────────────────────────
 export const WARLOCK_HEX_UPKEEP_MANA       = 1;
 export const WARLOCK_HEX_PENALTY_DIVISOR   = 3;

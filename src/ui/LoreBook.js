@@ -87,6 +87,14 @@ function buildAbilityList(def) {
         lines.push('Dragon: Dragonslayer lets level 25 paladins Smite and AoE Smite dragons');
         lines.push('Dragon: shielded level 25 paladins reduce this creature’s magic/AoE damage against the party by (paladin level + 10)%, capped at 90%, before defenses apply');
     }
+    if (tags.includes('vermin')) {
+        lines.push('Vermin: valid target for Vermin Keeper Charm Vermin (L20)');
+        lines.push('Vermin: if charmed/summoned under a level 35 Vermin Keeper, can gain Minions\' Frenzy extra actions and obey that keeper\'s Hive Mind mark');
+    }
+    if (tags.includes('slime')) {
+        lines.push('Slime: valid target for Vermin Keeper Charm Vermin (L20)');
+        lines.push('Slime: if charmed/summoned under a level 35 Vermin Keeper, can gain Minions\' Frenzy extra actions and obey that keeper\'s Hive Mind mark (special swarms excluded)');
+    }
     // Immunity from the immune[] array on the type definition.
     // Elemental types (fire, cold, lightning, acid, poison) get "damage and DoT" wording.
     // Non-elemental types (stun, poison-as-status) get plain wording.

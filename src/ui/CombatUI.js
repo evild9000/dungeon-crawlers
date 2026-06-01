@@ -160,6 +160,8 @@ import {
     VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST,
     VK_SWARM_MAX_UPGRADE_DIVISOR,
     VK_SWARM_PROTECT_MANA_COST,
+    VK_L35_UNLOCK_LEVEL, VK_FRENZY_DAMAGE_BASE_MULT, VK_FRENZY_DAMAGE_PER_LEVEL,
+    VK_HIVE_MIND_UPKEEP_MANA, VK_FRENZY_EXTRA_ACTION_CHANCES,
     WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
     WARLOCK_CURSE_UNLOCK_LEVEL, WARLOCK_CURSE_MANA_COST,
     WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
@@ -711,6 +713,17 @@ export class CombatUI {
                         const _stackNote = _hmFxAll.length > 1 ? `\nTotal from all marks: +${_hmTotalPct}%` : '';
                         mkB('🎯', `Marked +${_hmPct}%`, 'rgba(180,60,0,0.92)',
                             `Hunter's Mark (${_hmName}): +${_hmPct}% damage from all sources. Upkeep ${RANGER_HUNTERS_MARK_UPKEEP_MANA} MP + ${RANGER_HUNTERS_MARK_UPKEEP_STAMINA} ST/rd.${_stackNote}`);
+                    }
+                }
+
+                // ── Vermin Keeper Hive Mind tags — one card per active mark ──
+                const _vkMarkFxAll = efx.filter(x => x && x.type === 'vk_hive_mark');
+                if (_vkMarkFxAll.length > 0) {
+                    for (const _vkFx of _vkMarkFxAll) {
+                        const _vkOwner = (this.combat.party || []).find(p => p.id === _vkFx.markerId);
+                        const _vkName = _vkOwner ? _vkOwner.name : 'Vermin Keeper';
+                        mkB('🕸️', 'Hive Mark', 'rgba(70,30,130,0.92)',
+                            `Hive Mind (${_vkName}): this VK's vermin/slime summons and charms focus this target. Upkeep ${VK_HIVE_MIND_UPKEEP_MANA} MP/round.`);
                     }
                 }
 
@@ -2450,6 +2463,10 @@ export class CombatUI {
                     `Costs ${VK_SUMMON_VERMIN_MANA_COST} MP. Randomly summons one of 14 vermin types.`,
                     'HP = keeper max HP. Melee = level × 2. Defense = level × 1.5.',
                     'Cascade: 40% chance to summon additional vermin (-5% each, +1% per level).',
+                    ...(m.level >= VK_L35_UNLOCK_LEVEL ? [
+                        `L35 Minions' Frenzy: VK-owned vermin/slimes gain extra actions each round (2nd guaranteed; then ${VK_FRENZY_EXTRA_ACTION_CHANCES.map(c => Math.round(c * 100) + '%').join(', ')} for actions 3-8).`,
+                        `Frenzy damage bonus: ×${(VK_FRENZY_DAMAGE_BASE_MULT + m.level * VK_FRENZY_DAMAGE_PER_LEVEL).toFixed(2)} for VK-owned vermin/slime summons and charms (swarms excluded).`,
+                    ] : []),
                     !unlocked ? `Requires level ${VK_SUMMON_VERMIN_UNLOCK_LEVEL}.` : '',
                     unlocked && !canSummon ? `Not enough mana (need ${VK_SUMMON_VERMIN_MANA_COST} MP).` : '',
                 ].filter(Boolean).join('\n');
@@ -2469,6 +2486,9 @@ export class CombatUI {
                     `Costs ${VK_SUMMON_SLIME_MANA_COST} MP. Randomly summons a slime, acid slime, or gelatinous cube.`,
                     'HP = keeper max HP. Melee = level × 2. Defense = level × 1.5.',
                     'Cascade: 40% chance to summon additional slimes (-5% each, +1% per level).',
+                    ...(m.level >= VK_L35_UNLOCK_LEVEL ? [
+                        `L35 Minions' Frenzy applies to VK-owned slimes (except special swarms): extra actions and ×${(VK_FRENZY_DAMAGE_BASE_MULT + m.level * VK_FRENZY_DAMAGE_PER_LEVEL).toFixed(2)} damage.`,
+                    ] : []),
                     !unlocked ? `Requires level ${VK_SUMMON_SLIME_UNLOCK_LEVEL}.` : '',
                     unlocked && !canSummon ? `Not enough mana (need ${VK_SUMMON_SLIME_MANA_COST} MP).` : '',
                 ].filter(Boolean).join('\n');
@@ -2499,6 +2519,9 @@ export class CombatUI {
                     `Vermin Keeper L${VK_CHARM_VERMIN_UNLOCK_LEVEL}: Charm Vermin.`,
                     `Costs ${VK_CHARM_VERMIN_MANA_COST} MP. Target must have vermin, slime, or insect tag.`,
                     `${charmChancePct}% charm chance. Duration: ${charmDur} round(s).`,
+                    ...(m.level >= VK_L35_UNLOCK_LEVEL ? [
+                        `At L35, charmed vermin/slimes also gain Minions' Frenzy and Hive Mind targeting for this VK.`,
+                    ] : []),
                     'Bosses cannot be charmed.',
                     `Valid targets: ${validTargets.length > 0 ? validTargets.map(e => this.combat._eName(e)).join(', ') : 'none'}.`,
                     !hasTarget ? 'No vermin/slime/insect targets available.' : '',
@@ -2599,6 +2622,41 @@ export class CombatUI {
                         !active && !canProt ? `Not enough mana (need ${VK_SWARM_PROTECT_MANA_COST} MP).` : '',
                     ].filter(Boolean).join('\n');
                 }
+            }
+
+            // L35: Hive Mind Control + Minions' Frenzy
+            if (m.level >= VK_L35_UNLOCK_LEVEL) {
+                const marked = (this.combat.aliveHostileEnemies || []).find(e => e.id === m.vkHiveMindEnemyId) || null;
+                const hasTarget = (this.combat.aliveHostileEnemies || []).length > 0;
+                const frenzyMult = (VK_FRENZY_DAMAGE_BASE_MULT + m.level * VK_FRENZY_DAMAGE_PER_LEVEL).toFixed(2);
+                const upkeep = VK_HIVE_MIND_UPKEEP_MANA;
+                const btn = this._addBtn(
+                    marked
+                        ? `🕸️ Hive Mind: ${this.combat._eName(marked)} (-${upkeep} MP/rd)`
+                        : '🕸️ Hive Mind Control (mark target)',
+                    hasTarget,
+                    () => {
+                        if (marked) {
+                            this.combat.vkHiveMindControl(marked); // selecting same target clears the mark
+                            return;
+                        }
+                        this._pickTarget(e => this.combat.vkHiveMindControl(e), {
+                            prompt: '🕸️ Choose a Hive Mind target...'
+                        });
+                    }
+                );
+                btn.classList.add('combat-special-btn');
+                if (marked) btn.style.background = 'linear-gradient(135deg,#2a1a40,#4a2a80)';
+                btn.title = [
+                    `Vermin Keeper L${VK_L35_UNLOCK_LEVEL}: Hive Mind Control (free action).`,
+                    `Marks one hostile target. Your VK-owned summoned/charmed vermin and slimes focus this marked enemy when possible.`,
+                    `Only one mark per VK at a time. Multiple VKs can mark the same enemy independently.`,
+                    `Upkeep: -${upkeep} MP per round while mark persists.`,
+                    `Minions' Frenzy (passive): VK-owned summoned/charmed vermin and slimes gain extra actions each round (2nd guaranteed; then ${VK_FRENZY_EXTRA_ACTION_CHANCES.map(c => Math.round(c * 100) + '%').join(', ')} for actions 3-8).`,
+                    `Frenzy damage multiplier: ×${frenzyMult}. Does not affect Vermin Swarm or Acid Swarm.`,
+                    marked ? `Current mark: ${this.combat._eName(marked)} (click to clear).` : 'No current mark.',
+                    !hasTarget ? 'No hostile enemies available to mark.' : '',
+                ].filter(Boolean).join('\n');
             }
         }
 

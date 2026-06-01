@@ -258,6 +258,8 @@ import {
     VK_ASWARM_ACID_DOT_FRAC, VK_ASWARM_ACID_DOT_ROUNDS,
     VK_ASWARM_DEBUFF_DIV, VK_ASWARM_DEBUFF_ROUNDS,
     VK_SWARM_PROTECT_BASE_CHANCE, VK_SWARM_PROTECT_LEVEL_DIV, VK_SWARM_PROTECT_MANA_COST,
+    VK_L35_UNLOCK_LEVEL, VK_FRENZY_DAMAGE_BASE_MULT, VK_FRENZY_DAMAGE_PER_LEVEL,
+    VK_HIVE_MIND_UPKEEP_MANA, VK_FRENZY_EXTRA_ACTION_CHANCES,
     VK_RESIST_PER_LEVEL,
     VK_INSECT_PLAGUE_LEVEL_DMG_BONUS,
     WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
@@ -510,6 +512,63 @@ export class CombatSystem {
     _getEnemyTags(enemy) {
         const def = ENEMY_TYPES[enemy?.type] || {};
         return Array.isArray(def.tags) ? def.tags : [];
+    }
+
+    _getVKById(id) {
+        if (!id) return null;
+        return (this.party || []).find(p => p && p.id === id && !p.isSummoned && p.classId === 'verminkeeper') || null;
+    }
+
+    _isVKFrenzyEligibleMember(member, stats = null) {
+        if (!member || member.health <= 0) return false;
+        const st = stats || member.summonStats || {};
+        const kind = st.beastKind;
+        if (!(kind === 'vermin' || kind === 'slime')) return false;
+        if (kind === 'vermin_swarm' || kind === 'acid_swarm') return false;
+        return true;
+    }
+
+    _getVKFrenzyDamageMultiplier(keeperLevel) {
+        const lvl = Math.max(1, Number(keeperLevel) || 1);
+        return VK_FRENZY_DAMAGE_BASE_MULT + lvl * VK_FRENZY_DAMAGE_PER_LEVEL;
+    }
+
+    _getVKFrenzyActionCount(keeperLevel) {
+        const lvl = Math.max(1, Number(keeperLevel) || 1);
+        if (lvl < VK_L35_UNLOCK_LEVEL) return 1;
+        let actions = 2; // base action + guaranteed second action
+        for (const chance of VK_FRENZY_EXTRA_ACTION_CHANCES) {
+            if (Math.random() < chance) actions++;
+            else break;
+        }
+        return actions;
+    }
+
+    _getVKHiveMarkTarget(vkId) {
+        const vk = this._getVKById(vkId);
+        if (!vk || !vk.vkHiveMindEnemyId) return null;
+        const marked = this.aliveHostileEnemies.find(e => e.id === vk.vkHiveMindEnemyId);
+        return marked || null;
+    }
+
+    _clearVKHiveMark(vk, reason = null) {
+        if (!vk) return;
+        const oldId = vk.vkHiveMindEnemyId;
+        if (!oldId) return;
+        const old = this.enemies.find(e => e.id === oldId);
+        if (old) {
+            old.activeEffects = (old.activeEffects || []).filter(fx => fx && !(fx.type === 'vk_hive_mark' && fx.markerId === vk.id));
+        }
+        vk.vkHiveMindEnemyId = null;
+        if (reason) this._addLog(`🕸️ ${vk.name}'s Hive Mind mark fades (${reason}).`);
+    }
+
+    _setVKHiveMark(vk, enemy) {
+        if (!vk || !enemy) return;
+        this._clearVKHiveMark(vk);
+        vk.vkHiveMindEnemyId = enemy.id;
+        enemy.activeEffects = enemy.activeEffects || [];
+        enemy.activeEffects.push({ type: 'vk_hive_mark', markerId: vk.id });
     }
 
     _addLootItemStack(items, itemId, quantity = 1) {
@@ -8237,8 +8296,23 @@ export class CombatSystem {
         // ── Vermin Keeper: vermin summon attack ─────────────────────────────────
         if (beastKind === 'vermin' || (m.isSummoned && VERMIN_PRESETS[m.summonType])) {
             const sType = m.summonType;
+            const keeper = this._getVKById(m.summonerId);
+            const frenzyEligible = !!(keeper && keeper.health > 0 && this._isVKFrenzyEligibleMember(m, stats));
+            const frenzyMult = frenzyEligible ? this._getVKFrenzyDamageMultiplier(keeper.level) : 1;
+            const frenzyActions = frenzyEligible ? this._getVKFrenzyActionCount(keeper.level) : 1;
+            const pickTarget = () => {
+                const marked = keeper ? this._getVKHiveMarkTarget(keeper.id) : null;
+                if (marked && marked.health > 0) return marked;
+                return targets[Math.floor(Math.random() * targets.length)];
+            };
+
+            if (frenzyEligible && frenzyActions > 1) {
+                this._addLog(`🕷️ Frenzy! ${m.name} surges to ${frenzyActions} actions this turn at ×${frenzyMult.toFixed(2)} damage.`);
+            }
+
             const _vHit = (tgt, ignoreArmor = false) => {
-                const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+                let dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+                dmg = Math.max(1, Math.round(dmg * frenzyMult));
                 return this._damageSummonEnemy(tgt, dmg, ignoreArmor, false, { contactAttacker: m });
             };
             const _vPoison = (tgt, dealt, mult = 1) => {
@@ -8276,7 +8350,8 @@ export class CombatSystem {
             };
             const _vKill = (tgt) => { if (tgt.health <= 0) this._addLog(`${this._eName(tgt)} is defeated!`); };
 
-            let t = targets[Math.floor(Math.random() * targets.length)];
+            const _runVerminAction = () => {
+            let t = pickTarget();
             switch (sType) {
                 case 'spider': {
                     const d = _vHit(t);
@@ -8295,7 +8370,7 @@ export class CombatSystem {
                     // 2 attacks
                     for (let i = 0; i < 2; i++) {
                         if (targets.length === 0) break;
-                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const tgt = pickTarget();
                         const d = _vHit(tgt);
                         this._addLog(`\u{1F987} ${m.name} slams ${this._eName(tgt)} for ${d}!`);
                         if (d > 0 && tgt.health > 0 && Math.random() < 0.20) {
@@ -8310,7 +8385,7 @@ export class CombatSystem {
                     // 3 attacks
                     for (let i = 0; i < 3; i++) {
                         if (targets.length === 0) break;
-                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const tgt = pickTarget();
                         const d = _vHit(tgt);
                         this._addLog(`\u{1F41E} ${m.name} bites ${this._eName(tgt)} for ${d}!`);
                         if (d > 0 && Math.random() < 0.45) _vPoison(tgt, d);
@@ -8358,7 +8433,7 @@ export class CombatSystem {
                     // 2 attacks
                     for (let i = 0; i < 2; i++) {
                         if (targets.length === 0) break;
-                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const tgt = pickTarget();
                         const d = _vHit(tgt);
                         this._addLog(`\u{1F41D} ${m.name} stings ${this._eName(tgt)} for ${d}!`);
                         if (tgt.health > 0 && Math.random() < 0.40) _vPoison(tgt, d);
@@ -8389,14 +8464,14 @@ export class CombatSystem {
                     // 2 claw attacks + stinger
                     for (let i = 0; i < 2; i++) {
                         if (targets.length === 0) break;
-                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const tgt = pickTarget();
                         const d = _vHit(tgt);
                         this._addLog(`\u{1F982} ${m.name} claws ${this._eName(tgt)} for ${d}!`);
                         _vKill(tgt);
                         if (tgt.health <= 0) targets.splice(targets.indexOf(tgt), 1);
                     }
                     if (targets.length > 0) {
-                        const tgt = targets[Math.floor(Math.random() * targets.length)];
+                        const tgt = pickTarget();
                         const d = _vHit(tgt);
                         this._addLog(`\u{1F982} ${m.name}'s stinger strikes ${this._eName(tgt)} for ${d}!`);
                         if (d > 0 && tgt.health > 0 && Math.random() < 0.50) _vPoison(tgt, d, 1.5);
@@ -8428,14 +8503,36 @@ export class CombatSystem {
                     _vKill(t);
                 }
             }
+            };
+
+            for (let act = 0; act < frenzyActions; act++) {
+                if (targets.length === 0) break;
+                if (act > 0) this._addLog(`  ⚡ ${m.name} takes an extra frenzy action (${act + 1}/${frenzyActions})!`);
+                _runVerminAction();
+            }
             return;
         }
 
         // ── Vermin Keeper: slime summon attack ──────────────────────────────────
         if (beastKind === 'slime' || (m.isSummoned && SLIME_PRESETS[m.summonType])) {
             const sType = m.summonType;
+            const keeper = this._getVKById(m.summonerId);
+            const frenzyEligible = !!(keeper && keeper.health > 0 && this._isVKFrenzyEligibleMember(m, stats));
+            const frenzyMult = frenzyEligible ? this._getVKFrenzyDamageMultiplier(keeper.level) : 1;
+            const frenzyActions = frenzyEligible ? this._getVKFrenzyActionCount(keeper.level) : 1;
+            const pickTarget = () => {
+                const marked = keeper ? this._getVKHiveMarkTarget(keeper.id) : null;
+                if (marked && marked.health > 0) return marked;
+                return targets[Math.floor(Math.random() * targets.length)];
+            };
+
+            if (frenzyEligible && frenzyActions > 1) {
+                this._addLog(`🧪 Frenzy! ${m.name} surges to ${frenzyActions} actions this turn at ×${frenzyMult.toFixed(2)} damage.`);
+            }
+
             const _sHit = (tgt) => {
-                const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+                let dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
+                dmg = Math.max(1, Math.round(dmg * frenzyMult));
                 return this._damageSummonEnemy(tgt, dmg, false, false, { contactAttacker: m });
             };
             const _sHold = (tgt) => {
@@ -8444,7 +8541,8 @@ export class CombatSystem {
             };
             const _sKill = (tgt) => { if (tgt.health <= 0) this._addLog(`${this._eName(tgt)} is defeated!`); };
 
-            const t = targets[Math.floor(Math.random() * targets.length)];
+            const _runSlimeAction = () => {
+            const t = pickTarget();
             switch (sType) {
                 case 'slime': {
                     const d = _sHit(t);
@@ -8486,6 +8584,13 @@ export class CombatSystem {
                     this._addLog(`\u{1FAA1} ${m.name} engulfs ${this._eName(t)} for ${d}!`);
                     _sKill(t);
                 }
+            }
+            };
+
+            for (let act = 0; act < frenzyActions; act++) {
+                if (targets.length === 0) break;
+                if (act > 0) this._addLog(`  ⚡ ${m.name} takes an extra frenzy action (${act + 1}/${frenzyActions})!`);
+                _runSlimeAction();
             }
             return;
         }
@@ -9055,7 +9160,18 @@ export class CombatSystem {
 
         // Charmed enemy: fights for the party this turn
         if (e.charmedRounds > 0) {
-            this._charmedMonsterAttack(e);
+            const tags = this._getEnemyTags(e);
+            const vk = this._getVKById(e.charmerId);
+            const frenzyEligible = !!(vk && vk.health > 0 && (vk.level || 1) >= VK_L35_UNLOCK_LEVEL && (tags.includes('vermin') || tags.includes('slime')));
+            const frenzyActions = frenzyEligible ? this._getVKFrenzyActionCount(vk.level) : 1;
+            if (frenzyEligible && frenzyActions > 1) {
+                this._addLog(`🕷️ ${eName} acts with Minions' Frenzy (${frenzyActions} actions)!`);
+            }
+            for (let i = 0; i < frenzyActions; i++) {
+                if (this.aliveHostileEnemies.length === 0 || e.health <= 0) break;
+                if (i > 0) this._addLog(`  ⚡ ${eName} takes an extra frenzy action (${i + 1}/${frenzyActions})!`);
+                this._charmedMonsterAttack(e);
+            }
             return;
         }
 
@@ -13067,6 +13183,18 @@ export class CombatSystem {
                     this._addLog(`🎯 ${m.name}'s Hunter's Mark fades — insufficient resources!`);
                 }
             }
+            // Vermin Keeper Hive Mind Control: mark upkeep and auto-cleanup
+            if (m.classId === 'verminkeeper' && m.health > 0 && (m.level || 1) >= VK_L35_UNLOCK_LEVEL && m.vkHiveMindEnemyId) {
+                const marked = this.enemies.find(e => e.id === m.vkHiveMindEnemyId);
+                if (!marked || marked.health <= 0 || (marked.charmedRounds || 0) > 0) {
+                    this._clearVKHiveMark(m);
+                } else if ((m.mana || 0) >= VK_HIVE_MIND_UPKEEP_MANA) {
+                    m.mana = Math.max(0, (m.mana || 0) - VK_HIVE_MIND_UPKEEP_MANA);
+                    this._addLog(`🕸️ ${m.name} sustains Hive Mind on ${this._eName(marked)} (-${VK_HIVE_MIND_UPKEEP_MANA} MP).`);
+                } else {
+                    this._clearVKHiveMark(m, 'insufficient mana');
+                }
+            }
             // Beastlord: base mana upkeep and per-summon upkeep
             if (m.classId === 'ranger' && m.beastlordActive && m.health > 0) {
                 const _beastlordBeasts = this.party.filter(p => p.isSummoned && p.summonerId === m.id && p.summonStats && p.summonStats.beastlordSummoned && p.health > 0);
@@ -13497,12 +13625,18 @@ export class CombatSystem {
         const dlvl = this.dungeonLevel;
         const typeDef = ENEMY_TYPES[e.type] || {};
         e._enemyAttackExhausted = false;
+        const eTags = this._getEnemyTags(e);
+        const vkController = this._getVKById(e.charmerId);
+        const frenzyEligible = !!(vkController && vkController.health > 0 && (vkController.level || 1) >= VK_L35_UNLOCK_LEVEL
+            && (eTags.includes('vermin') || eTags.includes('slime')));
+        const frenzyMult = frenzyEligible ? this._getVKFrenzyDamageMultiplier(vkController.level) : 1;
         const lvlBoost = Math.max(0, dlvl - 1);
         const lvlThreeBonus = Math.max(0, dlvl - (MONSTER_DAMAGE_BONUS_THRESHOLD - 1));
 
         // Damage helpers — use _damageEnemy so resistances / death callbacks all fire correctly
         const cHit = (target, dmg, isMagic = false, contactAttacker = null) => {
             if (!target || target.health <= 0) return 0;
+            dmg = Math.max(1, Math.round(dmg * frenzyMult));
             const options = contactAttacker ? { contactAttacker } : {};
             dmg = this._applyEnemyResourceExhaustion(e, dmg);
             // Nature's Charms bolster: +1% per druid level bonus damage
@@ -13525,7 +13659,13 @@ export class CombatSystem {
             if (typeof effect.rounds === 'number') bits.push(`${effect.rounds} rd${effect.rounds === 1 ? '' : 's'}`);
             this._addLog(`    \u21B3 ${eN(target)} gains ${effect.type}${bits.length ? ` (${bits.join(', ')})` : ''}.`);
         };
-        const pick = () => { const h = hostile(); return h.length ? h[Math.floor(Math.random() * h.length)] : null; };
+        const pick = () => {
+            const h = hostile();
+            if (!h.length) return null;
+            const marked = frenzyEligible ? this._getVKHiveMarkTarget(vkController.id) : null;
+            if (marked && marked.health > 0) return marked;
+            return h[Math.floor(Math.random() * h.length)];
+        };
         const eN = t => this._eName(t);
         const tickDeath = t => { if (t.health <= 0 && !t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); } };
 
@@ -16176,6 +16316,30 @@ export class CombatSystem {
             m.vkSwarmProtectActive = true;
             this._addLog(`\u{1F41C} ${m.name}'s swarm coils around its master — ready to intercept attacks! (-${VK_SWARM_PROTECT_MANA_COST} MP)`);
         }
+        this._notify();
+    }
+
+    /** L35: Hive Mind Control — free action mark that directs this VK's vermin/slime minions. */
+    vkHiveMindControl(targetEnemy) {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'verminkeeper') return;
+        if ((m.level || 1) < VK_L35_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${VK_L35_UNLOCK_LEVEL} to use Hive Mind Control.`);
+            return;
+        }
+        if (!targetEnemy || targetEnemy.health <= 0 || (targetEnemy.charmedRounds || 0) > 0) {
+            this._addLog('No valid hostile target for Hive Mind Control.');
+            return;
+        }
+
+        if (m.vkHiveMindEnemyId && m.vkHiveMindEnemyId === targetEnemy.id) {
+            this._clearVKHiveMark(m, 'manual release');
+            this._notify();
+            return;
+        }
+
+        this._setVKHiveMark(m, targetEnemy);
+        this._addLog(`🕸️ ${m.name} links minds with vermin and slimes — ${this._eName(targetEnemy)} is the Hive target! (-${VK_HIVE_MIND_UPKEEP_MANA} MP/round)`);
         this._notify();
     }
 
