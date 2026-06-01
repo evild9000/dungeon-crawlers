@@ -9532,6 +9532,80 @@ export class CombatSystem {
                 this._summonEnemyMinion(e, 'acid_slime', '\u{1F7E2}');
             }
 
+        // ── Grey Ooze: corrosive pseudopod, mild dissolve + occasional engulf ─
+        } else if (typeDef.isGreyOozeAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const target = this.aliveFront.length > 0
+                ? this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)]
+                : this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+            if (target && this._enemyCanAttemptStaminaAttack(e)) {
+                this._spendEnemyStamina(e);
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._addLog(`\u{1F9EA} ${eName} lashes out with a corrosive pseudopod!`);
+                const _hit = this._applyEnemyHit(e, target, dmg, 'melee');
+                if (_hit && _hit.health > 0) {
+                    const acidTick = Math.max(1, Math.floor(dmg * 0.25));
+                    _hit.addEffect({ type: 'acid_dot', rounds: 2, damage: acidTick, defenseBonus: -1 });
+                    this._addLog(`\u{1F7E2} ${_hit.name}'s armor sizzles! (${acidTick}/rd, -1 def for 2 rds)`);
+                    if (Math.random() < 0.30 && !this._isHoldImmunePartyMember(_hit)) {
+                        _hit.webbedRounds = Math.max(_hit.webbedRounds || 0, 1);
+                        this._addLog(`\u{1F9B7} ${_hit.name} is partially engulfed by the ooze!`);
+                    }
+                }
+            }
+
+        // ── Black Pudding: front-line acid sweep + split chance ─────────────
+        } else if (typeDef.isBlackPuddingAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const targets = this.aliveFront.length > 0 ? this.aliveFront.slice() : this.aliveParty.slice();
+            if (targets.length > 0 && this._enemyCanAttemptStaminaAttack(e)) {
+                this._spendEnemyStamina(e);
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                this._addLog(`\u{1F9EA} ${eName} surges forward, splashing caustic sludge in a wide arc!`);
+                for (const t of targets) {
+                    const _hit = this._applyEnemyHit(e, t, dmg, 'melee', { aoe: true });
+                    if (_hit && _hit.health > 0) {
+                        const acidTick = Math.max(1, Math.floor(dmg * 0.33));
+                        _hit.addEffect({ type: 'acid_dot', rounds: 3, damage: acidTick, defenseBonus: -2 });
+                        this._addLog(`\u{1F7E2} ${_hit.name} is dissolving in black slime! (${acidTick}/rd, -2 def 3 rds)`);
+                    }
+                    if (this.aliveParty.length === 0) break;
+                }
+            }
+            if (Math.random() < 0.35 && this.aliveParty.length > 0) {
+                this._summonEnemyMinion(e, 'grey_ooze', '\u{1F9EA}');
+            }
+
+        // ── Ochre Jelly: adhesive lashes that can lock targets in place ──────
+        } else if (typeDef.isOchreJellyAI) {
+            const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
+            const attacks = 2;
+            this._addLog(`\u{1F7E1} ${eName} whips out adhesive tendrils!`);
+            for (let i = 0; i < attacks && this.aliveParty.length > 0; i++) {
+                const target = this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+                if (!target || !this._enemyCanAttemptStaminaAttack(e)) break;
+                this._spendEnemyStamina(e);
+                let dmg = randomInt(dmin, dmax);
+                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
+                const _hit = this._applyEnemyHit(e, target, dmg, 'ranged');
+                if (_hit && _hit.health > 0) {
+                    const acidTick = Math.max(1, Math.floor(dmg * 0.20));
+                    _hit.addEffect({ type: 'acid_dot', rounds: 2, damage: acidTick, defenseBonus: -1 });
+                    if (Math.random() < 0.40 && !this._isHoldImmunePartyMember(_hit)) {
+                        _hit.webbedRounds = Math.max(_hit.webbedRounds || 0, 2);
+                        this._addLog(`\u{1F9B7} ${_hit.name} is glued in place by sticky jelly! (2 rds)`);
+                    }
+                }
+            }
+
         // ── Bloat Demon: 6 ranged toxin blasts, each inflicts poison DoT ──
         } else if (typeDef.isBloatDemonAI) {
             const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;

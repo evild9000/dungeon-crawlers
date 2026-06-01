@@ -179,6 +179,22 @@ export const ENEMY_TYPES = {
     demon_knight:    { name: 'Demon Knight',     spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['demon', 'humanoid'] },
     naga:            { name: 'Naga',             spriteW: 1.8, spriteH: 1.6, poisonChance: 0.45, constrict: 3, rangedAny: true, tags: ['monster', 'beast'] },
     gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'] },
+    // New slime variants
+    grey_ooze:       { name: 'Grey Ooze',        spriteW: 1.6, spriteH: 1.1,
+        isGreyOozeAI: true,
+        hpMult: 1.4,
+        tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'],
+        minLevel: 15 },
+    black_pudding:   { name: 'Black Pudding',    spriteW: 2.0, spriteH: 1.2,
+        isBlackPuddingAI: true,
+        hpMult: 2.2, defenseMult: 1.25,
+        tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'],
+        minLevel: 20 },
+    ochre_jelly:     { name: 'Ochre Jelly',      spriteW: 1.8, spriteH: 1.1,
+        isOchreJellyAI: true,
+        hpMult: 1.8,
+        tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'],
+        minLevel: 18 },
 
     // ── Elemental triad ───────────────────────────────────────────────
     // earth_elemental: double HP & defense vs a normal high-level mob.
@@ -1924,6 +1940,9 @@ export const SUPERBOSS_NAMES = {
     slime:            ['Oozedrix the Consuming', 'Primordial Slime Lord'],
     acid_slime:       ['Corrosifax the Spreading', 'Acidflesh the Devouring'],
     gelatinous_cube:  ['Cube-Eternal Velorix', 'The Consuming Void of Halls'],
+    grey_ooze:        ['Greymire Dissolvar', 'Ash-Flow Corrovax'],
+    black_pudding:    ['Night-Mire Oblivion', 'Pitchmaw Devourax'],
+    ochre_jelly:      ['Amber-Glue Ochrovax', 'Saffron Maw Gelatrix'],
     // ── New Monsters ─────────────────────────────────────────────────────────
     evil_wizard:    ['Arcanis the Maleficent', 'Vexathor the Spellbinder'],
     dark_treant:    ['Root-of-Ruin Morbranx', 'Darkwood-Ancient Thraxix'],
