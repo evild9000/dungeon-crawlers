@@ -209,6 +209,9 @@ export class PartyMember {
         // Warlock: demon cauldron and L30 abyss form are combat-only.
         this.warlockCauldronOpen = false;
         this.warlockSelectedDemon = 'imp';
+        this.warlockAwakenActive = false;
+        this.warlockAwakenSummons = 0;
+        this.warlockAwakenSummonIds = [];
         this.abyssFormActive = false;
         this.abyssFormUsed = false;
         this.abyssFormHpBonus = 0;
@@ -1207,6 +1210,9 @@ export class PartyMember {
         this.elementalRiftOpen = false;
         this.elementalRiftUsed = false;
         this.warlockCauldronOpen = false;
+        this.warlockAwakenActive = false;
+        this.warlockAwakenSummons = 0;
+        this.warlockAwakenSummonIds = [];
         if (this.abyssFormHpBonus > 0) {
             this.maxHealth = Math.max(1, this.maxHealth - this.abyssFormHpBonus);
             this.health = Math.min(this.health, this.maxHealth);

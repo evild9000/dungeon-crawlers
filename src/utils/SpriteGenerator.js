@@ -3837,6 +3837,102 @@ function drawBloodDemon(c, r) {
     c.fillRect(18,56,10,8); c.fillRect(36,56,10,8);
 }
 
+function drawVarkhulChainTyrant(c, r) {
+    const dark = `rgb(${r.int(30,55)},${r.int(30,55)},${r.int(45,70)})`;
+    const iron = `rgb(${r.int(90,130)},${r.int(90,130)},${r.int(110,150)})`;
+    c.fillStyle = dark; c.fillRect(16,20,32,40);
+    c.fillStyle = iron; c.beginPath(); c.ellipse(32,14,12,10,0,0,Math.PI*2); c.fill();
+    c.strokeStyle = iron; c.lineWidth = 3;
+    for (let i=0;i<4;i++) { c.beginPath(); c.moveTo(4+i*18,30); c.lineTo(12+i*12,58); c.stroke(); }
+    c.fillStyle = '#5a2100'; c.fillRect(24,14,16,3);
+}
+
+function drawAzramorEmberCrown(c, r) {
+    const body = `rgb(${r.int(130,170)},${r.int(20,45)},${r.int(20,40)})`;
+    const fire = `rgb(${r.int(220,255)},${r.int(80,150)},${r.int(10,40)})`;
+    c.fillStyle = body; c.beginPath(); c.ellipse(32,38,16,22,0,0,Math.PI*2); c.fill();
+    c.fillStyle = fire;
+    c.beginPath(); c.moveTo(20,10); c.lineTo(24,0); c.lineTo(28,10); c.fill();
+    c.beginPath(); c.moveTo(32,8); c.lineTo(36,0); c.lineTo(40,8); c.fill();
+    c.beginPath(); c.moveTo(42,10); c.lineTo(46,0); c.lineTo(50,10); c.fill();
+    c.fillRect(18,24,28,6);
+}
+
+function drawThyraxisGlassQueen(c, r) {
+    const glass = `rgb(${r.int(110,160)},${r.int(180,230)},${r.int(220,255)})`;
+    const trim = `rgb(${r.int(30,60)},${r.int(90,130)},${r.int(150,200)})`;
+    c.fillStyle = glass;
+    c.beginPath(); c.moveTo(32,8); c.lineTo(16,56); c.lineTo(48,56); c.closePath(); c.fill();
+    c.fillStyle = trim; c.fillRect(24,18,16,6); c.fillRect(22,34,20,5);
+    c.strokeStyle = '#d9f7ff'; c.lineWidth = 2; c.beginPath(); c.moveTo(32,8); c.lineTo(32,56); c.stroke();
+}
+
+function drawGhorvexHungeringVoid(c, r) {
+    const voidCol = `rgb(${r.int(15,35)},${r.int(5,20)},${r.int(35,65)})`;
+    const maw = `rgb(${r.int(90,130)},${r.int(30,60)},${r.int(140,190)})`;
+    c.fillStyle = voidCol; c.beginPath(); c.ellipse(32,36,20,24,0,0,Math.PI*2); c.fill();
+    c.fillStyle = maw; c.beginPath(); c.ellipse(32,36,10,14,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#f6d7ff';
+    for (let i=0;i<6;i++) c.fillRect(27+i*2,28 + (i%2?8:0), 1, 5);
+}
+
+function drawNyrgothGraveTide(c, r) {
+    const robe = `rgb(${r.int(60,90)},${r.int(70,100)},${r.int(50,80)})`;
+    const bone = `rgb(${r.int(190,230)},${r.int(190,230)},${r.int(170,210)})`;
+    c.fillStyle = robe; c.fillRect(16,22,32,38);
+    c.fillStyle = bone; c.beginPath(); c.ellipse(32,14,11,10,0,0,Math.PI*2); c.fill();
+    c.fillRect(22,30,4,24); c.fillRect(38,30,4,24);
+    c.strokeStyle = '#9bbf93'; c.lineWidth = 2; c.beginPath(); c.arc(32,44,18,0,Math.PI); c.stroke();
+}
+
+function drawXeltharaStormBlade(c, r) {
+    const armor = `rgb(${r.int(70,110)},${r.int(90,130)},${r.int(130,190)})`;
+    const bolt = `rgb(${r.int(170,230)},${r.int(210,255)},${r.int(230,255)})`;
+    c.fillStyle = armor; c.fillRect(20,18,24,40);
+    c.fillStyle = bolt;
+    c.beginPath(); c.moveTo(32,0); c.lineTo(26,18); c.lineTo(34,18); c.lineTo(28,34); c.lineTo(40,14); c.lineTo(32,14); c.closePath(); c.fill();
+    c.fillRect(10,26,8,4); c.fillRect(46,26,8,4);
+}
+
+function drawMolkarethPoxScribe(c, r) {
+    const cloak = `rgb(${r.int(50,80)},${r.int(80,120)},${r.int(20,50)})`;
+    const bile = `rgb(${r.int(120,170)},${r.int(180,230)},${r.int(40,90)})`;
+    c.fillStyle = cloak; c.fillRect(16,18,32,42);
+    c.fillStyle = bile; c.beginPath(); c.ellipse(32,14,10,8,0,0,Math.PI*2); c.fill();
+    c.fillRect(10,38,44,5);
+    for (let i=0;i<4;i++) { c.beginPath(); c.ellipse(14+i*12,52,3,5,0,0,Math.PI*2); c.fill(); }
+}
+
+function drawVaelkorMindFlense(c, r) {
+    const flesh = `rgb(${r.int(130,170)},${r.int(80,120)},${r.int(140,190)})`;
+    const psi = `rgb(${r.int(170,220)},${r.int(90,150)},${r.int(210,255)})`;
+    c.fillStyle = flesh; c.fillRect(18,22,28,36);
+    c.fillStyle = psi; c.beginPath(); c.ellipse(32,14,13,10,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#2b1138'; c.fillRect(24,12,16,4);
+    c.strokeStyle = psi; c.lineWidth = 2;
+    c.beginPath(); c.arc(32,14,18,0,Math.PI*2); c.stroke();
+}
+
+function drawDrozharIronMaw(c, r) {
+    const iron = `rgb(${r.int(80,120)},${r.int(80,120)},${r.int(90,130)})`;
+    const rust = `rgb(${r.int(120,170)},${r.int(70,100)},${r.int(40,70)})`;
+    c.fillStyle = iron; c.fillRect(14,20,36,38);
+    c.fillStyle = rust; c.beginPath(); c.ellipse(32,18,14,12,0,0,Math.PI*2); c.fill();
+    c.fillStyle = '#f2e7cf';
+    for (let i=0;i<7;i++) c.fillRect(20+i*3,18 + (i%2?4:0),2,5);
+    c.fillStyle = iron; c.fillRect(8,28,8,18); c.fillRect(48,28,8,18);
+}
+
+function drawOrphielEclipsedSaint(c, r) {
+    const robe = `rgb(${r.int(70,100)},${r.int(40,70)},${r.int(90,130)})`;
+    const halo = `rgb(${r.int(220,245)},${r.int(160,210)},${r.int(90,140)})`;
+    c.fillStyle = robe; c.fillRect(18,22,28,38);
+    c.strokeStyle = halo; c.lineWidth = 3; c.beginPath(); c.arc(32,10,10,0,Math.PI*2); c.stroke();
+    c.fillStyle = '#111018'; c.beginPath(); c.arc(32,10,7,0,Math.PI*2); c.fill();
+    c.fillStyle = halo; c.beginPath(); c.ellipse(32,18,9,8,0,0,Math.PI*2); c.fill();
+    c.fillRect(28,30,8,20);
+}
+
 function drawPitFiend(c, r) {
     const skin  = `rgb(${r.int(120,160)},${r.int(0,25)},${r.int(0,25)})`;
     const dark  = `rgb(${r.int(40,70)},${r.int(0,10)},${r.int(0,10)})`;
@@ -5280,6 +5376,16 @@ const DRAWERS = {
     succubus:          drawSuccubus,
     chain_devil:       drawChainDevil,
     blood_demon:       drawBloodDemon,
+    varkhul_the_chain_tyrant: drawVarkhulChainTyrant,
+    azramor_the_ember_crown: drawAzramorEmberCrown,
+    thyraxis_the_glass_queen: drawThyraxisGlassQueen,
+    ghorvex_the_hungering_void: drawGhorvexHungeringVoid,
+    nyrgoth_the_grave_tide: drawNyrgothGraveTide,
+    xelthara_the_storm_blade: drawXeltharaStormBlade,
+    molkareth_the_pox_scribe: drawMolkarethPoxScribe,
+    vaelkor_the_mind_flense: drawVaelkorMindFlense,
+    drozhar_the_iron_maw: drawDrozharIronMaw,
+    orphiel_the_eclipsed_saint: drawOrphielEclipsedSaint,
     pit_fiend:         drawPitFiend,
     quasit:            drawQuasit,
     giant_crocodile:   drawGiantCrocodile,

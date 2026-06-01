@@ -167,6 +167,14 @@ import {
     WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
     WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP,
     WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
+    WARLOCK_L35_UNLOCK_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_BASE,
+    WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_PER_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_BLEED_BASE_CHANCE,
+    WARLOCK_HOOKED_TENTACLE_BLEED_CHANCE_PER_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_BLEED_ROUNDS_DIVISOR,
+    WARLOCK_AWAKEN_TRIGGER_SUMMONS,
     PHOTOMANCER_COLOR_SPRAY_MANA_COST, PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL,
     PHOTOMANCER_MIRROR_IMAGE_MANA_COST, PHOTOMANCER_BLUR_UNLOCK_LEVEL,
     PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_INVISIBILITY_MANA_COST,
@@ -183,7 +191,7 @@ import {
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
 import { soundManager } from '../utils/SoundManager.js';
-import { BEAST_TYPES, GOLEM_PRESETS, getSummonPreset, getWarlockUnlockedDemons, WARLOCK_DEMON_PRESETS } from '../entities/Summons.js';
+import { BEAST_TYPES, GOLEM_PRESETS, getSummonPreset, getWarlockUnlockedDemons, WARLOCK_DEMON_PRESETS, WARLOCK_AWAKENED_PRESETS } from '../entities/Summons.js';
 
 /**
  * CombatUI — full-screen overlay for turn-based combat.
@@ -620,6 +628,74 @@ export class CombatUI {
                     vk_aswarm_debuff: {
                         icon: '\u{1FAA1}', label: 'Dissolved', bg: 'rgba(20,100,40,0.9)',
                         tip: (fx) => 'Acid Swarm: -' + Math.abs(fx.defenseBonus||0) + ' def/range/magic — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_prone: {
+                        icon: '⏬', label: 'Prone', bg: 'rgba(100,60,20,0.95)',
+                        tip: (fx) => 'Abyssal Prone: hold-style knockdown — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_chain_shackle: {
+                        icon: '⛓️', label: 'Shackled', bg: 'rgba(80,80,90,0.95)',
+                        tip: (fx) => 'Chain Shackle: -' + Math.abs(fx.damageBonus||0) + ' atk/rng/magic — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_ember_brand: {
+                        icon: '🔥', label: 'Ember Brand', bg: 'rgba(180,60,20,0.95)',
+                        tip: (fx) => 'Ember Brand: ' + (fx.damage||0) + ' fire dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_ash_blind: {
+                        icon: '🌫️', label: 'Ash-Blind', bg: 'rgba(90,70,55,0.95)',
+                        tip: (fx) => 'Ash Blind: -' + Math.abs(fx.rangedBonus||0) + ' ranged/magic — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_brittle_curse: {
+                        icon: '💠', label: 'Brittle', bg: 'rgba(70,130,170,0.95)',
+                        tip: (fx) => 'Brittle Curse: -' + Math.abs(fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_void_rot: {
+                        icon: '🕳️', label: 'Void Rot', bg: 'rgba(40,20,70,0.95)',
+                        tip: (fx) => 'Void Rot: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_gravity_well: {
+                        icon: '🌀', label: 'Gravity Well', bg: 'rgba(50,40,90,0.95)',
+                        tip: (fx) => 'Gravity Well: -' + Math.abs(fx.damageBonus||0) + ' damage, -' + Math.abs(fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_grave_rot: {
+                        icon: '☠️', label: 'Grave Rot', bg: 'rgba(70,80,50,0.95)',
+                        tip: (fx) => 'Grave Rot: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_marrow_chill: {
+                        icon: '🦴', label: 'Marrow Chill', bg: 'rgba(85,85,95,0.95)',
+                        tip: (fx) => 'Marrow Chill: -' + Math.abs(fx.damageBonus||0) + ' damage — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_static_rupture: {
+                        icon: '🌩️', label: 'Static Rupture', bg: 'rgba(40,90,170,0.95)',
+                        tip: (fx) => 'Static Rupture: -' + Math.abs(fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_pox: {
+                        icon: '☣️', label: 'Eldritch Pox', bg: 'rgba(70,110,20,0.95)',
+                        tip: (fx) => 'Eldritch Pox: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_plague_scripture: {
+                        icon: '📜', label: 'Pox Script', bg: 'rgba(95,70,20,0.95)',
+                        tip: (fx) => 'Plague Scripture: -' + Math.abs(fx.damageBonus||0) + ' damage, -' + Math.abs(fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_terror_fracture: {
+                        icon: '🧠', label: 'Terror Fracture', bg: 'rgba(80,40,120,0.95)',
+                        tip: (fx) => 'Terror Fracture: -' + Math.abs(fx.damageBonus||0) + ' damage — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_mind_burn: {
+                        icon: '💜', label: 'Mind Burn', bg: 'rgba(90,30,130,0.95)',
+                        tip: (fx) => 'Mind Burn: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_rend_armor: {
+                        icon: '🦾', label: 'Rend Armor', bg: 'rgba(90,70,70,0.95)',
+                        tip: (fx) => 'Rend Armor: -' + Math.abs(fx.defenseBonus||0) + ' defense — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_saint_scorch: {
+                        icon: '🌘', label: 'Saint Scorch', bg: 'rgba(120,50,80,0.95)',
+                        tip: (fx) => 'Saint Scorch: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
+                    },
+                    awakened_eclipse_blind: {
+                        icon: '🌘', label: 'Eclipse Blind', bg: 'rgba(50,40,70,0.95)',
+                        tip: (fx) => 'Eclipse Blind: -' + Math.abs(fx.rangedBonus||0) + ' ranged/magic — ' + fx.rounds + ' rds left'
                     },
                     warlock_hex: {
                         icon: '\u{1F441}', label: 'Evil Eye', bg: 'rgba(90,0,120,0.95)',
@@ -2706,7 +2782,7 @@ export class CombatUI {
                 this.actionsEl.appendChild(picker);
 
                 const boundDemons = (this.combat.party || [])
-                    .filter(p => p.health > 0 && p.isSummoned && p.summonerId === m.id && WARLOCK_DEMON_PRESETS[p.summonType]);
+                    .filter(p => p.health > 0 && p.isSummoned && p.summonerId === m.id && (WARLOCK_DEMON_PRESETS[p.summonType] || WARLOCK_AWAKENED_PRESETS[p.summonType]));
                 const upkeep = boundDemons.length * WARLOCK_DEMON_UPKEEP_HP;
                 const canCauldron = m.warlockCauldronOpen || m.health > WARLOCK_CAULDRON_HP_COST;
                 const cauldronLabel = m.warlockCauldronOpen
@@ -2720,9 +2796,30 @@ export class CombatUI {
                     `Opening costs ${WARLOCK_CAULDRON_HP_COST} HP. While open, summons one selected demon every round at 100% chance.`,
                     'Demon HP is based on the warlock\'s max HP, not current HP; Tentacled Horror form doubles current and future bound demon HP.',
                     `Each bound demon costs ${WARLOCK_DEMON_UPKEEP_HP} HP per round to maintain. Current upkeep: ${upkeep} HP/round.`,
+                    `Awaken synergy (L${WARLOCK_L35_UNLOCK_LEVEL}): when Awaken is ON, every ${WARLOCK_AWAKEN_TRIGGER_SUMMONS} successful cauldron summons can be consumed to manifest one Awakened Lord.`,
                     'If the warlock falls, all demons bound to that cauldron vanish.',
                     !canCauldron ? `Need more than ${WARLOCK_CAULDRON_HP_COST} HP to open the cauldron.` : '',
                 ].filter(Boolean).join('\n');
+
+                if (m.level >= WARLOCK_L35_UNLOCK_LEVEL) {
+                    const awakenProgress = Math.max(0, Number(m.warlockAwakenSummons) || 0);
+                    const awakenedUsed = Array.isArray(m.warlockAwakenSummonIds)
+                        ? m.warlockAwakenSummonIds.length
+                        : 0;
+                    const awakenLabel = m.warlockAwakenActive
+                        ? `🜂 Awaken: ON (${awakenProgress}/${WARLOCK_AWAKEN_TRIGGER_SUMMONS})`
+                        : `🜂 Awaken: OFF (${awakenProgress}/${WARLOCK_AWAKEN_TRIGGER_SUMMONS})`;
+                    const awakenBtn = this._addBtn(awakenLabel, true, () => this.combat.warlockToggleAwaken());
+                    awakenBtn.classList.add('combat-special-btn');
+                    if (m.warlockAwakenActive) awakenBtn.style.background = 'linear-gradient(135deg,#180a30,#4a1c78)';
+                    awakenBtn.title = [
+                        `Warlock L${WARLOCK_L35_UNLOCK_LEVEL}: free action toggle, no mana cost, does not consume turn.`,
+                        `When ON, every ${WARLOCK_AWAKEN_TRIGGER_SUMMONS} successful cauldron summons are consumed to manifest an Awakened Lord.`,
+                        'Awakened Lords are globally unique across all warlocks in the same combat.',
+                        `This warlock has already manifested ${awakenedUsed}/10 unique Awakened Lords this combat.`,
+                        'If all eligible Lords are exhausted, the summon counter is not consumed and normal demons remain.',
+                    ].join('\n');
+                }
             }
 
             if (m.level >= WARLOCK_CURSE_UNLOCK_LEVEL && !inAbyssForm) {
@@ -2783,12 +2880,18 @@ export class CombatUI {
 
                 if (m.abyssFormActive) {
                     const tentacleCount = Math.max(1, Math.floor(m.level / 3));
+                    const hookedCritChance = Math.max(0, Math.min(1, (m.level || 1) * WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL));
+                    const hookedCritBonus = WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_BASE + (m.level || 1) * WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_PER_LEVEL;
+                    const hookedBleedChance = Math.max(0, Math.min(1, WARLOCK_HOOKED_TENTACLE_BLEED_BASE_CHANCE + (m.level || 1) * WARLOCK_HOOKED_TENTACLE_BLEED_CHANCE_PER_LEVEL));
+                    const hookedBleedRounds = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HOOKED_TENTACLE_BLEED_ROUNDS_DIVISOR));
                     const tentacleBtn = this._addBtn(`\u{1F419} Tentacles x${tentacleCount}`, true, () => this.combat.warlockTentacleAttack());
                     tentacleBtn.classList.add('combat-special-btn');
                     tentacleBtn.title = [
                         `Attacks ${tentacleCount} random available target(s) from the back row.`,
                         `Uses warlock magic skill for melee damage with +${m.level * 3}% bonus.`,
                         `${m.level}% stun chance per hit; normal monster and type immunities still apply.`,
+                        `Hooked Tentacles (L${WARLOCK_L35_UNLOCK_LEVEL} passive): ${Math.round(hookedCritChance * 100)}% chance per hit to crit for +${Math.round(hookedCritBonus * 100)}% damage.`,
+                        `Separate ${Math.round(hookedBleedChance * 100)}% chance per hit to apply Bleed DoT (${hookedBleedRounds} rounds, damage per tick = half of that hit).`,
                     ].join('\n');
 
                     const targets = Math.max(1, Math.floor(m.level / WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR));

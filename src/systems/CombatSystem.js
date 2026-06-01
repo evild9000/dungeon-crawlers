@@ -271,6 +271,14 @@ import {
     WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ABYSS_MAGIC_RESIST, WARLOCK_ABYSS_COLD_ACID_RESIST,
     WARLOCK_DEMON_PROTECTION_CAP, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
     WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE,
+    WARLOCK_L35_UNLOCK_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_BASE,
+    WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_PER_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_BLEED_BASE_CHANCE,
+    WARLOCK_HOOKED_TENTACLE_BLEED_CHANCE_PER_LEVEL,
+    WARLOCK_HOOKED_TENTACLE_BLEED_ROUNDS_DIVISOR,
+    WARLOCK_AWAKEN_TRIGGER_SUMMONS,
     PHOTOMANCER_COLOR_SPRAY_MANA_COST, PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL,
     PHOTOMANCER_MIRROR_IMAGE_MANA_COST, PHOTOMANCER_BLUR_UNLOCK_LEVEL,
     PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_BLUR_MISS_CHANCE,
@@ -302,6 +310,7 @@ import {
     VERMIN_PRESETS, SLIME_PRESETS, VERMIN_SWARM_PRESET, ACID_SWARM_PRESET,
     rollVerminStats, rollSwarmStats,
     WARLOCK_DEMON_PRESETS, getWarlockUnlockedDemons, rollWarlockDemonStats,
+    WARLOCK_AWAKENED_PRESETS, WARLOCK_AWAKENED_IDS, rollWarlockAwakenedStats,
     ILLUSIONARY_WARRIOR_PRESET,
 } from '../entities/Summons.js';
 import {
@@ -731,6 +740,102 @@ export class CombatSystem {
             (warlock.getWeaponBonus?.('magic') || 0)
             + (warlock.getClassDamageBonus?.('magic') || 0)
             + this._getPartyMemberDamageMod(warlock));
+    }
+
+    _isWarlockBoundSummon(unit) {
+        if (!unit || !unit.isSummoned) return false;
+        return !!(WARLOCK_DEMON_PRESETS[unit.summonType] || WARLOCK_AWAKENED_PRESETS[unit.summonType]);
+    }
+
+    _getWarlockBoundDemons(warlock, includeDead = false) {
+        if (!warlock) return [];
+        return (this.party || []).filter(p =>
+            p
+            && p.isSummoned
+            && p.summonerId === warlock.id
+            && this._isWarlockBoundSummon(p)
+            && (includeDead || p.health > 0));
+    }
+
+    _getActiveAwakenedIds() {
+        const ids = new Set();
+        for (const p of this.party || []) {
+            if (!p || p.health <= 0 || !p.isSummoned) continue;
+            if (WARLOCK_AWAKENED_PRESETS[p.summonType]) ids.add(p.summonType);
+        }
+        return ids;
+    }
+
+    _queueWarlockAwakenSummon(warlock, demon) {
+        if (!warlock || !demon || !warlock.warlockAwakenActive) return;
+        warlock.warlockAwakenSummons = (warlock.warlockAwakenSummons || 0) + 1;
+        warlock.warlockAwakenSummonIds = Array.isArray(warlock.warlockAwakenSummonIds)
+            ? warlock.warlockAwakenSummonIds
+            : [];
+        warlock.warlockAwakenSummonIds.push(demon.id);
+
+        if ((warlock.warlockAwakenSummons || 0) >= WARLOCK_AWAKEN_TRIGGER_SUMMONS) {
+            this._tryWarlockAwaken(warlock);
+        }
+    }
+
+    _tryWarlockAwaken(warlock) {
+        if (!warlock || warlock.health <= 0 || !warlock.warlockAwakenActive) return false;
+        if ((warlock.warlockAwakenSummons || 0) < WARLOCK_AWAKEN_TRIGGER_SUMMONS) return false;
+
+        const activeAwakened = this._getActiveAwakenedIds();
+        const available = WARLOCK_AWAKENED_IDS.filter(id => !activeAwakened.has(id));
+        if (available.length === 0) {
+            this._addLog(`🕳️ ${warlock.name}'s Awaken ritual strains against the void, but every known horror is already present.`);
+            return false;
+        }
+
+        const chosenId = available[Math.floor(Math.random() * available.length)];
+        const preset = WARLOCK_AWAKENED_PRESETS[chosenId];
+        if (!preset) return false;
+
+        const trackedIds = Array.isArray(warlock.warlockAwakenSummonIds) ? warlock.warlockAwakenSummonIds.slice() : [];
+        const consumeIds = trackedIds.slice(0, WARLOCK_AWAKEN_TRIGGER_SUMMONS);
+        let removed = 0;
+        for (const id of consumeIds) {
+            const summon = (this.party || []).find(p => p && p.id === id && p.health > 0 && p.summonerId === warlock.id && this._isWarlockBoundSummon(p));
+            if (!summon) continue;
+            summon.health = 0;
+            removed++;
+            this._addLog(`🕳️ ${summon.name} is swallowed by ${warlock.name}'s awakening ritual.`);
+        }
+
+        const awakenStats = rollWarlockAwakenedStats(warlock.level || 1, warlock.maxHealth, chosenId);
+        const existingCount = (this.party || []).filter(p => p && p.isSummoned && p.summonerId === warlock.id && p.summonType === chosenId).length;
+        const awakened = new PartyMember({
+            name: `${warlock.name}'s ${preset.name}${existingCount > 0 ? ` #${existingCount + 1}` : ''}`,
+            classId: 'summoned',
+            speciesId: 'human',
+            level: warlock.level || 1,
+            maxHealth: awakenStats.maxHealth,
+            maxStamina: 0,
+            maxMana: 0,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            summonType: chosenId,
+            summonerId: warlock.id,
+            canBeHealed: true,
+            row: 'back',
+            summonStats: awakenStats,
+        });
+        this.party.push(awakened);
+        this._registerNewSummon(awakened);
+
+        if (this._initiativeOrder.length > 0 && !this._initiativeOrder.some(slot => slot.ref === awakened)) {
+            const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
+            this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: awakened, init: baseInit, skipThisRound: false });
+        }
+
+        warlock.warlockAwakenSummons = Math.max(0, (warlock.warlockAwakenSummons || 0) - WARLOCK_AWAKEN_TRIGGER_SUMMONS);
+        warlock.warlockAwakenSummonIds = trackedIds.slice(WARLOCK_AWAKEN_TRIGGER_SUMMONS);
+
+        this._addLog(`🕳️ ${warlock.name} awakens ${preset.name}! ${removed} bound demon${removed === 1 ? '' : 's'} are sacrificed to the void.`);
+        return true;
     }
 
     _getDragonBreathDamageBonusPct(enemy) {
@@ -6551,7 +6656,7 @@ export class CombatSystem {
         if (!m.isSummoned) return true; // all real party members qualify
         // For summons: only beasts (ranger/druid/VK) and warlock demons qualify
         if (BEAST_TYPES[m.summonType]) return true;
-        if (WARLOCK_DEMON_PRESETS[m.summonType]) return true;
+        if (this._isWarlockBoundSummon(m)) return true;
         if (VERMIN_PRESETS[m.summonType]) return true;
         if (SLIME_PRESETS[m.summonType]) return true;
         return false;
@@ -8288,7 +8393,7 @@ export class CombatSystem {
         }
 
         // ── Warlock demon summons ───────────────────────────────────────────────
-        if (beastKind === 'warlock_demon' || (m.isSummoned && WARLOCK_DEMON_PRESETS[m.summonType])) {
+        if (beastKind === 'warlock_demon' || (m.isSummoned && this._isWarlockBoundSummon(m))) {
             this._processWarlockDemonAttack(m);
             return;
         }
@@ -11445,6 +11550,11 @@ export class CombatSystem {
             rawDmg = tauntResult.rawDmg;
         }
 
+        if (target?.isSummoned && target.summonStats?.immuneToLifeDrainAttack && (typeDef.lifeDrain || 0) > 0) {
+            this._addLog(`🕳️ ${target.name} ignores ${eName}'s life-drain assault.`);
+            return null;
+        }
+
         if (target && target.type && target.charmedRounds > 0) {
             const tName = this._eName(target);
             const kindLabel = opts.aoe ? 'AoE' : attackKind;
@@ -13254,7 +13364,7 @@ export class CombatSystem {
                     }
                 }
                 if (m.warlockCauldronOpen) {
-                    const demons = this.party.filter(p => p.isSummoned && p.summonerId === m.id && WARLOCK_DEMON_PRESETS[p.summonType] && p.health > 0);
+                    const demons = this._getWarlockBoundDemons(m);
                     const upkeep = demons.length * WARLOCK_DEMON_UPKEEP_HP;
                     if (upkeep > 0) {
                         m.health = Math.max(0, m.health - upkeep);
@@ -14729,7 +14839,7 @@ export class CombatSystem {
             // ── Weapon-rider DoTs on enemies (burn, acid_dot, poison_weapon).
             //    Each ticks per player round; damage rolled once per round.
             const effects = e.activeEffects || [];
-            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', quasit_poison: '\u{1F47F} quasit venom', bloat_poison: '\u{1F922} toxic bile', vk_acid_dot: '\u{1F7E2} acid corrosion', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid', shadow_fire_dot: '🌑🔥 shadow fire', shadow_ice_dot: '🌑❄️ shadow ice', shadow_lightning_dot: '🌑⚡ shadow lightning', shadow_acid_dot: '🌑🟢 shadow acid', shadow_poison_dot: '🌑☠️ shadow poison', shadow_psychic_dot: '🌑💜 shadow psychic', shadow_sonic_dot: '🌑🔊 shadow sonic', shadow_bleed_dot: '🌑🩸 shadow bleed' };
+            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', quasit_poison: '\u{1F47F} quasit venom', bloat_poison: '\u{1F922} toxic bile', vk_acid_dot: '\u{1F7E2} acid corrosion', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid', shadow_fire_dot: '🌑🔥 shadow fire', shadow_ice_dot: '🌑❄️ shadow ice', shadow_lightning_dot: '🌑⚡ shadow lightning', shadow_acid_dot: '🌑🟢 shadow acid', shadow_poison_dot: '🌑☠️ shadow poison', shadow_psychic_dot: '🌑💜 shadow psychic', shadow_sonic_dot: '🌑🔊 shadow sonic', shadow_bleed_dot: '🌑🩸 shadow bleed', awakened_ember_brand: '🔥 ember brand', awakened_void_rot: '🕳️ void rot', awakened_grave_rot: '☠️ grave rot', awakened_pox: '☣️ eldritch pox', awakened_mind_burn: '🧠 mind burn', awakened_saint_scorch: '🌘 saint scorch' };
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {
@@ -15642,6 +15752,20 @@ export class CombatSystem {
         this._notify();
     }
 
+    warlockToggleAwaken() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'warlock') return;
+        if ((m.level || 1) < WARLOCK_L35_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} must be level ${WARLOCK_L35_UNLOCK_LEVEL} to use Awaken.`);
+            return;
+        }
+        m.warlockAwakenActive = !m.warlockAwakenActive;
+        this._addLog(m.warlockAwakenActive
+            ? `🕳️ ${m.name} opens the deeper gate. Awaken is active.`
+            : `🕳️ ${m.name} seals the deeper gate. Awaken is inactive.`);
+        this._notify();
+    }
+
     _warlockSummonDemon(warlock, demonId = null) {
         if (!warlock || warlock.health <= 0 || warlock.classId !== 'warlock') return null;
         const unlocked = getWarlockUnlockedDemons(warlock.level || 1);
@@ -15683,6 +15807,7 @@ export class CombatSystem {
             if (!this._initiativeOrder.some(slot => slot.ref === demon))
                 this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: demon, init: baseInit, skipThisRound: false });
         }
+        this._queueWarlockAwakenSummon(warlock, demon);
         return demon;
     }
 
@@ -15812,7 +15937,7 @@ export class CombatSystem {
         let count = 0;
         for (const demon of this.party) {
             if (!demon || demon.health <= 0 || !demon.isSummoned || demon.summonerId !== warlock.id) continue;
-            if (!WARLOCK_DEMON_PRESETS[demon.summonType]) continue;
+            if (!this._isWarlockBoundSummon(demon)) continue;
             const stats = demon.summonStats = demon.summonStats || {};
             if (stats.abyssFormHpBonus > 0) continue;
             const bonus = Math.max(1, demon.maxHealth || 1);
@@ -15829,7 +15954,7 @@ export class CombatSystem {
         let count = 0;
         for (const demon of this.party) {
             if (!demon || !demon.isSummoned || demon.summonerId !== warlock.id) continue;
-            if (!WARLOCK_DEMON_PRESETS[demon.summonType]) continue;
+            if (!this._isWarlockBoundSummon(demon)) continue;
             const stats = demon.summonStats || {};
             const bonus = Math.max(0, stats.abyssFormHpBonus || 0);
             if (!bonus) continue;
@@ -15846,36 +15971,61 @@ export class CombatSystem {
         if (!m || m.health <= 0 || m.classId !== 'warlock' || !m.abyssFormActive) return;
         const count = Math.max(1, Math.floor((m.level || 1) / 3));
         const dmgMult = 1 + ((m.level || 1) * 3) / 100;
+        const level = Math.max(1, m.level || 1);
+        const hookedActive = level >= WARLOCK_L35_UNLOCK_LEVEL;
+        const critChance = Math.min(1, level * WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL);
+        const critBonusMult = 1 + WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_BASE + (level * WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_PER_LEVEL);
+        const bleedChance = Math.min(1, WARLOCK_HOOKED_TENTACLE_BLEED_BASE_CHANCE + (level * WARLOCK_HOOKED_TENTACLE_BLEED_CHANCE_PER_LEVEL));
+        const bleedRounds = Math.max(1, Math.floor(level / WARLOCK_HOOKED_TENTACLE_BLEED_ROUNDS_DIVISOR));
+
+        const applyTentacleHit = (target, label = 'Tentacle hits') => {
+            let dmg = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX) + this._getWarlockMagicSkill(m);
+            dmg = Math.max(1, Math.round(dmg * dmgMult));
+            let crit = false;
+            if (hookedActive && Math.random() < critChance) {
+                dmg = Math.max(1, Math.round(dmg * critBonusMult));
+                crit = true;
+            }
+            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
+            const dealt = this._damageEnemy(target, dmg, false, false, 0, false, { contactAttacker: m });
+            this._addLog(`  \u{1F9D0} ${label} ${this._eName(target)} for ${dealt}${crit ? ' (CRIT)' : ''}.`);
+
+            if (hookedActive && dealt > 0 && target.health > 0 && Math.random() < bleedChance) {
+                if (!this._enemyHasImmunity(target, 'bleed')) {
+                    const bleedDmg = Math.max(1, Math.floor(dealt / 2));
+                    target.activeEffects = target.activeEffects || [];
+                    target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedRounds });
+                    this._addLog(`    \u{1FA78} Hooked bleed tears ${this._eName(target)} (${bleedDmg}/rd, ${bleedRounds} rds).`);
+                } else {
+                    this._addLog(`    \u{1FA78} ${this._eName(target)} resists the hooked bleed.`);
+                }
+            }
+
+            if (target.health > 0 && Math.random() < Math.min(1, level / 100)) {
+                if (this._tryStunEnemy(target)) this._addLog(`  ⚡ ${this._eName(target)} is stunned by the abyssal grip!`);
+            }
+            if (target.health <= 0 && !target._deathHandled) {
+                target._deathHandled = true;
+                this._onEnemyDeath(target);
+            }
+        };
+
         this._addLog(`\u{1F9D0} ${m.name}'s abyssal tentacles lash out (${count} attacks)!`);
         for (let i = 0; i < count; i++) {
             const targets = this.aliveHostileEnemies;
             if (!targets.length) break;
             const t = targets[Math.floor(Math.random() * targets.length)];
-            let dmg = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX) + this._getWarlockMagicSkill(m);
-            dmg = Math.max(1, Math.round(dmg * dmgMult));
-            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
-            const dealt = this._damageEnemy(t, dmg, false, false, 0, false, { contactAttacker: m });
-            this._addLog(`  \u{1F9D0} Tentacle hits ${this._eName(t)} for ${dealt}.`);
-            if (t.health > 0 && Math.random() < Math.min(1, (m.level || 1) / 100)) {
-                if (this._tryStunEnemy(t)) this._addLog(`  ⚡ ${this._eName(t)} is stunned by the abyssal grip!`);
-            }
-            if (t.health <= 0 && !t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
+            applyTentacleHit(t, 'Tentacle hits');
         }
 
         // Quickstep Song haste: one extra round of tentacle attacks
         if (m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
             const _qstCount = Math.max(1, Math.floor((m.level || 1) / 3));
-            const _qstMult  = 1 + ((m.level || 1) * 3) / 100;
             this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus tentacle strike!`);
             for (let _qi = 0; _qi < _qstCount && this.aliveHostileEnemies.length > 0; _qi++) {
                 const _qstTgts = this.aliveHostileEnemies;
                 const _qstT = _qstTgts[Math.floor(Math.random() * _qstTgts.length)];
-                let _qstDmg = randomInt(MELEE_DAMAGE_MIN, MELEE_DAMAGE_MAX) + this._getWarlockMagicSkill(m);
-                _qstDmg = Math.max(1, Math.round(_qstDmg * _qstMult));
-                _qstDmg = this._applyOutgoingDamageBonuses(m, _qstDmg, 'melee');
-                const _qstDealt = this._damageEnemy(_qstT, _qstDmg, false, false, 0, false, { contactAttacker: m });
-                this._addLog(`  \u{1F9D0} Haste tentacle hits ${this._eName(_qstT)} for ${_qstDealt}.`);
-                if (_qstT.health <= 0 && !_qstT._deathHandled) { _qstT._deathHandled = true; this._onEnemyDeath(_qstT); }
+                applyTentacleHit(_qstT, 'Haste tentacle hits');
             }
         }
 
@@ -15900,7 +16050,7 @@ export class CombatSystem {
     _removeWarlockSummons(warlock) {
         if (!warlock) return;
         for (const p of this.party) {
-            if (p.isSummoned && p.summonerId === warlock.id && WARLOCK_DEMON_PRESETS[p.summonType] && p.health > 0) {
+            if (p.isSummoned && p.summonerId === warlock.id && this._isWarlockBoundSummon(p) && p.health > 0) {
                 p.health = 0;
                 this._addLog(`\u{1F608} ${p.name} is pulled back into the abyss as ${warlock.name} falls!`);
             }
@@ -16504,6 +16654,39 @@ export class CombatSystem {
             this._addLog(`\u{1F7E2} ${demon.name}'s acid spatter congeals into ${slime.name}!`);
             return slime;
         };
+        const refreshEnemyEffect = (target, effect) => {
+            if (!target || target.health <= 0 || !effect || !effect.type) return;
+            target.activeEffects = target.activeEffects || [];
+            const existing = target.activeEffects.find(fx => fx && fx.type === effect.type);
+            if (existing) {
+                for (const [k, v] of Object.entries(effect)) {
+                    if (k === 'type') continue;
+                    existing[k] = v;
+                }
+            } else {
+                target.activeEffects.push({ ...effect });
+            }
+        };
+        const applyAwakenedDot = (target, typeId, dealt, frac, rounds, immuneTag = null, label = 'afflicted') => {
+            if (!target || target.health <= 0 || dealt <= 0) return;
+            if (immuneTag && this._enemyHasImmunity(target, immuneTag)) return;
+            const damage = Math.max(1, Math.floor(dealt * frac));
+            target.activeEffects = target.activeEffects || [];
+            target.activeEffects.push({ type: typeId, damage, rounds: Math.max(1, rounds | 0) });
+            this._addLog(`    ${this._eName(target)} is ${label}! (${damage}/rd, ${Math.max(1, rounds | 0)} rds)`);
+        };
+        const applyAwakenedDebuff = (target, effect, logText) => {
+            if (!target || target.health <= 0 || !effect) return;
+            refreshEnemyEffect(target, effect);
+            if (logText) this._addLog(`    ${logText}`);
+        };
+        const applyAwakenedProne = (target, rounds = 1) => {
+            if (!target || target.health <= 0) return;
+            if (this._tryHoldEnemy(target)) {
+                refreshEnemyEffect(target, { type: 'awakened_prone', rounds: Math.max(1, rounds | 0) });
+                this._addLog(`    ${this._eName(target)} is yanked prone by abyssal force!`);
+            }
+        };
 
         switch (type) {
             case 'imp': {
@@ -16702,6 +16885,186 @@ export class CombatSystem {
                     st.bloodDemonKillBonus = (st.bloodDemonKillBonus || 0) + 2;
                 }
                 kill(t);
+                break;
+            }
+            case 'varkhul_the_chain_tyrant': {
+                this._addLog(`⛓️ ${demon.name} executes the Chain Tyrant litany!`);
+                for (let i = 0; i < 3; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged', 0.95);
+                    this._addLog(`  -> chain lash rends ${this._eName(t)} for ${d}.`);
+                    if (t.health > 0 && Math.random() < 0.35) applyAwakenedProne(t, 1);
+                    kill(t);
+                }
+                const t = randTarget();
+                if (t) {
+                    const d = hit(t, 'melee', 1.35);
+                    this._addLog(`  -> tyrant crushes ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDebuff(t, { type: 'awakened_chain_shackle', damageBonus: -3, rangedBonus: -3, magicBonus: -3, rounds: 2 }, `${this._eName(t)} is soul-shackled (-3 atk/rng/magic).`);
+                    kill(t);
+                }
+                break;
+            }
+            case 'azramor_the_ember_crown': {
+                this._addLog(`👑🔥 ${demon.name} crowns the field in infernal embers!`);
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    if (this._enemyHasImmunity(e, 'fire')) continue;
+                    const d = hit(e, 'magic', 0.9);
+                    this._addLog(`  -> crownfire scorches ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDot(e, 'awakened_ember_brand', d, 0.45, 3, 'fire', 'branded by ember-crown');
+                    kill(e);
+                }
+                const t = randTarget();
+                if (t) {
+                    const d = hit(t, 'magic', 1.5);
+                    this._addLog(`  -> ember lance impales ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDebuff(t, { type: 'awakened_ash_blind', rangedBonus: -3, magicBonus: -3, rounds: 2 }, `${this._eName(t)} is ash-blinded (-3 ranged/magic).`);
+                    kill(t);
+                }
+                break;
+            }
+            case 'thyraxis_the_glass_queen': {
+                this._addLog(`💠 ${demon.name} fractures reality with crystal harmonics!`);
+                for (let i = 0; i < 3; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged', 0.95);
+                    this._addLog(`  -> mirror shard hits ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDebuff(t, { type: 'awakened_brittle_curse', defenseBonus: -4, rounds: 2 }, `${this._eName(t)} turns brittle (-4 defense).`);
+                    kill(t);
+                }
+                const t = randTarget();
+                if (t) {
+                    const d = hit(t, 'magic', 1.4, true);
+                    this._addLog(`  -> prism lance pierces ${this._eName(t)} for ${d} (ignores defense).`);
+                    kill(t);
+                }
+                break;
+            }
+            case 'ghorvex_the_hungering_void': {
+                this._addLog(`🕳️ ${demon.name} feeds the hungering void!`);
+                const biteTarget = randTarget();
+                if (biteTarget) {
+                    const d = hit(biteTarget, 'melee', 1.4);
+                    this._addLog(`  -> void bite devours ${this._eName(biteTarget)} for ${d}.`);
+                    if (d > 0) demon.health = Math.min(demon.maxHealth, demon.health + Math.floor(d * 0.25));
+                    applyAwakenedDot(biteTarget, 'awakened_void_rot', d, 0.35, 3, null, 'rotted by the void');
+                    kill(biteTarget);
+                }
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'magic', 0.8);
+                    this._addLog(`  -> hunger pulse crushes ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDebuff(e, { type: 'awakened_gravity_well', defenseBonus: -2, damageBonus: -2, rounds: 2 }, `${this._eName(e)} is trapped in a gravity well.`);
+                    kill(e);
+                }
+                break;
+            }
+            case 'nyrgoth_the_grave_tide': {
+                this._addLog(`☠️ ${demon.name} drowns foes in a grave tide!`);
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'magic', 0.85);
+                    this._addLog(`  -> grave wave hits ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDot(e, 'awakened_grave_rot', d, 0.4, 3, null, 'consumed by grave rot');
+                    kill(e);
+                }
+                for (let i = 0; i < 2; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged', 1.1);
+                    this._addLog(`  -> bone spear impales ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDebuff(t, { type: 'awakened_marrow_chill', damageBonus: -3, rounds: 2 }, `${this._eName(t)} is marrow-chilled (-3 damage).`);
+                    kill(t);
+                }
+                break;
+            }
+            case 'xelthara_the_storm_blade': {
+                this._addLog(`🌩️ ${demon.name} dances in the storm and strikes all vectors!`);
+                for (let i = 0; i < 2; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'melee', 1.15);
+                    this._addLog(`  -> storm cleave tears ${this._eName(t)} for ${d}.`);
+                    kill(t);
+                }
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    if (this._enemyHasImmunity(e, 'lightning')) continue;
+                    const d = hit(e, 'magic', 0.75);
+                    this._addLog(`  -> thunder arc shocks ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDebuff(e, { type: 'awakened_static_rupture', defenseBonus: -2, rounds: 2 }, `${this._eName(e)} is statically ruptured (-2 defense).`);
+                    kill(e);
+                }
+                break;
+            }
+            case 'molkareth_the_pox_scribe': {
+                this._addLog(`☣️ ${demon.name} writes plague scripture in living flesh!`);
+                for (let i = 0; i < 4; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'ranged', 0.7);
+                    this._addLog(`  -> pox quill hits ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDot(t, 'awakened_pox', d, 0.5, 3, 'poison', 'infected with eldritch pox');
+                    kill(t);
+                }
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'magic', 0.8);
+                    this._addLog(`  -> bile nova splashes ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDebuff(e, { type: 'awakened_plague_scripture', damageBonus: -2, defenseBonus: -2, rounds: 2 }, `${this._eName(e)} is hexed by plague scripture.`);
+                    kill(e);
+                }
+                break;
+            }
+            case 'vaelkor_the_mind_flense': {
+                this._addLog(`🧠 ${demon.name} flenses thought from flesh!`);
+                for (let i = 0; i < 3; i++) {
+                    const t = randTarget(); if (!t) break;
+                    const d = hit(t, 'magic', 0.9);
+                    this._addLog(`  -> mind lance strikes ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDebuff(t, { type: 'awakened_terror_fracture', damageBonus: -3, rounds: 2 }, `${this._eName(t)} is terror-fractured (-3 damage).`);
+                    kill(t);
+                }
+                const t = randTarget();
+                if (t) {
+                    const d = hit(t, 'magic', 1.45);
+                    this._addLog(`  -> sanity shear ravages ${this._eName(t)} for ${d}.`);
+                    applyAwakenedDot(t, 'awakened_mind_burn', d, 0.4, 3, 'psychic', 'mind-burned');
+                    kill(t);
+                }
+                break;
+            }
+            case 'drozhar_the_iron_maw': {
+                this._addLog(`🦾 ${demon.name} grinds the battlefield to iron dust!`);
+                const biteTarget = randTarget();
+                if (biteTarget) {
+                    const d = hit(biteTarget, 'melee', 1.6);
+                    this._addLog(`  -> iron maw bite crushes ${this._eName(biteTarget)} for ${d}.`);
+                    kill(biteTarget);
+                }
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'melee', 0.9);
+                    this._addLog(`  -> crushing stomp hits ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDebuff(e, { type: 'awakened_rend_armor', defenseBonus: -4, rounds: 2 }, `${this._eName(e)} armor is torn apart (-4 defense).`);
+                    kill(e);
+                }
+                break;
+            }
+            case 'orphiel_the_eclipsed_saint': {
+                this._addLog(`🌘 ${demon.name} chants the eclipsed hymn and drowns the field in night.`);
+                const rayTarget = randTarget();
+                if (rayTarget) {
+                    const d = hit(rayTarget, 'magic', 1.4);
+                    this._addLog(`  -> eclipse ray sears ${this._eName(rayTarget)} for ${d}.`);
+                    applyAwakenedDot(rayTarget, 'awakened_saint_scorch', d, 0.45, 3, null, 'seared by eclipse fire');
+                    kill(rayTarget);
+                }
+                let totalDealt = 0;
+                for (const e of this.aliveHostileEnemies.slice()) {
+                    const d = hit(e, 'magic', 0.85);
+                    totalDealt += d;
+                    this._addLog(`  -> nightflood washes over ${this._eName(e)} for ${d}.`);
+                    applyAwakenedDebuff(e, { type: 'awakened_eclipse_blind', rangedBonus: -3, magicBonus: -3, rounds: 2 }, `${this._eName(e)} is eclipse-blinded (-3 ranged/magic).`);
+                    kill(e);
+                }
+                if (totalDealt > 0) {
+                    const heal = Math.max(1, Math.floor(totalDealt * 0.15));
+                    demon.health = Math.min(demon.maxHealth, demon.health + heal);
+                    this._addLog(`  -> ${demon.name} drinks eclipse grace and heals ${heal} HP.`);
+                }
                 break;
             }
             default: {

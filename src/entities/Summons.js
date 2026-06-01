@@ -696,6 +696,213 @@ export function rollWarlockDemonStats(warlockLevel = 1, warlockMaxHealth = 20, w
     };
 }
 
+export const WARLOCK_AWAKENED_PRESETS = {
+    varkhul_the_chain_tyrant: {
+        id: 'varkhul_the_chain_tyrant',
+        name: 'Varkhul, the Chain Tyrant',
+        icon: '⛓️',
+        enemySprite: 'varkhul_the_chain_tyrant',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['hold', 'stun', 'poison'],
+        abilities: [
+            'Awakened Lord: unique warlock L35 cauldron ascendant.',
+            'Each round uses all attacks: chain lash, hook-pull prone, and soul shackle.',
+            'Immune to hold, stun, and poison effects.',
+        ],
+    },
+    azramor_the_ember_crown: {
+        id: 'azramor_the_ember_crown',
+        name: 'Azramor, the Ember Crown',
+        icon: '👑',
+        enemySprite: 'azramor_the_ember_crown',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['fire', 'burn'],
+        abilities: [
+            'Each round uses all attacks: crownfire rain, searing brand, and ash burst.',
+            'Immune to fire and burn effects.',
+        ],
+    },
+    thyraxis_the_glass_queen: {
+        id: 'thyraxis_the_glass_queen',
+        name: 'Thyraxis, the Glass Queen',
+        icon: '💠',
+        enemySprite: 'thyraxis_the_glass_queen',
+        portraitClass: 'summoned',
+        portraitSpecies: 'elf',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['cold', 'bleed'],
+        abilities: [
+            'Each round uses all attacks: mirror shard volley, brittle curse, and prism lance.',
+            'Immune to cold and bleed effects.',
+        ],
+    },
+    ghorvex_the_hungering_void: {
+        id: 'ghorvex_the_hungering_void',
+        name: 'Ghorvex, the Hungering Void',
+        icon: '🕳️',
+        enemySprite: 'ghorvex_the_hungering_void',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['psychic', 'mana_drain', 'stamina_drain'],
+        lifeDrainWard: true,
+        abilities: [
+            'Each round uses all attacks: void bite, hunger pulse, and gravitic crush.',
+            'Immune to psychic and resource-drain effects; resists life-drain attackers.',
+        ],
+    },
+    nyrgoth_the_grave_tide: {
+        id: 'nyrgoth_the_grave_tide',
+        name: 'Nyrgoth, the Grave Tide',
+        icon: '☠️',
+        enemySprite: 'nyrgoth_the_grave_tide',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['poison', 'bleed', 'paralyze'],
+        lifeDrainWard: true,
+        abilities: [
+            'Each round uses all attacks: grave wave, marrow rot, and bone spear.',
+            'Immune to poison, bleed, and paralysis; resists life-drain attackers.',
+        ],
+    },
+    xelthara_the_storm_blade: {
+        id: 'xelthara_the_storm_blade',
+        name: 'Xelthara, the Storm Blade',
+        icon: '🌩️',
+        enemySprite: 'xelthara_the_storm_blade',
+        portraitClass: 'summoned',
+        portraitSpecies: 'elf',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['lightning', 'stun'],
+        abilities: [
+            'Each round uses all attacks: storm cleave, thunder arc, and static rupture.',
+            'Immune to lightning and stun effects.',
+        ],
+    },
+    molkareth_the_pox_scribe: {
+        id: 'molkareth_the_pox_scribe',
+        name: 'Molkareth, the Pox Scribe',
+        icon: '☣️',
+        enemySprite: 'molkareth_the_pox_scribe',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['poison', 'acid'],
+        abilities: [
+            'Each round uses all attacks: pox quills, plague scripture, and bile nova.',
+            'Immune to poison and acid effects.',
+        ],
+    },
+    vaelkor_the_mind_flense: {
+        id: 'vaelkor_the_mind_flense',
+        name: 'Vaelkor, the Mind Flense',
+        icon: '🧠',
+        enemySprite: 'vaelkor_the_mind_flense',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['psychic', 'charm'],
+        abilities: [
+            'Each round uses all attacks: mind lance, terror bloom, and sanity shear.',
+            'Immune to psychic and charm effects.',
+        ],
+    },
+    drozhar_the_iron_maw: {
+        id: 'drozhar_the_iron_maw',
+        name: 'Drozhar, the Iron Maw',
+        icon: '🦾',
+        enemySprite: 'drozhar_the_iron_maw',
+        portraitClass: 'summoned',
+        portraitSpecies: 'dwarf',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['bleed', 'fracture'],
+        abilities: [
+            'Each round uses all attacks: iron maw bite, crushing stomp, and shrapnel roar.',
+            'Immune to bleed and fracture-like wounds.',
+        ],
+    },
+    orphiel_the_eclipsed_saint: {
+        id: 'orphiel_the_eclipsed_saint',
+        name: 'Orphiel, the Eclipsed Saint',
+        icon: '🌘',
+        enemySprite: 'orphiel_the_eclipsed_saint',
+        portraitClass: 'summoned',
+        portraitSpecies: 'human',
+        speciesLabel: 'Awakened Lord',
+        kind: 'demon',
+        immune: ['psychic', 'poison', 'stun'],
+        abilities: [
+            'Each round uses all attacks: eclipse ray, saintfall hymn, and nightflood wave.',
+            'Immune to psychic, poison, and stun effects.',
+        ],
+    },
+};
+
+export const WARLOCK_AWAKENED_IDS = Object.keys(WARLOCK_AWAKENED_PRESETS);
+
+export function rollWarlockAwakenedStats(warlockLevel = 1, warlockMaxHealth = 20, awakenedId = WARLOCK_AWAKENED_IDS[0]) {
+    const level = Math.max(1, warlockLevel | 0);
+    const maxHealthBase = Math.max(1, Math.floor((warlockMaxHealth || 1) * 5));
+    const offense = Math.max(1, Math.floor(level * 3));
+    const defense = Math.max(1, Math.floor(level * 2.5));
+    const preset = WARLOCK_AWAKENED_PRESETS[awakenedId] || WARLOCK_AWAKENED_PRESETS[WARLOCK_AWAKENED_IDS[0]];
+
+    const healthMultById = {
+        drozhar_the_iron_maw: 1.25,
+        ghorvex_the_hungering_void: 1.2,
+        vaelkor_the_mind_flense: 0.9,
+        xelthara_the_storm_blade: 0.9,
+    };
+    const offenseMultById = {
+        xelthara_the_storm_blade: 1.25,
+        vaelkor_the_mind_flense: 1.2,
+        azramor_the_ember_crown: 1.1,
+        drozhar_the_iron_maw: 0.95,
+    };
+    const defenseMultById = {
+        varkhul_the_chain_tyrant: 1.1,
+        drozhar_the_iron_maw: 1.2,
+        vaelkor_the_mind_flense: 0.9,
+    };
+
+    const maxHealth = Math.max(1, Math.floor(maxHealthBase * (healthMultById[awakenedId] || 1)));
+    const offenseScaled = Math.max(1, Math.floor(offense * (offenseMultById[awakenedId] || 1)));
+    const defenseScaled = Math.max(1, Math.floor(defense * (defenseMultById[awakenedId] || 1)));
+
+    return {
+        maxHealth,
+        maxStamina: 0,
+        maxMana: 0,
+        meleeMin: offenseScaled,
+        meleeMax: offenseScaled + 4,
+        rangedMin: offenseScaled,
+        rangedMax: offenseScaled + 4,
+        magicMin: offenseScaled,
+        magicMax: offenseScaled + 4,
+        defense: defenseScaled,
+        warlockLevel: level,
+        beastKind: 'warlock_demon',
+        demonType: awakenedId,
+        awakened: true,
+        immune: (preset.immune || []).slice(),
+        immuneToLifeDrainAttack: !!preset.lifeDrainWard,
+    };
+}
+
 /**
  * Roll stats for a Vermin Keeper summon (vermin or slime).
  * HP = keeper maxHealth, melee = keeperLevel×2, defense = keeperLevel×1.5
@@ -747,6 +954,7 @@ export function getSummonPreset(member) {
     if (member.summonType === 'vermin_swarm') return VERMIN_SWARM_PRESET;
     if (member.summonType === 'acid_swarm') return ACID_SWARM_PRESET;
     if (WARLOCK_DEMON_PRESETS[member.summonType]) return WARLOCK_DEMON_PRESETS[member.summonType];
+    if (WARLOCK_AWAKENED_PRESETS[member.summonType]) return WARLOCK_AWAKENED_PRESETS[member.summonType];
     if (member.summonType === 'illusionary_warrior') return ILLUSIONARY_WARRIOR_PRESET;
     if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return SIMULACRUM_PRESET;
     return null;
