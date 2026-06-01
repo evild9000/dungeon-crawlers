@@ -984,6 +984,11 @@ export const LOOT_REAGENT_LEGENDARY_BASE = 0.01; // legendary drops level 20+
 export const LOOT_REAGENT_MYTHIC_BASE    = 0.01; // mythic drops level 25+
 export const LOOT_REAGENT_DIVINE_BASE    = 0.01; // divine drops level 30+
 
+// Advanced artificer crafting materials (separate from reagent rolls)
+// Only enemies level 25+ can drop these. One roll per slain enemy.
+export const ADVANCED_MATERIAL_DROP_MIN_LEVEL = 25;
+export const ADVANCED_MATERIAL_DROP_CHANCE    = 0.40;
+
 // Cleric revive (level 3+)
 export const CLERIC_REVIVE_MANA_COST   = 25;
 export const CLERIC_REVIVE_MIN_LEVEL   = 3;

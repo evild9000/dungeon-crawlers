@@ -46,6 +46,7 @@ import {
     LOOT_REAGENT_COMMON_BASE, LOOT_REAGENT_UNCOMMON_BASE, LOOT_REAGENT_RARE_BASE,
     LOOT_REAGENT_EPIC_BASE, LOOT_REAGENT_LEGENDARY_BASE, LOOT_REAGENT_MYTHIC_BASE, LOOT_REAGENT_DIVINE_BASE,
     LOOT_REAGENT_CHANCE_PER_LVL, LOOT_REAGENT_CHANCE_MAX,
+    ADVANCED_MATERIAL_DROP_MIN_LEVEL, ADVANCED_MATERIAL_DROP_CHANCE,
     REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN,
     REAGENT_TIER_EPIC_MIN, REAGENT_TIER_LEGENDARY_MIN, REAGENT_TIER_MYTHIC_MIN, REAGENT_TIER_DIVINE_MIN,
     CLERIC_REVIVE_MANA_COST, CLERIC_REVIVE_MIN_LEVEL, CLERIC_REVIVE_HEAL_FRAC,
@@ -507,6 +508,86 @@ export class CombatSystem {
     _getEnemyTags(enemy) {
         const def = ENEMY_TYPES[enemy?.type] || {};
         return Array.isArray(def.tags) ? def.tags : [];
+    }
+
+    _addLootItemStack(items, itemId, quantity = 1) {
+        if (!Array.isArray(items) || !itemId || quantity <= 0) return;
+        const existing = items.find(i => i.itemId === itemId);
+        if (existing) existing.quantity += quantity;
+        else items.push({ itemId, quantity });
+    }
+
+    _getElementalEssenceItemId(enemy) {
+        const type = String(enemy?.type || '').toLowerCase();
+        if (type.includes('fire')) return 'material_fire_essence';
+        if (type.includes('air')) return 'material_air_essence';
+        if (type.includes('earth') || type.includes('stone')) return 'material_earth_essence';
+        if (type.includes('water')) return 'material_water_essence';
+
+        // Fallback for atypical elemental IDs.
+        const fallback = [
+            'material_fire_essence',
+            'material_air_essence',
+            'material_earth_essence',
+            'material_water_essence',
+        ];
+        return fallback[Math.floor(Math.random() * fallback.length)];
+    }
+
+    _getAdvancedMaterialDropPool(enemy) {
+        if (!enemy) return [];
+
+        const tags = this._getEnemyTags(enemy);
+        const type = String(enemy.type || '').toLowerCase();
+        const pool = new Set();
+
+        if (type === 'displacer_beast') pool.add('material_hide');
+
+        if (tags.includes('construct')) {
+            pool.add('material_construct_heart');
+            pool.add('material_construct_head');
+            pool.add('material_construct_arm');
+            pool.add('material_construct_leg');
+            pool.add('material_construct_torso');
+        }
+
+        if (tags.includes('elemental')) {
+            pool.add(this._getElementalEssenceItemId(enemy));
+        }
+
+        if (tags.includes('giant')) pool.add('material_giant_heart');
+
+        if (tags.includes('dragon')) {
+            pool.add('material_hide');
+            pool.add('material_dragon_heart');
+        }
+
+        if (tags.includes('undead')) pool.add('material_undead_essence');
+        if (type.includes('troll')) pool.add('material_troll_blood');
+        if (tags.includes('vermin')) pool.add('material_vermin_parts');
+        if (tags.includes('slime')) pool.add('material_ichor');
+        if (tags.includes('plant')) pool.add('material_plant_parts');
+        if (tags.includes('demon')) pool.add('material_demon_ichor');
+        if (tags.includes('aberration')) pool.add('material_aberration_parts');
+
+        if (type.includes('hag')) pool.add('material_hag_eye');
+        if (type === 'manticore') pool.add('material_manticore_spikes');
+        if (type === 'yeti') pool.add('material_yeti_hide');
+        if (type === 'werewolf') pool.add('material_werewolf_blood');
+        if (type === 'harpy') pool.add('material_harpy_parts');
+        if (type === 'shrieker') pool.add('material_shrieker_parts');
+
+        return [...pool];
+    }
+
+    _rollAdvancedMaterialDrop(enemy) {
+        const lvl = Math.max(1, Number(enemy?.level) || 1);
+        if (lvl < ADVANCED_MATERIAL_DROP_MIN_LEVEL) return null;
+        if (Math.random() >= ADVANCED_MATERIAL_DROP_CHANCE) return null;
+
+        const pool = this._getAdvancedMaterialDropPool(enemy);
+        if (pool.length === 0) return null;
+        return pool[Math.floor(Math.random() * pool.length)] || null;
     }
 
     _isDragonEnemy(enemy) {
@@ -14589,6 +14670,10 @@ export class CombatSystem {
             const goldMult  = isSuperBoss ? 20 : isMegaBoss ? 10 : (isBoss ? 5 : 1);
 
             totalGold += randomInt(LOOT_GOLD_MIN, LOOT_GOLD_MAX) * lvl * goldMult;
+
+            // Advanced materials: one independent, per-enemy roll (separate from reagents).
+            const advancedMat = this._rollAdvancedMaterialDrop(e);
+            if (advancedMat) this._addLootItemStack(items, advancedMat, 1);
 
             for (let roll = 0; roll < lootRolls; roll++) {
                 if (Math.random() < LOOT_FOOD_CHANCE) {
