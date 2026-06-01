@@ -9536,15 +9536,17 @@ export class CombatSystem {
         } else if (typeDef.isGreyOozeAI) {
             const dmin = MONSTER_MELEE_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
             const dmax = MONSTER_MELEE_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
-            const target = this.aliveFront.length > 0
-                ? this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)]
-                : this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
-            if (target && this._enemyCanAttemptStaminaAttack(e)) {
+            const pseudopodAttacks = 3;
+            this._addLog(`\u{1F9EA} ${eName} surges forward with ${pseudopodAttacks} corrosive pseudopod strikes!`);
+            for (let ai = 0; ai < pseudopodAttacks && this.aliveParty.length > 0; ai++) {
+                const target = this.aliveFront.length > 0
+                    ? this.aliveFront[Math.floor(Math.random() * this.aliveFront.length)]
+                    : this.aliveParty[Math.floor(Math.random() * this.aliveParty.length)];
+                if (!target || !this._enemyCanAttemptStaminaAttack(e)) break;
                 this._spendEnemyStamina(e);
                 let dmg = randomInt(dmin, dmax);
                 dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                this._addLog(`\u{1F9EA} ${eName} lashes out with a corrosive pseudopod!`);
                 const _hit = this._applyEnemyHit(e, target, dmg, 'melee');
                 if (_hit && _hit.health > 0) {
                     const acidTick = Math.max(1, Math.floor(dmg * 0.25));
