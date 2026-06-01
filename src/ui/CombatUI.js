@@ -1002,7 +1002,7 @@ export class CombatUI {
                     `L25 Deconstruct: Scatter Shot vs constructs gains +${Math.round((0.20 + m.level * 0.005) * 100)}% crit chance and deals ×${ARTIFICER_DECONSTRUCT_BONUS_MULT} bonus armor-ignoring damage; each hit has a 50% scavenge chance to repair your golems for 5% max HP.`,
                 ] : []),
                 ...(m.level >= ARTIFICER_SABOTAGE_UNLOCK_LEVEL ? [
-                    `L25 Sabotage: each construct hit adds a sabotage stack and immediately checks instant-destroy. Each stack rolls ${(m.level / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2)}% (bosses immune). On sabotage kill, your golems are fully repaired.`,
+                    `L35 Sabotage: each construct hit adds a sabotage stack and immediately checks instant-destroy. Each stack rolls ${(m.level / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2)}% (bosses immune). On sabotage kill, your golems are fully repaired.`,
                 ] : []),
             ]
             : [

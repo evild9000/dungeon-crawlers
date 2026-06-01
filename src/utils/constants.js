@@ -1053,7 +1053,7 @@ export const SCATTER_SPLASH_FRACTION = 0.5; // splash damage = half
 export const ARTIFICER_DRONE_UNLOCK_LEVEL = 25;
 export const ARTIFICER_DRONE_CHANCE_CAP   = 0.75; // level% chance, capped at 75%
 export const ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL = 35;
-export const ARTIFICER_SABOTAGE_UNLOCK_LEVEL    = 25;
+export const ARTIFICER_SABOTAGE_UNLOCK_LEVEL    = 35;
 export const ARTIFICER_SABOTAGE_CHANCE_DIVISOR  = 33; // each counter rolls at (artificerLevel / 33)%
 
 // Paladin class
