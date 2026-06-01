@@ -64,6 +64,7 @@ function buildAbilityList(def) {
     if (tags.includes('demon')) {
         lines.push('Demon: vulnerable to Paladin Smite — Smite and AoE Smite deal bonus damage and can destroy demons outright');
         lines.push('Demon: vulnerable to Cleric Banishment (L30) — divine power can expel demonic entities; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
+        lines.push('Demon Lore: Warlock L35 Awaken can manifest ten unique Awakened Lords from repeated cauldron summons; no duplicate Lord can exist across warlocks in the same combat');
     }
     if (tags.includes('plant')) {
         lines.push('Plant: fungal or plant-type creature — vulnerable to fire and nature magic');
