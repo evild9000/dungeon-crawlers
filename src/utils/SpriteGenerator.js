@@ -117,6 +117,39 @@ function drawSlime(c, r) {
     c.arc(32, 44, 6, 0.2, Math.PI - 0.2);
     c.stroke();
 }
+function drawGreyOoze(c, r) {
+    drawSlime(c, r);
+    c.fillStyle = 'rgba(170,170,180,0.45)';
+    c.beginPath();
+    c.ellipse(32, 40, 22, 14, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = 'rgba(240,240,248,0.35)';
+    c.beginPath();
+    c.ellipse(24, 28, 7, 5, -0.35, 0, Math.PI * 2);
+    c.fill();
+}
+function drawBlackPudding(c, r) {
+    drawSlime(c, r);
+    c.fillStyle = 'rgba(22,22,26,0.58)';
+    c.beginPath();
+    c.ellipse(32, 42, 24, 16, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = 'rgba(95,85,115,0.28)';
+    c.beginPath();
+    c.ellipse(26, 30, 8, 6, -0.2, 0, Math.PI * 2);
+    c.fill();
+}
+function drawOchreJelly(c, r) {
+    drawSlime(c, r);
+    c.fillStyle = 'rgba(220,165,45,0.45)';
+    c.beginPath();
+    c.ellipse(32, 41, 23, 15, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = 'rgba(255,225,120,0.28)';
+    c.beginPath();
+    c.ellipse(25, 30, 8, 5, -0.3, 0, Math.PI * 2);
+    c.fill();
+}
 
 function drawGoblin(c, r) {
     const skinG = r.int(130, 180);
@@ -5198,6 +5231,9 @@ const DRAWERS = {
     mind_flayer: drawMindFlayer, fire_elemental: drawFireElemental,
     gnoll: drawGnoll, demon_knight: drawDemonKnight,
     naga: drawNaga, gelatinous_cube: drawGelatinousCube,
+    grey_ooze:       drawGreyOoze,
+    black_pudding:   drawBlackPudding,
+    ochre_jelly:     drawOchreJelly,
     // Elementals
     earth_elemental: drawEarthElemental,
     air_elemental:   drawAirElemental,

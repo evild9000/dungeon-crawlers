@@ -16,6 +16,7 @@ const TAG_INFO = {
     vermin:       { label: '🐛 Vermin',       color: '#708050' },
     dragon:       { label: '🐉 Dragon',       color: '#c06020' },
     plant:        { label: '🌿 Plant',        color: '#4a8040' },
+    slime:        { label: '🧪 Slime',        color: '#8a8f63' },
 };
 
 function buildAbilityList(def) {
@@ -189,6 +190,11 @@ function buildAbilityList(def) {
     if (def.isRemorhazAI)           lines.push('Searing Hide: 30% chance — any physical attack on this creature burns the attacker (fire DoT equal to a fraction of the attacker\'s damage); takes only half damage from magic; immune to fire and cold');
     if (def.isThunderbirdAI)        lines.push('Storm Strike: 2 ranged lightning attacks per turn; 35% chance each bolt chains to an adjacent party member for half damage; every 3rd round unleashes a Thunderclap AoE against the front row (25% stun chance per target)');
     if (def.isRustMonsterAI)        lines.push('Corrosive Touch: on any hit against a target wearing Chainmail or Plate Mail — permanently corrodes the armor (defense penalty = rust monster level − 5, lasts the entire combat); this debuff cannot be removed by Cleric or any cleansing ability');
+
+    // Slime variants
+    if (def.isGreyOozeAI)           lines.push('Grey Ooze: unleashes 3 corrosive pseudopod strikes each turn; hits apply mild acid dissolve and can partially engulf targets');
+    if (def.isBlackPuddingAI)       lines.push('Black Pudding: sweeps the whole front line with caustic sludge (acid dissolve) and can split off a Grey Ooze');
+    if (def.isOchreJellyAI)         lines.push('Ochre Jelly: lashes sticky tendrils at any row with adhesive acid; can glue targets in place for multiple rounds');
 
     // Bestiary Expansion — Humanoids
     if (def.isWitchDoctorAI)        lines.push('Dark Rituals: each turn rolls one of four spells — Hex (reduces target defense for 2 rounds); Wither (reduces target\'s ALL damage output by level÷4 for level÷4 rounds); Plague (AoE poison DoT on whole party); Soul Siphon (tears 20% of target\'s MAX HP from current HP ignoring armor, adds that HP to witch doctor\'s current and maximum HP); spawns with only 50% normal HP');
