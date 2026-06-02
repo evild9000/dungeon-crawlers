@@ -5299,6 +5299,67 @@ function drawDreadCultist(c, r) {
     }
 }
 
+function drawWillOWisp(c, r) {
+    const core = `rgb(${r.int(170,220)},${r.int(220,255)},${r.int(245,255)})`;
+    const glow = `rgba(${r.int(90,145)},${r.int(140,205)},255,0.45)`;
+    const halo = `rgba(${r.int(80,130)},${r.int(110,180)},255,0.26)`;
+
+    c.shadowColor = core;
+    c.shadowBlur = 22;
+    c.fillStyle = glow;
+    c.beginPath(); c.ellipse(32,34,18,16,0,0,Math.PI * 2); c.fill();
+    c.fillStyle = halo;
+    c.beginPath(); c.ellipse(32,34,24,22,0,0,Math.PI * 2); c.fill();
+
+    c.fillStyle = core;
+    c.beginPath(); c.ellipse(32,32,8,8,0,0,Math.PI * 2); c.fill();
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.ellipse(32,31,3.5,3.5,0,0,Math.PI * 2); c.fill();
+
+    c.shadowBlur = 0;
+    c.strokeStyle = `rgba(${r.int(140,190)},${r.int(190,240)},255,0.6)`;
+    c.lineWidth = 2;
+    c.beginPath(); c.moveTo(22,20); c.quadraticCurveTo(14,12,9,6); c.stroke();
+    c.beginPath(); c.moveTo(42,22); c.quadraticCurveTo(52,13,56,7); c.stroke();
+    c.beginPath(); c.moveTo(26,44); c.quadraticCurveTo(20,53,16,60); c.stroke();
+    c.beginPath(); c.moveTo(38,45); c.quadraticCurveTo(46,53,50,61); c.stroke();
+}
+
+function drawRoper(c, r) {
+    const hide = `rgb(${r.int(85,120)},${r.int(70,102)},${r.int(55,84)})`;
+    const dark = `rgb(${r.int(45,70)},${r.int(35,56)},${r.int(28,46)})`;
+    const tooth = `rgb(${r.int(205,235)},${r.int(195,228)},${r.int(170,210)})`;
+
+    c.fillStyle = hide;
+    c.beginPath(); c.ellipse(32,40,18,16,0,0,Math.PI * 2); c.fill();
+    c.fillStyle = dark;
+    c.beginPath(); c.ellipse(32,40,12,10,0,0,Math.PI * 2); c.fill();
+
+    c.fillStyle = '#ffdd44';
+    c.beginPath(); c.arc(27,35,2.5,0,Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(37,35,2.5,0,Math.PI * 2); c.fill();
+    c.fillStyle = '#1a1200';
+    c.beginPath(); c.arc(27,35,1,0,Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(37,35,1,0,Math.PI * 2); c.fill();
+
+    c.fillStyle = tooth;
+    for (const x of [24, 28, 32, 36, 40]) {
+        c.beginPath();
+        c.moveTo(x, 46);
+        c.lineTo(x + 1.5, 52);
+        c.lineTo(x + 3, 46);
+        c.closePath();
+        c.fill();
+    }
+
+    c.strokeStyle = hide;
+    c.lineWidth = 4;
+    c.beginPath(); c.moveTo(18,38); c.quadraticCurveTo(8,28,3,18); c.stroke();
+    c.beginPath(); c.moveTo(22,48); c.quadraticCurveTo(8,50,2,58); c.stroke();
+    c.beginPath(); c.moveTo(46,38); c.quadraticCurveTo(56,27,61,16); c.stroke();
+    c.beginPath(); c.moveTo(42,48); c.quadraticCurveTo(56,50,62,58); c.stroke();
+}
+
 const DRAWERS = {
     skeleton: drawSkeleton, slime: drawSlime, goblin: drawGoblin,
     spider: drawSpider, wraith: drawWraith,
@@ -5418,6 +5479,8 @@ const DRAWERS = {
     winter_wolf:   drawWinterWolf,
     lizard_folk:   drawLizardFolk,
     dread_cultist: drawDreadCultist,
+    will_o_wisp:   drawWillOWisp,
+    roper:         drawRoper,
 };
 
 /**
