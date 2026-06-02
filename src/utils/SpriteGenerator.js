@@ -5360,6 +5360,67 @@ function drawRoper(c, r) {
     c.beginPath(); c.moveTo(42,48); c.quadraticCurveTo(56,50,62,58); c.stroke();
 }
 
+function drawMegaloceros(c, r) {
+    const coat  = `rgb(${r.int(105,145)},${r.int(73,105)},${r.int(38,65)})`;
+    const belly = `rgb(${r.int(158,195)},${r.int(138,170)},${r.int(95,128)})`;
+    const tine  = `rgb(${r.int(160,198)},${r.int(138,172)},${r.int(94,128)})`;
+    const hoof  = '#1a1208';
+    // Body
+    c.fillStyle = coat;
+    c.beginPath(); c.ellipse(28,46,24,14,0,0,Math.PI*2); c.fill();
+    // Belly lighter patch
+    c.fillStyle = belly;
+    c.beginPath(); c.ellipse(28,50,14,8,0,0,Math.PI*2); c.fill();
+    // Neck
+    c.fillStyle = coat;
+    c.beginPath(); c.ellipse(44,34,10,13,-0.35,0,Math.PI*2); c.fill();
+    // Head
+    c.beginPath(); c.ellipse(52,20,12,10,0.15,0,Math.PI*2); c.fill();
+    // Muzzle
+    c.fillStyle = belly;
+    c.beginPath(); c.ellipse(61,26,7,5,0.25,0,Math.PI*2); c.fill();
+    c.fillStyle = '#3a1a08';
+    c.beginPath(); c.ellipse(65,24,3,2,0,0,Math.PI*2); c.fill();
+    // Eye
+    c.fillStyle = '#7a3c10';
+    c.beginPath(); c.arc(48,15,2.5,0,Math.PI*2); c.fill();
+    c.fillStyle = '#111';
+    c.beginPath(); c.arc(48,15,1.2,0,Math.PI*2); c.fill();
+    // Ear
+    c.fillStyle = coat;
+    c.beginPath(); c.moveTo(54,12); c.lineTo(60,5); c.lineTo(62,13); c.fill();
+    c.fillStyle = belly;
+    c.beginPath(); c.moveTo(55,12); c.lineTo(60,7); c.lineTo(61,12); c.fill();
+    // Massive antlers
+    c.strokeStyle = tine;
+    c.lineCap = 'round';
+    c.lineWidth = 3.5;
+    c.beginPath(); c.moveTo(44,10); c.lineTo(34,1); c.stroke();
+    c.lineWidth = 2.5;
+    c.beginPath(); c.moveTo(40,6); c.lineTo(30,4); c.stroke();
+    c.beginPath(); c.moveTo(36,2); c.lineTo(28,5); c.stroke();
+    c.lineWidth = 2;
+    c.beginPath(); c.moveTo(34,1); c.lineTo(26,3); c.stroke();
+    c.beginPath(); c.moveTo(34,1); c.lineTo(31,-1); c.stroke();
+    c.lineWidth = 3;
+    c.beginPath(); c.moveTo(50,10); c.lineTo(58,2); c.stroke();
+    c.lineWidth = 2;
+    c.beginPath(); c.moveTo(55,5); c.lineTo(63,6); c.stroke();
+    c.beginPath(); c.moveTo(58,2); c.lineTo(62,0); c.stroke();
+    c.lineCap = 'butt';
+    // Legs
+    c.fillStyle = coat;
+    c.fillRect(10,56,8,10); c.fillRect(20,58,8,8);
+    c.fillRect(34,58,8,8); c.fillRect(44,56,8,10);
+    // Hooves
+    c.fillStyle = hoof;
+    c.fillRect(9,64,10,3); c.fillRect(19,64,10,3);
+    c.fillRect(33,64,10,3); c.fillRect(43,64,10,3);
+    // White scut tail
+    c.fillStyle = '#e8e0d0';
+    c.beginPath(); c.ellipse(6,44,4,6,0.1,0,Math.PI*2); c.fill();
+}
+
 const DRAWERS = {
     skeleton: drawSkeleton, slime: drawSlime, goblin: drawGoblin,
     spider: drawSpider, wraith: drawWraith,
@@ -5481,6 +5542,7 @@ const DRAWERS = {
     dread_cultist: drawDreadCultist,
     will_o_wisp:   drawWillOWisp,
     roper:         drawRoper,
+    megaloceros:   drawMegaloceros,
 };
 
 /**

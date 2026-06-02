@@ -939,8 +939,32 @@ export function rollSwarmStats(keeperLevel = 1, keeperMaxHealth = 20, keeperMagi
     };
 }
 
+export const BEAST_COMPANION_PRESETS = (() => {
+    const out = {};
+    for (const def of Object.values(RANGER_BEAST_COMPANION_TYPES)) {
+        out[def.summonType] = {
+            id: def.summonType,
+            name: def.name,
+            icon: def.icon,
+            enemySprite: def.enemySprite,
+            portraitClass: 'summoned',
+            portraitSpecies: 'human',
+            speciesLabel: 'Beast Companion',
+            kind: 'beast',
+            persistent: true,
+            abilities: [
+                'Ranger L35 Beast Companion (persistent summon).',
+                def.description,
+                'Companion stats scale directly from the owner ranger level.',
+            ],
+        };
+    }
+    return out;
+})();
+
 export function getSummonPreset(member) {
     if (!member || !member.isSummoned || !member.summonType) return null;
+    if (BEAST_COMPANION_PRESETS[member.summonType]) return BEAST_COMPANION_PRESETS[member.summonType];
     if (BEAST_TYPES[member.summonType]) return BEAST_TYPES[member.summonType];
     const tier = UNDEAD_TIERS.find(t => t.id === member.summonType);
     if (tier) return tier;
@@ -1186,15 +1210,16 @@ export function buildBeastCompanionStats(ranger, beastTypeId) {
     const rl = ranger.level || 1;
     const stat = rl * RANGER_BEAST_MASTERY_STAT_MULT;
     const maxHp = Math.max(1, Math.floor((ranger.maxHealth || 1) * RANGER_BEAST_MASTERY_HEALTH_MULT));
+    const isRanged = def.attackType === 'ranged';
     return {
         maxHealth:  maxHp,
         maxStamina: 0,
         maxMana:    0,
-        meleeMin:   stat,
-        meleeMax:   stat * 2,
-        rangedMin:  stat,
-        rangedMax:  stat * 2,
+        ...(isRanged
+            ? { rangedMin: stat, rangedMax: stat * 2 }
+            : { meleeMin:  stat, meleeMax:  stat * 2 }),
         defense:    stat,
+        attackType: def.attackType,
         beastKind:  def.beastKind,
         beastTypeId,
         summonerId: ranger.id,
@@ -1218,14 +1243,15 @@ export function syncBeastCompanionStats(party) {
         const newLevel = ranger.level;
         if (beast.summonStats.rangerLevel === newLevel) continue;
         const s = buildBeastCompanionStats(ranger, beast.summonStats.beastTypeId);
-        beast.maxHealth          = s.maxHealth;
+        beast.maxHealth = s.maxHealth;
         if (beast.health > s.maxHealth) beast.health = s.maxHealth;
-        beast.level              = newLevel;
-        beast.summonStats.meleeMin   = s.meleeMin;
-        beast.summonStats.meleeMax   = s.meleeMax;
-        beast.summonStats.rangedMin  = s.rangedMin;
-        beast.summonStats.rangedMax  = s.rangedMax;
-        beast.summonStats.defense    = s.defense;
+        beast.level     = newLevel;
+        beast.summonStats.meleeMin    = s.meleeMin;
+        beast.summonStats.meleeMax    = s.meleeMax;
+        beast.summonStats.rangedMin   = s.rangedMin;
+        beast.summonStats.rangedMax   = s.rangedMax;
+        beast.summonStats.defense     = s.defense;
+        beast.summonStats.attackType  = s.attackType;
         beast.summonStats.rangerLevel = newLevel;
     }
 }

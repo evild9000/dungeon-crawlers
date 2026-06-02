@@ -5,6 +5,7 @@ import {
     RANGER_BEAST_COMPANION_TYPES,
     RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV,
 } from '../utils/constants.js';
+import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 
 export class BeastMasteryUI {
     constructor(getState, onChanged, systems = {}) {
@@ -208,10 +209,20 @@ export class BeastMasteryUI {
         // Description box
         const beastDef = RANGER_BEAST_COMPANION_TYPES[this._selectedBeastType];
         const descBox = document.createElement('div');
-        descBox.style.cssText = 'background:#0e1a0a;border:1px solid #3a6030;border-radius:6px;padding:10px;margin-bottom:12px;color:#c8e8b0;font-size:12px;white-space:pre-line;';
+        descBox.style.cssText = 'background:#0e1a0a;border:1px solid #3a6030;border-radius:6px;padding:10px;margin-bottom:12px;color:#c8e8b0;font-size:12px;display:flex;gap:10px;align-items:flex-start;';
         const stat = (ranger.level || 1) * 2;
         const maxHp = Math.max(1, Math.floor((ranger.maxHealth || 1) * 1.5));
-        descBox.textContent = `${beastDef.icon} ${beastDef.name}\n\n${beastDef.description}\n\nStats (at L${ranger.level}): HP ${maxHp}, ATK ${stat}–${stat * 2}, DEF ${stat}`;
+
+        const spriteCanvas = generateEnemySprite(beastDef.enemySprite, 42);
+        const spriteImg = document.createElement('img');
+        spriteImg.src = spriteCanvas.toDataURL();
+        spriteImg.style.cssText = 'width:64px;height:64px;image-rendering:pixelated;flex-shrink:0;border:1px solid #3a6030;border-radius:4px;background:#050e04;';
+
+        const textDiv = document.createElement('div');
+        textDiv.style.cssText = 'flex:1;white-space:pre-line;';
+        textDiv.textContent = `${beastDef.icon} ${beastDef.name}\n\n${beastDef.description}\n\nStats (at L${ranger.level}): HP ${maxHp}, ATK ${stat}–${stat * 2}, DEF ${stat}`;
+
+        descBox.append(spriteImg, textDiv);
         this._body.appendChild(descBox);
 
         // Bond / Change button
