@@ -13454,11 +13454,13 @@ export class CombatSystem {
                         this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms fades — no mana left!`);
                     }
                 }
-                // Attempt to charm eligible plant/beast enemies this round
+                // Attempt eligible plant/beast enemies until one charm succeeds this round.
                 if (m.naturesCharmActive) {
                     const _ncChance   = Math.min(0.95, (m.level / DRUID_NATURES_CHARM_CHANCE_DIVISOR) / 100);
                     const _ncDuration = Math.max(1, Math.floor(m.level / BARD_CHARM_DURATION_DIVISOR) + DRUID_NATURES_CHARM_DURATION_BONUS);
+                    let _ncCharmedThisRound = false;
                     for (const _nce of this.aliveHostileEnemies.slice()) {
+                        if (_ncCharmedThisRound) break;
                         if (_nce.health <= 0 || _nce.charmedRounds > 0 || _nce.naturesCharmImmune) continue;
                         if (_nce.isBoss || _nce.isMegaBoss || _nce.isSuperBoss) continue;
                         const _ncTags = this._getEnemyTags(_nce);
@@ -13469,6 +13471,7 @@ export class CombatSystem {
                             _nce.charmerId            = m.id;
                             _nce.naturesCharmed       = true;
                             _nce.naturesCharmBolster  = m.level * DRUID_NATURES_CHARM_BOLSTER_PER_LEVEL;
+                            _ncCharmedThisRound = true;
                             this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms wins over ${this._eName(_nce)}! (${_ncDuration} rds, +${Math.round(_nce.naturesCharmBolster * 100)}% dmg)`);
                         } else {
                             _nce.naturesCharmResists = (_nce.naturesCharmResists || 0) + 1;
