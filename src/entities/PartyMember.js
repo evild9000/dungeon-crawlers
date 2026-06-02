@@ -1050,6 +1050,7 @@ export class PartyMember {
         if (this.isSummoned && (this.summonType === 'simulacrum' || this.summonType === 'shadow_simulacra') && effect.source === 'bard_song') return;
         if (this.isSummoned && Array.isArray(this.summonStats?.immune)) {
             const immune = this.summonStats.immune;
+            if (immune.includes('all_dots') && typeof effect.damage === 'number' && (effect.rounds || 0) > 0) return;
             const byType = {
                 poison: 'poison',
                 vk_poison: 'poison',
@@ -1066,6 +1067,26 @@ export class PartyMember {
                 shocked: 'lightning',
                 lightning_dot: 'lightning',
                 psychic_dot: 'psychic',
+                drowning: 'all_dots',
+                poison_weapon: 'all_dots',
+                rogue_trap_dot: 'all_dots',
+                insect_plague_poison: 'all_dots',
+                vk_swarm_poison: 'all_dots',
+                vk_swarm_acid: 'all_dots',
+                shadow_fire_dot: 'all_dots',
+                shadow_ice_dot: 'all_dots',
+                shadow_lightning_dot: 'all_dots',
+                shadow_acid_dot: 'all_dots',
+                shadow_poison_dot: 'all_dots',
+                shadow_psychic_dot: 'all_dots',
+                shadow_sonic_dot: 'all_dots',
+                shadow_bleed_dot: 'all_dots',
+                awakened_ember_brand: 'all_dots',
+                awakened_void_rot: 'all_dots',
+                awakened_grave_rot: 'all_dots',
+                awakened_pox: 'all_dots',
+                awakened_mind_burn: 'all_dots',
+                awakened_saint_scorch: 'all_dots',
             };
             const immuneTag = byType[effect.type];
             if (immuneTag && immune.includes(immuneTag)) return;

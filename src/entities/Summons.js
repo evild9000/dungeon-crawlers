@@ -669,11 +669,11 @@ export function rollWarlockDemonStats(warlockLevel = 1, warlockMaxHealth = 20, w
         ice_demon: 2.0,
         acid_demon: 1.8,
         bloat_demon: 2.5,
-        pit_fiend: 3.0,
+        pit_fiend: 2.0,
     };
     const defenseMults = {
         ice_demon: 1.5,
-        pit_fiend: 2.0,
+        pit_fiend: 1.5,
     };
     const hpMult = hpMults[demonId] || 1;
     const defenseMult = defenseMults[demonId] || 1;
@@ -935,6 +935,7 @@ export function rollSwarmStats(keeperLevel = 1, keeperMaxHealth = 20, keeperMagi
         defense:    Math.floor(lv * VK_SWARM_DEFENSE_PER_LEVEL),
         keeperLevel: lv,
         attackCount: 1,
+        immune: ['stun', 'hold', 'web', 'paralyze', 'psychic', 'all_dots'],
     };
 }
 

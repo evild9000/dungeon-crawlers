@@ -1109,6 +1109,7 @@ export class CombatSystem {
     _isPsychicImmunePartyMember(target) {
         if (!target || target.health <= 0) return false;
         if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
+        if (this._isVKSwarm(target)) return true;
         if (!target.isSummoned) return false;
         if (Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes('psychic')) return true;
         // Undead summons have no living mind
@@ -1127,6 +1128,7 @@ export class CombatSystem {
         if (!target) return false;
         if (target.isLichForm) return true;
         if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
+        if (this._isVKSwarm(target)) return true;
         if (target.speciesId === 'undead' || target.speciesId === 'elemental' || target.speciesId === 'construct' || target.speciesId === 'incorporeal') return true;
         if (!target.isSummoned) return false;
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
@@ -1142,14 +1144,21 @@ export class CombatSystem {
         return false;
     }
 
+    _isVKSwarm(target) {
+        if (!target || !target.isSummoned) return false;
+        return target.summonType === 'vermin_swarm'
+            || target.summonType === 'acid_swarm'
+            || target.summonStats?.beastKind === 'vermin_swarm'
+            || target.summonStats?.beastKind === 'acid_swarm';
+    }
+
     _isHoldImmunePartyMember(target) {
         if (!target) return false;
         if (!target.isSummoned && target.classId === 'warlock' && target.abyssFormActive) return true;
+        if (this._isVKSwarm(target)) return true;
         if (this._isSlimePartyMember(target)) return true;
         if (Array.isArray(target.summonStats?.immune)
             && (target.summonStats.immune.includes('hold') || target.summonStats.immune.includes('web'))) return true;
-        if (target.isSummoned && (target.summonType === 'vermin_swarm' || target.summonType === 'acid_swarm')) return true;
-        if (target.isSummoned && (target.summonStats?.beastKind === 'vermin_swarm' || target.summonStats?.beastKind === 'acid_swarm')) return true;
         return false;
     }
 
@@ -1164,9 +1173,8 @@ export class CombatSystem {
         if (this._isRiftElemental(target) || target.speciesId === 'elemental') return true;
         if (target.summonStats?.incorporeal === true) return true;
         if (['treant', 'shambling_mound'].includes(target.summonStats?.beastKind)) return true;
+        if (this._isVKSwarm(target)) return true;
         if (this._isSlimePartyMember(target)) return true;
-        if (target.summonType === 'vermin_swarm' || target.summonType === 'acid_swarm') return true;
-        if (target.summonStats?.beastKind === 'vermin_swarm' || target.summonStats?.beastKind === 'acid_swarm') return true;
         const immune = target.summonStats?.immune;
         if (Array.isArray(immune) && (immune.includes('paralyze') || immune.includes('stun') || immune.includes('hold'))) return true;
         return false;
@@ -1174,6 +1182,7 @@ export class CombatSystem {
 
     _isFractureImmunePartyMember(target) {
         if (!target || !target.isSummoned) return false;
+        if (this._isVKSwarm(target)) return true;
         if (Array.isArray(target.summonStats?.immune) && target.summonStats.immune.includes('bleed')) return true;
         if (UNDEAD_TIERS.some(ut => ut.id === target.summonType) || target.summonType === 'demi_lich' || target.summonType === 'corpse_horror') return true;
         if (GOLEM_PRESETS[target.summonType]) return true;
@@ -11580,6 +11589,11 @@ export class CombatSystem {
             return null;
         }
 
+        if (this._isVKSwarm(target) && opts.psychic) {
+            this._addLog(`🕸️ ${target.name} is immune to psychic damage and effects!`);
+            return null;
+        }
+
         if (isShadowSimulacra(target)) {
             const immune = Array.isArray(target.summonStats?.immune) ? target.summonStats.immune : [];
             const blocksPsychic = opts.psychic && immune.includes('psychic');
@@ -16405,6 +16419,7 @@ export class CombatSystem {
                     beastKind: swarmSummonType,
                     swarmType: swarmType,
                     incorporeal: swarmType === 'vermin',
+                    immune: ['stun', 'hold', 'web', 'paralyze', 'psychic', 'all_dots'],
                 },
             });
             this.party.push(u);
