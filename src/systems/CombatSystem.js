@@ -9128,10 +9128,6 @@ export class CombatSystem {
             // Human-controlled: set currentMemberIndex and wait for player input.
             this._logTarget = 'player'; // reset before player acts so all action logs go to the party window
             this.currentMemberIndex = this.party.indexOf(m);
-            // Symphony of Destruction: auto-end if bard can no longer afford the next round
-            if (m.symphonyActive && (m.mana < m.symphonyManaCost || m.stamina < m.symphonyStaCost)) {
-                this._bardEndSymphony(m, 'exhausted');
-            }
             this.phase = 'PLAYER_TURN';
             this._addLog(`--- Turn ${this.turnNumber}: ${m.name}'s turn ---`);
             this._notify();
@@ -11868,7 +11864,7 @@ export class CombatSystem {
                     // Counter-attack: swarm erupts outward and hits all enemies for half normal damage
                     if (swarm.health > 0) {
                         const st2 = swarm.summonStats || {};
-                        const counterBase = Math.max(1, Math.floor(randomInt(st2.magicMin || 1, st2.magicMax || 5) * 0.5));
+                        const counterBase = Math.max(1, Math.floor(randomInt(st2.magicMin || 1, st2.magicMax || 5) * 0.75));
                         const isAcid = swarm.summonType === 'acid_swarm';
                         this._addLog(`\u{1F41C} ${swarm.name} erupts outward — ${isAcid ? 'acid' : 'stinging'} AoE counter-attack!`);
                         for (const ce of this.aliveHostileEnemies.slice()) {
@@ -16521,7 +16517,7 @@ export class CombatSystem {
         for (let atk = 0; atk < attackCount; atk++) {
             if (this.aliveHostileEnemies.length === 0) break;
             if (attackCount > 1) this._addLog(`  ⚔️ Strike ${atk + 1}:`);
-            const rawBase = randomInt(st.magicMin || 1, st.magicMax || 5);
+            const rawBase = Math.max(1, Math.floor(randomInt(st.magicMin || 1, st.magicMax || 5) * 1.35));
             for (const e of this.aliveHostileEnemies.slice()) {
                 if (e.health <= 0) continue;
                 const dealt = this._damageSummonEnemy(e, rawBase);

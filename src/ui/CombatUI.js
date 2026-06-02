@@ -4119,6 +4119,9 @@ export class CombatUI {
         const select = document.createElement('select');
         select.className = 'combat-action-btn combat-special-btn';
         select.style.minWidth = '240px';
+        select.style.background = '#262626';
+        select.style.color = '#e6e6e6';
+        select.style.border = '1px solid #4a4a4a';
 
         for (const pm of candidates) {
             const icon = pm.classDef ? pm.classDef.icon : '👥';
@@ -4134,8 +4137,8 @@ export class CombatUI {
         castBtn.className = 'combat-action-btn combat-special-btn';
         castBtn.textContent = 'Cast Improved Invis';
         castBtn.addEventListener('click', () => {
-            const id = Number(select.value);
-            const target = (this.combat.party || []).find(pm => pm && pm.id === id && pm.health > 0);
+            const id = String(select.value);
+            const target = (this.combat.party || []).find(pm => pm && String(pm.id) === id && pm.health > 0);
             if (!target) {
                 this._addBlockingNotice('Selected target is no longer valid.');
                 return;
