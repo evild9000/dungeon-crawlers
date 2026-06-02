@@ -413,6 +413,16 @@ export const CONSUMABLES = {
         potionKind: 'heal_greater',
         combatUsable: true,
     },
+    mana_potion: {
+        id: 'mana_potion',
+        name: 'Mana Potion',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Restores 20% of one character\'s max MP. Usable in and out of combat.',
+        icon: '\u{1F499}',
+        stackable: true,
+        potionKind: 'mana',
+        combatUsable: true,
+    },
     elixir_warding: {
         id: 'elixir_warding',
         name: 'Scroll of Warding',
@@ -934,6 +944,7 @@ export function getItemSellPrice(itemId) {
     if (itemId === 'magical_reagent')       return 10;
     if (itemId === 'minor_healing_potion')  return 25;
     if (itemId === 'greater_healing_potion')return 75;
+    if (itemId === 'mana_potion')           return 75;
     if (itemId === 'elixir_warding')        return 125;
     if (itemId === 'elixir_wrath')          return 125;
     return 0;

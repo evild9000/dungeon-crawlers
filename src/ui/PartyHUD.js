@@ -27,6 +27,8 @@ import {
     WARRIOR_SHIELD_WALL_UNLOCK_LEVEL,
     WARRIOR_SHIELD_WALL_LEVEL_DIVISOR,
     PHOTOMANCER_BLUR_MISS_CHANCE,
+    PALADIN_STEED_MANA_PER_ROUND,
+    PALADIN_COVENANT_MANA_PER_ROUND,
 } from '../utils/constants.js';
 
 /**
@@ -256,7 +258,7 @@ export class PartyHUD {
         this._craftBtn = document.createElement('button');
         this._craftBtn.className = 'hud-btn';
         this._craftBtn.textContent = 'Craft (K)';
-        this._craftBtn.title = 'Open the Crafting menu: enchant gear, augment trinkets, brew potions, forge / repair golems. Requires an Artificer in the party.';
+        this._craftBtn.title = 'Open the Crafting menu: enchant gear, augment trinkets, brew potions, scribe scrolls, forge / repair golems. Requires an Artificer in the party.';
         this._craftBtn.style.display = 'none';
         this._craftBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1244,11 +1246,11 @@ export class PartyHUD {
             if (!member.isSummoned && member.classId === 'paladin' && member.paladinSteedActive) {
                 const meleeBonus = 100 + (member.level || 1);
                 mkPB('🐎', 'Steed', 'rgba(135,95,25,0.95)',
-                    `Summoned Steed: +50% max HP, +${meleeBonus}% regular melee damage, half melee damage taken, and Smite/AoE Smite can crit. Costs 10 MP/round.`);
+                    `Summoned Steed: +50% max HP, +${meleeBonus}% regular melee damage, half melee damage taken, and Smite/AoE Smite can crit. Costs ${PALADIN_STEED_MANA_PER_ROUND} MP/round.`);
             }
             if (!member.isSummoned && member.classId === 'paladin' && member.martyrsCovenantActive) {
                 mkPB('✝️', 'Covenant', 'rgba(135,115,25,0.95)',
-                    `Martyr's Covenant: heavy single hits on recruited living allies transfer to this paladin. Costs 8 MP/round; cannot kill the paladin.`);
+                    `Martyr's Covenant: heavy single hits on recruited living allies transfer to this paladin. Costs ${PALADIN_COVENANT_MANA_PER_ROUND} MP/round; cannot kill the paladin.`);
             }
             if (!member.isSummoned && member.classId === 'cleric' && member.divineShroudActive) {
                 const reduction = Math.round(Math.min(0.95, (member.level || 1) * 0.005) * 100);

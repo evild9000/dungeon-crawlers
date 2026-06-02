@@ -1059,15 +1059,15 @@ export const ARTIFICER_SABOTAGE_CHANCE_DIVISOR  = 33; // each counter rolls at (
 // Paladin class
 export const PALADIN_MELEE_PER_LEVEL   = 1;
 export const PALADIN_DEFENSE_PER_LEVEL = 1;
-// Smite: armor-ignoring holy melee; 5 MP; % chance to instakill undead/demon tags.
+// Smite: armor-ignoring holy melee; % chance to instakill undead/demon tags.
 // Base 1% + 1% per paladin level.
-export const PALADIN_SMITE_MANA_COST   = 5;
+export const PALADIN_SMITE_MANA_COST   = 3;
 export const PALADIN_SMITE_INSTAKILL_BASE      = 0.01;
 export const PALADIN_SMITE_INSTAKILL_PER_LEVEL = 0.01;
 // Paladin heals at half cleric effectiveness.
-export const PALADIN_HEAL_MANA_COST = 5;
-// Fire Aura: 4 MP/round upkeep; reflects melee dmg back as fire damage.
-export const PALADIN_FIRE_AURA_MANA_PER_ROUND = 4;
+export const PALADIN_HEAL_MANA_COST = 3;
+// Fire Aura: reflects melee dmg back as fire damage.
+export const PALADIN_FIRE_AURA_MANA_PER_ROUND = 2;
 export const PALADIN_HEAL_PERCENT   = CLERIC_HEAL_PERCENT / 2;       // 12.5%
 export const PALADIN_HEAL_PER_LEVEL = CLERIC_HEAL_PER_LEVEL / 2;     // +1% per level
 
@@ -1076,11 +1076,11 @@ export const PALADIN_L20_UNLOCK_LEVEL        = 20;
 export const PALADIN_SMITE_INSTAKILL_CAP     = 0.50; // purge chance hard cap (50%)
 export const PALADIN_SMITE_BOSS_DAMAGE_MULT  = 4;    // on bosses/mega-bosses: x4 damage instead of instant kill
 export const PALADIN_SMITE_DAMAGE_BONUS_MULT = 1.75; // all Smite/AoE Smite damage gets +75%
-export const PALADIN_AOE_SMITE_MANA_MULT     = 3;    // 3× normal smite mana
+export const PALADIN_AOE_SMITE_MANA_MULT     = 2;    // 2× normal smite mana
 export const PALADIN_AOE_SMITE_DAMAGE_MULT   = (1 / 3); // 1/3 normal smite damage
 export const PALADIN_AOE_SMITE_INSTAKILL_MULT = (1 / 3); // 1/3 normal purge chance
 export const PALADIN_DRAGONSLAYER_UNLOCK_LEVEL = 25;
-export const PALADIN_DRAGONSLAYER_MANA_PER_ROUND = 15;
+export const PALADIN_DRAGONSLAYER_MANA_PER_ROUND = 8;
 export const PALADIN_DRAGON_AURA_PERCENT_OFFSET = 10; // base: level + 10 %
 export const PALADIN_DRAGON_AURA_PERCENT_CAP    = 90; // hard cap: 90%
 
@@ -1089,7 +1089,7 @@ export const PALADIN_L30_UNLOCK_LEVEL                 = 30;
 export const PALADIN_AURA_RIGHTEOUSNESS_REDUCTION     = 0.05;       // 5% base incoming damage reduction
 export const PALADIN_AURA_RIGHTEOUSNESS_HEAL_FRAC     = 0.05;       // 5% of dealt damage healed to party
 export const PALADIN_DIVINE_JUDGMENT_STAMINA_COST     = 50;
-export const PALADIN_DIVINE_JUDGMENT_MANA_COST        = 50;
+export const PALADIN_DIVINE_JUDGMENT_MANA_COST        = 25;
 export const PALADIN_DIVINE_JUDGMENT_BASE_PCT         = 0.33;       // 33% of target current HP
 export const PALADIN_DIVINE_JUDGMENT_PER_LEVEL        = 1 / 300;    // (level/3)% = level/300 as fraction
 export const PALADIN_DIVINE_JUDGMENT_BOSS_DIVISOR     = 2;          // halved vs bosses
@@ -1097,8 +1097,8 @@ export const PALADIN_DIVINE_JUDGMENT_MEGABOSS_DIVISOR = 4;          // quartered
 
 // ── Paladin L35 — Summon Steed + Martyr's Covenant ───────────────────────────
 export const PALADIN_L35_UNLOCK_LEVEL                 = 35;
-export const PALADIN_STEED_MANA_COST                  = 100;
-export const PALADIN_STEED_MANA_PER_ROUND             = 10;
+export const PALADIN_STEED_MANA_COST                  = 50;
+export const PALADIN_STEED_MANA_PER_ROUND             = 5;
 export const PALADIN_STEED_HEALTH_BONUS               = 0.50;
 export const PALADIN_STEED_MELEE_DAMAGE_BASE_BONUS    = 1.00; // +100%
 export const PALADIN_STEED_MELEE_DAMAGE_PER_LEVEL     = 0.01; // +level%
@@ -1106,7 +1106,7 @@ export const PALADIN_STEED_MELEE_RESIST               = 0.50;
 export const PALADIN_STEED_SMITE_CRIT_BASE            = 0.20;
 export const PALADIN_STEED_SMITE_CRIT_PER_LEVEL       = 0.005; // +level/2%
 export const PALADIN_STEED_SMITE_CRIT_MULT            = 2;
-export const PALADIN_COVENANT_MANA_PER_ROUND          = 8;
+export const PALADIN_COVENANT_MANA_PER_ROUND          = 4;
 export const PALADIN_COVENANT_TRIGGER_MAX_HP_FRAC     = 0.30;
 export const PALADIN_COVENANT_MIN_HP_FRAC             = 0.10;
 
@@ -1245,10 +1245,12 @@ export function calcScrollCost(AL) {
 export const POTION_COSTS = {
     minor_healing_potion:  { gold: 25, common: 2, uncommon: 0, rare: 0 },
     greater_healing_potion:{ gold: 25, common: 1, uncommon: 1, rare: 0 },
+    mana_potion:           { gold: 100, common: 0, uncommon: 0, rare: 1 },
     // Scroll costs are dynamic — use calcScrollCost(AL) in UI. These are AL-0 fallbacks.
     elixir_warding:        { gold: 25, common: 2, uncommon: 0, rare: 0 },
     elixir_wrath:          { gold: 25, common: 2, uncommon: 0, rare: 0 },
 };
+export const POTION_MANA_RESTORE_PCT = 0.20;
 
 // Golems — persistent artificer summons. Damage = melee roll + artificer level.
 // HP = BASE_HP + HP_PER_AL × artificerLevel. Defense = BASE_DEF + artificerLevel.

@@ -26,7 +26,7 @@ import {
     GOLEM_ATTACHMENT_SHIELD_DEFENSE, GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE,
     GOLEM_ATTACHMENT_MAX_TRINKETS, GOLEM_ATTACHMENT_TRINKET_HP_MULT,
     POTION_COSTS,
-    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
+    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT, POTION_MANA_RESTORE_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
     calcScrollBonus, calcScrollCost,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
@@ -467,6 +467,7 @@ export class CraftingUI {
         const entries = [
             { id: 'minor_healing_potion',   isScroll: false, name: 'Minor Healing Potion',   icon: '\u{1F9EA}', desc: `Restores ${Math.round(POTION_MINOR_HEAL_PCT*100)}% of max HP to one character.` },
             { id: 'greater_healing_potion', isScroll: false, name: 'Greater Healing Potion', icon: '\u{1F48A}', desc: `Restores ${Math.round(POTION_GREATER_HEAL_PCT*100)}% of max HP to one character.` },
+            { id: 'mana_potion',            isScroll: false, name: 'Mana Potion',            icon: '\u{1F499}', desc: `Restores ${Math.round(POTION_MANA_RESTORE_PCT*100)}% of max MP to one character.` },
             { id: 'elixir_warding',  isScroll: true, name: 'Scroll of Warding', icon: '\u{1F6E1}️', desc: `+${scrollBonus} defense for the ENTIRE party (base +2, +1 per 5 AL). Duration: ${scrollDuration} min.` },
             { id: 'elixir_wrath',    isScroll: true, name: 'Scroll of Wrath',   icon: '\u{1F525}',        desc: `+${scrollBonus} damage (all types) for the ENTIRE party (base +2, +1 per 5 AL). Duration: ${scrollDuration} min.` },
         ];

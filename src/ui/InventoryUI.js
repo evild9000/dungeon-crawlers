@@ -22,7 +22,7 @@ import { getFamiliarDef } from '../entities/Familiars.js';
 import { getSummonPreset } from '../entities/Summons.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import {
-    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
+    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT, POTION_MANA_RESTORE_PCT,
     POTION_WARD_DEF_BONUS, POTION_WRATH_DMG_BONUS,
     POTION_BUFF_DURATION_SEC, calcScrollBonus,
     MELEE_STUN_CHANCE, RANGED_CRIT_CHANCE,
@@ -104,6 +104,12 @@ function _applyPotion(member, itemId, party) {
         case 'healing_potion': {
             if (member.health >= member.maxHealth) return false;
             member.health = member.maxHealth;
+            return true;
+        }
+        case 'mana_potion': {
+            if (member.mana >= member.maxMana) return false;
+            const amt = Math.max(1, Math.ceil(member.maxMana * POTION_MANA_RESTORE_PCT));
+            member.mana = Math.min(member.maxMana, member.mana + amt);
             return true;
         }
         case 'elixir_warding': {
@@ -662,6 +668,7 @@ export class InventoryUI {
                         'healing_potion',
                         'minor_healing_potion',
                         'greater_healing_potion',
+                        'mana_potion',
                         'elixir_warding',
                         'elixir_wrath',
                     ];

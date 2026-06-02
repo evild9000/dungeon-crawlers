@@ -182,9 +182,6 @@ import {
     PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL,
     PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL,
     PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
-    RANGER_L35_UNLOCK_LEVEL,
-    RANGER_RICOCHET_CHANCES,
-    RANGER_RICOCHET_MP_COST,
     RANGER_BEAST_COMPANION_TYPES,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
@@ -2028,25 +2025,6 @@ export class CombatUI {
             ].filter(Boolean).join('\n');
         }
 
-        // Ranger L35: Ricochet Shot passive info
-        if (m.classId === 'ranger' && m.level >= RANGER_L35_UNLOCK_LEVEL) {
-            const ricBtn = this._addBtn(`🏹 Ricochet Shot (passive)`, false, null);
-            ricBtn.classList.add('combat-special-btn');
-            ricBtn.style.cssText += '; background:linear-gradient(135deg,#1a2a0a,#2e4a10);color:#b8e870;opacity:0.85;cursor:default;';
-            const ricChances = RANGER_RICOCHET_CHANCES.map((c, i) => `${Math.round(c * 100)}%`).join('→');
-            ricBtn.title = [
-                `Ranger L${RANGER_L35_UNLOCK_LEVEL}: Ricochet Shot (passive, always active).`,
-                `Each normal ranged arrow has a 50% chance to ricochet to a random other enemy for 50% damage.`,
-                `Chain chances: ${ricChances} (up to 6 additional hits per arrow).`,
-                `Each ricochet costs ${RANGER_RICOCHET_MP_COST} MP — chain halts if ranger has insufficient mana.`,
-                'Ricochets can crit at normal crit chance. Can instakill favored enemies at 50% of normal instakill chance.',
-                'Applies weapon riders and totem effects on every ricochet hit.',
-                'Each arrow tracked independently — same arrow never hits the same target twice per chain.',
-                'Does NOT apply to Explosive Arrow attacks.',
-            ].filter(Boolean).join('\n');
-        }
-
-
         // Bard: AoE Disrupt (once per combat)
         if (m.classId === 'bard') {
             const scale  = Math.max(1, Math.floor(m.level / 5));
@@ -2874,16 +2852,36 @@ export class CombatUI {
                 blurBtn.title = `All party members gain 20% miss chance vs melee/ranged for ${blurRounds} rounds.`;
 
                 const invisLabel = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL ? 'Improved Invis' : 'Invisibility';
-                const invisBtn = this._addBtn(`\u{1F441} ${invisLabel} (-${PHOTOMANCER_INVISIBILITY_MANA_COST} MP)`, m.mana >= PHOTOMANCER_INVISIBILITY_MANA_COST, () => {
-                    this._pickPartyTarget(t => this.combat.photomancerInvisibility(t), {
-                        filter: pm => pm.health > 0,
-                        prompt: 'Cloak which ally?',
-                    });
+                const cloakRow = document.createElement('div');
+                cloakRow.className = 'combat-action-row';
+                cloakRow.style.cssText = 'display:flex;gap:6px;align-items:center;width:100%;';
+                const cloakSel = document.createElement('select');
+                cloakSel.style.cssText = 'min-width:0;flex:1;padding:5px 6px;background:#1a1a2e;color:#eee;border:1px solid #556;border-radius:4px;font-size:13px;';
+                for (const pm of this.combat.party.filter(pm => pm && pm.health > 0)) {
+                    const opt = document.createElement('option');
+                    opt.value = pm.id;
+                    opt.textContent = `${pm.name} (${pm.health}/${pm.maxHealth} HP)`;
+                    if (pm.id === m.id) opt.selected = true;
+                    cloakSel.appendChild(opt);
+                }
+                const invisBtn = document.createElement('button');
+                invisBtn.className = 'combat-action-btn combat-special-btn';
+                invisBtn.textContent = `\u{1F441} ${invisLabel} (-${PHOTOMANCER_INVISIBILITY_MANA_COST} MP)`;
+                invisBtn.disabled = m.mana < PHOTOMANCER_INVISIBILITY_MANA_COST || cloakSel.options.length === 0;
+                invisBtn.addEventListener('click', () => {
+                    if (invisBtn.disabled || this._actionInProgress) return;
+                    this._actionInProgress = true;
+                    this.actionsEl.querySelectorAll('button').forEach(b => { b.disabled = true; });
+                    const target = this.combat.party.find(pm => pm.id === cloakSel.value);
+                    this.combat.photomancerInvisibility(target || m);
                 });
-                invisBtn.classList.add('combat-special-btn');
                 invisBtn.title = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL
                     ? 'Target cannot be selected by melee/ranged/single-target magic. Does not break on attack.'
                     : 'Target cannot be selected by melee/ranged/single-target magic. Breaks when the target damages an enemy.';
+                cloakSel.title = 'Choose the ally to cloak.';
+                cloakRow.appendChild(cloakSel);
+                cloakRow.appendChild(invisBtn);
+                this.actionsEl.appendChild(cloakRow);
             }
 
             if (m.level >= PHOTOMANCER_ILLUSION_UNLOCK_LEVEL) {

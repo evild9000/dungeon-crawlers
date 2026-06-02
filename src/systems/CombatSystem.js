@@ -287,7 +287,7 @@ import {
     PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
     PHOTOMANCER_DISINTEGRATE_BASE_KILL, PHOTOMANCER_DISINTEGRATE_BOSS_MULT,
     PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
-    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT,
+    POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT, POTION_MANA_RESTORE_PCT,
     calcScrollBonus,
     RANGER_L35_UNLOCK_LEVEL,
     RANGER_BEAST_COMPANION_TYPES,
@@ -7269,6 +7269,15 @@ export class CombatSystem {
                 const gtAmt = Math.max(1, Math.ceil(target.maxHealth * POTION_GREATER_HEAL_PCT));
                 target.health = Math.min(target.maxHealth, target.health + gtAmt);
                 this._addLog(`\u{1F489} ${actor.name} uses a Greater Healing Potion on ${target.name} — restored ${gtAmt} HP (now ${target.health}/${target.maxHealth}).`);
+                applied = true;
+                break;
+            }
+            case 'mana_potion': {
+                if (target.health <= 0) { this._addLog(`Cannot restore mana to an unconscious ally with this potion.`); return; }
+                if (target.mana >= target.maxMana) { this._addLog(`${target.name} is already at full mana.`); return; }
+                const mpAmt = Math.max(1, Math.ceil(target.maxMana * POTION_MANA_RESTORE_PCT));
+                target.mana = Math.min(target.maxMana, target.mana + mpAmt);
+                this._addLog(`\u{1F499} ${actor.name} uses a Mana Potion on ${target.name} — restored ${mpAmt} MP (now ${target.mana}/${target.maxMana}).`);
                 applied = true;
                 break;
             }
