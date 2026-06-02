@@ -100,7 +100,7 @@ import {
     ROGUE_SHADOW_STEP_UNLOCK_LEVEL, ROGUE_SHADOW_STEP_STAMINA_COST,
     ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
     ROGUE_TRAP_MASTERY_UNLOCK_LEVEL, ROGUE_TRAP_MASTERY_EXTRA_ROUNDS,
-    ROGUE_TRAP_MASTERY_PENALTY_DIVISOR, ROGUE_EXTRA_LOOT_UNLOCK_LEVEL,
+    ROGUE_TRAP_MASTERY_PENALTY_DIVISOR,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
     MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
@@ -186,7 +186,6 @@ import {
     RANGER_RICOCHET_CHANCES,
     RANGER_RICOCHET_MP_COST,
     RANGER_BEAST_COMPANION_TYPES,
-    RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
 import { getItemDef } from '../items/ItemTypes.js';
@@ -1346,20 +1345,6 @@ export class CombatUI {
                 ].filter(Boolean).join('\n');
             }
 
-            // L35 Extra Loot passive display
-            if (m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL) {
-                const goldPct = m.level;
-                const elBtn = this._addBtn(`🪙 Extra Loot (+${goldPct}% gold)`, false, null);
-                elBtn.classList.add('combat-special-btn');
-                elBtn.style.cssText += '; background: linear-gradient(135deg,#4a3800,#7a5c00); color:#ffd700; opacity:0.85; cursor:default;';
-                elBtn.title = [
-                    `Rogue L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL}: Extra Loot (passive).`,
-                    `${m.name} adds +${goldPct}% to all gold found at the end of combat.`,
-                    'Multiple rogues are additive (three L35 rogues = +105% gold).',
-                    'Applies to all gold including boss multipliers and statue-event bonuses.',
-                    'Only living rogues contribute at the end of combat.',
-                ].filter(Boolean).join('\n');
-            }
 
             // L30 Shadow Step button
             if (m.level >= ROGUE_SHADOW_STEP_UNLOCK_LEVEL) {
@@ -2061,41 +2046,6 @@ export class CombatUI {
             ].filter(Boolean).join('\n');
         }
 
-        // Ranger L35: Beast companion status in combat
-        if (m.classId === 'ranger' && m.level >= RANGER_L35_UNLOCK_LEVEL) {
-            const companion = Array.isArray(this.combat.party)
-                ? this.combat.party.find(p => p.isSummoned && p.isPersistent && p.summonStats && p.summonStats.isBeastCompanion && p.summonStats.summonerId === m.id)
-                : null;
-            if (companion) {
-                const bdef = RANGER_BEAST_COMPANION_TYPES[companion.summonStats.beastTypeId];
-                const alive = companion.health > 0;
-                const icon = bdef ? bdef.icon : '🐾';
-                const bcLabel = alive
-                    ? `${icon} ${companion.name} (${companion.health}/${companion.maxHealth} HP)`
-                    : `${icon} ${companion.name} — Dead`;
-                const bcBtn = this._addBtn(bcLabel, false, null);
-                bcBtn.classList.add('combat-special-btn');
-                bcBtn.style.cssText += alive
-                    ? '; background:linear-gradient(135deg,#122010,#1e3a14);color:#90d870;opacity:0.85;cursor:default;'
-                    : '; background:linear-gradient(135deg,#250c0c,#3a1010);color:#d87070;opacity:0.85;cursor:default;';
-                const reviveCost = m.level * RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV;
-                bcBtn.title = alive
-                    ? [
-                        `Beast Companion: ${bdef ? bdef.name : companion.name}.`,
-                        bdef ? bdef.description : '',
-                        `HP: ${companion.health}/${companion.maxHealth}. If slain, revive for ${reviveCost} gold out of combat [P].`,
-                    ].filter(Boolean).join('\n')
-                    : [
-                        `Beast Companion: ${bdef ? bdef.name : companion.name} — has fallen in combat.`,
-                        `Revive out of combat for ${reviveCost} gold by pressing [P].`,
-                    ].filter(Boolean).join('\n');
-            } else {
-                const bcBtn = this._addBtn(`🐾 No Beast Companion bonded — [P] to select`, false, null);
-                bcBtn.classList.add('combat-special-btn');
-                bcBtn.style.cssText += '; background:#111a0a;color:#7ab870;opacity:0.75;cursor:default;';
-                bcBtn.title = `Press [P] out of combat to bond with a beast companion (Ranger L${RANGER_L35_UNLOCK_LEVEL} Beast Mastery).`;
-            }
-        }
 
         // Bard: AoE Disrupt (once per combat)
         if (m.classId === 'bard') {
@@ -2925,14 +2875,10 @@ export class CombatUI {
 
                 const invisLabel = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL ? 'Improved Invis' : 'Invisibility';
                 const invisBtn = this._addBtn(`\u{1F441} ${invisLabel} (-${PHOTOMANCER_INVISIBILITY_MANA_COST} MP)`, m.mana >= PHOTOMANCER_INVISIBILITY_MANA_COST, () => {
-                    if (m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL) {
-                        this._showImprovedInvisTargetDropdown();
-                    } else {
-                        this._pickPartyTarget(t => this.combat.photomancerInvisibility(t), {
-                            filter: pm => pm.health > 0,
-                            prompt: 'Cloak which ally?',
-                        });
-                    }
+                    this._pickPartyTarget(t => this.combat.photomancerInvisibility(t), {
+                        filter: pm => pm.health > 0,
+                        prompt: 'Cloak which ally?',
+                    });
                 });
                 invisBtn.classList.add('combat-special-btn');
                 invisBtn.title = m.level >= PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL
@@ -4091,64 +4037,6 @@ export class CombatUI {
             btn.addEventListener('click', () => callback(pm));
             this.actionsEl.appendChild(btn);
         }
-
-        const cancel = document.createElement('button');
-        cancel.className = 'combat-action-btn';
-        cancel.textContent = 'Cancel';
-        cancel.addEventListener('click', () => this._refresh());
-        this.actionsEl.appendChild(cancel);
-    }
-
-    _showImprovedInvisTargetDropdown() {
-        this._actionInProgress = false;
-        const candidates = (this.combat.party || []).filter(pm => pm && pm.health > 0);
-        if (candidates.length === 0) {
-            this._addBlockingNotice('No valid targets.');
-            return;
-        }
-
-        this.actionsEl.innerHTML = '';
-        this.turnInfo.textContent = 'Cloak which ally?';
-
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '6px';
-        row.style.alignItems = 'center';
-        row.style.flexWrap = 'wrap';
-
-        const select = document.createElement('select');
-        select.className = 'combat-action-btn combat-special-btn';
-        select.style.minWidth = '240px';
-        select.style.background = '#262626';
-        select.style.color = '#e6e6e6';
-        select.style.border = '1px solid #4a4a4a';
-
-        for (const pm of candidates) {
-            const icon = pm.classDef ? pm.classDef.icon : '👥';
-            const pct = pm.maxHealth > 0 ? Math.round((pm.health / pm.maxHealth) * 100) : 0;
-            const opt = document.createElement('option');
-            opt.value = String(pm.id);
-            opt.textContent = `${icon} ${pm.name} (${pm.health}/${pm.maxHealth} HP - ${pct}%)`;
-            if (pm.id === this.combat.currentMember?.id) opt.selected = true;
-            select.appendChild(opt);
-        }
-
-        const castBtn = document.createElement('button');
-        castBtn.className = 'combat-action-btn combat-special-btn';
-        castBtn.textContent = 'Cast Improved Invis';
-        castBtn.addEventListener('click', () => {
-            const id = String(select.value);
-            const target = (this.combat.party || []).find(pm => pm && String(pm.id) === id && pm.health > 0);
-            if (!target) {
-                this._addBlockingNotice('Selected target is no longer valid.');
-                return;
-            }
-            this.combat.photomancerInvisibility(target);
-        });
-
-        row.appendChild(select);
-        row.appendChild(castBtn);
-        this.actionsEl.appendChild(row);
 
         const cancel = document.createElement('button');
         cancel.className = 'combat-action-btn';
