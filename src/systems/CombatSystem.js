@@ -13763,15 +13763,18 @@ export class CombatSystem {
         const lvlThreeBonus = Math.max(0, dlvl - (MONSTER_DAMAGE_BONUS_THRESHOLD - 1));
 
         // Damage helpers — use _damageEnemy so resistances / death callbacks all fire correctly
-        const cHit = (target, dmg, isMagic = false, contactAttacker = null) => {
+        const cHit = (target, dmg, isMagic = false, contactAttacker = null, opts = {}) => {
             if (!target || target.health <= 0) return 0;
             dmg = Math.max(1, Math.round(dmg * frenzyMult));
+            const attackKind = opts.attackKind || (isMagic ? 'magic' : 'melee');
             const options = contactAttacker ? { contactAttacker } : {};
             dmg = this._applyEnemyResourceExhaustion(e, dmg);
             // Nature's Charms bolster: +1% per druid level bonus damage
             if (e.naturesCharmBolster > 0) dmg = Math.max(1, Math.round(dmg * (1 + e.naturesCharmBolster)));
-            const dealt = this._damageEnemy(target, dmg, false, isMagic, 0, false, options);
+            const ignoreDefense = !!opts.phaseStrike || (!isMagic && !!typeDef.phaseStrike);
+            const dealt = this._damageEnemy(target, dmg, ignoreDefense, isMagic, 0, attackKind === 'ranged', options);
             this._addLog(`  \u2192 ${eN(target)} takes ${dealt}${isMagic ? ' magic' : ''} damage.`);
+            cRiders(target, dealt, attackKind, opts);
             return dealt;
         };
         const cEffect = (target, effect) => {
@@ -13787,6 +13790,95 @@ export class CombatSystem {
             if (typeof effect.defenseBonus === 'number') bits.push(`${effect.defenseBonus} def`);
             if (typeof effect.rounds === 'number') bits.push(`${effect.rounds} rd${effect.rounds === 1 ? '' : 's'}`);
             this._addLog(`    \u21B3 ${eN(target)} gains ${effect.type}${bits.length ? ` (${bits.join(', ')})` : ''}.`);
+        };
+        const cRiders = (target, dealt, attackKind = 'melee', opts = {}) => {
+            if (!target || target.health <= 0 || dealt <= 0) return;
+            const melee = attackKind === 'melee';
+            const aoeMagic = attackKind === 'magic' && (opts.aoe || typeDef.aoeMagic || typeDef.aoeFire || typeDef.aoeDrowning);
+
+            if (melee && typeDef.poisonChance && !this._enemyHasImmunity(target, 'poison') && Math.random() < typeDef.poisonChance) {
+                const perTick = Math.max(1, Math.floor(dealt * POISON_DAMAGE_FRACTION));
+                cEffect(target, { type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+                this._addLog(`🟢 ${eN(target)} is poisoned by ${eName}!`);
+            }
+            if (melee && typeDef.stunChance && Math.random() < typeDef.stunChance) {
+                if (this._tryStunEnemy(target)) this._addLog(`⚡ ${eN(target)} is STUNNED by charmed ${eName}!`);
+            }
+            if (melee && typeDef.webChance && Math.random() < typeDef.webChance) {
+                if (this._tryHoldEnemy(target)) this._addLog(`🕸️ ${eN(target)} is ENSNARED by charmed ${eName}!`);
+            }
+            if (melee && typeDef.paralyzingBite) {
+                if (this._tryParalyzeEnemy(target)) this._addLog(`🧪 ${eN(target)} is PARALYZED by charmed ${eName}!`);
+            }
+            if (melee && typeDef.constrict && Math.random() < 0.35) {
+                if (this._tryHoldEnemy(target)) this._addLog(`🐍 ${eN(target)} is CONSTRICTED by charmed ${eName}!`);
+            }
+            if (melee && typeDef.attackDebuff && !this._enemyHasImmunity(target, 'cold')) {
+                const debuffMag = typeof typeDef.attackDebuff === 'number' ? typeDef.attackDebuff : 2;
+                target.activeEffects = (target.activeEffects || []).filter(x => x.type !== 'ice_chill');
+                cEffect(target, { type: 'ice_chill', damageBonus: -debuffMag, rounds: 2 });
+                this._addLog(`❄️ ${eN(target)} is CHILLED by charmed ${eName}!`);
+            }
+
+            if (aoeMagic) {
+                if (typeDef.aoePoisonChance && Math.random() < typeDef.aoePoisonChance) {
+                    if (this._enemyHasImmunity(target, 'poison')) {
+                        this._addLog(`🟢 ${eN(target)} is immune to the toxic cloud!`);
+                    } else {
+                        const perTick = Math.max(1, Math.floor(dealt * POISON_DAMAGE_FRACTION));
+                        cEffect(target, { type: 'poison', rounds: POISON_DURATION_ROUNDS, damage: perTick });
+                        this._addLog(`🟢 ${eN(target)} breathes in the toxic cloud and is poisoned!`);
+                    }
+                }
+                if (typeDef.aoeStunChance && Math.random() < typeDef.aoeStunChance) {
+                    if (typeDef.aoeStunPsychic && this._enemyHasImmunity(target, 'psychic')) {
+                        this._addLog(`🧠 ${eN(target)} is immune to the psychic blast!`);
+                    } else if (this._tryStunEnemy(target)) {
+                        this._addLog(`⚡ ${eN(target)} is dazed by charmed ${eName}'s blast!`);
+                    }
+                }
+            }
+
+            if (typeDef.lifeDrain && e.health > 0) {
+                const stolenBase = Math.max(1, Math.floor(dealt * WRAITH_DRAIN_FRACTION));
+                const rotMult = this._getMummyRotHealMultiplier(e);
+                const stolen = Math.max(0, Math.floor(stolenBase * rotMult));
+                if (stolen <= 0) {
+                    this._addLog(`🟤 ${eName}'s life drain is nullified by Mummy Rot!`);
+                } else {
+                    const before = e.health;
+                    e.health = Math.min(e.maxHealth, e.health + stolen);
+                    const gained = e.health - before;
+                    if (gained > 0) this._addLog(`💀 ${eName} drains life from ${eN(target)}, recovering ${gained} HP!`);
+                }
+            }
+
+            // Match hostile monster L25+ follow-up chains. These roll once per
+            // primary melee/ranged hit, but never recurse from follow-up hits.
+            if (!opts.isFollowup && !opts.aoe && (attackKind === 'melee' || attackKind === 'ranged')) {
+                cFollowups(attackKind);
+            }
+        };
+        const cFollowups = (attackKind) => {
+            const dlvl = this.dungeonLevel;
+            if (dlvl < 25 || e.health <= 0 || hostile().length === 0) return;
+            const tiers = [
+                dlvl / 100,
+                dlvl / 200,
+                dlvl / 400,
+                dlvl >= 50 ? dlvl / 800 : null,
+                dlvl >= 80 ? dlvl / 1600 : null,
+            ];
+            for (const chance of tiers) {
+                if (chance === null) continue;
+                if (Math.random() >= chance) continue;
+                const t = pick();
+                if (!t || e.health <= 0) continue;
+                let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
+                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, attackKind));
+                this._addLog(`🎵⚔️ ${eName} (charmed) presses the attack with a bonus ${attackKind} strike at ${eN(t)}!`);
+                cHit(t, dmg, false, e, { attackKind, isFollowup: true });
+            }
         };
         const pick = () => {
             const h = hostile();
