@@ -1539,8 +1539,8 @@ export class Game {
      *
      * Distance is Euclidean (diagonal moves count correctly).
      * Chance = max(0, (WANDERER_BASE_CHANCE + escalation) − dist × WANDERER_CHANCE_PER_CELL)
-     *   Round 2: 55 % at 0 cells, max range 11 cells.
-     *   Round 3: 60 % at 0 cells, max range 12 cells. Etc.
+     *   Round 2: 27.5 % at 0 cells, max range 11 cells.
+     *   Round 3: 30 % at 0 cells, max range 12 cells. Etc.
      *
      * Returns an array of { enemy } objects for CombatSystem to integrate.
      */

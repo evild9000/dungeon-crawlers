@@ -75,12 +75,12 @@ export const ENEMY_INITIAL_COUNT = 43;     // enemies spawned on new game (+33%)
 // Wandering monster encounter system — per-round attraction to active combat
 // Each round, every hostile enemy within WANDERER_MAX_DISTANCE grid cells of the
 // encounter centre rolls a chance to join.  Chance = max(0, BASE − dist × PER_CELL).
-// At distance 0 → 50 %, distance 5 → 25 %, distance 10 → 0 % (never joins).
+// At distance 0 → 25 %, distance 5 → 12.5 %, distance 10 → 0 % (never joins).
 // Distance is Euclidean: a monster 5E+3S is sqrt(34) ≈ 5.83 cells away.
-export const WANDERER_BASE_CHANCE        = 0.50;  // 50 % base chance at distance 0
-export const WANDERER_CHANCE_PER_CELL    = 0.05;  // −5 % per grid cell of distance
+export const WANDERER_BASE_CHANCE        = 0.25;  // 25 % base chance at distance 0
+export const WANDERER_CHANCE_PER_CELL    = 0.025; // −2.5 % per grid cell of distance
 export const WANDERER_MAX_DISTANCE       = 10;    // monsters beyond 10 cells never join (round 1)
-export const WANDERER_ROUND_CHANCE_BONUS = 0.05;  // +5 % base chance per round elapsed
+export const WANDERER_ROUND_CHANCE_BONUS = 0.025; // +2.5 % base chance per round elapsed
 export const WANDERER_ROUND_DIST_BONUS   = 1;     // +1 cell max distance per round elapsed
 
 // Enemy stat range (randomised per enemy)
@@ -1611,7 +1611,8 @@ export const ROGUE_TRAP_MASTERY_DAMAGE_MULT     = 2;   // ×2 on top of existing
 export const ROGUE_TRAP_MASTERY_EXTRA_ROUNDS    = 2;   // DoT lasts +2 rounds (3 → 5)
 export const ROGUE_TRAP_MASTERY_PENALTY_DIVISOR = 4;   // floor(rogueLevel/4) atk/def penalty
 export const ROGUE_EXTRA_LOOT_UNLOCK_LEVEL      = 35;
-// Extra Loot gold bonus = rogueLevel% per living L35+ rogue, additive across rogues
+export const ROGUE_EXTRA_LOOT_GOLD_PCT_PER_LEVEL = 2;   // +2% gold per rogue level
+// Extra Loot gold bonus = rogueLevel × 2% per living L35+ rogue, additive across rogues
 
 // ── Ranger L35 — Beast Mastery & Ricochet Shot ────────────────────────────────
 export const RANGER_L35_UNLOCK_LEVEL                  = 35;

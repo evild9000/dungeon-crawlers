@@ -141,7 +141,7 @@ import {
     ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
     ROGUE_TRAP_MASTERY_UNLOCK_LEVEL, ROGUE_TRAP_MASTERY_DAMAGE_MULT,
     ROGUE_TRAP_MASTERY_EXTRA_ROUNDS, ROGUE_TRAP_MASTERY_PENALTY_DIVISOR,
-    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL,
+    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL, ROGUE_EXTRA_LOOT_GOLD_PCT_PER_LEVEL,
     GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT, GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS, BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT,
@@ -9071,17 +9071,28 @@ export class CombatSystem {
             // Web-skip
             if (m.webbedRounds && m.webbedRounds > 0) {
                 if ((m.abolethEnslavedRounds || 0) > 0) {
-                    this._addLog(`🧠 ${m.name} is mentally enslaved and cannot act! (${m.abolethEnslavedRounds} rd left)`);
-                } else {
+                    const drumCount = this._getAllBardsWithDrums().length;
+                    const shrugChance = Math.min(1, 0.33 + drumCount * 0.10);
+                    if (Math.random() < shrugChance) {
+                        m.abolethEnslavedRounds = 0;
+                        m.webbedRounds = 0;
+                        this._addLog(`🧠 ${m.name} shrugs off the aboleth's enslavement! (${Math.round(shrugChance * 100)}% chance)`);
+                    } else {
+                        this._addLog(`🧠 ${m.name} is mentally enslaved and cannot act! (${m.abolethEnslavedRounds} rd left)`);
+                        if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
+                        m.webbedRounds--;
+                        m.abolethEnslavedRounds = Math.max(0, (m.abolethEnslavedRounds || 0) - 1);
+                        this._initTurnIdx++;
+                        continue;
+                    }
+                }
+                if (m.webbedRounds > 0) {
                     this._addLog(`\u{1F578}\uFE0F ${m.name} struggles against the webbing and cannot act! (${m.webbedRounds} rd left)`);
+                    if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
+                    m.webbedRounds--;
+                    this._initTurnIdx++;
+                    continue;
                 }
-                if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
-                m.webbedRounds--;
-                if ((m.abolethEnslavedRounds || 0) > 0) {
-                    m.abolethEnslavedRounds = Math.max(0, (m.abolethEnslavedRounds || 0) - 1);
-                }
-                this._initTurnIdx++;
-                continue;
             }
 
             // Prone-skip (Zombie Giant stomp)
@@ -15334,12 +15345,12 @@ export class CombatSystem {
             items.push({ itemId: guaranteedLeg, quantity: 1 });
         }
 
-        // Rogue Extra Loot (L35+): each living L35+ rogue adds rogueLevel% gold (additive)
+        // Rogue Extra Loot (L35+): each living L35+ rogue adds rogueLevel x 2% gold (additive)
         const _extraLootRogues = this.party.filter(
             m => !m.isSummoned && m.health > 0 && m.classId === 'rogue' && m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
         );
         if (_extraLootRogues.length > 0 && totalGold > 0) {
-            const _extraPct  = _extraLootRogues.reduce((s, m) => s + m.level, 0);
+            const _extraPct  = _extraLootRogues.reduce((s, m) => s + m.level * ROGUE_EXTRA_LOOT_GOLD_PCT_PER_LEVEL, 0);
             const _extraGold = Math.floor(totalGold * _extraPct / 100);
             const _rNames    = _extraLootRogues.map(m => m.name).join(' & ');
             totalGold += _extraGold;
