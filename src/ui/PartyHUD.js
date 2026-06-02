@@ -1270,9 +1270,14 @@ export class PartyHUD {
                 mkPB('👁️', improved ? 'Imp Invis' : 'Invisible', improved ? 'rgba(70,35,150,0.92)' : 'rgba(35,75,125,0.92)',
                     `${improved ? 'Improved Invisibility' : 'Invisibility'}: cannot be targeted by melee, ranged, or single-target magic attacks; AoE still hits.${improved ? ' Does not break on attack.' : ' Breaks when this character damages an enemy.'} ${pinvis.rounds} rds left.`);
             }
-            // Webbed / paralyzed / constricted
-            if (member.webbedRounds > 0)
-                mkPB('🕸️', 'Webbed', 'rgba(120,80,0,0.9)', 'Webbed/Paralyzed/Constricted: ' + member.webbedRounds + ' rds left');
+            // Webbed / paralyzed / constricted / mentally enslaved
+            if (member.webbedRounds > 0) {
+                if ((member.abolethEnslavedRounds || 0) > 0) {
+                    mkPB('🧠', 'Enslaved', 'rgba(80,30,140,0.92)', 'Aboleth mental enslavement: cannot act — ' + member.abolethEnslavedRounds + ' rds left');
+                } else {
+                    mkPB('🕸️', 'Webbed', 'rgba(120,80,0,0.9)', 'Webbed/Paralyzed/Constricted: ' + member.webbedRounds + ' rds left');
+                }
+            }
             // DoTs and debuffs from activeEffects
             const ppo = pefx.find(x => x && x.type === 'poison');
             if (ppo) mkPB('☠️', 'Poisoned', 'rgba(80,0,140,0.9)',

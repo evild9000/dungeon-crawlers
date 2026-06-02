@@ -9070,9 +9070,16 @@ export class CombatSystem {
 
             // Web-skip
             if (m.webbedRounds && m.webbedRounds > 0) {
-                this._addLog(`\u{1F578}\uFE0F ${m.name} struggles against the webbing and cannot act! (${m.webbedRounds} rd left)`);
+                if ((m.abolethEnslavedRounds || 0) > 0) {
+                    this._addLog(`🧠 ${m.name} is mentally enslaved and cannot act! (${m.abolethEnslavedRounds} rd left)`);
+                } else {
+                    this._addLog(`\u{1F578}\uFE0F ${m.name} struggles against the webbing and cannot act! (${m.webbedRounds} rd left)`);
+                }
                 if (m.symphonyActive) this._bardEndSymphony(m, 'interrupted');
                 m.webbedRounds--;
+                if ((m.abolethEnslavedRounds || 0) > 0) {
+                    m.abolethEnslavedRounds = Math.max(0, (m.abolethEnslavedRounds || 0) - 1);
+                }
                 this._initTurnIdx++;
                 continue;
             }
@@ -10997,7 +11004,10 @@ export class CombatSystem {
                             }
                             if (!_abolResisted) {
                                 _hit.webbedRounds = Math.max(_hit.webbedRounds || 0, enslaveDuration);
-                                this._addLog(`\u{1F9E0} ${_hit.name} is mentally enslaved — too confused to act! (${enslaveDuration} rds)`);
+                                if ((_hit.webbedRounds || 0) > 0) {
+                                    _hit.abolethEnslavedRounds = Math.max(_hit.abolethEnslavedRounds || 0, enslaveDuration);
+                                    this._addLog(`\u{1F9E0} ${_hit.name} is mentally enslaved — too confused to act! (${enslaveDuration} rds)`);
+                                }
                             }
                         }
                     }

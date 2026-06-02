@@ -112,6 +112,7 @@ export class PartyMember {
         familiar,
         hungerState, foodTimer,
         savedEffects,
+        abolethEnslavedRounds,
     }) {
         this.id = id || generateId();
         this.name = name;
@@ -169,6 +170,7 @@ export class PartyMember {
         }
         this.stunned = false;
         this._webbedRounds = 0;  // Phase 11 — web/hold lockdown counter (rounds left)
+        this.abolethEnslavedRounds = Math.max(0, abolethEnslavedRounds | 0);
         this.usedBardSong = false;  // "once per combat" tracker
         this.isRaging = false;   // Barbarian: active rage flag
         this.usedRage = false;   // Barbarian: once-per-combat rage tracker
@@ -224,9 +226,11 @@ export class PartyMember {
             get: () => this._webbedRounds || 0,
             set: (value) => {
                 const rounds = Math.max(0, value | 0);
-                this._webbedRounds = (!this.isSummoned && this.classId === 'warlock' && this.abyssFormActive && rounds > 0)
+                const actualRounds = (!this.isSummoned && this.classId === 'warlock' && this.abyssFormActive && rounds > 0)
                     ? 0
                     : rounds;
+                this._webbedRounds = actualRounds;
+                if (actualRounds <= 0) this.abolethEnslavedRounds = 0;
             },
         });
 
