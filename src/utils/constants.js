@@ -1634,8 +1634,8 @@ export const ROGUE_TRAP_MASTERY_DAMAGE_MULT     = 2;   // ×2 on top of existing
 export const ROGUE_TRAP_MASTERY_EXTRA_ROUNDS    = 2;   // DoT lasts +2 rounds (3 → 5)
 export const ROGUE_TRAP_MASTERY_PENALTY_DIVISOR = 4;   // floor(rogueLevel/4) atk/def penalty
 export const ROGUE_EXTRA_LOOT_UNLOCK_LEVEL      = 35;
-export const ROGUE_EXTRA_LOOT_GOLD_PCT_PER_LEVEL = 2;   // +2% gold per rogue level
-// Extra Loot gold bonus = rogueLevel × 2% per living L35+ rogue, additive across rogues
+export const ROGUE_EXTRA_LOOT_GOLD_PCT          = 100; // +100% gold per living L35+ rogue
+// Extra Loot gold bonus = +100% per living L35+ rogue, additive across rogues
 
 // ── Ranger L35 — Beast Mastery & Ricochet Shot ────────────────────────────────
 export const RANGER_L35_UNLOCK_LEVEL                  = 35;

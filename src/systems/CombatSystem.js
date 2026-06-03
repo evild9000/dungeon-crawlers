@@ -141,7 +141,7 @@ import {
     ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
     ROGUE_TRAP_MASTERY_UNLOCK_LEVEL, ROGUE_TRAP_MASTERY_DAMAGE_MULT,
     ROGUE_TRAP_MASTERY_EXTRA_ROUNDS, ROGUE_TRAP_MASTERY_PENALTY_DIVISOR,
-    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL, ROGUE_EXTRA_LOOT_GOLD_PCT_PER_LEVEL,
+    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL, ROGUE_EXTRA_LOOT_GOLD_PCT,
     GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT, GOLEM_ATTACHMENT_SHIELD_BLOCK_CHANCE,
     BARBARIAN_ENCOURAGE_UNLOCK_LEVEL, BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND,
     BARBARIAN_ENCOURAGE_MAX_ROUNDS, BARBARIAN_ENCOURAGE_MAX_DAMAGE_MULT,
@@ -15369,7 +15369,8 @@ export class CombatSystem {
             const lootRolls = isSuperBoss ? 10 : (isBoss ? 5 : 1);
             const goldMult  = isSuperBoss ? 20 : isMegaBoss ? 10 : (isBoss ? 5 : 1);
 
-            totalGold += randomInt(LOOT_GOLD_MIN, LOOT_GOLD_MAX) * lvl * goldMult;
+            const levelGoldScale = lvl <= 25 ? lvl : (lvl * lvl) / 25;
+            totalGold += randomInt(LOOT_GOLD_MIN, LOOT_GOLD_MAX) * levelGoldScale * goldMult;
 
             // Advanced materials: one independent, per-enemy roll (separate from reagents).
             const advancedMat = this._rollAdvancedMaterialDrop(e);
@@ -15513,12 +15514,12 @@ export class CombatSystem {
             items.push({ itemId: guaranteedLeg, quantity: 1 });
         }
 
-        // Rogue Extra Loot (L35+): each living L35+ rogue adds rogueLevel x 2% gold (additive)
+        // Rogue Extra Loot (L35+): each living L35+ rogue adds a flat +100% gold (additive)
         const _extraLootRogues = this.party.filter(
             m => !m.isSummoned && m.health > 0 && m.classId === 'rogue' && m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
         );
         if (_extraLootRogues.length > 0 && totalGold > 0) {
-            const _extraPct  = _extraLootRogues.reduce((s, m) => s + m.level * ROGUE_EXTRA_LOOT_GOLD_PCT_PER_LEVEL, 0);
+            const _extraPct  = _extraLootRogues.length * ROGUE_EXTRA_LOOT_GOLD_PCT;
             const _extraGold = Math.floor(totalGold * _extraPct / 100);
             const _rNames    = _extraLootRogues.map(m => m.name).join(' & ');
             totalGold += _extraGold;
