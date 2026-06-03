@@ -505,7 +505,7 @@ export class CombatUI {
                         tip: (fx) => 'Leprechaun Curse: ' + (fx.defenseBonus||0) + ' defense' + (fx.permanent ? ' this combat' : ' — ' + fx.rounds + ' rds left')
                     },
                     bleed: {
-                        icon: '🟥', label: 'Bleeding', bg: 'rgba(160,0,0,0.9)',
+                        icon: '\u{1FA78}', label: 'Bleeding', bg: 'rgba(160,0,0,0.9)',
                         tip: (fx) => 'Bleeding: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
                     },
                     burn: {
@@ -591,6 +591,14 @@ export class CombatUI {
                     drone_binding: {
                         icon: '⚙️', label: 'Bound', bg: 'rgba(80,80,200,0.9)',
                         tip: (fx) => 'Drone Binding: -' + Math.abs(fx.damageBonus||0) + ' atk, -' + Math.abs(fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'
+                    },
+                    sabotage_defense: {
+                        icon: '\u{1F6E0}\uFE0F', label: 'Sabotaged', bg: 'rgba(120,80,20,0.95)',
+                        tip: (fx) => 'Sabotage: ' + (fx.defenseBonus||0) + ' defense (permanent stack)'
+                    },
+                    sabotage_malfunction: {
+                        icon: '\u{1F6E0}\uFE0F', label: 'Malfunction', bg: 'rgba(160,90,20,0.95)',
+                        tip: (fx) => 'Malfunction: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
                     },
                     quasit_poison: {
                         icon: '\u{1F47F}', label: 'Venom', bg: 'rgba(60,0,120,0.9)',
@@ -918,12 +926,12 @@ export class CombatUI {
             }
         };
 
-        const damageWords = 'damage|bonus damage|explosion|fire|acid|poison|psychic|cold|lightning|sonic|plague|cutting grit|ranged|melee|magic';
+        const damageWords = 'damage|dmg|explosion|fire|acid|poison|psychic|cold|frost|lightning|sonic|plague|shockwave|ki|internal|nature|ethereal|ranged|melee|magic';
         // Allow up to 3 descriptor words (e.g. "defense-ignoring", "radiant") between
         // the number and the damage keyword so phrases like
         // "takes 42 defense-ignoring magic damage" still highlight the amount.
         const descriptors = '(?:[A-Za-z][A-Za-z-]*\\s+){0,3}?';
-        addMatches(new RegExp(`\\bfor\\s+(\\d+)(?=\\s*(?:${damageWords}|[!.()]|$))`, 'gi'));
+        addMatches(new RegExp(`\\bfor\\s+(\\d+)(?=\\s*(?:${descriptors}(?:${damageWords})|[!.()]|$))`, 'gi'));
         addMatches(new RegExp(`\\btakes\\s+(\\d+)(?=\\s+${descriptors}(?:${damageWords}))`, 'gi'));
         addMatches(new RegExp(`\\bsuffers\\s+(\\d+)(?=\\s+${descriptors}(?:${damageWords}))`, 'gi'));
         addMatches(new RegExp(`\\b(\\d+)\\s+(?:${damageWords})\\b`, 'gi'));
@@ -935,7 +943,7 @@ export class CombatUI {
     _dotInfoRanges(msg) {
         const text = String(msg || '');
         const ranges = [];
-        const regex = /\([^)]*(?:\/rd|dmg\/round|damage\/round)[^)]*(?:rounds?|rds?)[^)]*\)/gi;
+        const regex = /\([^)]*(?:\/rd|\/round|dmg\/round|damage\/round)[^)]*(?:rounds?|rds?)[^)]*\)/gi;
         let match;
         while ((match = regex.exec(text)) !== null) {
             ranges.push({ start: match.index, end: match.index + match[0].length, className: 'log-dot-info' });
@@ -1187,7 +1195,7 @@ export class CombatUI {
                     `L25 Deconstruct: Scatter Shot vs constructs gains +${Math.round((0.20 + m.level * 0.005) * 100)}% crit chance and deals ×${ARTIFICER_DECONSTRUCT_BONUS_MULT} bonus armor-ignoring damage; each hit has a 50% scavenge chance to repair your golems for 5% max HP.`,
                 ] : []),
                 ...(m.level >= ARTIFICER_SABOTAGE_UNLOCK_LEVEL ? [
-                    `L35 Sabotage: each construct hit adds a sabotage stack and immediately checks instant-destroy. Each stack rolls ${(m.level / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2)}% (bosses immune). On sabotage kill, your golems are fully repaired.`,
+                    `L35 Sabotage: each construct hit adds a sabotage stack, -${(m.level / 10).toFixed(1)} permanent defense, and malfunction DoT for 50% of the hit over 3 rounds. Each stack rolls ${(m.level / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2)}% instant-destroy (bosses immune); detonations blast other enemies from the construct's remaining HP and fully repair your golems.`,
                 ] : []),
             ]
             : [

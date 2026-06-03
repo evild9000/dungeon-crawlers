@@ -800,14 +800,38 @@ export class CombatSystem {
         return golem;
     }
 
-    _applyArtificerSabotage(artificer, enemy) {
+    _applyArtificerSabotage(artificer, enemy, originatingHit = 0) {
         if (!artificer || !enemy || enemy.health <= 0) return false;
         if ((artificer.level || 1) < ARTIFICER_SABOTAGE_UNLOCK_LEVEL) return false;
         const tags = this._getEnemyTags(enemy);
         if (!tags.includes('construct')) return false;
 
+        const level = artificer.level || 1;
+        const eName = this._eName(enemy);
+        const defPenalty = Math.max(0, level / 10);
+        const hitDamage = Math.max(0, Math.round(originatingHit || 0));
+        const malfunctionDamage = Math.max(1, Math.round(hitDamage * 0.5));
+
+        enemy.activeEffects = enemy.activeEffects || [];
+        if (defPenalty > 0) {
+            enemy.activeEffects.push({
+                type: 'sabotage_defense',
+                defenseBonus: -defPenalty,
+                permanent: true,
+            });
+        }
+        if (hitDamage > 0) {
+            enemy.activeEffects.push({
+                type: 'sabotage_malfunction',
+                damage: malfunctionDamage,
+                rounds: 3,
+                artificerId: artificer.id,
+            });
+        }
+        this._addLog(`🛠️ ${eName} malfunctions under Sabotage! (-${defPenalty.toFixed(1)} def permanent, ${malfunctionDamage}/rd for 3 rds)`);
+
         if (enemy.isBoss || enemy.isMegaBoss || enemy.isSuperBoss) {
-            this._addLog(`🛠️ Sabotage fails to compromise ${this._eName(enemy)} — boss-tier frame is immune to instant destruction.`);
+            this._addLog(`🛠️ Sabotage fails to detonate ${eName} — boss-tier frame is immune to instant destruction.`);
             return false;
         }
 
@@ -816,9 +840,9 @@ export class CombatSystem {
         const counters = (enemy.sabotageCountersByArtificerId[key] || 0) + 1;
         enemy.sabotageCountersByArtificerId[key] = counters;
 
-        const perCounterChance = Math.min(0.95, Math.max(0, (artificer.level || 1) / (ARTIFICER_SABOTAGE_CHANCE_DIVISOR * 100)));
+        const perCounterChance = Math.min(0.95, Math.max(0, level / (ARTIFICER_SABOTAGE_CHANCE_DIVISOR * 100)));
         const totalChance = 1 - Math.pow(1 - perCounterChance, counters);
-        this._addLog(`🛠️ Sabotage stack ${counters} on ${this._eName(enemy)} (${Math.round(perCounterChance * 100)}% per stack, ${Math.round(totalChance * 100)}% total).`);
+        this._addLog(`🛠️ Sabotage stack ${counters} on ${eName} (${Math.round(perCounterChance * 100)}% per stack, ${Math.round(totalChance * 100)}% total).`);
 
         let detonate = false;
         for (let i = 0; i < counters; i++) {
@@ -829,12 +853,25 @@ export class CombatSystem {
         }
         if (!detonate) return false;
 
+        const detonationBaseHp = Math.max(0, enemy.health || 0);
+        const aoeDmg = Math.max(1, Math.round(detonationBaseHp * (level / 300)));
         enemy.health = 0;
         if (!enemy._deathHandled) {
             enemy._deathHandled = true;
             this._onEnemyDeath(enemy);
         }
-        this._addLog(`💥🛠️ SABOTAGE DETONATION! ${this._eName(enemy)} catastrophically fails and is instantly destroyed!`);
+        this._addLog(`💥🛠️ SABOTAGE DETONATION! ${eName} catastrophically fails and is instantly destroyed!`);
+        const blastTargets = (this.aliveHostileEnemies || []).filter(e => e && e !== enemy && e.health > 0);
+        if (blastTargets.length > 0 && aoeDmg > 0) {
+            for (const t of blastTargets) {
+                const dealt = this._damageEnemy(t, aoeDmg, true, false, 0, false);
+                this._addLog(`  💥 sabotage shrapnel hits ${this._eName(t)} for ${dealt} damage!`);
+                if (t.health <= 0) {
+                    this._addLog(`${this._eName(t)} is destroyed by the sabotage blast!`);
+                    if (!t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
+                }
+            }
+        }
         this._healArtificerOwnedGolemsToFull(artificer);
         return true;
     }
@@ -2419,7 +2456,7 @@ export class CombatSystem {
             const primaryDef  = ENEMY_TYPES[targetEnemy.type] || {};
             const primaryTags = Array.isArray(primaryDef.tags) ? primaryDef.tags : [];
             if (primaryTags.includes('construct')) {
-                this._applyArtificerSabotage(m, targetEnemy);
+                this._applyArtificerSabotage(m, targetEnemy, dealt);
                 if (targetEnemy.health <= 0) {
                     this._addLog(`${eName} is torn apart!`);
                 } else {
@@ -2476,7 +2513,7 @@ export class CombatSystem {
                 const sDef  = ENEMY_TYPES[t.type] || {};
                 const sTags = Array.isArray(sDef.tags) ? sDef.tags : [];
                 if (sTags.includes('construct')) {
-                    this._applyArtificerSabotage(m, t);
+                    this._applyArtificerSabotage(m, t, sDealt);
                     if (t.health <= 0) {
                         this._addLog(`${sName} is torn apart!`);
                     } else {
@@ -7580,7 +7617,7 @@ export class CombatSystem {
                 const bleedDmg = Math.max(1, Math.round(dealt * DRUID_WILD_WOLF_BLEED_FRACTION));
                 target.activeEffects = target.activeEffects || [];
                 target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedDur });
-                this._addLog(`\u{1F7E5} ${this._eName(target)} bleeds! (${bleedDmg}/rd × ${bleedDur} rds)`);
+                this._addLog(`\u{1FA78} ${this._eName(target)} bleeds! (${bleedDmg}/rd × ${bleedDur} rds)`);
             }
             if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
         }
@@ -8773,7 +8810,7 @@ export class CombatSystem {
                     const bleedDmg = Math.max(1, Math.round(dealt * 1.0));
                     target.activeEffects = target.activeEffects || [];
                     target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedDuration });
-                    this._addLog(`\u{1F7E5} ${this._eName(target)} is Bleeding! (${bleedDmg}/round × ${bleedDuration} rds)`);
+                    this._addLog(`\u{1FA78} ${this._eName(target)} is Bleeding! (${bleedDmg}/rd × ${bleedDuration} rds)`);
                 }
                 if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
             };
@@ -8817,6 +8854,8 @@ export class CombatSystem {
         }
 
         // ── Beast Companion attacks (Ranger L35 Beast Mastery) ────────────────
+        const companionDamageMult = stats.isBeastCompanion ? (stats.damageMult || 1) : 1;
+        const rollCompanionDamage = (min, max) => Math.max(1, Math.round(randomInt(min ?? 2, max ?? 8) * companionDamageMult));
         if (beastKind === 'bc_dire_wolf') {
             const ranger = this.party.find(p => p.id === m.summonStats.summonerId && !p.isSummoned);
             const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
@@ -8826,14 +8865,14 @@ export class CombatSystem {
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
-                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 this._addLog(`🐺 ${m.name} bites ${this._eName(t)} for ${dealt}!`);
                 const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
                 if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
                     t.activeEffects = t.activeEffects || [];
                     t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
-                    this._addLog(`🟥 ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
+                    this._addLog(`\u{1FA78} ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
                 }
             }
             if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
@@ -8849,7 +8888,7 @@ export class CombatSystem {
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
-                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 if (Math.random() < 0.5) {
                     // Claw: bleed
@@ -8858,7 +8897,7 @@ export class CombatSystem {
                     if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
                         t.activeEffects = t.activeEffects || [];
                         t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
-                        this._addLog(`🟥 ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
+                        this._addLog(`\u{1FA78} ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
                     }
                 } else {
                     // Bite: hold chance = rl%
@@ -8885,7 +8924,7 @@ export class CombatSystem {
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
-                let dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 8);
+                let dmg = rollCompanionDamage(stats.rangedMin, stats.rangedMax);
                 const isCrit = Math.random() < critChance && !this._isCritImmune(t);
                 if (isCrit) dmg = Math.round(dmg * critMult);
                 const dealt = this._damageSummonEnemy(t, dmg);
@@ -8907,7 +8946,7 @@ export class CombatSystem {
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
-                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 if (Math.random() < 0.5) {
                     // Claw: bleed
@@ -8916,7 +8955,7 @@ export class CombatSystem {
                     if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
                         t.activeEffects = t.activeEffects || [];
                         t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
-                        this._addLog(`🟥 ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
+                        this._addLog(`\u{1FA78} ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
                     }
                 } else {
                     // Bite: instakill check
@@ -8948,7 +8987,7 @@ export class CombatSystem {
             const holdRounds = Math.max(1, Math.floor(rl / 5));
             const baseDmgMult = 3 + Math.floor(rl / 10);
             const t = targets[Math.floor(Math.random() * targets.length)];
-            const baseDmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+            const baseDmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
             const constrictDmg = Math.max(1, Math.round(baseDmg * baseDmgMult));
             const dealt = this._damageSummonEnemy(t, constrictDmg, false, false, { contactAttacker: m });
             this._addLog(`🐍 ${m.name} constricts ${this._eName(t)} for ${dealt}! (${baseDmgMult}× base)`);
@@ -8979,7 +9018,7 @@ export class CombatSystem {
             this._addLog(`🦌 ${m.name} charges into the fray!`);
             for (const ct of chargeTargets) {
                 if (ct.health <= 0) continue;
-                const baseDmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const baseDmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
                 const dmg = Math.max(1, Math.round(baseDmg * dmgMult));
                 const dealt = this._damageSummonEnemy(ct, dmg, false, false, { contactAttacker: m });
                 this._addLog(`  🦌 ${m.name} smashes ${this._eName(ct)} for ${dealt}!`);
@@ -9007,7 +9046,7 @@ export class CombatSystem {
                     ? alive[Math.floor(Math.random() * alive.length)]
                     : (targets[0] && targets[0].health > 0 ? targets[0] : alive[0]);
                 if (!at || at.health <= 0) continue;
-                const baseDmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const baseDmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
                 const dmg = Math.max(1, Math.round(baseDmg * dmgMult));
                 const dealt = this._damageSummonEnemy(at, dmg, false, false, isBoulder ? undefined : { contactAttacker: m });
                 if (isBoulder) {
@@ -15803,7 +15842,7 @@ export class CombatSystem {
             // ── Weapon-rider DoTs on enemies (burn, acid_dot, poison_weapon).
             //    Each ticks per player round; damage rolled once per round.
             const effects = e.activeEffects || [];
-            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1F7E5} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', quasit_poison: '\u{1F47F} quasit venom', bloat_poison: '\u{1F922} toxic bile', vk_acid_dot: '\u{1F7E2} acid corrosion', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid', shadow_fire_dot: '🌑🔥 shadow fire', shadow_ice_dot: '🌑❄️ shadow ice', shadow_lightning_dot: '🌑⚡ shadow lightning', shadow_acid_dot: '🌑🟢 shadow acid', shadow_poison_dot: '🌑☠️ shadow poison', shadow_psychic_dot: '🌑💜 shadow psychic', shadow_sonic_dot: '🌑🔊 shadow sonic', shadow_bleed_dot: '🌑🩸 shadow bleed', awakened_ember_brand: '🔥 ember brand', awakened_void_rot: '🕳️ void rot', awakened_grave_rot: '☠️ grave rot', awakened_pox: '☣️ eldritch pox', awakened_mind_burn: '🧠 mind burn', awakened_saint_scorch: '🌘 saint scorch' };
+            const DOT_TYPES = { burn: '\u{1F525} burn', acid_dot: '\u{1F7E2} acid', poison_weapon: '\u{1F40D} venom', lightning_dot: '⚡ lightning', frost_dot: '❄️ frost', bleed: '\u{1FA78} bleed', mummy_rot: '\u{1F7E4} Mummy Rot', fae_poison: '\u{1F33F} fae venom', rogue_trap_dot: '\u{1FAA4} trap wound', ranger_totem_bleed: '🐺 totem bleed', ranger_totem_poison: '🧚 totem poison', avatar_fire: '🔥 avatar fire', avatar_lightning: '⚡ avatar lightning', avatar_acid: '🟢 avatar acid', avatar_ice: '❄️ avatar ice', rift_drown: '\u{1F30A} drowning', vk_poison: '\u{1F577}️ venom', quasit_poison: '\u{1F47F} quasit venom', bloat_poison: '\u{1F922} toxic bile', vk_acid_dot: '\u{1F7E2} acid corrosion', sabotage_malfunction: '\u{1F6E0}\uFE0F malfunction', insect_plague_poison: '\u{1F41C} plague poison', vk_swarm_poison: '\u{1F41C} swarm venom', vk_swarm_acid: '\u{1FAA1} swarm acid', shadow_fire_dot: '🌑🔥 shadow fire', shadow_ice_dot: '🌑❄️ shadow ice', shadow_lightning_dot: '🌑⚡ shadow lightning', shadow_acid_dot: '🌑🟢 shadow acid', shadow_poison_dot: '🌑☠️ shadow poison', shadow_psychic_dot: '🌑💜 shadow psychic', shadow_sonic_dot: '🌑🔊 shadow sonic', shadow_bleed_dot: '🌑🩸 shadow bleed', awakened_ember_brand: '🔥 ember brand', awakened_void_rot: '🕳️ void rot', awakened_grave_rot: '☠️ grave rot', awakened_pox: '☣️ eldritch pox', awakened_mind_burn: '🧠 mind burn', awakened_saint_scorch: '🌘 saint scorch' };
             for (const fx of effects) {
                 if (!fx || fx.rounds === undefined || fx.rounds <= 0) continue;
                 if (DOT_TYPES[fx.type] && fx.damage > 0 && e.health > 0) {
@@ -17744,7 +17783,7 @@ export class CombatSystem {
                     for (let i = 0; i < 3; i++) {
                         const t = randTarget(); if (!t) break;
                         const d = hit(t, 'melee', 1.35);
-                        this._addLog(`  -> ${this._eName(t)} takes ${d}.`);
+                        this._addLog(`  -> ${this._eName(t)} takes ${d} melee damage.`);
                         kill(t);
                     }
                 } else {
@@ -17752,7 +17791,7 @@ export class CombatSystem {
                     for (const e of this.aliveHostileEnemies.slice()) {
                         if (this._enemyHasImmunity(e, 'fire')) continue;
                         const d = hit(e, 'magic', type === 'pit_fiend' ? 1.2 : 1);
-                        this._addLog(`  -> ${this._eName(e)} takes ${d} fire.`);
+                        this._addLog(`  -> ${this._eName(e)} takes ${d} fire damage.`);
                         burn(e, d);
                         kill(e);
                     }

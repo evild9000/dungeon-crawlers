@@ -981,7 +981,7 @@ export class InventoryUI {
         if (member.classId === 'artificer' && member.level >= ARTIFICER_SABOTAGE_UNLOCK_LEVEL) {
             const sabotageChance = ((member.level || 1) / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2);
             perk.push(`Sabotage: ${sabotageChance}%/stack`);
-            perkDetails.push(`Artificer L${ARTIFICER_SABOTAGE_UNLOCK_LEVEL} Sabotage:\n  Passive Scatter Shot upgrade against constructs.\n  Each construct hit adds a sabotage counter and immediately rolls an instant-destroy check at ${sabotageChance}% per counter.\n  Bosses, mega-bosses, and super-bosses are immune to sabotage instant destruction.\n  Sabotage kills fully repair this artificer's living golems.`);
+            perkDetails.push(`Artificer L${ARTIFICER_SABOTAGE_UNLOCK_LEVEL} Sabotage:\n  Passive Scatter Shot upgrade against constructs.\n  Each construct hit adds a sabotage counter, -${((member.level || 1) / 10).toFixed(1)} permanent defense, and a stacking malfunction DoT for 50% of the hit over 3 rounds.\n  Each counter immediately rolls an instant-destroy check at ${sabotageChance}% per counter; bosses, mega-bosses, and super-bosses are immune to instant destruction.\n  Sabotage detonations blast other enemies for artificer level/3% of the construct's remaining HP and fully repair this artificer's living golems.`);
         }
         if (member.classId === 'barbarian' && member.level >= BARBARIAN_ENCOURAGE_UNLOCK_LEVEL) {
             const maxPct = Math.round(BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND * BARBARIAN_ENCOURAGE_MAX_ROUNDS * 100);

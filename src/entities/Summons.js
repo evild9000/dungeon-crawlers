@@ -884,7 +884,7 @@ export const WARLOCK_AWAKENED_IDS = Object.keys(WARLOCK_AWAKENED_PRESETS);
 export function rollWarlockAwakenedStats(warlockLevel = 1, warlockMaxHealth = 20, awakenedId = WARLOCK_AWAKENED_IDS[0]) {
     const level = Math.max(1, warlockLevel | 0);
     const maxHealthBase = Math.max(1, Math.floor((warlockMaxHealth || 1) * 5));
-    const offense = Math.max(1, Math.floor(level * 3));
+    const offense = Math.max(1, Math.floor(level * 5));
     const defense = Math.max(1, Math.floor(level * 2.5));
     const preset = WARLOCK_AWAKENED_PRESETS[awakenedId] || WARLOCK_AWAKENED_PRESETS[WARLOCK_AWAKENED_IDS[0]];
 
@@ -920,6 +920,9 @@ export function rollWarlockAwakenedStats(warlockLevel = 1, warlockMaxHealth = 20
         rangedMax: offenseScaled + 4,
         magicMin: offenseScaled,
         magicMax: offenseScaled + 4,
+        meleeSkill: offenseScaled,
+        rangedSkill: offenseScaled,
+        magicSkill: offenseScaled,
         defense: defenseScaled,
         warlockLevel: level,
         beastKind: 'warlock_demon',
@@ -1246,7 +1249,7 @@ export function rollBeastStats(beastId, rangerLevel = 1) {
 
 /**
  * Build stat block for a beast companion (L35 Ranger Beast Mastery).
- * melee/ranged stat = rangerLevel×2, defense = rangerLevel×2, health = rangerMaxHealth×1.5
+ * melee/ranged stat = rangerLevel×3, defense = rangerLevel×3, health = rangerMaxHealth×1.5
  * @param {object} ranger — PartyMember
  * @param {string} beastTypeId — key in RANGER_BEAST_COMPANION_TYPES
  */
@@ -1262,8 +1265,8 @@ export function buildBeastCompanionStats(ranger, beastTypeId) {
         maxStamina: 0,
         maxMana:    0,
         ...(isRanged
-            ? { rangedMin: stat, rangedMax: stat * 2 }
-            : { meleeMin:  stat, meleeMax:  stat * 2 }),
+            ? { rangedMin: stat, rangedMax: stat * 2, rangedSkill: stat }
+            : { meleeMin:  stat, meleeMax:  stat * 2, meleeSkill: stat }),
         defense:    stat,
         attackType: def.attackType,
         beastKind:  def.beastKind,
@@ -1271,6 +1274,7 @@ export function buildBeastCompanionStats(ranger, beastTypeId) {
         summonerId: ranger.id,
         isBeastCompanion: true,
         rangerLevel: rl,
+        damageMult: 1 + rl / 100,
     };
 }
 
@@ -1287,7 +1291,6 @@ export function syncBeastCompanionStats(party) {
         const ranger = party.find(m => m.id === beast.summonStats.summonerId && !m.isSummoned);
         if (!ranger) continue;
         const newLevel = ranger.level;
-        if (beast.summonStats.rangerLevel === newLevel) continue;
         const s = buildBeastCompanionStats(ranger, beast.summonStats.beastTypeId);
         beast.maxHealth = s.maxHealth;
         if (beast.health > s.maxHealth) beast.health = s.maxHealth;
@@ -1296,8 +1299,11 @@ export function syncBeastCompanionStats(party) {
         beast.summonStats.meleeMax    = s.meleeMax;
         beast.summonStats.rangedMin   = s.rangedMin;
         beast.summonStats.rangedMax   = s.rangedMax;
+        beast.summonStats.meleeSkill  = s.meleeSkill;
+        beast.summonStats.rangedSkill = s.rangedSkill;
         beast.summonStats.defense     = s.defense;
         beast.summonStats.attackType  = s.attackType;
         beast.summonStats.rangerLevel = newLevel;
+        beast.summonStats.damageMult  = s.damageMult;
     }
 }

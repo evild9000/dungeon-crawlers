@@ -1711,7 +1711,7 @@ export const ROGUE_EXTRA_LOOT_GOLD_PCT          = 100; // base gold bonus per li
 // ── Ranger L35 — Beast Mastery & Ricochet Shot ────────────────────────────────
 export const RANGER_L35_UNLOCK_LEVEL                  = 35;
 export const RANGER_BEAST_MASTERY_HEALTH_MULT         = 1.5;
-export const RANGER_BEAST_MASTERY_STAT_MULT           = 2;
+export const RANGER_BEAST_MASTERY_STAT_MULT           = 3;
 export const RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV  = 100;
 export const RANGER_RICOCHET_CHANCES    = [0.75, 0.65, 0.55, 0.45, 0.35, 0.25, 0.15, 0.05];
 export const RANGER_RICOCHET_DAMAGE_MULT              = 0.50;
