@@ -404,6 +404,19 @@ export const RIFT_ELEMENTAL_PRESETS = {
             'Immune to stun and poison.',
         ],
     },
+    rift_void: {
+        id: 'rift_void',
+        name: 'Void Elemental',
+        icon: '\u{1F311}',
+        enemySprite: 'wraith',
+        speciesLabel: 'Void Elemental',
+        kind: 'elemental',
+        abilities: [
+            'Summoned through a Sceptre of Void Elementals.',
+            'Back-row incorporeal elemental/undead caster.',
+            'Immune to poison, stun, hold, web, and bleed.',
+        ],
+    },
 };
 
 export const DEMI_LICH_PRESET = {
@@ -1035,6 +1048,24 @@ export const GOLEM_PRESETS = (() => {
             ],
         };
     }
+    out.mismatched_golem = {
+        id: 'mismatched_golem',
+        name: 'Mismatched Golem',
+        icon: '\u{1F916}',
+        portraitClass: 'summoned',
+        portraitSpecies: 'dwarf',
+        speciesLabel: 'Mismatched Golem',
+        kind: 'golem',
+        persistent: true,
+        reagentTier: 'common',
+        description: 'A unique artificer-built golem assembled from mismatched parts. It does not count against the normal golem cap and cannot use attachment upgrades.',
+        abilities: [
+            'Persistent artificer golem that scales from its creator level.',
+            'Attacks floor(artificer level / 6) times each turn.',
+            'Each strike has artificer level% chance to stun through normal stun processing.',
+            'Takes half damage from ranged and magic attacks.',
+        ],
+    };
     return out;
 })();
 

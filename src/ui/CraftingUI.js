@@ -416,6 +416,59 @@ export class CraftingUI {
 
             if (qRow.children.length > 0) panel.appendChild(qRow);
 
+            const dragonHeader = document.createElement('div');
+            dragonHeader.className = 'craft-note';
+            dragonHeader.textContent = 'Dragon hide augments — max 10 tiers each. Generic hide adds +1 armor defense; colored hides add +5% resistance per tier.';
+            panel.appendChild(dragonHeader);
+
+            const dragonRows = document.createElement('div');
+            dragonRows.className = 'craft-rider-row';
+            const dragonAugments = [
+                { key: 'defense', label: 'Dragon Defense', material: 'material_dragon_hide', amount: 3, desc: '+1 armor defense' },
+                { key: 'fire', label: 'Fire Resist', material: 'material_red_dragon_hide', amount: 4, desc: '+5% fire resistance' },
+                { key: 'cold', label: 'Cold Resist', material: 'material_white_dragon_hide', amount: 4, desc: '+5% cold resistance' },
+                { key: 'acid', label: 'Acid Resist', material: 'material_black_dragon_hide', amount: 4, desc: '+5% acid resistance' },
+                { key: 'poison', label: 'Poison Resist', material: 'material_green_dragon_hide', amount: 4, desc: '+5% poison resistance' },
+                { key: 'lightning', label: 'Lightning Resist', material: 'material_blue_dragon_hide', amount: 4, desc: '+5% lightning resistance' },
+            ];
+            const dragonResists = armorEnch.dragonResists || {};
+            for (const aug of dragonAugments) {
+                const cur = aug.key === 'defense' ? (armorEnch.dragonDefenseAugment || 0) : (dragonResists[aug.key] || 0);
+                if (cur >= 10) {
+                    const done = document.createElement('div');
+                    done.className = 'craft-note';
+                    done.textContent = `${aug.label} maxed (${cur}/10).`;
+                    panel.appendChild(done);
+                    continue;
+                }
+                const next = cur + 1;
+                const cost = { gold: 5000 + 5000 * next, [aug.material]: aug.amount };
+                const canPay = this._canPay(state, cost);
+                const db = document.createElement('button');
+                db.className = `craft-rider-btn ${canPay ? '' : 'craft-btn-disabled'}`;
+                db.disabled = !canPay;
+                db.textContent = `${aug.label} +${next}`;
+                db.title = `${aug.desc}. Current tier ${cur}/10.\nCost: ${this._formatCost(cost)}`;
+                db.addEventListener('click', () => {
+                    if (!this._canPay(state, cost)) return;
+                    this._pay(state, cost);
+                    const ex = target.equipmentEnchants[slot] || { level: enchLvl };
+                    if (aug.key === 'defense') {
+                        target.equipmentEnchants[slot] = { ...ex, dragonDefenseAugment: next };
+                    } else {
+                        target.equipmentEnchants[slot] = {
+                            ...ex,
+                            dragonResists: { ...(ex.dragonResists || {}), [aug.key]: next },
+                        };
+                    }
+                    this._log(`🐉 ${artificer.name} applies ${aug.label} tier ${next} to ${target.name}'s ${itemDef.name}.`);
+                    this._onChanged();
+                    this._render();
+                });
+                dragonRows.appendChild(db);
+            }
+            if (dragonRows.children.length > 0) panel.appendChild(dragonRows);
+
         } else if (slot === 'armor' && enchLvl > 0 && enchLvl < 4) {
             const hint = document.createElement('div');
             hint.className = 'craft-note';
@@ -531,7 +584,8 @@ export class CraftingUI {
         const unlocked = getArtificerUnlockedGolems(artificer.level);
         const existingGolems = (state.party || []).filter(
             p => p && p.isSummoned && p.summonerId === artificer.id &&
-                 p.summonStats && p.summonStats.tierId && p.health > 0 && GOLEM_PRESETS[p.summonType],
+                 p.summonStats && p.summonStats.tierId && !p.summonStats.mismatchedGolem &&
+                 p.health > 0 && GOLEM_PRESETS[p.summonType],
         );
         const maxGolems = artificer.level >= 90 ? 5
                         : artificer.level >= 70 ? 4
@@ -647,41 +701,66 @@ export class CraftingUI {
 
         const intro = document.createElement('div');
         intro.className = 'craft-note';
-        intro.textContent = `Each craft creates ${MAGIC_ITEM_CRAFT_CHARGES} combat charge${MAGIC_ITEM_CRAFT_CHARGES === 1 ? '' : 's'} in group inventory. Use them from the combat Use Item button.`;
+        intro.textContent = 'Choose a special level 35 artificer recipe. Elemental devices create 10 combat charges; equipment is added to group inventory; the Mismatched Golem joins its creator.';
         body.appendChild(intro);
 
+        const picker = document.createElement('div');
+        picker.className = 'craft-picker';
+        picker.appendChild(this._label('Special item:'));
+        const sel = document.createElement('select');
+        sel.className = 'craft-select';
         for (const recipe of MAGIC_ITEM_RECIPES) {
             const def = getItemDef(recipe.id);
-            if (!def) continue;
-            const row = document.createElement('div');
-            row.className = 'craft-row';
-
-            const owned = state.inventory.getItemCount(recipe.id);
-            const info = document.createElement('div');
-            info.className = 'craft-row-info';
-            info.innerHTML =
-                `<b>${def.icon || ''} ${def.name}</b> <span class="craft-owned">(charges: ${owned})</span><br>` +
-                `<span>${def.description}</span>`;
-
-            const canPay = this._canPay(state, recipe.cost);
-            const btn = document.createElement('button');
-            btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
-            btn.disabled = !canPay;
-            btn.textContent = `Craft ${MAGIC_ITEM_CRAFT_CHARGES} — ${this._formatCost(recipe.cost)}`;
-            btn.title = `Creates ${MAGIC_ITEM_CRAFT_CHARGES} ${def.name} charge${MAGIC_ITEM_CRAFT_CHARGES === 1 ? '' : 's'}.\nCost: ${this._formatCost(recipe.cost)}`;
-            btn.addEventListener('click', () => {
-                if (!this._canPay(state, recipe.cost)) return;
-                this._pay(state, recipe.cost);
-                state.inventory.addItem(recipe.id, MAGIC_ITEM_CRAFT_CHARGES);
-                this._log(`${def.icon || '✨'} ${artificer.name} crafts ${MAGIC_ITEM_CRAFT_CHARGES} charge${MAGIC_ITEM_CRAFT_CHARGES === 1 ? '' : 's'} of ${def.name}.`);
-                this._onChanged();
-                this._render();
-            });
-
-            row.appendChild(info);
-            row.appendChild(btn);
-            body.appendChild(row);
+            const opt = document.createElement('option');
+            opt.value = recipe.id;
+            opt.textContent = `${(def && def.name) || recipe.name || recipe.id}`;
+            if (opt.value === this._magicItemRecipeId) opt.selected = true;
+            sel.appendChild(opt);
         }
+        sel.addEventListener('change', () => { this._magicItemRecipeId = sel.value; this._render(); });
+        picker.appendChild(sel);
+        body.appendChild(picker);
+
+        let recipe = MAGIC_ITEM_RECIPES.find(r => r.id === this._magicItemRecipeId) || MAGIC_ITEM_RECIPES[0];
+        this._magicItemRecipeId = recipe && recipe.id;
+        if (!recipe) return;
+        const def = getItemDef(recipe.id);
+        const display = def || recipe;
+        const row = document.createElement('div');
+        row.className = 'craft-row';
+        const owned = def ? state.inventory.getItemCount(recipe.id) : 0;
+        const info = document.createElement('div');
+        info.className = 'craft-row-info';
+        const ownedText = recipe.kind === 'device' ? ` <span class="craft-owned">(charges: ${owned}/${def?.maxCharges || MAGIC_ITEM_CRAFT_CHARGES})</span>` :
+                          recipe.kind === 'equipment' ? ` <span class="craft-owned">(owned: ${owned})</span>` : '';
+        info.innerHTML =
+            `<b>${display.icon || ''} ${display.name || recipe.name}</b>${ownedText}<br>` +
+            `<span>${display.description || recipe.description || ''}</span>`;
+        row.appendChild(info);
+
+        const canPay = this._canPay(state, recipe.cost);
+        const btn = document.createElement('button');
+        btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
+        btn.disabled = !canPay;
+        const qty = recipe.quantity || 1;
+        btn.textContent = `Craft${qty > 1 ? ` ${qty}` : ''} — ${this._formatCost(recipe.cost)}`;
+        btn.title = `Cost: ${this._formatCost(recipe.cost)}`;
+        btn.addEventListener('click', () => {
+            if (!this._canPay(state, recipe.cost)) return;
+            this._pay(state, recipe.cost);
+            if (recipe.kind === 'summon') {
+                if (this._combatSystem && typeof this._combatSystem.craftMismatchedGolem === 'function') {
+                    this._combatSystem.craftMismatchedGolem(artificer);
+                }
+            } else {
+                state.inventory.addItem(recipe.id, qty);
+            }
+            this._log(`${display.icon || '✨'} ${artificer.name} crafts ${display.name || recipe.name}.`);
+            this._onChanged();
+            this._render();
+        });
+        row.appendChild(btn);
+        body.appendChild(row);
     }
 
     // ──────────────────────────────────────────
@@ -928,9 +1007,11 @@ export class CraftingUI {
             const augmentPct = TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augmentLevel] || 0;
             const regenAugmentLevel = (enchObj && enchObj.regenAugmentLevel) || 0;
             const regenAugmentBonus = TRINKET_AUGMENT_REGEN_BY_LEVEL[regenAugmentLevel] || 0;
+            const hasRoundRegen = !!(enchObj && enchObj.roundRegenAugment);
             const augmentBits = [`+${enchLvl} enchant`];
             if (augmentLevel) augmentBits.push(`L${augmentLevel} vitality`);
             if (regenAugmentLevel) augmentBits.push(`L${regenAugmentLevel} regen`);
+            if (hasRoundRegen) augmentBits.push('combat regen');
             titleEl.textContent = `${def.icon || ''} ${slotNames[slot]}: ${def.name}  ${bonusDesc}${bonus2Desc}  [${augmentBits.join(', ')}]`;
             panel.appendChild(titleEl);
 
@@ -1039,6 +1120,30 @@ export class CraftingUI {
                         panel.appendChild(regenBtn);
                     } else {
                         panel.appendChild(this._note(`Regen augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${regenAugmentBonus}/min HP/ST/MP regen.`));
+                    }
+
+                    if (def.trinketKind === 'ring') {
+                        if (hasRoundRegen) {
+                            panel.appendChild(this._note('Ring of Regeneration augment active: heals 10% max HP each combat round. Two rings stack.'));
+                        } else {
+                            const roundCost = { gold: 150000, material_troll_blood: 10 };
+                            const canRound = this._canPay(state, roundCost);
+                            const roundBtn = document.createElement('button');
+                            roundBtn.className = `craft-btn ${canRound ? '' : 'craft-btn-disabled'}`;
+                            roundBtn.disabled = !canRound;
+                            roundBtn.textContent = `Add Ring of Regeneration — ${this._formatCost(roundCost)}`;
+                            roundBtn.title = 'Requires a ring of effective +4 or higher. Grants 10% max HP regeneration per combat round while equipped. Two rings stack.';
+                            roundBtn.addEventListener('click', () => {
+                                if (!this._canPay(state, roundCost)) return;
+                                this._pay(state, roundCost);
+                                const existing = target.trinketEnchants[slot] || {};
+                                target.trinketEnchants[slot] = { ...existing, roundRegenAugment: true };
+                                this._log(`💍 ${artificer.name} awakens regeneration in ${target.name}'s ${def.name}.`);
+                                this._onChanged();
+                                this._render();
+                            });
+                            panel.appendChild(roundBtn);
+                        }
                     }
                 } else {
                     panel.appendChild(this._note(`Vitality and regen augments require an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is currently level ${totalTrinketLevel}.`));

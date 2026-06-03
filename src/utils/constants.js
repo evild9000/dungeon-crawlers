@@ -552,6 +552,11 @@ export const ENEMY_TYPES = {
         tags: ['elemental'],
         immune: ['poison', 'stun', 'bleed'],
         minLevel: 30 },
+    void_elemental:   { name: 'Void Elemental',       spriteW: 1.4, spriteH: 1.9,
+        hpMult: 1.5, defenseMult: 1.3,
+        tags: ['elemental', 'undead', 'incorporeal'],
+        immune: ['poison', 'stun', 'hold', 'web', 'bleed'],
+        minLevel: 30 },
 
     // ── New monsters ─────────────────────────────────────────────────────────
     evil_wizard:   { name: 'Evil Wizard',    spriteW: 1.4, spriteH: 1.9,
@@ -1252,26 +1257,92 @@ export const POTION_COSTS = {
 };
 export const POTION_MANA_RESTORE_PCT = 0.20;
 
-// Artificer L35 special magic items. Crafted charges are used from the combat
-// Use Item menu; each craft creates this many charges.
+// Artificer L35 special magic items. Recipes may create equipment, a special
+// permanent golem, or 10-charge elemental devices.
 export const ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL = 35;
-export const MAGIC_ITEM_CRAFT_CHARGES = 3;
+export const MAGIC_ITEM_CRAFT_CHARGES = 10;
 export const MAGIC_ITEM_RECIPES = [
     {
-        id: 'cloak_of_displacement',
-        cost: { gold: 25000, rare: 5, epic: 2, legendary: 1, material_hide: 10 },
+        id: 'displacer_cloak',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_displacer_beast_hide: 10 },
     },
     {
-        id: 'horn_of_valhalla',
-        cost: { gold: 30000, rare: 5, epic: 3, legendary: 1, material_giant_heart: 3 },
+        id: 'mismatched_golem',
+        name: 'Mismatched Golem',
+        icon: '\u{1F916}',
+        kind: 'summon',
+        quantity: 1,
+        description: 'Creates one artificer-owned front-row golem. It does not count against the normal golem cap, is not upgradeable, and its stats update with the artificer level.',
+        cost: {
+            gold: 200000,
+            material_construct_heart: 1,
+            material_construct_arm: 2,
+            material_construct_leg: 2,
+            material_construct_head: 1,
+            material_construct_torso: 1,
+        },
     },
     {
-        id: 'pipes_of_the_sewers',
-        cost: { gold: 20000, rare: 3, epic: 2, material_vermin_parts: 50, material_ichor: 10 },
+        id: 'elemental_bowl',
+        kind: 'device',
+        quantity: 10,
+        cost: { gold: 15000, material_water_essence: 10 },
     },
     {
-        id: 'demon_pentagram',
-        cost: { gold: 35000, rare: 5, epic: 3, legendary: 1, material_demon_ichor: 10 },
+        id: 'elemental_stone',
+        kind: 'device',
+        quantity: 10,
+        cost: { gold: 15000, material_earth_essence: 10 },
+    },
+    {
+        id: 'elemental_censer',
+        kind: 'device',
+        quantity: 10,
+        cost: { gold: 15000, material_air_essence: 10 },
+    },
+    {
+        id: 'elemental_brazier',
+        kind: 'device',
+        quantity: 10,
+        cost: { gold: 15000, material_fire_essence: 10 },
+    },
+    {
+        id: 'elemental_sceptre',
+        kind: 'device',
+        quantity: 10,
+        cost: { gold: 15000, material_void_essence: 10 },
+    },
+    {
+        id: 'girdle_giant_strength',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_giant_heart: 10 },
+    },
+    {
+        id: 'staff_of_necromancy',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_lich_part: 10, material_undead_essence: 30 },
+    },
+    {
+        id: 'lance_dragon_king',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_dragon_heart: 10 },
+    },
+    {
+        id: 'sash_vermin_keeper',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_vermin_parts: 100 },
+    },
+    {
+        id: 'staff_world_tree',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_plant_parts: 50 },
     },
 ];
 

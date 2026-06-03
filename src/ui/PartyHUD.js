@@ -1257,6 +1257,11 @@ export class PartyHUD {
                 mkPB('✨', 'Shroud', 'rgba(150,135,35,0.95)',
                     `Divine Shroud: ${reduction}% all-source damage reduction before armor/defense, including DoTs. Costs 15 MP/round; level% chance to auto-revive at 50% HP if slain.`);
             }
+            const roundRegenPct = typeof member.getRoundHealthRegenPct === 'function' ? member.getRoundHealthRegenPct() : 0;
+            if (roundRegenPct > 0) {
+                mkPB('💍', 'Regen', 'rgba(45,145,95,0.95)',
+                    `Ring of Regeneration: restores ${Math.round(roundRegenPct * 100)}% max HP each combat round. Two rings stack additively.`);
+            }
             const pblur = pefx.find(x => x && x.type === 'blur' && x.rounds > 0);
             if (pblur) {
                 const missPct = Math.round(((pblur.missChance ?? PHOTOMANCER_BLUR_MISS_CHANCE) || 0) * 100);

@@ -52,6 +52,9 @@ function buildAbilityList(def) {
         lines.push('Undead: immune to Necromancer Plague Bringer (L30) — cannot be infected with necrotic plague');
         lines.push('Undead: immune to Necromancer Siphon Power (L35) — no living vigor to drain');
         lines.push('Undead: cannot be stitched by Necromancer Dark Apotheosis (L30) — already animated; no suitable remains to repurpose');
+        if ((def.name || '').toLowerCase().includes('lich')) {
+            lines.push('Lich Remains: liches and dracoliches have a 33% chance to drop a Lich Part in addition to normal undead materials');
+        }
     }
     if (tags.includes('elemental')) {
         lines.push('Elemental: immune to Photomancer Radiant Burst and its blind effect — the spell only affects living targets');
@@ -62,6 +65,7 @@ function buildAbilityList(def) {
         lines.push('Elemental: immune to Necromancer Siphon Power (L35) — no mortal stamina/mana reserves to drain');
         lines.push('Elemental: immune to Ranger Beast Companion Sabre Tooth Cat instakill — elemental energy cannot be slain by a physical killing bite; normal damage applies');
         lines.push('Elemental: vulnerable to Cleric Banishment (L30) — elemental energy can be torn from the mortal plane; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
+        lines.push('Elemental Essence: elemental creatures can drop matching essence for Artificer L35 elemental devices; void-touched elementals can drop Void Essence');
     }
     if (tags.includes('demon')) {
         lines.push('Demon: vulnerable to Paladin Smite — Smite and AoE Smite deal bonus damage and can destroy demons outright');
@@ -91,6 +95,7 @@ function buildAbilityList(def) {
     if (tags.includes('dragon')) {
         lines.push('Dragon: Dragonslayer lets level 25 paladins Smite and AoE Smite dragons');
         lines.push('Dragon: shielded level 25 paladins reduce this creature’s magic/AoE damage against the party by (paladin level + 10)%, capped at 90%, before defenses apply');
+        lines.push('Dragon Hide: dragon-tagged monsters have a 40% hide drop chance; colored dragons usually drop matching colored hide, while dracoliches are skeletal and do not drop hides');
     }
     if (tags.includes('vermin')) {
         lines.push('Vermin: valid target for Vermin Keeper Charm Vermin (L20)');

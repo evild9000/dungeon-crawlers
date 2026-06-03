@@ -31,9 +31,13 @@ export class Inventory {
         if (isStackable) {
             const existing = this.items.find(i => i.itemId === itemId);
             if (existing) {
+                this._rechargeEntry(existing, def);
                 existing.quantity += quantity;
+                if (def.maxCharges) existing.quantity = Math.min(def.maxCharges, existing.quantity);
             } else {
-                this.items.push({ itemId, quantity });
+                const entry = { itemId, quantity: def.maxCharges ? Math.min(def.maxCharges, quantity) : quantity };
+                if (def.rechargeMs) entry.lastRechargeAt = Date.now();
+                this.items.push(entry);
             }
         } else {
             // Equipment: add as individual entries
@@ -52,6 +56,7 @@ export class Inventory {
         if (idx === -1) return false;
 
         const entry = this.items[idx];
+        this._rechargeEntry(entry);
         if (entry.quantity < quantity) return false;
 
         entry.quantity -= quantity;
@@ -63,12 +68,34 @@ export class Inventory {
 
     hasItem(itemId, quantity = 1) {
         const entry = this.items.find(i => i.itemId === itemId);
+        if (entry) this._rechargeEntry(entry);
         return entry ? entry.quantity >= quantity : false;
     }
 
     getItemCount(itemId) {
         const entry = this.items.find(i => i.itemId === itemId);
+        if (entry) this._rechargeEntry(entry);
         return entry ? entry.quantity : 0;
+    }
+
+    _rechargeEntry(entry, def = null) {
+        if (!entry) return;
+        const itemDef = def || getItemDef(entry.itemId);
+        if (!itemDef || !itemDef.rechargeMs || !itemDef.maxCharges) return;
+        const now = Date.now();
+        if (!entry.lastRechargeAt) entry.lastRechargeAt = now;
+        if (entry.quantity >= itemDef.maxCharges) {
+            entry.quantity = itemDef.maxCharges;
+            entry.lastRechargeAt = now;
+            return;
+        }
+        const elapsed = now - entry.lastRechargeAt;
+        if (elapsed < itemDef.rechargeMs) return;
+        const gained = Math.floor(elapsed / itemDef.rechargeMs);
+        if (gained <= 0) return;
+        entry.quantity = Math.min(itemDef.maxCharges, entry.quantity + gained);
+        entry.lastRechargeAt += gained * itemDef.rechargeMs;
+        if (entry.quantity >= itemDef.maxCharges) entry.lastRechargeAt = now;
     }
 
     /**

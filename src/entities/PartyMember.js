@@ -337,6 +337,10 @@ export class PartyMember {
             if (!def) continue;
             // Enchant bonus: trinketEnchants[slot].level adds to both aspects.
             const enchLvl = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].level) || 0;
+            if (def.bonusTypes && typeof def.bonusTypes[bonusType] === 'number') {
+                total += (def.bonusTypes[bonusType] || 0) + (enchLvl > 0 ? enchLvl : 0);
+                continue;
+            }
             if (def.bonusType  === bonusType) total += (def.bonusValue  || 0) + (enchLvl > 0 ? enchLvl : 0);
             // Dual-aspect trinkets carry a second bonus (DL10+ drops).
             if (def.bonusType2 === bonusType) total += (def.bonusValue2 || 0) + (enchLvl > 0 ? enchLvl : 0);
@@ -349,9 +353,24 @@ export class PartyMember {
         let pct = 0;
         const slots = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
         for (const s of slots) {
-            if (!this.equipment[s]) continue;
+            const itemId = this.equipment[s];
+            if (!itemId) continue;
+            const def = TRINKETS[itemId] || getItemDef(itemId);
+            if (def && typeof def.maxHealthPct === 'number') pct += def.maxHealthPct;
             const augLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].augmentLevel) || 0;
             pct += TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augLevel] || 0;
+        }
+        return pct;
+    }
+
+    getRoundHealthRegenPct() {
+        if (this.isSummoned) return 0;
+        let pct = 0;
+        for (const s of ['ring1', 'ring2']) {
+            const itemId = this.equipment && this.equipment[s];
+            if (!itemId) continue;
+            const ench = this.trinketEnchants && this.trinketEnchants[s];
+            if (ench && ench.roundRegenAugment) pct += 0.10;
         }
         return pct;
     }
@@ -710,6 +729,13 @@ export class PartyMember {
         const def = getItemDef(itemId);
         if (!def) return { ok: false, reason: 'Unknown item.' };
 
+        if (def.requiredClass && this.classId !== def.requiredClass) {
+            return { ok: false, reason: `${def.name} can only be equipped by ${def.requiredClass}s.` };
+        }
+        if (def.requiredLevel && (this.level || 1) < def.requiredLevel) {
+            return { ok: false, reason: `${def.name} requires level ${def.requiredLevel}.` };
+        }
+
         // Armor type gating via armorAllowed array
         if (def.category === ITEM_CATEGORY.ARMOR) {
             const allowed = this.classDef.armorAllowed;
@@ -876,7 +902,8 @@ export class PartyMember {
         if (!def || def.category !== ITEM_CATEGORY.ARMOR) return 0;
         const ench = this.equipmentEnchants && this.equipmentEnchants.armor;
         const enchLvl = ench && ench.level ? ench.level : 0;
-        return (def.blocking || 0) + enchLvl;
+        const dragonDefense = ench && ench.dragonDefenseAugment ? ench.dragonDefenseAugment : 0;
+        return (def.blocking || 0) + enchLvl + dragonDefense;
     }
 
     /** Current weapon rider ('fire'|'acid'|'poison'|'lightning'|'ice'|null). */
