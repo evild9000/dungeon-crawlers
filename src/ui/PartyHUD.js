@@ -1340,6 +1340,10 @@ export class PartyHUD {
             const pms = pefx.find(x => x && x.type === 'mage_shield' && x.rounds > 0);
             if (pms) mkPB('🛡️', 'Shielded', 'rgba(0,80,180,0.85)',
                 'Arcane Shield: +' + (pms.defenseBonus||0) + ' defense — ' + pms.rounds + ' rds left');
+            if (member.quickstepHasteActive) {
+                mkPB('⚡', 'Quickstep', 'rgba(45,120,180,0.92)',
+                    'Quickstep Song: gains one extra qualifying attack each round this combat.');
+            }
             const ph = pefx.find(x => x && x.source === 'bard_song' && x.type === 'bard_song_haste');
             const pb = pefx.find(x => x && x.source === 'bard_song' && x.type === 'bard_song_battle');
             const phl = pefx.find(x => x && x.source === 'bard_song' && x.type === 'bard_song_healing');

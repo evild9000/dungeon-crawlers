@@ -1296,6 +1296,7 @@ export class CombatSystem {
         if (damageType === 'poison' && tags.some(t => ['undead', 'construct', 'elemental'].includes(t))) return true;
         if (damageType === 'bleed' && tags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant', 'slime'].includes(t))) return true;
         if (damageType === 'stun'  && tags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant', 'slime'].includes(t))) return true;
+        if ((damageType === 'hold' || damageType === 'web') && tags.includes('incorporeal')) return true;
         if ((damageType === 'hold' || damageType === 'web' || damageType === 'paralyze') && tags.includes('slime')) return true;
         if (damageType === 'psychic' && tags.some(t => ['plant', 'undead', 'construct', 'elemental'].includes(t))) return true;
         return false;
@@ -6664,6 +6665,7 @@ export class CombatSystem {
         if (!m || m.health <= 0) return false;
         if (!m.isSummoned) return true; // all real party members qualify
         // For summons: only beasts (ranger/druid/VK) and warlock demons qualify
+        if (m.summonStats?.isBeastCompanion) return true;
         if (BEAST_TYPES[m.summonType]) return true;
         if (this._isWarlockBoundSummon(m)) return true;
         if (VERMIN_PRESETS[m.summonType]) return true;
@@ -8602,9 +8604,18 @@ export class CombatSystem {
                 }
             };
             const _vWeb = (tgt) => {
-                if (tgt.health <= 0 || tgt.isBoss || tgt.isMegaBoss || tgt.isSuperBoss) return;
+                if (!tgt || tgt.health <= 0) return false;
+                if (this._enemyHasImmunity(tgt, 'web')) {
+                    this._addLog(`  \u{1F578}️ ${this._eName(tgt)} cannot be webbed!`);
+                    return false;
+                }
+                if (tgt.isBoss || tgt.isMegaBoss || tgt.isSuperBoss) {
+                    this._addLog(`  \u{1F578}️ ${this._eName(tgt)} tears through the webbing!`);
+                    return false;
+                }
                 tgt.webbedRounds = Math.max(tgt.webbedRounds || 0, WEB_DURATION_ROUNDS);
                 this._addLog(`  \u{1F578}️ ${this._eName(tgt)} is WEBBED! (${WEB_DURATION_ROUNDS} rds)`);
+                return true;
             };
             const _vBleed = (tgt, dealt) => {
                 if (dealt > 0 && tgt.health > 0 && !this._enemyHasImmunity(tgt, 'bleed')) {

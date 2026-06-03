@@ -45,6 +45,7 @@ import {
     BARD_RALLYING_MELODY_UNLOCK_LEVEL, BARD_RALLYING_MELODY_MANA_COST,
     BARD_RALLYING_MELODY_RESTORE_FRACTION,
     CLERIC_CLEANSE_UNLOCK_LEVEL, CLERIC_CLEANSE_MANA_PER_STATE,
+    ARTIFICER_SABOTAGE_UNLOCK_LEVEL, ARTIFICER_SABOTAGE_CHANCE_DIVISOR,
     MAGE_FAMILIAR_UNLOCK_LEVEL, MAGE_FAMILIAR_GOLD_PER_LEVEL,
     MAGE_L35_UNLOCK_LEVEL, MAGE_MANA_SHIELD_MANA_COST,
     MAGE_DEATH_BURST_DAMAGE_BASE_MULT, MAGE_DEATH_BURST_DAMAGE_PER_LEVEL,
@@ -974,6 +975,11 @@ export class InventoryUI {
         if (member.classId === 'artificer' && member.level >= 25) {
             perk.push('Advanced Augments');
             perkDetails.push('Artificer L25 Advanced Augments:\n  Trinkets at effective level 4+ can receive separate vitality augments (+5/10/15/20% HP, ST, and MP at augment levels 4-7) and regen augments (+2/+4/+6/+8 HP, ST, and MP regen per minute at levels 4-7).\n  These two trinket augment tracks are purchased separately and can coexist.\n  Persistent golems can receive extra limbs, a golem shield, and golem trinkets from the Crafting menu.');
+        }
+        if (member.classId === 'artificer' && member.level >= ARTIFICER_SABOTAGE_UNLOCK_LEVEL) {
+            const sabotageChance = ((member.level || 1) / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2);
+            perk.push(`Sabotage: ${sabotageChance}%/stack`);
+            perkDetails.push(`Artificer L${ARTIFICER_SABOTAGE_UNLOCK_LEVEL} Sabotage:\n  Passive Scatter Shot upgrade against constructs.\n  Each construct hit adds a sabotage counter and immediately rolls an instant-destroy check at ${sabotageChance}% per counter.\n  Bosses, mega-bosses, and super-bosses are immune to sabotage instant destruction.\n  Sabotage kills fully repair this artificer's living golems.`);
         }
         if (member.classId === 'barbarian' && member.level >= BARBARIAN_ENCOURAGE_UNLOCK_LEVEL) {
             const maxPct = Math.round(BARBARIAN_ENCOURAGE_DAMAGE_PER_ROUND * BARBARIAN_ENCOURAGE_MAX_ROUNDS * 100);
