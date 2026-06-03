@@ -878,7 +878,7 @@ export class CombatUI {
         if ((containerEl === this.enemyLogEl || containerEl === this.playerLogEl)
             && msg.startsWith('--- ')
             && msg.endsWith("'s turn ---")) return 'log-turn-heading';
-        if (msg.includes('CRITICAL'))           return 'log-crit';
+        if (this._isCritDamageLog(msg))         return 'log-crit';
         if (msg.includes('STUNNED') ||
             msg.includes('is stunned') ||
             msg.includes('PARALYZED') ||
@@ -897,7 +897,7 @@ export class CombatUI {
     }
 
     _isCritDamageLog(msg) {
-        return /\bCRITICAL(?:\s+HIT)?\b|\bCRIT!\b/.test(String(msg || ''));
+        return /\bCRITICAL(?:\s+(?:HIT|STRIKE))?\b|\bCRIT!?\b/.test(String(msg || ''));
     }
 
     _damageAmountRanges(msg) {
@@ -918,31 +918,56 @@ export class CombatUI {
             }
         };
 
-        const damageWords = 'damage|bonus damage|fire|acid|poison|psychic|cold|lightning|sonic|plague|cutting grit|ranged|melee|magic';
-        addMatches(new RegExp(`\\bfor\\s+(\\d+)(?=\\s*(?:${damageWords}|[!.]|$))`, 'gi'));
+        const damageWords = 'damage|bonus damage|explosion|fire|acid|poison|psychic|cold|lightning|sonic|plague|cutting grit|ranged|melee|magic';
+        addMatches(new RegExp(`\\bfor\\s+(\\d+)(?=\\s*(?:${damageWords}|[!.()]|$))`, 'gi'));
         addMatches(new RegExp(`\\btakes\\s+(\\d+)(?=\\s+(?:${damageWords}))`, 'gi'));
+        addMatches(new RegExp(`\\bsuffers\\s+(\\d+)(?=\\s+(?:${damageWords}))`, 'gi'));
         addMatches(new RegExp(`\\b(\\d+)\\s+(?:${damageWords})\\b`, 'gi'));
         addMatches(/\((?:x|×)4[^:)]*:\s*(\d+)\s+damage\)/gi);
 
         return ranges.sort((a, b) => a.start - b.start || a.end - b.end);
     }
 
+    _dotInfoRanges(msg) {
+        const text = String(msg || '');
+        const ranges = [];
+        const regex = /\([^)]*(?:\/rd|dmg\/round|damage\/round)[^)]*(?:rounds?|rds?)[^)]*\)/gi;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            ranges.push({ start: match.index, end: match.index + match[0].length, className: 'log-dot-info' });
+        }
+        return ranges;
+    }
+
+    _logHighlightRanges(msg) {
+        const text = String(msg || '');
+        const isCrit = this._isCritDamageLog(text);
+        const ranges = this._dotInfoRanges(text);
+        for (const range of this._damageAmountRanges(text)) {
+            if (ranges.some(r => range.start < r.end && range.end > r.start)) continue;
+            ranges.push({
+                ...range,
+                className: isCrit ? 'log-damage-amount log-damage-crit' : 'log-damage-amount',
+            });
+        }
+        return ranges.sort((a, b) => a.start - b.start || a.end - b.end);
+    }
+
     _renderLogMessage(p, msg) {
         const text = String(msg || '');
-        const ranges = this._damageAmountRanges(text);
+        const ranges = this._logHighlightRanges(text);
         if (ranges.length === 0) {
             p.textContent = text;
             return;
         }
 
-        const isCrit = this._isCritDamageLog(text);
         let cursor = 0;
         for (const range of ranges) {
             if (range.start > cursor) {
                 p.appendChild(document.createTextNode(text.slice(cursor, range.start)));
             }
             const span = document.createElement('span');
-            span.className = isCrit ? 'log-damage-amount log-damage-crit' : 'log-damage-amount';
+            span.className = range.className;
             span.textContent = text.slice(range.start, range.end);
             p.appendChild(span);
             cursor = range.end;

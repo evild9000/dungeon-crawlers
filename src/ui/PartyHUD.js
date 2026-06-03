@@ -652,6 +652,40 @@ export class PartyHUD {
             } else if (poisonBadge) {
                 poisonBadge.remove();
             }
+
+            let acidBadge = portraitWrap.querySelector('.party-acid-dot-badge');
+            const acidEffect = Array.isArray(member.activeEffects)
+                ? member.activeEffects.find(e => e && e.type === 'acid_dot' && (e.rounds || 0) > 0)
+                : null;
+            if (acidEffect) {
+                if (!acidBadge) {
+                    acidBadge = document.createElement('span');
+                    acidBadge.className = 'party-acid-dot-badge';
+                    acidBadge.style.position = 'absolute';
+                    acidBadge.style.top = '-4px';
+                    acidBadge.style.left = '20px';
+                    acidBadge.style.width = '22px';
+                    acidBadge.style.height = '22px';
+                    acidBadge.style.display = 'flex';
+                    acidBadge.style.alignItems = 'center';
+                    acidBadge.style.justifyContent = 'center';
+                    acidBadge.style.fontSize = '15px';
+                    acidBadge.style.background = 'radial-gradient(circle,#a6ff45 20%,#317500 100%)';
+                    acidBadge.style.border = '2px solid #123d00';
+                    acidBadge.style.borderRadius = '50%';
+                    acidBadge.style.boxShadow = '0 0 6px rgba(150,255,60,0.8)';
+                    acidBadge.style.pointerEvents = 'auto';
+                    portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                    portraitWrap.appendChild(acidBadge);
+                }
+                acidBadge.textContent = '\u{1F9EA}';
+                const defText = typeof acidEffect.defenseBonus === 'number'
+                    ? `, ${acidEffect.defenseBonus} defense`
+                    : '';
+                acidBadge.title = `Acid DoT: ${acidEffect.damage || 1} dmg/round${defText}, ${acidEffect.rounds || 0} rounds left`;
+            } else if (acidBadge) {
+                acidBadge.remove();
+            }
         }
 
         // Hunger badge — shown when hungerState is 'hungry', 'starving', or 'dying'.
