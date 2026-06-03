@@ -896,13 +896,69 @@ export class CombatUI {
         return '';
     }
 
+    _isCritDamageLog(msg) {
+        return /\bCRITICAL(?:\s+HIT)?\b|\bCRIT!\b/.test(String(msg || ''));
+    }
+
+    _damageAmountRanges(msg) {
+        const text = String(msg || '');
+        const ranges = [];
+        const addMatches = (regex) => {
+            regex.lastIndex = 0;
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                const amount = match[1];
+                if (!amount) continue;
+                const offset = match[0].indexOf(amount);
+                if (offset < 0) continue;
+                const start = match.index + offset;
+                const end = start + amount.length;
+                if (ranges.some(r => start < r.end && end > r.start)) continue;
+                ranges.push({ start, end });
+            }
+        };
+
+        const damageWords = 'damage|bonus damage|fire|acid|poison|psychic|cold|lightning|sonic|plague|cutting grit|ranged|melee|magic';
+        addMatches(new RegExp(`\\bfor\\s+(\\d+)(?=\\s*(?:${damageWords}|[!.]|$))`, 'gi'));
+        addMatches(new RegExp(`\\btakes\\s+(\\d+)(?=\\s+(?:${damageWords}))`, 'gi'));
+        addMatches(new RegExp(`\\b(\\d+)\\s+(?:${damageWords})\\b`, 'gi'));
+        addMatches(/\((?:x|×)4[^:)]*:\s*(\d+)\s+damage\)/gi);
+
+        return ranges.sort((a, b) => a.start - b.start || a.end - b.end);
+    }
+
+    _renderLogMessage(p, msg) {
+        const text = String(msg || '');
+        const ranges = this._damageAmountRanges(text);
+        if (ranges.length === 0) {
+            p.textContent = text;
+            return;
+        }
+
+        const isCrit = this._isCritDamageLog(text);
+        let cursor = 0;
+        for (const range of ranges) {
+            if (range.start > cursor) {
+                p.appendChild(document.createTextNode(text.slice(cursor, range.start)));
+            }
+            const span = document.createElement('span');
+            span.className = isCrit ? 'log-damage-amount log-damage-crit' : 'log-damage-amount';
+            span.textContent = text.slice(range.start, range.end);
+            p.appendChild(span);
+            cursor = range.end;
+        }
+        if (cursor < text.length) {
+            p.appendChild(document.createTextNode(text.slice(cursor)));
+        }
+    }
+
     _fillLogEl(containerEl, messages) {
         const wasNearBottom =
             (containerEl.scrollHeight - containerEl.scrollTop - containerEl.clientHeight) < 24;
         containerEl.innerHTML = '';
         for (const msg of messages) {
             const p = document.createElement('p');
-            p.textContent = msg;
+            this._renderLogMessage(p, msg);
             const cls = this._logClass(msg, containerEl);
             if (cls) p.classList.add(cls);
             containerEl.appendChild(p);
