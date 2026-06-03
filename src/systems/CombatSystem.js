@@ -13621,9 +13621,18 @@ export class CombatSystem {
             this._onEnemyDeath(enemy);
         }
 
-        // Mandrake Root: retributive sonic scream AoE whenever it takes damage
+        // Mandrake Root: retributive sonic scream AoE whenever it takes damage.
+        // This is a fresh monster magic attack from the Mandrake's own stats,
+        // not a reflection of the incoming hit.
         if (final > 0 && ENEMY_TYPES[enemy?.type]?.mandrakeScream && this.aliveParty.length > 0) {
-            const _screamDmg = Math.max(1, Math.floor(final * 0.40));
+            const _sLvl = Math.max(1, enemy?.level || this.dungeonLevel || 1);
+            const _sLvlBoost = Math.max(0, _sLvl - 1);
+            const _sLvlThreeBonus = Math.max(0, _sLvl - 3);
+            const _sMin = MONSTER_MAGIC_DAMAGE_MIN + MONSTER_DAMAGE_PER_LEVEL * _sLvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * _sLvlThreeBonus;
+            const _sMax = MONSTER_MAGIC_DAMAGE_MAX + MONSTER_DAMAGE_PER_LEVEL * _sLvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * _sLvlThreeBonus;
+            let _screamDmg = randomInt(_sMin, _sMax);
+            _screamDmg = Math.max(1, Math.round(_screamDmg * MONSTER_DAMAGE_MULTIPLIER));
+            _screamDmg = Math.max(1, _screamDmg + this._getEnemyDamageMod(enemy, 'magic'));
             this._addLog(`😱 ${this._eName(enemy)} SHRIEKS in agony — a sonic blast erupts!`);
             for (const _screamTarget of this.aliveParty.slice()) {
                 if (_screamTarget.health <= 0) continue;

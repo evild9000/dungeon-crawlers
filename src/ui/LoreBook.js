@@ -238,7 +238,7 @@ function buildAbilityList(def) {
     if (def.isMyconidSovereignAI)   lines.push('Spore Sovereign: every turn blasts the ENTIRE party with toxic spore cloud (AoE magic + 40% poison DoT); 60% chance per turn to spawn 1-2 Myconid minions; higher HP, defense, and minimum dungeon level than standard Myconid');
 
     // New Monsters
-    if (def.mandrakeScream)         lines.push('Retributive Scream: whenever this creature takes any damage it unleashes a piercing sonic scream — AoE magic sonic blast hits the ENTIRE party for 40% of the damage just dealt (triggers on every hit, including AoE; Thunderous Drums can reduce the sonic damage)');
+    if (def.mandrakeScream)         lines.push('Retributive Scream: whenever this creature takes any damage it unleashes a piercing sonic scream — AoE magic sonic blast hits the ENTIRE party using the Mandrake Root’s own monster magic damage scaling (triggers on every hit, including AoE; Thunderous Drums can reduce the sonic damage)');
     if (def.isDarkTreantAI)         lines.push('Branch Barrage: lashes out with 4 powerful branch strikes per turn against random front-row targets; each hit has a 35% chance to hold the target in grasping bark for 2 rounds');
     if (def.isMandrakeRootAI)       lines.push('Gnarled Strike: single melee attack with twisted root fists; see Retributive Scream above — every hit taken triggers an AoE sonic counter-blast');
     if (def.isKillerVineAI)         lines.push('Vine Grasp: extends crushing vines to ensnare up to (dungeon level ÷ 6) targets simultaneously — each grappled target takes thorn and constriction melee damage with a 45% chance per target to be held fast for 2 rounds');
