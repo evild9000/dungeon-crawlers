@@ -305,6 +305,7 @@ import {
     RANGER_RICOCHET_DAMAGE_MULT,
     RANGER_RICOCHET_MP_COST,
     RANGER_RICOCHET_INSTAKILL_MULT,
+    RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL,
 } from '../utils/constants.js';
 import { soundManager } from '../utils/SoundManager.js';
 import {
@@ -1582,8 +1583,9 @@ export class CombatSystem {
             let rCrit = false;
             const rCritChance = RANGED_CRIT_CHANCE + shooter.getRangedCritBonus();
             if (Math.random() < rCritChance && !this._isCritImmune(rTarget)) { rDmg *= 2; rCrit = true; }
+            rDmg = this._applyRangerCritDamageBonus(shooter, rDmg, rCrit);
             const rDealt = this._damageEnemy(rTarget, rDmg, rIsFavored, false, 0, true);
-            const rCritStr = rCrit ? ' 💥 CRIT!' : '';
+            const rCritStr = rCrit ? ` 💥 CRIT! (+${Math.round((shooter.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
             const rFavStr = rIsFavored ? ' [Favored]' : '';
             this._addLog(`🏹 Ricochet! ${shooter.name}'s arrow strikes ${this._eName(rTarget)} for ${rDealt}!${rCritStr}${rFavStr}`);
             this._applyWeaponRider(shooter, rTarget, rDealt);
@@ -1709,6 +1711,11 @@ export class CombatSystem {
         if (!enemy || !enemy.type) return false;
         const def = ENEMY_TYPES[enemy.type] || {};
         return (def.tags || []).includes('slime');
+    }
+
+    _applyRangerCritDamageBonus(member, damage, isCrit) {
+        if (!isCrit || !member || member.classId !== 'ranger') return damage;
+        return Math.max(1, Math.round(damage * (1 + (member.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL)));
     }
 
     /** Roll a Formation crit. Returns { damage, crit }. Crit chance = (level/2)%. Crit damage = base + 100% + level% (e.g. L30: +130% → ×2.30). */
@@ -2307,13 +2314,14 @@ export class CombatSystem {
             isCrit = true;
         }
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'ranged');
+        dmg = this._applyRangerCritDamageBonus(m, dmg, isCrit);
         if (isFavored) dmg = Math.round(dmg * (1 + m.level * 0.02));
 
         const dealt = this._damageEnemy(targetEnemy, dmg, isFavored, false, 0, true);
 
         const eName = this._eName(targetEnemy);
         const exhaustStr = exhausted ? ' (exhausted!)' : '';
-        const critStr = isCrit ? ' \u{1F4A5} CRITICAL HIT!' : '';
+        const critStr = isCrit ? ` \u{1F4A5} CRITICAL HIT! (+${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
         const favoredStr = isFavored ? ` [Favored Enemy — armor ignored, +${m.level * 2}% dmg]` : '';
         this._addLog(`${m.name} shoots ${eName} for ${dealt} damage!${exhaustStr}${critStr}${favoredStr}`);
 
@@ -2369,11 +2377,12 @@ export class CombatSystem {
             const scritChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus();
             if (Math.random() < scritChance && !this._isCritImmune(curT)) { sdmg *= 2; scrit = true; }
             sdmg = this._applyOutgoingDamageBonuses(m, sdmg, 'ranged');
+            sdmg = this._applyRangerCritDamageBonus(m, sdmg, scrit);
             if (xtFavored) sdmg = Math.round(sdmg * (1 + m.level * 0.02));
             const sTargetName = this._eName(curT);
             const sDealt = this._damageEnemy(curT, sdmg, xtFavored, false, 0, true);
             const sExhaust = shotExhausted ? ' (exhausted!)' : '';
-            const sCrit = scrit ? ' \u{1F4A5} CRITICAL HIT!' : '';
+            const sCrit = scrit ? ` \u{1F4A5} CRITICAL HIT! (+${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
             const sFav = xtFavored ? ` [Favored Enemy — armor ignored, +${m.level * 2}% dmg]` : '';
             this._addLog(`\u{1F3F9} ${m.name} looses another arrow at ${sTargetName} for ${sDealt} damage!${sExhaust}${sCrit}${sFav}`);
             this._applyWeaponRider(m, curT, sDealt);
@@ -5159,6 +5168,7 @@ export class CombatSystem {
             let isCrit = false;
             if (Math.random() < critChance && !this._isCritImmune(target)) { raw *= 2; isCrit = true; }
             raw = this._applyOutgoingDamageBonuses(m, raw, 'aoe');
+            raw = this._applyRangerCritDamageBonus(m, raw, isCrit);
             if (isFav) raw = Math.round(raw * (1 + m.level * 0.02));
 
             // Replicate _damageEnemy defense calculation without modifying health yet,
@@ -5178,7 +5188,7 @@ export class CombatSystem {
             target.health = Math.max(0, target.health - dealt);
 
             const eName   = this._eName(target);
-            const critStr = isCrit ? ' 💥 CRIT!' : '';
+            const critStr = isCrit ? ` 💥 CRIT! (+${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
             const favStr  = isFav ? ` [Favored — armor ignored, +${m.level * 2}% dmg]` : '';
             this._addLog(`  ➡️ ${eName} takes ${dealt} explosion damage!${critStr}${favStr}`);
             this._applyWeaponRider(m, target, dealt);

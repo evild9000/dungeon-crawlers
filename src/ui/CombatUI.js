@@ -134,6 +134,7 @@ import {
     ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL,
     ARTIFICER_SABOTAGE_UNLOCK_LEVEL, ARTIFICER_SABOTAGE_CHANCE_DIVISOR,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
+    RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL,
     RANGER_TOTEM_DURATION_DIVISOR, RANGER_BEAR_TOTEM_DEFENSE_DIVISOR,
     RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL, RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
@@ -1202,6 +1203,16 @@ export class CombatUI {
                 `Ranged attack. Costs ${RANGED_STAMINA_COST} stamina.`,
                 `${crit.toFixed(0)}% chance for critical hit (double damage).`,
             ];
+        if (m.classId === 'ranger') {
+            const baseExtraShots = Math.floor((m.level || 1) / 5);
+            const wolfExtraShot = (m.level >= RANGER_TOTEM_UNLOCK_LEVEL && m.rangerTotem === 'wolf') ? 1 : 0;
+            const totalShots = 1 + baseExtraShots + wolfExtraShot;
+            rangedTip.push(`Ranger arrows: 1 + floor(level/5)${wolfExtraShot ? ' + 1 Wolf Totem' : ''} = ${totalShots} shot${totalShots === 1 ? '' : 's'} this attack.`);
+            rangedTip.push(`Ranger crits deal normal double damage, then +${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% more damage. This stacks with Favored Enemy damage.`);
+            if ((m.level || 1) >= 35) {
+                rangedTip.push('L35 Ricochet Shot: each normal arrow starts its own ricochet chain; chance starts at 75% and drops by 10% after each success.');
+            }
+        }
         if (rBonus > 0) rangedTip.push(`Damage bonus (class/species/level): +${rBonus}`);
         rangedBtn.title = rangedTip.join('\n');
 

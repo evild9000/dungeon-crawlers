@@ -522,11 +522,12 @@
         }
         .craft-content {
             position: relative;
-            width: 640px; max-width: 96vw; max-height: 86vh;
+            width: min(920px, 98vw); max-width: 98vw; max-height: 86vh;
             overflow-y: auto;
             background: linear-gradient(180deg, #1b1a24 0%, #0f0e14 100%);
             border: 1px solid #3d2a55; border-radius: 6px;
             padding: 20px; color: #d8cde8;
+            box-sizing: border-box;
         }
         .craft-content::-webkit-scrollbar { width: 8px; }
         .craft-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
@@ -555,11 +556,11 @@
         .craft-tab:hover:not(.active) { background: #241b32; }
         .craft-body { display: flex; flex-direction: column; gap: 10px; }
         .craft-row {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
             padding: 10px; background: #1a1624;
             border: 1px solid #2a1f38; border-radius: 4px;
         }
-        .craft-row-info { flex: 1; font-size: 13px; }
+        .craft-row-info { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
         .craft-desc { color: #8f80b8; font-size: 12px; }
         .craft-owned { color: #9f8fd0; font-size: 11px; }
         .craft-locked { color: #6b5a8a; font-size: 11px; }
@@ -568,6 +569,9 @@
             background: #3d2a55; color: #fff;
             border: 1px solid #5a3f7a; font-size: 12px;
             white-space: nowrap;
+            max-width: 340px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .craft-btn:hover:not(:disabled) { background: #5a3f7a; }
         .craft-btn-disabled, .craft-btn:disabled {
@@ -586,8 +590,17 @@
             border: 1px solid #2a1f38; border-radius: 4px;
         }
         .craft-select {
+            min-width: 0;
             flex: 1; padding: 4px 8px; background: #241b32; color: #d8cde8;
             border: 1px solid #3d2a55; border-radius: 3px; font-size: 12px;
+        }
+        @media (max-width: 640px) {
+            .craft-content { padding: 14px; }
+            .craft-tab-bar { flex-wrap: wrap; }
+            .craft-tab { flex: 1 1 30%; }
+            .craft-row { align-items: stretch; flex-direction: column; }
+            .craft-btn { width: 100%; max-width: none; }
+            .craft-picker { align-items: stretch; flex-direction: column; }
         }
         .craft-slot-panel {
             padding: 10px; background: #1a1624;

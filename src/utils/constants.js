@@ -1717,6 +1717,7 @@ export const RANGER_RICOCHET_CHANCES    = [0.75, 0.65, 0.55, 0.45, 0.35, 0.25, 0
 export const RANGER_RICOCHET_DAMAGE_MULT              = 0.50;
 export const RANGER_RICOCHET_MP_COST                  = 1;
 export const RANGER_RICOCHET_INSTAKILL_MULT           = 0.50;
+export const RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL       = 0.02;
 export const RANGER_BEAST_COMPANION_TYPES = {
     dire_wolf:   { id: 'dire_wolf',   summonType: 'bc_dire_wolf',   beastKind: 'bc_dire_wolf',
         name: 'Dire Wolf',       icon: '🐺', enemySprite: 'winter_wolf', row: 'front', attackType: 'melee',

@@ -59,6 +59,7 @@ import {
     NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
     NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
+    RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
     PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
     PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
@@ -897,8 +898,9 @@ export class InventoryUI {
         if (cls.critPerLevel) {
             const base = Math.round(RANGED_CRIT_CHANCE * 100);
             const cur  = Math.round((RANGED_CRIT_CHANCE + member.getRangedCritBonus()) * 100);
+            const critBonusPct = Math.round((member.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100);
             perk.push(`Ranged crit: ${cur}%`);
-            perkDetails.push(`Ranger Crit: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  (crit = 2× ranged damage; +${Math.round(cls.critPerLevel * 100)}%/level)`);
+            perkDetails.push(`Ranger Crit: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  Crit damage: normal 2× ranged damage, then +${critBonusPct}% more damage (level × 2%). This stacks with Favored Enemy damage.\n  Crit chance formula: +${Math.round(cls.critPerLevel * 100)}%/level.`);
         }
         if (cls.magicStunPerLevel) {
             const base = 0;
@@ -1053,11 +1055,16 @@ export class InventoryUI {
         // Ranger favored enemy — show all selected tags + instakill pct
         if (member.classId === 'ranger') {
             const allFav = member.getAllFavoredEnemies();
+            const baseExtraShots = Math.floor((member.level || 1) / 5);
+            const wolfExtraShot = (member.level >= RANGER_TOTEM_UNLOCK_LEVEL && member.rangerTotem === 'wolf') ? 1 : 0;
+            const totalShots = 1 + baseExtraShots + wolfExtraShot;
+            perk.push(`Ranged shots: ${totalShots}`);
+            perkDetails.push(`Ranger ranged shots:\n  Formula: 1 + floor(ranger level / 5)${wolfExtraShot ? ' + 1 Wolf Totem' : ''}.\n  Current: 1 + ${baseExtraShots}${wolfExtraShot ? ' + 1' : ''} = ${totalShots} shot${totalShots === 1 ? '' : 's'} per normal ranged attack.\n  Each shot pays stamina and rolls crit independently. L35 Ricochet Shot can trigger from each normal arrow.`);
             if (allFav.length > 0) {
                 const ikPct  = Math.round(member.getFavoredEnemyInstakillChance() * 100);
                 const tagStr = allFav.join(', ');
                 perk.push(`Favored [${tagStr}]: ${ikPct}% instakill`);
-                perkDetails.push(`Ranger Favored Enemies (${tagStr}): ignores defense, ${ikPct}% instakill chance\n  (1% per 3 levels; currently L${member.level})\n  Bosses/mega-bosses are immune to instant death; triggered procs deal x4 ranged damage instead.\n  Extra slots unlocked at L20, L25, L30…`);
+                perkDetails.push(`Ranger Favored Enemies (${tagStr}): ignores defense, ${ikPct}% instakill chance, and +${(member.level || 1) * 2}% ranged damage.\n  Instakill formula: 1% per 3 levels; currently L${member.level}.\n  Favored damage stacks with ranger crit bonus damage.\n  Bosses/mega-bosses are immune to instant death; triggered procs deal x4 ranged damage instead.\n  Extra slots unlocked at L20, L25, L30…`);
             }
         }
 
