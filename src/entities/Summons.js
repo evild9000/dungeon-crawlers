@@ -624,6 +624,20 @@ export const SIMULACRUM_PRESET = {
     ],
 };
 
+export const LEPRECHAUN_PRESET = {
+    id: 'leprechaun', name: 'Leprechaun', icon: '\u{1F340}',
+    portraitClass: 'summoned', portraitSpecies: 'human',
+    speciesLabel: 'Living Rainbow Minion', kind: 'fey',
+    abilities: [
+        'Photomancer L35 Eternal Rainbow violet phase summon.',
+        'Living minion: can receive living-only healing and rainbow buffs.',
+        'Glamour resets at the start of its turn: first incoming hit misses, then miss chance falls by 5% per attack until the 20th hits automatically.',
+        'Immune to psychic damage, damage-over-time effects, charm, and enslavement.',
+        'Each turn curses enemies with a magic AoE defense penalty, then fires Golden Greed at one target.',
+        'If alive at victory, adds its photomancer level as a final multiplicative gold bonus.',
+    ],
+};
+
 // ────────────────────────────────────────────
 // Warlock — demon summons
 // ────────────────────────────────────────────
@@ -982,6 +996,7 @@ export function getSummonPreset(member) {
     if (WARLOCK_AWAKENED_PRESETS[member.summonType]) return WARLOCK_AWAKENED_PRESETS[member.summonType];
     if (member.summonType === 'illusionary_warrior') return ILLUSIONARY_WARRIOR_PRESET;
     if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return SIMULACRUM_PRESET;
+    if (member.summonType === 'leprechaun') return LEPRECHAUN_PRESET;
     return null;
 }
 

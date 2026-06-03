@@ -60,6 +60,8 @@ import {
     NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
+    PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
+    PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
 } from '../utils/constants.js';
 
 /**
@@ -1034,6 +1036,14 @@ export class InventoryUI {
             perk.push(`Death Burst: ${burstDmg} dmg on death`);
             perkDetails.push(`Mage L${MAGE_L35_UNLOCK_LEVEL} Mana Shield:\n  Free action in combat, once per combat, costs ${MAGE_MANA_SHIELD_MANA_COST} MP.\n  Grants temporary shield HP equal to max mana.\n  Incoming damage is checked against shield HP last, right before HP damage is applied; overflow hits normal HP.`);
             perkDetails.push(`Mage L${MAGE_L35_UNLOCK_LEVEL} Death Burst (passive):\n  Triggers when this mage dies.\n  Hits all enemies not immune to magic for ${burstDmg} damage.\n  Formula: max mana × (2 + level × 2%).`);
+        }
+        if (member.classId === 'photomancer' && member.level >= PHOTOMANCER_L35_UNLOCK_LEVEL) {
+            const statBonus = Math.max(1, Math.floor((member.level || 1) / 5));
+            const reviveCount = Math.max(1, Math.floor((member.level || 1) / 10));
+            perk.push(`Radiant Burst: ${PHOTOMANCER_RADIANT_BURST_MANA_COST} MP`);
+            perk.push(`Eternal Rainbow: ${PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST} MP, 1/combat`);
+            perkDetails.push(`Photomancer L${PHOTOMANCER_L35_UNLOCK_LEVEL} Radiant Burst:\n  Living-only magic AoE. Constructs, elementals, undead, plants, slimes, and magic-immune monsters are unaffected.\n  Blind chance is level% (${member.level || 1}% now); boss-style monsters use 20%.\n  Blind lasts 2 rounds and causes 50% miss chance on single-target melee/ranged/magic attacks. Success or resist grants short reblind protection.`);
+            perkDetails.push(`Photomancer L${PHOTOMANCER_L35_UNLOCK_LEVEL} Eternal Rainbow:\n  Once/combat, builds one color each round.\n  Red: 10% max HP regen. Orange: 5% max MP/ST regen. Yellow: +${statBonus} melee/ranged/magic. Green: +${statBonus} defense.\n  Blue: revives up to ${reviveCount} fallen recruited member(s) at 50% HP.\n  Indigo: ${member.level || 1}% chance to immediately remove newly applied harmful monster effects from living allies.\n  Violet: summons a living Leprechaun minion with glamour defense, enemy defense curse, Golden Greed, and final victory gold bonus if alive.`);
         }
         if (cls.drainPerLevel) {
             const drainPct = Math.round((0.05 + ((member.level || 1) / 2) / 100) * 100);

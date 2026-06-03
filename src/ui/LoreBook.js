@@ -40,6 +40,7 @@ function buildAbilityList(def) {
     }
     if (tags.includes('undead')) {
         lines.push('Undead: immune to stun and paralysis — undead physiology resists physical disruption; Trap Mastery stun procs will be resisted');
+        lines.push('Undead: immune to Photomancer Radiant Burst and its blind effect — the spell only affects living targets');
         lines.push('Undead: immune to mummy rot — no living flesh to decay');
         lines.push('Undead: can be held by treant or faerie queen — hold bypasses stun immunity');
         lines.push('Undead: immune to bleed and poison effects — no living blood or metabolism');
@@ -53,6 +54,7 @@ function buildAbilityList(def) {
         lines.push('Undead: cannot be stitched by Necromancer Dark Apotheosis (L30) — already animated; no suitable remains to repurpose');
     }
     if (tags.includes('elemental')) {
+        lines.push('Elemental: immune to Photomancer Radiant Burst and its blind effect — the spell only affects living targets');
         lines.push('Elemental: immune to Bard Charm Monster — pure elemental energy resists mind magic');
         lines.push('Elemental: immune to stun and paralysis — no nervous system to disrupt; Trap Mastery stun procs will be resisted');
         lines.push('Elemental: immune to poison — pure elemental energy has no biology to corrupt');
@@ -68,12 +70,14 @@ function buildAbilityList(def) {
     }
     if (tags.includes('plant')) {
         lines.push('Plant: fungal or plant-type creature — vulnerable to fire and nature magic');
+        lines.push('Plant: immune to Photomancer Radiant Burst and its blind effect — plant bodies do not count as living targets for this spell');
         lines.push('Plant: vulnerable to Druid Wither Plants (L35) — magic AoE at 3× base damage; non-boss plants have a level/5% chance of instant destruction');
         lines.push('Plant: susceptible to Druid Nature\'s Charms (L35) — charm bypasses normal plant charm immunity; 3 resists grant immunity for the rest of combat');
         lines.push('Plant: immune to Ranger Beast Companion Sabre Tooth Cat instakill — plant physiology resists a predator\'s killing bite; normal damage applies');
     }
     if (tags.includes('construct')) {
         lines.push('Construct: immune to Bard Charm Monster — no mind to enchant');
+        lines.push('Construct: immune to Photomancer Radiant Burst and its blind effect — the spell only affects living targets');
         lines.push('Construct: immune to all psychic effects — fear, charm, mental enslavement, and psychic stun cannot affect mechanical or magically-animated beings');
         lines.push('Construct: immune to stun and paralysis — mechanical body resists physical disruption; Trap Mastery stun procs will be resisted');
         lines.push('Construct: immune to poison — no biology to corrupt');
@@ -94,6 +98,7 @@ function buildAbilityList(def) {
     }
     if (tags.includes('slime')) {
         lines.push('Slime: valid target for Vermin Keeper Charm Vermin (L20)');
+        lines.push('Slime: immune to Photomancer Radiant Burst and its blind effect');
         lines.push('Slime: if charmed/summoned under a level 35 Vermin Keeper, can gain Minions\' Frenzy extra actions and obey that keeper\'s Hive Mind mark (special swarms excluded)');
     }
     // Immunity from the immune[] array on the type definition.

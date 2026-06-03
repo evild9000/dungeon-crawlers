@@ -1215,6 +1215,7 @@ export class PartyMember {
         this.divineShroudActive  = false;
         this.shadowStepUsed      = false;
         this.prismaticSphereUsed = false;
+        this.eternalRainbowUsed  = false;
         this.hunterMarkEnemyId   = null;
         this.bonusTurnPending    = false;
         this.beastlordActive     = false;

@@ -287,6 +287,16 @@ import {
     PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
     PHOTOMANCER_DISINTEGRATE_BASE_KILL, PHOTOMANCER_DISINTEGRATE_BOSS_MULT,
     PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
+    PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
+    PHOTOMANCER_RADIANT_BURST_BLIND_ROUNDS, PHOTOMANCER_RADIANT_BURST_BLIND_LOCKOUT_ROUNDS,
+    PHOTOMANCER_RADIANT_BURST_BOSS_BLIND_CHANCE, PHOTOMANCER_RADIANT_BURST_BLIND_MISS_CHANCE,
+    PHOTOMANCER_RADIANT_BURST_IMMUNE_TAGS, PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
+    PHOTOMANCER_RAINBOW_RED_HP_REGEN, PHOTOMANCER_RAINBOW_ORANGE_RESOURCE_REGEN,
+    PHOTOMANCER_RAINBOW_STAT_DIVISOR, PHOTOMANCER_RAINBOW_BLUE_REVIVE_DIVISOR,
+    PHOTOMANCER_LEPRECHAUN_HP_MULT, PHOTOMANCER_LEPRECHAUN_DEFENSE_PER_LEVEL,
+    PHOTOMANCER_LEPRECHAUN_MAGIC_PER_LEVEL, PHOTOMANCER_LEPRECHAUN_GLAMOUR_STEP,
+    PHOTOMANCER_LEPRECHAUN_CURSE_DIVISOR, PHOTOMANCER_LEPRECHAUN_GREED_MIN,
+    PHOTOMANCER_LEPRECHAUN_GREED_MAX,
     POTION_MINOR_HEAL_PCT, POTION_GREATER_HEAL_PCT, POTION_MANA_RESTORE_PCT,
     calcScrollBonus,
     RANGER_L35_UNLOCK_LEVEL,
@@ -311,7 +321,7 @@ import {
     rollVerminStats, rollSwarmStats,
     WARLOCK_DEMON_PRESETS, getWarlockUnlockedDemons, rollWarlockDemonStats,
     WARLOCK_AWAKENED_PRESETS, WARLOCK_AWAKENED_IDS, rollWarlockAwakenedStats,
-    ILLUSIONARY_WARRIOR_PRESET,
+    ILLUSIONARY_WARRIOR_PRESET, LEPRECHAUN_PRESET,
 } from '../entities/Summons.js';
 import {
     SHADOW_SIMULACRA_DOT_POWERS,
@@ -379,6 +389,7 @@ export class CombatSystem {
         this.telemetry = null;
         this._lastDamageByEnemyId = Object.create(null);
         this.prismaticSphere = null;
+        this.eternalRainbows = [];
     }
 
     /** Game.js can assign the live inventory reference (also set in startCombat). */
@@ -451,6 +462,7 @@ export class CombatSystem {
             if (typeof m.clearCombatState === 'function') m.clearCombatState();
         }
         this.prismaticSphere = null;
+        this.eternalRainbows = [];
 
         this._addLog('--- Combat begins! ---');
         const n = this.enemies.length;
@@ -4421,6 +4433,346 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
+    _isRadiantBurstImmuneEnemy(enemy) {
+        if (!enemy || enemy.health <= 0) return true;
+        const typeDef = ENEMY_TYPES[enemy.type] || {};
+        const tags = Array.isArray(typeDef.tags) ? typeDef.tags : [];
+        if (typeDef.fullMagicImmune || this._enemyHasImmunity(enemy, 'magic')) return true;
+        return tags.some(t => PHOTOMANCER_RADIANT_BURST_IMMUNE_TAGS.includes(t));
+    }
+
+    _enemyHasActiveEffect(enemy, type) {
+        return !!(enemy && Array.isArray(enemy.activeEffects)
+            && enemy.activeEffects.some(fx => fx && fx.type === type && ((fx.rounds || 0) > 0 || fx.permanent)));
+    }
+
+    _tryRadiantBlind(enemy, photomancer) {
+        if (!enemy || enemy.health <= 0 || !photomancer) return;
+        if (this._enemyHasActiveEffect(enemy, 'radiant_blind') || this._enemyHasActiveEffect(enemy, 'radiant_blind_lockout')) {
+            return;
+        }
+        const chance = (enemy.isBoss || enemy.isMegaBoss || enemy.isSuperBoss)
+            ? PHOTOMANCER_RADIANT_BURST_BOSS_BLIND_CHANCE
+            : Math.min(1, Math.max(0, (photomancer.level || 1) / 100));
+        const success = Math.random() < chance;
+        enemy.activeEffects = enemy.activeEffects || [];
+        if (success) {
+            enemy.activeEffects.push({
+                type: 'radiant_blind',
+                rounds: PHOTOMANCER_RADIANT_BURST_BLIND_ROUNDS,
+                missChance: PHOTOMANCER_RADIANT_BURST_BLIND_MISS_CHANCE,
+            });
+            enemy.activeEffects.push({
+                type: 'radiant_blind_lockout',
+                rounds: PHOTOMANCER_RADIANT_BURST_BLIND_ROUNDS + PHOTOMANCER_RADIANT_BURST_BLIND_LOCKOUT_ROUNDS,
+            });
+            this._addLog(`    \u2600\uFE0F ${this._eName(enemy)} is blinded by radiant afterimages!`);
+        } else {
+            enemy.activeEffects.push({
+                type: 'radiant_blind_lockout',
+                rounds: PHOTOMANCER_RADIANT_BURST_BLIND_LOCKOUT_ROUNDS,
+            });
+            this._addLog(`    \u2600\uFE0F ${this._eName(enemy)} resists the blinding flash.`);
+        }
+    }
+
+    photomancerRadiantBurst() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_L35_UNLOCK_LEVEL) return;
+        if (m.mana < PHOTOMANCER_RADIANT_BURST_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_RADIANT_BURST_MANA_COST} MP for Radiant Burst.`);
+            return;
+        }
+        const targets = this.aliveHostileEnemies.filter(e => !this._isRadiantBurstImmuneEnemy(e));
+        if (!targets.length) {
+            this._addLog(`${m.name}'s Radiant Burst finds no living enemy it can affect.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_RADIANT_BURST_MANA_COST;
+        this._addLog(`\u2600\uFE0F ${m.name} detonates a Radiant Burst over ${targets.length} living target${targets.length !== 1 ? 's' : ''}!`);
+        for (const e of targets) {
+            if (!e || e.health <= 0) continue;
+            const dealt = this._damageEnemy(e, this._rollPhotomancerMagicDamage(m), false, true, 0, false, { sourceMember: m });
+            this._addLog(`  \u2192 ${this._eName(e)} takes ${dealt} radiant magic damage.`);
+            if (e.health > 0) this._tryRadiantBlind(e, m);
+            if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
+        }
+        this._advancePlayerTurn();
+    }
+
+    photomancerEternalRainbow() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0 || m.classId !== 'photomancer' || m.level < PHOTOMANCER_L35_UNLOCK_LEVEL) return;
+        if (m.eternalRainbowUsed) {
+            this._addLog(`${m.name} has already called an Eternal Rainbow this combat.`);
+            return;
+        }
+        if (m.mana < PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST) {
+            this._addLog(`${m.name} needs ${PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST} MP for Eternal Rainbow.`);
+            return;
+        }
+        m.mana -= PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST;
+        m.eternalRainbowUsed = true;
+        this.eternalRainbows = this.eternalRainbows || [];
+        this.eternalRainbows.push({
+            casterId: m.id,
+            casterName: m.name,
+            casterLevel: Math.max(1, m.level || 1),
+            casterMaxHealth: Math.max(1, m.maxHealth || m.health || 1),
+            casterHealth: Math.max(1, m.health || m.maxHealth || 1),
+            phase: 1,
+            blueFired: false,
+            violetFired: false,
+        });
+        this._addLog(`\u{1F308} ${m.name} begins an Eternal Rainbow. Red light gathers around the living party.`);
+        this._refreshEternalRainbowPartyEffects();
+        this._advancePlayerTurn();
+    }
+
+    _processEternalRainbows() {
+        const rainbows = (this.eternalRainbows || []).filter(Boolean);
+        if (!rainbows.length) return;
+        for (const rb of rainbows) {
+            const oldPhase = rb.phase || 1;
+            rb.phase = Math.min(7, oldPhase + 1);
+            if (rb.phase !== oldPhase) {
+                const names = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+                this._addLog(`\u{1F308} ${rb.casterName}'s Eternal Rainbow adds ${names[rb.phase - 1]} light.`);
+            }
+            if (rb.phase >= 5 && !rb.blueFired) {
+                this._rainbowBlueRevive(rb);
+                rb.blueFired = true;
+            }
+            if (rb.phase >= 7 && !rb.violetFired) {
+                this._summonRainbowLeprechaun(rb);
+                rb.violetFired = true;
+            }
+        }
+        this._refreshEternalRainbowPartyEffects();
+    }
+
+    _refreshEternalRainbowPartyEffects() {
+        const rainbows = (this.eternalRainbows || []).filter(Boolean);
+        if (!rainbows.length) return;
+        const hasRed = rainbows.some(rb => rb.phase >= 1);
+        const hasOrange = rainbows.some(rb => rb.phase >= 2);
+        const bestYellow = Math.max(0, ...rainbows.filter(rb => rb.phase >= 3)
+            .map(rb => Math.max(1, Math.floor((rb.casterLevel || 1) / PHOTOMANCER_RAINBOW_STAT_DIVISOR))));
+        const bestGreen = Math.max(0, ...rainbows.filter(rb => rb.phase >= 4)
+            .map(rb => Math.max(1, Math.floor((rb.casterLevel || 1) / PHOTOMANCER_RAINBOW_STAT_DIVISOR))));
+        const bestIndigo = Math.max(0, ...rainbows.filter(rb => rb.phase >= 6)
+            .map(rb => Math.min(1, (rb.casterLevel || 1) / 100)));
+        for (const ally of this.party || []) {
+            if (!this._canReceiveLivingHealOrBuff(ally)) continue;
+            if (hasRed) ally.addEffect?.({
+                type: 'rainbow_red',
+                source: 'eternal_rainbow',
+                rounds: 2,
+                healPct: PHOTOMANCER_RAINBOW_RED_HP_REGEN,
+            });
+            if (hasOrange) ally.addEffect?.({
+                type: 'rainbow_orange',
+                source: 'eternal_rainbow',
+                rounds: 2,
+                resourcePct: PHOTOMANCER_RAINBOW_ORANGE_RESOURCE_REGEN,
+            });
+            if (bestYellow > 0) ally.addEffect?.({
+                type: 'rainbow_yellow',
+                source: 'eternal_rainbow',
+                rounds: 2,
+                damageBonus: bestYellow,
+            });
+            if (bestGreen > 0) ally.addEffect?.({
+                type: 'rainbow_green',
+                source: 'eternal_rainbow',
+                rounds: 2,
+                defenseBonus: bestGreen,
+            });
+            if (bestIndigo > 0) ally.addEffect?.({
+                type: 'rainbow_indigo',
+                source: 'eternal_rainbow',
+                rounds: 2,
+                cleanseChance: bestIndigo,
+            });
+        }
+    }
+
+    _rainbowBlueRevive(rb) {
+        const count = Math.max(1, Math.floor((rb.casterLevel || 1) / PHOTOMANCER_RAINBOW_BLUE_REVIVE_DIVISOR));
+        const fallen = (this.party || []).filter(p => p && !p.isSummoned && p.health <= 0 && !p.lichPhial).slice(0, count);
+        if (!fallen.length) {
+            this._addLog(`\u{1F499} ${rb.casterName}'s blue rainbow light finds no fallen recruit to revive.`);
+            return;
+        }
+        for (const ally of fallen) {
+            ally.health = Math.max(1, Math.floor((ally.maxHealth || 1) * 0.5));
+            ally.stunned = false;
+            ally.webbedRounds = 0;
+            ally.proneRounds = 0;
+            ally.abolethEnslavedRounds = 0;
+            this._addLog(`\u{1F499} Blue rainbow light revives ${ally.name} at ${ally.health} HP.`);
+        }
+    }
+
+    _summonRainbowLeprechaun(rb) {
+        const num = this.party.filter(p => p && p.isSummoned && p.summonType === 'leprechaun' && p.summonerId === rb.casterId).length + 1;
+        const level = Math.max(1, rb.casterLevel || 1);
+        const magicSkill = Math.max(1, level * PHOTOMANCER_LEPRECHAUN_MAGIC_PER_LEVEL);
+        const lep = new PartyMember({
+            name: `${rb.casterName}'s Leprechaun${num > 1 ? ` #${num}` : ''}`,
+            classId: 'summoned',
+            speciesId: 'human',
+            level,
+            maxHealth: Math.max(1, Math.floor((rb.casterHealth || rb.casterMaxHealth || 1) * PHOTOMANCER_LEPRECHAUN_HP_MULT)),
+            maxStamina: 0,
+            maxMana: 0,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            summonType: 'leprechaun',
+            summonerId: rb.casterId,
+            canBeHealed: true,
+            row: 'back',
+            summonStats: {
+                icon: LEPRECHAUN_PRESET.icon,
+                defense: Math.max(1, level * PHOTOMANCER_LEPRECHAUN_DEFENSE_PER_LEVEL),
+                magicMin: magicSkill,
+                magicMax: magicSkill,
+                photomancerLevel: level,
+                leprechaun: true,
+                immune: ['psychic', 'all_dots', 'charm', 'enslave'],
+            },
+        });
+        lep.health = lep.maxHealth;
+        lep.leprechaunGlamourChecks = 0;
+        this.party.push(lep);
+        this._registerNewSummon(lep);
+        this._addLog(`\u{1F340} Violet light summons ${lep.name} to the back row!`);
+    }
+
+    _processLeprechaunTurn(m) {
+        if (!m || m.health <= 0) return;
+        m.leprechaunGlamourChecks = 0;
+        const level = Math.max(1, m.summonStats?.photomancerLevel || m.level || 1);
+        const penalty = Math.max(1, Math.floor(level / PHOTOMANCER_LEPRECHAUN_CURSE_DIVISOR));
+        const curseTargets = this.aliveHostileEnemies.filter(e => {
+            if (!e || e.health <= 0) return false;
+            const def = ENEMY_TYPES[e.type] || {};
+            const tags = Array.isArray(def.tags) ? def.tags : [];
+            if (def.fullMagicImmune || this._enemyHasImmunity(e, 'magic')) return false;
+            return !tags.includes('construct');
+        });
+        if (curseTargets.length) {
+            this._addLog(`\u{1F340} ${m.name} mutters a rainbow curse over ${curseTargets.length} enem${curseTargets.length === 1 ? 'y' : 'ies'}!`);
+            for (const e of curseTargets) {
+                e.activeEffects = (e.activeEffects || []).filter(fx =>
+                    !(fx && fx.type === 'leprechaun_curse' && fx.sourceId === m.id));
+                e.activeEffects.push({
+                    type: 'leprechaun_curse',
+                    sourceId: m.id,
+                    defenseBonus: -penalty,
+                    permanent: true,
+                });
+                this._addLog(`  \u2192 ${this._eName(e)} loses ${penalty} defense.`);
+            }
+        } else {
+            this._addLog(`\u{1F340} ${m.name}'s curse finds no vulnerable enemy.`);
+        }
+        const target = this.aliveHostileEnemies[Math.floor(Math.random() * this.aliveHostileEnemies.length)];
+        if (!target) return;
+        const dmg = Math.max(1, randomInt(PHOTOMANCER_LEPRECHAUN_GREED_MIN, PHOTOMANCER_LEPRECHAUN_GREED_MAX) * level);
+        const dealt = this._damageSummonEnemy(target, dmg, true, false, { isRanged: true, sourceMember: m });
+        this._addLog(`\u{1FA99} ${m.name} fires Golden Greed at ${this._eName(target)} for ${dealt} armor-bypassing damage!`);
+        if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+    }
+
+    _tryLeprechaunGlamour(target, enemyName, attackKind) {
+        if (!target || target.summonType !== 'leprechaun' || target.health <= 0) return false;
+        const attempts = target.leprechaunGlamourChecks || 0;
+        target.leprechaunGlamourChecks = attempts + 1;
+        const chance = attempts >= 19 ? 0 : Math.max(0, 1 - attempts * PHOTOMANCER_LEPRECHAUN_GLAMOUR_STEP);
+        if (chance <= 0) return false;
+        if (Math.random() < chance) {
+            this._addLog(`\u{1F340} ${target.name}'s glamour turns ${enemyName}'s ${attackKind} aside! (${Math.round(chance * 100)}% miss check)`);
+            return true;
+        }
+        return false;
+    }
+
+    _isPartyHarmfulEffect(fx) {
+        if (!fx || !fx.type) return false;
+        const harmfulTypes = new Set([
+            'poison', 'burn', 'acid_dot', 'drowning', 'drown_armor_break', 'ice_chill',
+            'shocked', 'chilled', 'petrified', 'anti_magic_beam', 'slow_ray',
+            'mummy_rot', 'hag_curse', 'fracture', 'necrotic_curse', 'hex', 'wither',
+            'rust_corrosion', 'taunted', 'quasit_poison', 'roper_weakness', 'web',
+            'frost_dot',
+        ]);
+        if (harmfulTypes.has(fx.type)) return true;
+        const numericDebuffs = [
+            fx.damageBonus, fx.defenseBonus, fx.meleeDamageBonus, fx.rangedBonus,
+            fx.magicBonus, fx.initiativeBonus,
+        ];
+        if (numericDebuffs.some(v => typeof v === 'number' && v < 0)) return true;
+        return typeof fx.damage === 'number' && fx.damage > 0 && fx.source !== 'eternal_rainbow';
+    }
+
+    _partyHarmfulSignature(member) {
+        if (!member) return '';
+        const fxSig = (member.activeEffects || [])
+            .filter(fx => this._isPartyHarmfulEffect(fx))
+            .map(fx => `${fx.type}:${fx.rounds || 0}:${fx.damage || 0}:${fx.damageBonus || 0}:${fx.defenseBonus || 0}:${fx.meleeDamageBonus || 0}:${fx.rangedBonus || 0}:${fx.magicBonus || 0}`)
+            .sort()
+            .join('|');
+        return [
+            member.stunned ? 1 : 0,
+            member.webbedRounds || 0,
+            member.proneRounds || 0,
+            member.abolethEnslavedRounds || 0,
+            fxSig,
+        ].join(';');
+    }
+
+    _snapshotPartyHarmfulStates() {
+        const map = new Map();
+        for (const member of this.party || []) {
+            if (member) map.set(member.id, this._partyHarmfulSignature(member));
+        }
+        return map;
+    }
+
+    _removeRainbowHarmfulStates(member) {
+        if (!member) return 0;
+        let removed = 0;
+        const beforeFx = (member.activeEffects || []).length;
+        member.activeEffects = (member.activeEffects || []).filter(fx => !this._isPartyHarmfulEffect(fx));
+        removed += beforeFx - member.activeEffects.length;
+        if (member.stunned) { member.stunned = false; removed++; }
+        if ((member.webbedRounds || 0) > 0) { member.webbedRounds = 0; removed++; }
+        if ((member.proneRounds || 0) > 0) { member.proneRounds = 0; removed++; }
+        if ((member.abolethEnslavedRounds || 0) > 0) { member.abolethEnslavedRounds = 0; removed++; }
+        return removed;
+    }
+
+    _tryRainbowIndigoCleanseAfterEnemyAction(beforeMap, enemy) {
+        const active = (this.eternalRainbows || []).filter(rb => rb && rb.phase >= 6);
+        if (!active.length || !beforeMap) return;
+        for (const member of this.party || []) {
+            if (!this._canReceiveLivingHealOrBuff(member)) continue;
+            const beforeSig = beforeMap.get(member.id) || '';
+            const afterSig = this._partyHarmfulSignature(member);
+            if (!afterSig || afterSig === beforeSig) continue;
+            for (const rb of active) {
+                const chance = Math.min(1, Math.max(0, (rb.casterLevel || 1) / 100));
+                if (Math.random() >= chance) continue;
+                const removed = this._removeRainbowHarmfulStates(member);
+                if (removed > 0) {
+                    this._addLog(`\u{1F7E3} Indigo light from ${rb.casterName}'s rainbow purges ${removed} harmful effect${removed !== 1 ? 's' : ''} from ${member.name}.`);
+                }
+                break;
+            }
+        }
+    }
+
     // ── Druid L20: Commune / Faerie Queen ────────────────────────────────────
 
     /**
@@ -7765,6 +8117,10 @@ export class CombatSystem {
             this._processSimulacrumAttack(m);
             return;
         }
+        if (m.isSummoned && m.summonType === 'leprechaun') {
+            this._processLeprechaunTurn(m);
+            return;
+        }
 
         if (stats.magicItemSummon) {
             const target = targets[Math.floor(Math.random() * targets.length)];
@@ -9216,7 +9572,9 @@ export class CombatSystem {
                 for (let _a = 0; _a < actionCount; _a++) {
                     if (ref.health <= 0) break;
                     try {
+                        const indigoBefore = this._snapshotPartyHarmfulStates();
                         this._executeOneEnemyTurn(ref);
+                        this._tryRainbowIndigoCleanseAfterEnemyAction(indigoBefore, ref);
                     } catch (err) {
                         this._handleAutoTurnError(slot, err);
                         break;
@@ -11751,6 +12109,13 @@ export class CombatSystem {
             rawDmg = tauntResult.rawDmg;
         }
 
+        if (!opts.aoe && ['melee', 'ranged', 'magic'].includes(attackKind)
+            && this._enemyHasActiveEffect(e, 'radiant_blind')
+            && Math.random() < PHOTOMANCER_RADIANT_BURST_BLIND_MISS_CHANCE) {
+            this._addLog(`\u2600\uFE0F ${eName} swings through blinding afterimages and misses ${target?.name || 'the target'}!`);
+            return null;
+        }
+
         if (target?.isSummoned && target.summonStats?.immuneToLifeDrainAttack && (typeDef.lifeDrain || 0) > 0) {
             this._addLog(`🕳️ ${target.name} ignores ${eName}'s life-drain assault.`);
             return null;
@@ -11796,6 +12161,11 @@ export class CombatSystem {
 
         if (this._isVKSwarm(target) && opts.psychic) {
             this._addLog(`🕸️ ${target.name} is immune to psychic damage and effects!`);
+            return null;
+        }
+        if (opts.psychic && target.isSummoned && Array.isArray(target.summonStats?.immune)
+            && target.summonStats.immune.includes('psychic')) {
+            this._addLog(`\u{1F49C} ${target.name} is immune to psychic damage and effects!`);
             return null;
         }
 
@@ -12050,6 +12420,11 @@ export class CombatSystem {
                 this._addLog(`🪽 ${target.name} parries ${eName}'s attack with a shining shield!`);
                 return null;
             }
+        }
+
+        if (!opts.aoe && ['melee', 'ranged', 'magic'].includes(attackKind)
+            && this._tryLeprechaunGlamour(target, eName, attackKind)) {
+            return null;
         }
 
         // Pixie / Pixie Princess dodge — 25% + summoner level%, capped at 90%.
@@ -13218,6 +13593,7 @@ export class CombatSystem {
      * buffs (song). Song has no `rounds` so it persists through the whole fight.
      */
     _tickPartyEffects() {
+        this._processEternalRainbows();
         for (const m of this.party) {
             if (m.health <= 0) continue;
             const effects = m.activeEffects || [];
@@ -13350,6 +13726,35 @@ export class CombatSystem {
                 // Frost DoT from Winter Wolf cold breath (50% breath dmg/rd for 3 rounds)
                 if (e.type === 'frost_dot' && e.rounds > 0) {
                     totalFrost += (e.damage || 0);
+                    e.rounds--;
+                }
+                if (e.type === 'rainbow_red' && e.rounds > 0) {
+                    if (this._canReceiveLivingHealOrBuff(m)) {
+                        const heal = Math.max(1, Math.floor((m.maxHealth || 1) * (e.healPct || PHOTOMANCER_RAINBOW_RED_HP_REGEN)));
+                        const before = m.health;
+                        m.health = Math.min(m.maxHealth, m.health + heal);
+                        if (m.health > before) this._addLog(`\u{1F534} ${m.name} regenerates ${m.health - before} HP in red rainbow light.`);
+                    }
+                    e.rounds--;
+                }
+                if (e.type === 'rainbow_orange' && e.rounds > 0) {
+                    if (this._canReceiveLivingHealOrBuff(m)) {
+                        const pct = e.resourcePct || PHOTOMANCER_RAINBOW_ORANGE_RESOURCE_REGEN;
+                        const manaGain = Math.max(1, Math.floor((m.maxMana || 0) * pct));
+                        const staGain = Math.max(1, Math.floor((m.maxStamina || 0) * pct));
+                        const beforeMana = m.mana || 0;
+                        const beforeSta = m.stamina || 0;
+                        m.mana = Math.min(m.maxMana || 0, (m.mana || 0) + manaGain);
+                        m.stamina = Math.min(m.maxStamina || 0, (m.stamina || 0) + staGain);
+                        const gainedMana = (m.mana || 0) - beforeMana;
+                        const gainedSta = (m.stamina || 0) - beforeSta;
+                        if (gainedMana > 0 || gainedSta > 0) {
+                            this._addLog(`\u{1F7E0} ${m.name} recovers ${gainedMana} MP and ${gainedSta} ST in orange rainbow light.`);
+                        }
+                    }
+                    e.rounds--;
+                }
+                if (['rainbow_yellow', 'rainbow_green', 'rainbow_indigo'].includes(e.type) && e.rounds > 0) {
                     e.rounds--;
                 }
             }
@@ -15538,6 +15943,18 @@ export class CombatSystem {
             const _rNames    = _extraLootRogues.map(m => m.name).join(' & ');
             totalGold += _extraGold;
             this._addLog(`🪙 Extra Loot (${_rNames}): +${_extraPct}% gold bonus! (+${_extraGold})`);
+        }
+
+        const livingLeps = this.party.filter(
+            m => m && m.isSummoned && m.summonType === 'leprechaun' && m.health > 0
+        );
+        if (livingLeps.length > 0 && totalGold > 0) {
+            const lepPct = livingLeps.reduce((sum, lep) =>
+                sum + Math.max(1, lep.summonStats?.photomancerLevel || lep.level || 1), 0);
+            const lepGold = Math.floor(totalGold * lepPct / 100);
+            const lepNames = livingLeps.map(m => m.name).join(' & ');
+            totalGold += lepGold;
+            this._addLog(`\u{1F340} Leprechaun's Reward (${lepNames}): +${lepPct}% final gold bonus! (+${lepGold})`);
         }
 
         this.loot = { gold: totalGold, items };

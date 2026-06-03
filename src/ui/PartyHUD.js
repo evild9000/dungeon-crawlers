@@ -1263,6 +1263,27 @@ export class PartyHUD {
                 mkPB('🌀', 'Blur', 'rgba(45,110,190,0.9)',
                     `Photomancer Blur: ${missPct}% miss chance against melee and ranged attacks — ${pblur.rounds} rds left.`);
             }
+            const rbRed = pefx.find(x => x && x.type === 'rainbow_red' && x.rounds > 0);
+            if (rbRed) mkPB('🔴', 'Red', 'rgba(170,40,35,0.95)',
+                `Eternal Rainbow Red: ${Math.round((rbRed.healPct || 0.10) * 100)}% max HP regen each round — refreshed by active rainbow.`);
+            const rbOrange = pefx.find(x => x && x.type === 'rainbow_orange' && x.rounds > 0);
+            if (rbOrange) mkPB('🟠', 'Orange', 'rgba(190,100,25,0.95)',
+                `Eternal Rainbow Orange: ${Math.round((rbOrange.resourcePct || 0.05) * 100)}% max MP and ST regen each round — refreshed by active rainbow.`);
+            const rbYellow = pefx.find(x => x && x.type === 'rainbow_yellow' && x.rounds > 0);
+            if (rbYellow) mkPB('🟡', 'Yellow', 'rgba(185,155,25,0.95)',
+                `Eternal Rainbow Yellow: +${rbYellow.damageBonus || 0} melee, ranged, and magic offense — refreshed by active rainbow.`);
+            const rbGreen = pefx.find(x => x && x.type === 'rainbow_green' && x.rounds > 0);
+            if (rbGreen) mkPB('🟢', 'Green', 'rgba(45,150,65,0.95)',
+                `Eternal Rainbow Green: +${rbGreen.defenseBonus || 0} defense — refreshed by active rainbow.`);
+            const rbIndigo = pefx.find(x => x && x.type === 'rainbow_indigo' && x.rounds > 0);
+            if (rbIndigo) mkPB('🟣', 'Indigo', 'rgba(80,55,150,0.95)',
+                `Eternal Rainbow Indigo: ${Math.round((rbIndigo.cleanseChance || 0) * 100)}% chance to immediately purge new harmful monster effects.`);
+            if (member.isSummoned && member.summonType === 'leprechaun') {
+                const attempts = member.leprechaunGlamourChecks || 0;
+                const next = attempts >= 19 ? 0 : Math.max(0, 1 - attempts * 0.05);
+                mkPB('🍀', 'Glamour', 'rgba(35,125,70,0.95)',
+                    `Leprechaun Glamour: next incoming single-target attack has ${Math.round(next * 100)}% miss chance; resets at the start of the Leprechaun's turn.`);
+            }
             const pinvis = pefx.find(x => x && x.type === 'improved_invisibility' && x.rounds > 0)
                 || pefx.find(x => x && x.type === 'invisibility' && x.rounds > 0);
             if (pinvis) {

@@ -183,6 +183,8 @@ import {
     PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL,
     PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL,
     PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
+    PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
+    PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
     RANGER_BEAST_COMPANION_TYPES,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
@@ -490,6 +492,18 @@ export class CombatUI {
                 }
                 // ── Render all DoT-type effects using a comprehensive map ──
                 const DOT_MAP = {
+                    radiant_blind: {
+                        icon: '\u2600\uFE0F', label: 'Blinded', bg: 'rgba(220,170,20,0.95)',
+                        tip: (fx) => 'Radiant Blind: 50% miss chance on single-target melee/ranged/magic attacks — ' + fx.rounds + ' rds left'
+                    },
+                    radiant_blind_lockout: {
+                        icon: '\u2728', label: 'Reblind Guard', bg: 'rgba(150,120,50,0.85)',
+                        tip: (fx) => 'Reblind Guard: cannot be blinded by Radiant Burst again — ' + fx.rounds + ' rds left'
+                    },
+                    leprechaun_curse: {
+                        icon: '\u{1F340}', label: 'Rainbow Curse', bg: 'rgba(40,135,70,0.95)',
+                        tip: (fx) => 'Leprechaun Curse: ' + (fx.defenseBonus||0) + ' defense' + (fx.permanent ? ' this combat' : ' — ' + fx.rounds + ' rds left')
+                    },
                     bleed: {
                         icon: '🟥', label: 'Bleeding', bg: 'rgba(160,0,0,0.9)',
                         tip: (fx) => 'Bleeding: ' + (fx.damage||0) + ' dmg/round — ' + fx.rounds + ' rds left'
@@ -2912,6 +2926,18 @@ export class CombatUI {
                 const sphereBtn = this._addBtn(activeHp > 0 ? `\u{1F308} Sphere (${activeHp})` : `\u{1F308} Prismatic Sphere (-${PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST} MP)`, canSphere, () => this.combat.photomancerPrismaticSphere());
                 sphereBtn.classList.add('combat-special-btn');
                 sphereBtn.title = `Once/combat. Absorbs ${m.level * 100} ranged, magic, and AoE damage before Eagle Totem deflect. Only one party sphere can exist.`;
+            }
+
+            if (m.level >= PHOTOMANCER_L35_UNLOCK_LEVEL) {
+                const rbBtn = this._addBtn(`\u2600\uFE0F Radiant Burst (-${PHOTOMANCER_RADIANT_BURST_MANA_COST} MP)`, m.mana >= PHOTOMANCER_RADIANT_BURST_MANA_COST, () => this.combat.photomancerRadiantBurst());
+                rbBtn.classList.add('combat-special-btn');
+                rbBtn.title = `Magic AoE against living enemies only. Constructs, elementals, undead, plants, slimes, and magic-immune monsters ignore it. Blind chance is photomancer level%; boss-style monsters use 20%. Blind causes 50% miss chance on single-target melee/ranged/magic attacks for 2 rounds and prevents immediate reblind.`;
+
+                const rainbowActive = (this.combat.eternalRainbows || []).some(rb => rb && rb.casterId === m.id);
+                const erCan = !m.eternalRainbowUsed && m.mana >= PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST;
+                const erBtn = this._addBtn(rainbowActive ? `\u{1F308} Eternal Rainbow active` : `\u{1F308} Eternal Rainbow (-${PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST} MP)`, erCan, () => this.combat.photomancerEternalRainbow());
+                erBtn.classList.add('combat-special-btn');
+                erBtn.title = `Once/combat. Builds one color each round: red HP regen, orange MP/ST regen, yellow offense, green defense, blue revive, indigo instant cleanse chance, violet Leprechaun summon. Living-only phases exclude constructs, golems, undead, simulacra, illusionary warriors, and elementals as appropriate.`;
             }
         }
 
