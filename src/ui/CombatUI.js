@@ -101,6 +101,7 @@ import {
     ROGUE_SHADOW_STEP_DURATION, ROGUE_SHADOW_STEP_BACKSTAB_MULT,
     ROGUE_TRAP_MASTERY_UNLOCK_LEVEL, ROGUE_TRAP_MASTERY_EXTRA_ROUNDS,
     ROGUE_TRAP_MASTERY_PENALTY_DIVISOR,
+    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL, ROGUE_EXTRA_LOOT_GOLD_PCT,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
     MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
@@ -1314,6 +1315,9 @@ export class CombatUI {
                         : `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL} Twin Fangs: equip an offhand melee weapon to unlock the second strike.`
                     : `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL}: Twin Fangs unlocks — offhand melee follow-up strike on every Backstab.`,
                 shadowActive ? `🌑 Shadow Step active (${(m.activeEffects.find(fx => fx.type === 'shadow_step') || {}).rounds || 0} rds) — Backstab deals ×${ROGUE_SHADOW_STEP_BACKSTAB_MULT} damage!` : '',
+                m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
+                    ? `L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL} Extra Loot: this rogue adds +${ROGUE_EXTRA_LOOT_GOLD_PCT + (m.level || 1)}% combat gold (100% + rogue level%). Multiple rogues stack additively.`
+                    : `L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL}: Extra Loot unlocks — adds 100% + rogue level% combat gold.`,
             ].filter(Boolean).join('\n')
 
             if (m.level >= ROGUE_TRAP_UNLOCK_LEVEL) {

@@ -15525,12 +15525,15 @@ export class CombatSystem {
             items.push({ itemId: guaranteedLeg, quantity: 1 });
         }
 
-        // Rogue Extra Loot (L35+): each living L35+ rogue adds a flat +100% gold (additive)
+        // Rogue Extra Loot (L35+): each living L35+ rogue adds +(100 + rogue level)% gold (additive)
         const _extraLootRogues = this.party.filter(
             m => !m.isSummoned && m.health > 0 && m.classId === 'rogue' && m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
         );
         if (_extraLootRogues.length > 0 && totalGold > 0) {
-            const _extraPct  = _extraLootRogues.length * ROGUE_EXTRA_LOOT_GOLD_PCT;
+            const _extraPct  = _extraLootRogues.reduce(
+                (sum, rogue) => sum + ROGUE_EXTRA_LOOT_GOLD_PCT + (rogue.level || 1),
+                0,
+            );
             const _extraGold = Math.floor(totalGold * _extraPct / 100);
             const _rNames    = _extraLootRogues.map(m => m.name).join(' & ');
             totalGold += _extraGold;
