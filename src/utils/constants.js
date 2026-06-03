@@ -1252,6 +1252,29 @@ export const POTION_COSTS = {
 };
 export const POTION_MANA_RESTORE_PCT = 0.20;
 
+// Artificer L35 special magic items. Crafted charges are used from the combat
+// Use Item menu; each craft creates this many charges.
+export const ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL = 35;
+export const MAGIC_ITEM_CRAFT_CHARGES = 3;
+export const MAGIC_ITEM_RECIPES = [
+    {
+        id: 'cloak_of_displacement',
+        cost: { gold: 25000, rare: 5, epic: 2, legendary: 1, material_hide: 10 },
+    },
+    {
+        id: 'horn_of_valhalla',
+        cost: { gold: 30000, rare: 5, epic: 3, legendary: 1, material_giant_heart: 3 },
+    },
+    {
+        id: 'pipes_of_the_sewers',
+        cost: { gold: 20000, rare: 3, epic: 2, material_vermin_parts: 50, material_ichor: 10 },
+    },
+    {
+        id: 'demon_pentagram',
+        cost: { gold: 35000, rare: 5, epic: 3, legendary: 1, material_demon_ichor: 10 },
+    },
+];
+
 // Golems — persistent artificer summons. Damage = melee roll + artificer level.
 // HP = BASE_HP + HP_PER_AL × artificerLevel. Defense = BASE_DEF + artificerLevel.
 // Permadeath — no cleric revive, no resurrect potion. Only artificer can heal

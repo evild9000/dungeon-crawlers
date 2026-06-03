@@ -7205,6 +7205,114 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
+    _summonMagicItemAlly(kind, actor) {
+        const level = Math.max(1, actor?.level || 1);
+        const makeId = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+        const add = (member) => {
+            this.party.push(member);
+            this._registerNewSummon(member);
+            return member;
+        };
+
+        if (kind === 'einherjar') {
+            const count = randomInt(2, 5);
+            for (let i = 0; i < count; i++) {
+                const hp = Math.max(1, Math.floor((actor?.maxHealth || 100) * 0.75));
+                const warrior = new PartyMember({
+                    id: makeId('einherjar'),
+                    name: `Einherjar ${i + 1}`,
+                    classId: 'summoned',
+                    speciesId: 'human',
+                    level,
+                    maxHealth: hp,
+                    maxStamina: 100,
+                    maxMana: 0,
+                    isSummoned: true,
+                    summonType: 'magic_item_einherjar',
+                    summonerId: actor?.id || null,
+                    canBeHealed: false,
+                    row: 'front',
+                    summonStats: {
+                        magicItemSummon: 'einherjar',
+                        meleeMin: 8 + level,
+                        meleeMax: 18 + level * 2,
+                        defense: level,
+                        incorporeal: true,
+                        immune: ['stun', 'poison', 'web', 'hold', 'bleed', 'rot'],
+                    },
+                });
+                warrior.health = hp;
+                add(warrior);
+            }
+            this._addLog(`\u{1F4EF} ${actor.name} sounds the Horn of Valhalla — ${count} Einherjar answer!`);
+            return true;
+        }
+
+        if (kind === 'rat_swarm') {
+            const hp = Math.max(1, Math.floor((actor?.maxHealth || 100) * 2));
+            const swarm = new PartyMember({
+                id: makeId('rat_swarm'),
+                name: `${actor.name}'s Rat Swarm`,
+                classId: 'summoned',
+                speciesId: 'human',
+                level,
+                maxHealth: hp,
+                maxStamina: 100,
+                maxMana: 0,
+                isSummoned: true,
+                summonType: 'magic_item_rat_swarm',
+                summonerId: actor?.id || null,
+                canBeHealed: true,
+                row: 'front',
+                summonStats: {
+                    magicItemSummon: 'rat_swarm',
+                    meleeMin: 10 + level,
+                    meleeMax: 25 + level * 2,
+                    defense: Math.max(1, Math.floor(level / 2)),
+                    immune: ['stun', 'web', 'hold'],
+                },
+            });
+            swarm.health = hp;
+            add(swarm);
+            this._addLog(`\u{1FA88} ${actor.name} plays the Pipes of the Sewers — a rat swarm floods in!`);
+            return true;
+        }
+
+        if (kind === 'bound_demon') {
+            const names = ['Bound Imp', 'Bound Quasit', 'Bound Hellion', 'Bound Chain Fiend', 'Bound Ash Devil'];
+            const name = names[Math.floor(Math.random() * names.length)];
+            const hp = Math.max(1, Math.floor((actor?.maxHealth || 100) * 1.25));
+            const demon = new PartyMember({
+                id: makeId('bound_demon'),
+                name,
+                classId: 'summoned',
+                speciesId: 'human',
+                level,
+                maxHealth: hp,
+                maxStamina: 75,
+                maxMana: 999,
+                isSummoned: true,
+                summonType: 'magic_item_bound_demon',
+                summonerId: actor?.id || null,
+                canBeHealed: false,
+                row: 'back',
+                summonStats: {
+                    magicItemSummon: 'bound_demon',
+                    magicMin: 12 + level,
+                    magicMax: 28 + level * 2,
+                    defense: Math.max(1, Math.floor(level / 2)),
+                    immune: ['fire', 'poison'],
+                },
+            });
+            demon.health = hp;
+            add(demon);
+            this._addLog(`\u{1F52F} ${actor.name} opens a Demon Pentagram — ${name} is bound to the party!`);
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Use a combat-usable item from personal or group inventory.
      * @param {string} itemId      — item to use
@@ -7299,6 +7407,26 @@ export class CombatSystem {
                 for (const t of rTargets) t.addEffect({ type: 'elixir_wrath', damageBonus: rBonus, expiresAt: Date.now() + rDurMs });
                 this._addLog(`\u{1F525} ${actor.name} reads the Scroll of Wrath — +${rBonus} damage to all ${rTargets.length} living allies!`);
                 applied = true;
+                break;
+            }
+            case 'cloak_of_displacement': {
+                if (target.health <= 0) { this._addLog(`Cannot cloak an unconscious ally.`); return; }
+                target.activeEffects = (target.activeEffects || []).filter(fx => !fx || fx.type !== 'cloak_of_displacement');
+                target.addEffect({ type: 'cloak_of_displacement', permanent: true });
+                this._addLog(`\u{1F9E5} ${actor.name} activates a Cloak of Displacement on ${target.name} — 30% avoidance vs melee, ranged, and single-target magic this combat.`);
+                applied = true;
+                break;
+            }
+            case 'horn_of_valhalla': {
+                applied = this._summonMagicItemAlly('einherjar', actor);
+                break;
+            }
+            case 'pipes_of_the_sewers': {
+                applied = this._summonMagicItemAlly('rat_swarm', actor);
+                break;
+            }
+            case 'demon_pentagram': {
+                applied = this._summonMagicItemAlly('bound_demon', actor);
                 break;
             }
             default:
@@ -7634,6 +7762,33 @@ export class CombatSystem {
         if (isShadowSimulacra(m)) {
             this._processSimulacrumAttack(m);
             return;
+        }
+
+        if (stats.magicItemSummon) {
+            const target = targets[Math.floor(Math.random() * targets.length)];
+            if (!target) return;
+            if (stats.magicItemSummon === 'einherjar') {
+                const dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 1);
+                const dealt = this._damageSummonEnemy(target, dmg, false, false, { contactAttacker: m });
+                this._addLog(`\u{1F4EF} ${m.name} strikes ${this._eName(target)} for ${dealt}.`);
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+                return;
+            }
+            if (stats.magicItemSummon === 'rat_swarm') {
+                const hpRatio = Math.max(0.25, (m.health || 1) / Math.max(1, m.maxHealth || 1));
+                const raw = Math.max(1, Math.round(randomInt(stats.meleeMin || 1, stats.meleeMax || 1) * hpRatio));
+                const dealt = this._damageSummonEnemy(target, raw, false, false, { contactAttacker: m });
+                this._addLog(`\u{1FA88} ${m.name} swarms ${this._eName(target)} for ${dealt}.`);
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+                return;
+            }
+            if (stats.magicItemSummon === 'bound_demon') {
+                const raw = randomInt(stats.magicMin || 1, stats.magicMax || 1);
+                const dealt = this._damageSummonEnemy(target, raw, false, false, { isMagic: true });
+                this._addLog(`\u{1F52F} ${m.name} hurls infernal force at ${this._eName(target)} for ${dealt}.`);
+                if (target.health <= 0) this._addLog(`${this._eName(target)} is defeated!`);
+                return;
+            }
         }
 
         // ── Squire AI (warrior L30 summoned allies) ────────────────────────────
@@ -11619,6 +11774,15 @@ export class CombatSystem {
             return null;
         }
 
+        if (!opts.covenantTransfer && !opts.aoe && ['melee', 'ranged', 'magic'].includes(attackKind)
+            && Array.isArray(target.activeEffects)
+            && target.activeEffects.some(fx => fx && fx.type === 'cloak_of_displacement')) {
+            if (Math.random() < 0.30) {
+                this._addLog(`\u{1F9E5} ${target.name}'s Cloak of Displacement bends ${eName}'s ${attackKind} attack aside!`);
+                return null;
+            }
+        }
+
         if (this._isVKSwarm(target) && opts.psychic) {
             this._addLog(`🕸️ ${target.name} is immune to psychic damage and effects!`);
             return null;
@@ -15169,6 +15333,7 @@ export class CombatSystem {
             m.rangerTotem = null;
             m.avatarActive = false;
             m.avatarElement = 'fire';
+            m.activeEffects = (m.activeEffects || []).filter(fx => !(fx && fx.type === 'cloak_of_displacement'));
             if (m.health <= 0) continue;          // do NOT revive
             m.health  = Math.min(m.maxHealth,  m.health  + POST_COMBAT_RECOVERY);
             m.stamina = Math.min(m.maxStamina, m.stamina + POST_COMBAT_RECOVERY);

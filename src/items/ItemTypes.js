@@ -453,6 +453,46 @@ export const CONSUMABLES = {
         icon: '\u{1FAA4}', // mouse trap-ish
         stackable: true,
     },
+    cloak_of_displacement: {
+        id: 'cloak_of_displacement',
+        name: 'Cloak of Displacement',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Crafted by a level 35+ artificer. Activate in combat to gain a 30% chance to avoid melee, ranged, or single-target magic attacks for the rest of the fight.',
+        icon: '\u{1F9E5}',
+        stackable: true,
+        combatUsable: true,
+        targetSelf: true,
+    },
+    horn_of_valhalla: {
+        id: 'horn_of_valhalla',
+        name: 'Horn of Valhalla',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Crafted by a level 35+ artificer. Use in combat to summon 2-5 incorporeal Einherjar warriors for this fight.',
+        icon: '\u{1F4EF}',
+        stackable: true,
+        combatUsable: true,
+        targetParty: true,
+    },
+    pipes_of_the_sewers: {
+        id: 'pipes_of_the_sewers',
+        name: 'Pipes of the Sewers',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Crafted by a level 35+ artificer. Use in combat to summon a durable rat swarm whose damage scales down as it is wounded.',
+        icon: '\u{1FA88}',
+        stackable: true,
+        combatUsable: true,
+        targetParty: true,
+    },
+    demon_pentagram: {
+        id: 'demon_pentagram',
+        name: 'Demon Pentagram',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Crafted by a level 35+ artificer. Use in combat to call a random bound demon ally for this fight.',
+        icon: '\u{1F52F}',
+        stackable: true,
+        combatUsable: true,
+        targetParty: true,
+    },
 };
 
 // ──────────────────────────────────────────

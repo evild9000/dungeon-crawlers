@@ -31,6 +31,7 @@ import {
     calcScrollBonus, calcScrollCost,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
     ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
+    ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL, MAGIC_ITEM_CRAFT_CHARGES, MAGIC_ITEM_RECIPES,
 } from '../utils/constants.js';
 import { getItemDef, WEAPONS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';
@@ -62,7 +63,7 @@ export class CraftingUI {
         this._combatSystem = systems.combatSystem || null;
         this._log = typeof systems.logger === 'function' ? systems.logger : () => {};
 
-        this._tab = 'enchant';          // 'enchant' | 'trinkets' | 'potions' | 'golems'
+        this._tab = 'enchant';          // 'enchant' | 'trinkets' | 'potions' | 'magicItems' | 'golems'
         this._enchantTarget = null;     // selected party member id
         this._trinketTarget = null;     // selected party member id for trinket upgrade
         this._golemTarget = null;       // selected artificer id for golem tab
@@ -197,6 +198,7 @@ export class CraftingUI {
             ['enchant',  'Enchant'],
             ['trinkets', 'Trinkets'],
             ['potions',  'Potions & Scrolls'],
+            ['magicItems', 'Magic Items'],
             ['golems',   'Golems'],
         ]) {
             const btn = document.createElement('button');
@@ -226,6 +228,8 @@ export class CraftingUI {
             this._renderTrinkets(body, state, craftArtificer);
         } else if (this._tab === 'potions') {
             this._renderPotions(body, state, craftArtificer);
+        } else if (this._tab === 'magicItems') {
+            this._renderMagicItems(body, state, craftArtificer);
         } else {
             // For golems, allow choosing which artificer manages the golem.
             if (!this._golemTarget || !allArtificers.find(m => m.id === this._golemTarget)) {
@@ -634,6 +638,52 @@ export class CraftingUI {
         }
     }
 
+    // ── Magic Items tab (Artificer L35+) ─────────────────────────────────────
+    _renderMagicItems(body, state, artificer) {
+        if ((artificer.level || 0) < ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL) {
+            body.appendChild(this._note(`Magic item crafting unlocks at Artificer level ${ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL}. (Current: ${artificer.level})`));
+            return;
+        }
+
+        const intro = document.createElement('div');
+        intro.className = 'craft-note';
+        intro.textContent = `Each craft creates ${MAGIC_ITEM_CRAFT_CHARGES} combat charge${MAGIC_ITEM_CRAFT_CHARGES === 1 ? '' : 's'} in group inventory. Use them from the combat Use Item button.`;
+        body.appendChild(intro);
+
+        for (const recipe of MAGIC_ITEM_RECIPES) {
+            const def = getItemDef(recipe.id);
+            if (!def) continue;
+            const row = document.createElement('div');
+            row.className = 'craft-row';
+
+            const owned = state.inventory.getItemCount(recipe.id);
+            const info = document.createElement('div');
+            info.className = 'craft-row-info';
+            info.innerHTML =
+                `<b>${def.icon || ''} ${def.name}</b> <span class="craft-owned">(charges: ${owned})</span><br>` +
+                `<span>${def.description}</span>`;
+
+            const canPay = this._canPay(state, recipe.cost);
+            const btn = document.createElement('button');
+            btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
+            btn.disabled = !canPay;
+            btn.textContent = `Craft ${MAGIC_ITEM_CRAFT_CHARGES} — ${this._formatCost(recipe.cost)}`;
+            btn.title = `Creates ${MAGIC_ITEM_CRAFT_CHARGES} ${def.name} charge${MAGIC_ITEM_CRAFT_CHARGES === 1 ? '' : 's'}.\nCost: ${this._formatCost(recipe.cost)}`;
+            btn.addEventListener('click', () => {
+                if (!this._canPay(state, recipe.cost)) return;
+                this._pay(state, recipe.cost);
+                state.inventory.addItem(recipe.id, MAGIC_ITEM_CRAFT_CHARGES);
+                this._log(`${def.icon || '✨'} ${artificer.name} crafts ${MAGIC_ITEM_CRAFT_CHARGES} charge${MAGIC_ITEM_CRAFT_CHARGES === 1 ? '' : 's'} of ${def.name}.`);
+                this._onChanged();
+                this._render();
+            });
+
+            row.appendChild(info);
+            row.appendChild(btn);
+            body.appendChild(row);
+        }
+    }
+
     // ──────────────────────────────────────────
     // Cost helpers
     // ──────────────────────────────────────────
@@ -649,6 +699,10 @@ export class CraftingUI {
         if ((cost.legendary || 0) > 0 && !inv.hasReagent('legendary', cost.legendary)) return false;
         if ((cost.mythic    || 0) > 0 && !inv.hasReagent('mythic',    cost.mythic))    return false;
         if ((cost.divine    || 0) > 0 && !inv.hasReagent('divine',    cost.divine))    return false;
+        for (const [key, amount] of Object.entries(cost)) {
+            if (!key.startsWith('material_') || !amount) continue;
+            if (!inv.hasItem(key, amount)) return false;
+        }
         return true;
     }
 
@@ -662,6 +716,10 @@ export class CraftingUI {
         if ((cost.legendary || 0) > 0) inv.removeReagent('legendary', cost.legendary);
         if ((cost.mythic    || 0) > 0) inv.removeReagent('mythic',    cost.mythic);
         if ((cost.divine    || 0) > 0) inv.removeReagent('divine',    cost.divine);
+        for (const [key, amount] of Object.entries(cost)) {
+            if (!key.startsWith('material_') || !amount) continue;
+            inv.removeItem(key, amount);
+        }
     }
 
     _formatCost(cost) {
@@ -675,6 +733,11 @@ export class CraftingUI {
         if (cost.legendary) parts.push(`${cost.legendary}🔷L`);
         if (cost.mythic)    parts.push(`${cost.mythic}🌟M`);
         if (cost.divine)    parts.push(`${cost.divine}✨✨D`);
+        for (const [key, amount] of Object.entries(cost)) {
+            if (!key.startsWith('material_') || !amount) continue;
+            const def = getItemDef(key);
+            parts.push(`${amount} ${def ? `${def.icon || ''}${def.name}` : key}`);
+        }
         return parts.join(' + ') || 'free';
     }
 
