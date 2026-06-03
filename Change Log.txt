@@ -2660,114 +2660,484 @@ the form disappears if the barbarian dies and cannot be reused that combat.
 ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
 
 
-=========================================================================================
-
-
-
-barbarian: 
-new level 35 abilities
-1. Odin's ravens (new passive): During combat, if the barbarian dies, has 10% + level% chance (max 90) to summon a valkyrie that joins the battle and resses the barbarian at 25% hit points and continues fighting. 
-the valkyrie = barbarian level, 
-a. has barbarian health
-b. has barbarian level x2 in defense
-c. attacks / round = barbarian level/7.  
-d. damage = base 5-10 + barbarian level x2. 
-e. uses a spear, has a 20% chance to crit.  
-f. summoned to front row.  is race valkyrie.  
-g. is considered 'non-living' for purposes of other buffs, healing, regen etc.
-h. has a shield, 25% chance to block any melee, ranged or magic/aoe attack.  
-i. takes 2/3 damage from any magic/aoe.
-
-2. Werebear:(cost 50 Stamina) + 5 stamina per round. usable 1/combat - the barbarian shapechanges to a werebear.  
-a. weapon riders no longer apply (probably requires custom code), 
-b. but the werebear form has a barbarian level% to apply a separate bleed DoT with each attack. 
-- the DoT does 50% base damage/round. 
-- bleed Dots last barbarian level/7 rounds.  
-c. in werebear form normal cap to blood frenzy % level bonus to damage cap is increased by (barbarian level/2)%.
-d. gain 50% max hit points. 
-e. regen increases to 10% per round instead of 5.  
-f. (barbarian level/3) added to defense.
-the form disappears if the barbarian dies and cannot be reused that combat.
-
-
-
-artificer:
-1. instakill golem? heals all golems to full
-2. craft special items (see below)
-
-Option 2: "Emergency Protocol" (Passive)
-Passive. When any of the artificer's golems drops to 25% HP or below, it automatically enters Emergency Protocol: gains +75% damage output but takes +50% incoming damage. When an Emergency Protocol golem is destroyed, it self-destructs — dealing artificer level × 3 magic damage to all enemies (ignores half defense). This detonation cannot be cancelled or prevented once triggered.
-
-Why it works: Turns golem death from a pure loss into a tactical tool. Enemies that kill your golems do so at a cost. Pairs with Overclock interestingly — an overclocked golem taking heat damage might intentionally trigger Emergency Protocol. Completely passive, no button to press, but changes how you think about golem positioning entirely.
-
-Option 3: "Resonance Cannon" (Personal Nuke)
-Once per combat. Costs 40 MP + 15 stamina. The artificer assembles a makeshift cannon from workshop components and fires a single devastating shot. Base damage = artificer level × 4, plus golem tier bonus (each active golem adds its tier number × 8 to the damage). Ignores half the target's defense. Against bosses and mega-bosses, deals 3× damage instead of instakilling. Against normal enemies, has a flat 10% instakill chance.
-
-Why it works: Rewards having multiple high-tier golems active — a full team of Divine Soul golems adds enormous bonus damage. It's the artificer's one "personal" moment of destroying something themselves rather than through constructs. Once per combat keeps it from being spammable. The boss damage multiplier means it remains useful against the toughest targets.
-
-
+confirm:
+level 35 mage abilities:
 mage: 
 1. Mana Shield (free action to activate) (50MP) - 1/combat.  Creates a protective sphere of temporary health = the mage's max mana.  any damage is removed from this first.  the damage can be first reduced by other effects.  this is the last check in combat sequence right before applying damage to the mage.  any damage that surpasses the shield goes to the mage.
-2. death burst:  a mage who is slain in combat releases a mana burst damage all enemy targets that are not immune to magic.  the damage = the mage's max mana x (2 + (mage levelx2)%) . example a level 35 mage with 700 mana does 700 x 2.7 damage = 1890 magic/aoe damage.
+2. Death Burst (Passive):  a mage who is slain in combat releases a mana burst to damage all enemy targets that are not immune to magic.  the damage = the mage's max mana x (2 + (mage levelx2)%) . example a level 35 mage with 700 mana does 700 x 2.7 damage = 1890 magic/aoe damage.
 
+todo:
 necromancer: 
-1. take control of undead (charm) - same chances and duration as bard charm
-2. stamina and mana drain - aoe - drains enemies of ST/MP - amount = random amount per target of (necro level/2) to (necro level *2).  undead, constructs, elementals immune.  
+level 35 abilities:
+1. Control the Dead: (50MP)  allows a necromancer to dominate an undead enemy.  this bypasses the normal immunity undead have to charm,  It has the same chance and duration as the bard charm power
+2. Siphon Power - stamina and mana drain - aoe - drains all enemies of ST/MP - amount = random amount per target from (necro level/2) to (necro level *2).  undead, constructs, elementals are all immune. 
 
-vermin keeper:
-1. vermin frenzy (passive): any vermin or slimes summoned or charmed have a (vermin keeper level)% chance to gain a second action each round.  the vermin or slimes also do (VK level x2)% + 100% more damage.
---- create some new slime types:  grey ooze, black pudding, ochre jelly
-2. hive mind - share health with summoned minions and swarm.  how does this benefit except for the minions.  melee and ranged are all that matter. aoe will be taken by all anyhow mostly.  creates a lot of math....
+ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.+
 
-photomancer:
-1.  blinding burst emission 
-2. 
+
+
+
+confirm:
+1. death knight instakill too high? check
+
+todo:
+2. change improved invis to a drop down
+
+
+todo:
+it is time to create a more advanced item creation system for lvel 25 artificers. create a system where defeated enemies can drop materials.  this drop chance is separate and different from the generic reagents from before.  this one is more tailored and specialized.  only monsters at level 25+ drop these materials.
+
+here are items that monsters should drop when slain, with the item going to the party inventory.  monsters have a 40% chance to drop an item.  some have more than 1 item they can drop, so its random from the pool.
+
+1. displacer beast : hide
+2. any construct tag: construct heart, construct head head, construct arm, construct leg, construct torso.
+3. any elemental tag: fire type drop fire essence, air types drop air essence, earth types drop earth essence, water types drop water essence
+4. any giant tag: drops giant heart
+5. any dragon tag: hide, heart
+6. any undead tag: undead essence
+7. any troll monster: blood
+8. any vermin tag: vermin parts
+9. any slime tag: ichor
+10.any plant tag: plant parts
+11.any demon tag: demon ichor
+12. any aberration tag: aberration parts
+12. any hag monster: hag eye 
+13. manticore: manticore spikes
+14. yeti: yeti hide
+15.werewolf: werewolf blood
+15. harpy: harpy parts
+16. shrieker: shrieker parts
+
+for now just work up this framework.  in the next phase I will adjust some artificer crafting to support their use.
+
+confirm:
+create some new slime types:  grey ooze, black pudding, ochre jelly - give them some unique powers but of course thematic for slimes, they have the slime tag of course
+
+confirm:
+new level 35 artificer abilities:
+1. Sabotage (Passive) each time an artificer shot hits a construct for a Deconstruct special power.  It adds a counter.  each counter has a artificer level/33 chance to instakill the construct checked immediately.  the more counters the higher the chance.  bosses/mega/super bosses etc immune.  when a construct instakills from this ability, any golems owned by that artificer are healed to full.
+2. Dual Drone (Passive) Create a second roll for drones at level 35%.  On an Artificer scattershot splash, if the first shot succeeds on a drone roll.  roll for a second chance at the same %.
+
+todo:
+new vermin keeper level 35 abilities:
+1. Minions' Frenzy (Passive): any vermin or slimes summoned or charmed have a have a 100% chance to gain a second action each round.  cascading down to 50% for a third attack 25% for a 4th attack, 12% for a 5th attack, 6, 3, 1 for attack 6,7,8. Secondly the vermin or slimes also do (VK level x2)% + 100% more damage.  doesnt affect the special swarm.  each action of course can be an entire suite of attacks or whatever the slime does.
+
+2. Hive Mind Control - normally slimes and vermin are somewhat mindless and will attack random foes.  This ability allows the VK to mark a target that all vermin and slimes will attack (obviously some have aoe attacks so this doesnt matter as much).  Only one target can be marked at a time.  Once it is marked it costs 2 mana per turn to maintain.  All summoned slimes and vermin and any charmed slimes or vermin of that particular VK will attack the enemy marked.  vermin or slimes from another Vk in the party dont attack this marked one, unless that VK also marks it.  a target can have multiple marks.  each summoned or charmed vermin or slime thus needs to be keyed to its master for the purpose of the marks.
+
 
 warlock:
-1. demon lord/eldritch horror (appears after 5 demons successfully summoned from the cauldron) those demons disappear and are replaced by the demon lord.  select randomly from a list of 10 or so lords (come up with names and special powers)
-the demon lord has high attack, defense, powers, immunities, etc
-2. Hooked tentacles:  adds a warlock level% chance for a tentacle hit to crit for x2 damage.  each hit also has a separate warlock level% chance to apply a bleed DoT (normal check for monster resists).  The DoT does damage/2 each round for (warlock level/7) rounds. This counts as a bleed dot like other bleed DoTs for purpose of barbarian bleed frenzy
+new level 35 abilities:
+1. Hooked tentacles (Passive):  adds a warlock level% chance for a tentacle hit to crit for +100% + (warlock levelx2)% damage.  each hit also has a separate 33% +(warlock level)% chance to apply a bleed DoT (normal check for monster resists).  The DoT does damage/2 each round for (warlock level/7) rounds. This counts as a bleed dot like other bleed DoTs for purpose of barbarian bleed frenzy
+
+2. Awaken (free toggle, free action no mana required):  If this power is toggled on and after 5 demons successfully summoned from the cauldron, those demons (which must be from that specific warlock nother other warlocks' demons ) disappear (remove) and are replaced by a an unspeakable entity from the void.  Some eldritch Horror, or Demon Lord, or Duke of Hell.  select randomly from a list of 10 or so lords (come up with names and special powers).  in the case of two or more warlock in the party do not allow the same entity to be summoned twice.  reroll until unique.  If for some extreme reason there are more than 10 warlocks in the party, this power does NOT trigger as all the mega-entities have been summoned.  Multiple entities can be summoned by the same warlock if the combat lasts long enough.  again multiple warlocks in a long combat may exhaust the list of these.  if so, the check is bypassed and do not remove the 5 starter demons
+
+chose randomly from among the following:
+the awakened entity has:
+a. x5 the max health of the warlock.
+b. any offensive melee, ranged, magic skills are = warlock level x 3
+c. defense is = warlock level x 2.5
+d. each has special attacks, powers, resistances, immunities and may have additional health, offense or defense
+
+* make sure all new attacks that apply a buff, debuff or DoT are creating an entry on the enemy HUD card.
+* make some very creative looking sprite cards for each of these that adheres to their theme.
+* make sure all attacks or Dots check the target(s) for immunities or resistances to the attack type even if i have not explicitly spelled it out.
+* make sure that for each lord all of its attacks happen every round, do not select randomly from the various ones,  they can do them all.
+
+1. Varkhul the Chain-Crowned
+Theme: Hellish jailer, chains, domination, pain (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types: (all attacks happen every round)
+- Melee: Chain Flail — hits a single target (warlock level/5) times for physical damage and applies a fire DoT (for immunity purposes).  The damage of the DoT = the number of hits/2 x the base damage done.  the duration is warlock level/5 rounds.
+- Additional power: - Ranged: Hook Chain — hits 2 random targets with a special ranged attack, and will pull them down (considered a hold) prone.  normal hold resists apply.  the prone state is 1 round
+- Additional power: Tyrant’s Command — all enemy targets, 60% chance to apply attack debuff.  the debuff = warlock level/5 to all enemy ranged, melee, and magic/aoe attacks.  this is a psychic and sonic attack for purposes of immunity (construct, elementals, undead, plants immune, possibly others)
+
+Special power:
+Punish the Bound: Deals x2 base damage to any held, stunned, or prone enemies.
+
+Defenses:
+- Fire resistant. (half damage from any fire themed attacks or DoTs)
+- Poison resistant (half damage from any poison themed attacks or DoTs).
+- Immune to charm and fear effects.
+- Mild physical resistance (takes 66% damage from all untyped normal melee or ranged attacks)
 
 
+2. Malgora, Queen of the Ash Womb
+Theme: Demon broodmother, ash, plague, burning parasites (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types: (all attacks happen every round)
+- Melee: Belly Maw — single target physical damage multiplied by (warlock level/5) applies an acid DoT for half base damage for (warlock level/5) rounds
+- Magic AOE: Ash Breath — fire damage to all targets and applies a burn DoT = 50% base damage for (warlock level/5) rounds.  Applies Ash Fever debuff that reduces enemy attack skill in melee, ranged or magic by (warlock level/5) for (warlock level/5) rounds.  Ash Fever is a fire based attack and fire monsters are immune.
+- Summon: Ash Brood — summons 1–3 fire imps (use the warlock template,added to the party roster) - to each imp apply the Burning Brood 'buff'.  If that imp is killed be enemies it explodes for AOE fire damage to all enemies doing damage = the imps max health.
+
+Defenses:
+- Immune to fire  based attacks and DoTs.
+- Immune to poison based attacks and DoTs.
+- Acid resistant. (50% damage from acid based attacks and DoTs)
+- If Malgora reaches 50% health she consumes one available imp and is healed by the amount of current health of the imp.  she continues to consume imps until she s full health or out of imps.  this does not trigger the Burning Brood explosive effect, it just consumes the imp (remove).  these can only be imps with the burning brood effect on them (indicating it is from a malgora summons).  it will not consume other imps that have been charmed or summoned by the same or other warlocks. 
+
+
+3. Thal’Zuun the Sleepless Eye
+Theme: Psychic eye horror, madness, surveillance (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types: (all attacks happen every round)
+Ranged: Eye Lance — single target force damage multiplied by (warlock level/5). this target is stunned for 2 rounds, normal immunities and checks apply.
+Magic AOE: Mind Flay — psychic damage to all targets.  (normal tags are checked for immunity to psychic damage, such as undead, constructs, plants)
+Magic: Mental Intrusion: Choose a number of random targets = (warlock level/5).  It will bypass any that are normally immune such as construct, undead, plants and apply a debuff to the targets defense AND offensive skills/damage of (warlock level/5) for duration = warlock level/5.  This is considered both a magic and psychic ability for purposes of target immunity.
+Magic: Paranoia Field: Target may attack an ally or waste a turn.  this is considered a psychic and magic attack.  It does no damage, but a random number of targets = (warlock level/5) are subjected to paranoia and have a 'debuff' applied for 1 round.  Their next action will be targeted against the monster group instead of the player group.  This works like using the charm power.  and it is also considered a charm for purposes of immunity.  If there is only one target alive that is affects by this, it has a 50% chance to skip its turn.
+ 
+Defenses:
+- Immune to blind.
+- Immune to charms.
+- Immune to psychic damage and DoTs.
+- Force resistant: takes half damage from all untyped damage/attacks
+- Immune to Stuns and Holds
+
+4. Drozmakh the Furnace Duke
+Theme: Infernal forge lord, molten armor, war machines (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types:  (all attacks happen every round)
+- Melee: Hellhammer — single target physical/fire  damage multiplied by (warlock level/5). applies a fire DoT for half base damage for (warlock level/5) rounds.  Special addon to the attack: Anvil Crush: This attack will knock the targe prone ( considered a hold for immunities or duration refresh bypass )
+- Ranged: Molten Rivets — random 3-hit ranged attack; damage multiplied by (warlock level/10). (warlock level)% chance to crit for damage additional damage of +100% + (warlock level)%. applies a fire DoT for half base damage for (warlock level/5) rounds.  each DoT is separate in case of hiting the same target more than once.
+- AOE: Furnace Blast — fire damage to all targets. applies a fire DoT for half base damage for (warlock level/5) rounds. (this applies a separate DoT from all other DoTs). special addons : Overheat Armor. This debuffs the target armor for (warlock level/5) for (warlock level/5) rounds
+
+Defenses:
+- Immune to fire attacks/DoTs.
+- Physical resistant: takes half damage from all untyped damage/attacks
+- Immune to Stuns
+
+Special Powers:
+- Forge Plate buff: Drozmakh Gains a buff to its (armor) defense each round for (warlock level/10).  this stacks infinitely.
+
+5. Ilyrra of the Velvet Maw: 
+Theme: Seductive demon, charm, venom, predatory beauty  (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types:  (all attacks happen every round)
+- Melee: Kiss of Knives — single target physical.  damage multiplied by (warlock level/5). applies a bleed DoT for half base damage for (warlock level/5) rounds.  special effect:     Life-Tasting Kiss: Life drain = to the damage done, heals Ilyrra. (constructs, elementals, undead, plants immune)
+- Magic: Velvet Command: targets 2 different enemies (bypasses immune targets in favor of charmable ones if any exist). this is a psychic charm effect for purposes of immunity.  the target has a 50% chance to be charmed and join the player's side.  This works like bard charm mechanically.  duration is 2 rounds only. bosses + are immune to this of course.
+- Ranged: Perfume Needle — random single target poison attack. damage multiplied by (warlock level/5). applies a poison DoT for half base damage for (warlock level/5) rounds.
+
+Defenses:
+- Immune to charm style attacks/powers.
+- Immune to poison/DoTs.
+- Psychic resistant: take half damage from psychic attacks.
+
+
+
+6. Ghorvex the Carrion Star
+Theme: Dead star, carrion god, gravity and rot (for purposes of an entry message when summoned and for other thematic messages). 
+
+Attack Types:(all attacks happen every round)
+- Magic AOE: Necrotic Gravity — hits all targets. this is considered a magic attack.  it is also a necrotic attack and undead. constructs and elementals are immune to the damage but may be affected by the Gravity aspect which launches all targets into the air and drops them to the ground.  targets have a 50% chance to fall prone.  This is a hold attack for purposes of immunity.  incorporeal are immune.  
+Ranged: Bone Shards hits (warlock level/10) +2 random targets. the shards can crit at (warlock level/2)% chance doing +100% + (warlock level)% extra damage.  Applies a Carrion Strike debuff. which applies a 20% chance for the target to not act on its turn for a duration of (warlock/5) rounds.  multiple applications of the debuff merely refresh the duration.  undead, constructs, elementals, plants and slime tags are immune.
+Melee: Starved Bite. base damage is doubled. has a life drain aspect and any damage applied also heals Ghorvex for the same amount.  the damage applies to all, but undead, constructs, elementals are immune to the life drain.
+
+Defenses:
+- Immune to poison/venom themed attacks/DoTs.
+- Cold resistant. takes 50% damage from any cold themed attack or DoT
+- Life drain resistant.  immune to attacks from creatures that life drain (many are undead) - code up this mechanic.
+
+
+7. Szarthuun the Glass Serpent
+Theme: Acid, mirrors, venom, reflected pain (for purposes of an entry message when summoned and for other thematic messages). 
+
+Attack Types: (all attacks happen every round)
+
+- Melee: Glass Fang — single target poison/acid.   damage multiplied by (warlock level/5). applies a poison DoT for half base damage for (warlock level/5) rounds AND  applies an acid DoT for half base damage for (warlock level/5). and applies a bleed DoT for half base damage for (warlock level/5). constructs, elementals, undead, plants are immune to the bleed and poison DoTs.  All DoTs last (warlock level/7) rounds
+- Ranged: Shard Spray — hits (warlock level/10) random targets. damage is doubled.  shards can crit for +200% + (warlock level)% damage and apply a bleed DoT for 50% damage. Duration (warlock level/7) rounds
+Magic: Mirror Curse — single target debuff.  Halves the current target's defense.  THis is a magical effect for purpose of immunity.  duration = (warlock level/10) rounds. new applications to the same target will halve the defense yet again, cumulatively and also refresh the duration. (code up the mechanics for this)
+
+Defenses:
+- Immune to acid themed attacks and DoTs.
+- Immune to to poison/venom themed attacks and DoTs.
+- Immune to to bleed DoTs
+- Ranged resistant: takes half damage from all ranged tagged attacks
+
+Special Powers:
+- Once per round can create a Mirror Double: Creates a decoy that absorbs the next hit.  This works like mirror image.  self only. in addition to all other actions
+- Shatter Hex: Reflects damage back at melee attackers.  All damage taken by Szarthuun is also reflected back to the attacker at 100%
+
+8. Orubael, the Choir Beneath the Skin
+Theme: Sonic horror, screaming flesh, possession (for purposes of an entry message when summoned and for other thematic messages). . 
+
+Attack Types: (all attacks happen every round)
+
+- Magic AOE: Skin Choir — sonic damage to all.  this both a magical and sonic attack for immunities to it.  has a (warlock level)% chance to sun the targets.  check targets for immunities as normal and of course targets recently stunned ignore it as per normal stun rules.  bosses/mega bosses immune etc.
+- Melee: Bone Rake — single target physical.   damage multiplied by (warlock level/5).  can crit at a (warlock level)% for +200% + (warlock level)% increase in damage
+- Magic ranged attack: Borrowed Voice single target.  prioritize caster style targets, wizards, battle mages, cultists, priests (sort through the monsters for anything that seems like it might be caster-ish).  if no such targets exist, target anything else that has a magic attack.  it will ignore constructs, undead, plants which are immune to this.  this is considered psychic and magical for purposes of immunity.  the attack does no damage, but halves the current target's mana.   it also silences the caster for 2 rounds, preventing the target from attacking or using any special abilities.  this is considered a hold for immunity purposes.
+
+Defenses:
+- Immune to sonic themed attacks and DoTs.
+- Immune to charm.
+- Psychic resistant: 50% damage from any Psychic attack/DoT
+- immune to stun and holds
+
+Special Powers:
+Rupture Harmony: Skin Choir does +100% + (warlock level)%  bonus damage to any stunned targets.
+
+9. Nyrgoth the Pale Ferryman
+Theme: Soul collection, infernal reckoning  (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types: (all attacks happen every round)
+
+- Melee: Soul Blade — single target physical/life drain.  damage multiplied by (warlock level/5). any damage done Nyrgoth heals for 50% of that amount.  undead, constructs and elementals are immune to this and as a result if possible, Nyrgoth targets other enemies as a priority. in additon applies: Soul Mark: target takes increased damage from all sources (this works like the ranger's hunters mark ability).  increased damage = (warlock level/3)%
+- Magic AOE: Soul Audit — all targets life drain. this is considered a magical attack and undead, elementals, constructs, demons, plants and acid tags are immune.  25% of damage done to EACH target heals Nyrgoth
+Ranged: Sigil of Damnation — 1 random target force damage. damage multiplied by (warlock level/5).  stuns target (normal immunities and time outs apply)
+
+Defenses:
+- Immune to life drain (for example certain undead monsters)
+- Immune to psychic attacks and DoTs
+- Magic resistant : takes half damage from all magic attacks single target or AOE.  
+
+Special Powers:
+1/round if any target is marked by Soul Mark and below 50% health, summon a Soul Ghost.  This is basically a necromancer summoned ghost template reskinned.  the Ghost has health = the warlock health.  has offense and defense = warlock level x2.  works the same as a ghost in terms of attacks, fear, armor bypass, undead,. incorporeal etc.
+
+10. Aum-Keth, the Door That Hungers
+Theme: Eldritch portal-monster, impossible space, force magic.   (for purposes of an entry message when summoned and for other thematic messages).
+
+Attack Types:  (all attacks happen every round)
+- Magic: Spatial Rend — single target force damage.  damage multiplied by (warlock level/5) has chance = (warlock level)% to instakill the target.  normal boss restrictions and bonus damage apply.  this is a magical attack for purposes of immunities and resists
+- Ranged: Portal Spikes — ranged force attack. this is considered magical damage for purposes of immunity and resistances.  attacks random targets, hits up to (warlock level/5) targets. damage = doubled.  have a chance = (warlock level)% to crit doing an additional 200% + (warlock level)% in damage.  
+- AOE: Reality Collapse — all targets suffer damage twice. the first wave uses the entity's magic attack score but is considered untyped damage and not magical and bypasses enemy defense/armor.  the second wave is considered psychic and adheres to normal target immunities or resistances.  it also bypasses armor.
+
+Defenses:
+- Immune to physical, ranged or aoe attacks that are physical or not themed or marked as fire, ice, lightning, acid, poison, sonic, or psychic, acid or some other type
+- Immune to poison and bleed
+- Immune to charm
+- Immune to holds, and prone
+
+Special Powers:
+Folded Space: Reflects part of ranged damage. even though immune to physical ranged, will reflect back 50% the damage to the attack for types labeled as ranged.  this also applies to ranged attacks for which Aum-Keth is not immune.
+
+
+
+
+
+confirm:
+1. add blur to the combat attack resolution order where it is handled by the code.
+2. swarms need to do more damage
+3. the background for the dropdown for improved invisibility should be a darker color like a charcoal
+4. selecting a target for improved invisibility gives me a 'the target is no longer valid'  regardless of who i select.
+5. i was performing a bard symphony of dfestruction but on the next turn to select to continue it, the button was not aviaiable on the GUI.
+
+
+confirm:
+1. change warlock pit fiend defense from 2x to 1.5 and health from x3 to x2
+3. VK swarms are supposed to be immune to stun, psychic damage and DoTs, and holds
+
+confirm:
+1. will-o-wips has no monster graphic card in the HUD.  check if it has a sprite as well.
+2. ropers have no monster graphic card in the HUD.  check if it has a sprite as well.
+3. the background of the drop down is still white and the light text on the white background is hard to see
+
+confirm:
+1. i want custom icons that resemble the actual creatures for the level 35 ranger permanent summoned beasts
+
+confirm:
+1. level 35 ranger summoned creatures need to have their offense/damage and defense on their party HUD card.  
+
+
+
+todo:
+1. rangers dont need a button in combat for their permanent beast companions since their companions act on their own
+2. rogues dont need a button in combat for their extra loot bonus as this is an automatic bonus
+3. i click the improved invis button and after selecting the person and then clicking the button to cast it but nothing happens, the button did not register
+
+confirm:
+1. why did improved invisibility go back to the old way of selecting a target.  i preferred the drop down menu.
+2. rangers dont need a button in combat for ricochet shot since it is passive.
+3. paladin stuff costs too much mana
+4. mana potions: create mana potions to be made under the Potions and Scrolls area of the artificer craft 'k' modal.  mana potions cost 100 gold and require 1 rare component, and restore 20% of the drinkers max mana.
+
+confirm:
+1. ranger rogue bard druid artificer all needs their level 35 class abilities added to the class help document
+
+confirm:
+charmed monsters via bard, druid, etc still dont seem to be using any special powers or abilities, they just attack once with a single melee attack against the monsters.  i thought this was fixed so that they use their full sequence and all abilities.
+
+confirm:
+1. doublecheck aboleth enslavement. make sure there is some indicator on the player HUD.  also tell me how many rounds it is supposed to last.
+
+confirm:
+1. give each party member a chance to shrug off aboleth enslavement.  this is 33% chance per round.  this increases by 10% for each bard playing thundrous drums
+2. reduce the % that nearby enemies will be drawn to the battle.  take all percentages and halve them.
+
+confirm:
+what about monsters that attack multiple times or have a cahnce to attack multiple bonus times off of each base attack, due to level
+
+
+confirm:
+1. druid level 35  charm charms too many.  max 1 monster per round.
+
+confirm:
+change rogue level 35 extra gold loot bonus ability from 1% / lvel to 2% per level. update the help files
+
+
+confirm:
+1. disintegrate should only cost 20 mp
+2. i am not seeing the level 35 artificer tab for making the new magic items
+
+confirm:
+1. change the formula for gold drops in the following way:  for monsters level25 and lower use enemylevel. for monsters level 26 and above use  (enemylevel/5) squared.  keep decimals to the second digit after the division, do not floor or round this.  and for example this means a level 30 monster gives x36 gold instead of just times 30.  and a level 100 monster gives x400 gold instead of just x100.  
+
+in progress:
+1. i had a vermin keeper summoned cave fisher web a banshee.  i think banshees are incorporeal and immune to holds? check not only banshees but also 
+2. need a hover over buff indicator for those affected by bard quickstep song.  this should also be affecting ranger permanent beast summons.
+3. the artificer level 35 ability sabotage needs to be documented in the class help
+
+todo:
+photomancer:
+new level 35 abilities.
+
+1.  Radiant Burst - magic based AOE (75 MP)  only affects living.  (constructs, elemenetals, undead, plant, and slimes immune ).  all targets can be blinded (chance = photomancer level)% .  blinded targets have a 50% miss chance on single  melee, ranged, or magic attacks that are not AOE that hit all targets.  last for 2 rounds.  boss style monsters only have only 20% chance of it working.  while blinded or if the monster resists and for 2 turns after cannot be reblinded.
+2.  Eternal Rainbow. - cost 100 MP. 1/combat
+- upon starting and each round threafter the rainbow constructs itself adding another color.  Each color of the rainbow affects the party or enemies in a variety of ways.  create a color coded buff entry for each color to apply to any appropriate entity it targets, whether player side or monster side.
+round 1. red: all living party members gain a regen of 10% max health per round (works like cleric regen).  the rainbow checks and adds new viable targets to its effect each round.   (constructs, golems, undead, and elementals do not gain this regen) - does not stack with other photomancer rainbows' red phase
+round 2. orange: all living party members gain a regen of 5% max mana and stamina per round.  the rainbow checks and adds new viable targets to its effect each round.   (constructs, golems, undead, and elementals do not gain this regen) - does not stack with other photomancer rainbows' orange phase
+round 3. yellow: all living party members gain photomancer level/5 to all offensive skills (melee, ranged, magic).  the rainbow checks and adds new viable targets to its effect each round.  (constructs, golems, undead, simulacra, illusionary warriors, and elementals do not gain this ability) - does not stack with other photomancer rainbows' yellow phase
+round 4. green:  all living party memmbers gain photomancer level/5 to defense skill.  the rainbow checks and adds new viable targets to its effect each round.  (constructs, golems, undead, simulacra, illusionary warriors, and elementals do not gain this ability) - does not stack with other photomancer rainbows' green phase
+round 5. blue: auto-revives fallen characters (recruited members only) - up to warlock level/10 are revived at 50% health. multiple photomancer rainbows can revive the same round.
+round 6. indigo: any time a 'living' party member receives a detrmimental effect from a monster attack (including but not limited toDoT, stun, hold/paralyze, prone, enslavement/charm, armor or attack debuff, etc ) - there is a (photomancer level)% chance that that the indigo ray of light removes the effects immediately (hook this up in the post damage effects to check for this in combat).  code a message indicator
+round 7. violet:  Summons the Leprechaun.  
+a. has health = photomancer health x2 
+b. has defense = photomancer level x2
+c. has magic skill = photomancer level x2
+d. has a special defense ability.  each round the leprechaun starts with a special glamour buff.  The first attack that would target or hit the leprechaun misses. a second attack misses 95% of the time, the third attack 90%.  Each attack reduces the chance of missing by 5% until in theory the 20th attack automatically hits. this glamour is checked after all other defenses and bypasses are checked, such as blur, invisibility, etc. this resets at the start of the leprechaun's turn. 
+e. he is immune to psychic damage, DoTs, charms, enslavement.
+f. summoned to backrow
+g. considered a 'living' minion for purposes of buffs/effects/heals
+h. one per round the leprechaun utters his curse.  this is a magical AOE power that targets all enemies.  those immune to magic (such as clockwork horrors) ignore the curse.  constructs are immune.  undead and elementals are NOT immune.  The curse applies a (photomancer level/3) penalty to all affected enemies' defense. 
+i. in addition the leprechaun can blast a single target with a ranged attack called Golden Greed.  This does damage = random(2 to 8) * photomancer level.  it bypasses armor.
+j. if the leprechaun is alive at the end of the fight, the party gains a bonus to its gold reward of +(photomancer level)% = this is multiplied after all other bonuses are calculated.
+
+ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
 
 
 
 =========================================================================================
-special item creation:
-1. displacer cloak - needs 10 displacer beast hides (50% chance to drop from displacer beast)
-a. grants a 25% chance to avoid a melee, ranged or single target magic attack
+Here is a tweak/expansion for new mechanic for artificers level 35+ to create special items.  items that are not augments to current enchanted items (see below for listed cases) can be selected from a drop down and then the components required and cost will be shown.  if the requirements are met, the craft button becomes available.
 
-2. collect golem heart from iron golem - make special golden golem (doesnt count against golem count) + other components or gold.  maybe collect other parts or parts from other constructs. construct types can randomly drop arm, leg,head, torso.  need 2 arms 2 legs head, torso and heart + a ton of gold to make special golden golem.
+remove the current cloak of displacement, demon pentagram, horn of valhalla, and pipes of the sewers items. replace them with the following
 
-3. elemental essences for special charge bowl, stone, censor, brazier, void sceptre
-- elemental tagged mosnters drop fire, water, air, stone essences
+1. Displacer Cloak - needs 10 displacer beast hides . cost in gold is 150,000
+a. create a +7 defense cloak that also grants +7 melee, +7 ranged and +7 magic skill
+b. worn in the cloak slot
+c. the wearer has a permanent 25% chance to avoid any melee, ranged or single target magic attack (not AOE).  code this and putting it into the personal defense checks phase 3 is most logical.  stacks with blur, but not invisibility.
 
-4. girdle of giant strength - giant hearts + gold + components
-- create a +7 trinket belt that adds to melee damage
+2. Mismatched Golem - requires a golem heart 2 golem arms, 2 golem legs, a golem head, and a golem torso. cost in gold is 200,000
+a. This makes a for the artificer who crafted it.  This golem doesnt count against the artificer's max golem count
+b. stats: offense skills magic, melee and magic = artificer level x2.  defense = artificer level x2.  health = triple artificer health.  
+c. performs melee strikes per round = the artificer level/6.  these strikes have an (artificer level)% chance to stun the target (normal stun processing)
+d. counts as a golem for artificer healing and can enter berserk mode.  counts as a golem for drone heals and deconstruct heals.
+e. as golem with construct tag, immune to a gamut of effects, like stun, poison, bleed, drains, psychic, charms etc.
+f. defaults to front row.  
+g. not upgradeable like normal golems in the artificer crafting golem modal.
+h. all stats update automatically when the artificer levels up.
+i. takes half damage from any attack tagged as ranged or magic 
 
-5. or dragon hides for armor bonus - 5 different types, % chance to drop, need x hides for one of the following
-add a special add on to armor that adds +2 to defense and reduces damage from: fire, acid, poison, lightning, or cold damage by 15% (up to 5 addons)
 
-6. undead pieces for a necro staff addon
+3. Elemental Device. - there are 5 types.  each type requires 10 elemental essences to craft of the appropriate type.  cost is 15,000 gold per item plus the essences
+a. bowl: summons a water elemental lasting the combat
+b. stone: summons an earth elemental lasting the combat
+c. censor: summons an air elemental lasting the combat
+d. brazier: summons a fire elemental lasting the combat
+e. sceptre: summons a void elemental  lasting the combat (might require some coding to add this to player summoned elementals)
+f. each device must be activated in combat via the Use Item function.  It summons the appropriate elemental with a 100% chance. this requires 1 charge from the item
+g. new items are created with 10 charges.
+h. each item regains a charge every real life hour. (code this timer)
+i. the elemental works like mage summoned ones (need to add the void one).  
+j. stats: offense stats = summoner level x 1.75. defense = summoner level x 1.75
+k. typical elemental and construct tags.  void elementals are also undead and incorporeal.
+l. disappears at the end of combat.
+m. make sure to properly create the HUD card specially for the Void Elemental (use the monster graphics). 
 
-7. troll blood for regen ring addon
+4. Girdle of Giant Strength - requires 10 giant hearts. cost 150,000 gold
+a. creates belt slot item that grants: +14 melee +7 defense
 
-8. vermin item?  venom item?  already have weapon riders - collect 100 vermin parts for a vermin staff upgrade that enhances swarm damage, vermins and slimes and charmed damage
+5. Dragon Hide augment - 6 different types.  needs 10 hides from the specific type of dragon for the effect.  (change dragon hide drops to match the color of the dragon.  dragon tag monsters that dont have a color associated with them drop just generic 'Dragon Hides' as opposed to for example a Red Dragon that drops a Red Dragon Hide.
+a. change all dragon tagged monsters to have a 40% chance to drop a hide.  Colored Dragons will drop a colored hide tied to their color 80% of the time and a generic Dragon Hide, 20% of the time.  Non Colored Dragon tagged monsters merely drop a generic hide.  Dracoliches are skeletal and do not drop a hide (special coded exception)
+a. this augment actually appears under the normal enchant tab of artificer crafting.  it adds additional armor echant buttons similar to AOE Ward and Spikes of the following options.
+b. 3 generic hides and 10000 gold adds a +1 augment to the defense of the item.  this bonus can be added 10 times.  Each augment requires 3 hides and 5000 gold + (5000 gold x the bonus tier of the augment being added).  for example purchasing the +4 augment costs 25,000 gold plus 3 hides.
+c. 4 colored hides and 10000 gold adds a 5% reduction to the type of damage received.  this can also be added 10 times.  Each augment of a certain color costs 4 hides and 5000 gold +  (5000 gold x the bonus tier of the augment being added) for example purchasing the +4 augment (for 20% resist) costs 25,000 gold plus 4 hides.
+- fire augment requires red dragon hides and grants resistance to any fire themed damage or DoT
+- ice augment requires red dragon hides and grants resistance to any fire themed damage or DoT
+- acid augment requires black dragon hides and grants resistance to any acid themed damage or DoT
+- poison augment requires green dragon hides and grants resistance to any poison themed damage or DoT
+- lightning augment requires blue dragon hides and grants resistance to any blue themed damage or DoT
 
-9. plant item - druid enhance to entangle, treants and shamblers
+6. Staff of Necromancy:  cost is 150,000 gold 
+a. Creates a staff that is +7 to magic skill
+b. requires 10 lich parts ( code it so lich or dracoliches have a 33% chance to drop a lich part in addition to normal undead pieces )
+c. also requires 30 undead essences.
+d. Reduces time in lich phylactery due to death in lich form from 3 rounds to 2 rounds.
+e. Augments summoned undead by applying a buff to any undead summoned by the wielder of the staff that adds 25% to its damage.
+f. increases the damage by 50% of a necromancer's magic AOE skill and double the healing on top of that increased bonus to any undead under their control that are healed.  
+g. adds a 5% bonus to successfully dominate an undead using te level 35 ability.
+h. usable only by necromancers 35+ (check on equip)
+
+
+7. Ring of Regeneration: cost 150,000 gold
+a. this costs 10 troll bloods.
+b. this augment is added under the Trinkets tab in the artificer modal for crafting.  
+c. It can apply the Regeneration augment to a ring of +4 or higher enchant power.
+d. regeneration augment on a character grants them 10% max health regeneration per round.  ( wearing 2 such rings would allow for 20% ).  be sure to create a buff icon for this.  This stacks with all other sources of regeneration.
+
+8. Lance of the Dragon King : cost 150,000 gold
+a. +7 melee bonus
+b. usable only by paladins 35+ - check on equip
+c. adds 50% more damage to smites, and aoe smites. (special code required)
+d. adds 10% more damage to dragon tagged monsters while Dragonslayer is active (special code required)
+
+9. Sash of the Vermin Keeper : cost 150,000 gold
+a. requires 100 vermin parts 
+b. A vermin keeper who summons a slime tagged minion, vermin tagged minion or acid or vermin swarm while wearing this belt enhances the damage of the minion by placing a permanent buff on the minion that increases its damage by 25%
+c. Insect plague damage (and therefore DoT damage ) is increase by 20%
+d. Adds a flat 5% chance to the check for each successive attacks for minions affected by vermin frenzy.  thus the successive action percentages become: 55%, 30%, 17%, 11%, 8% and 6%
+e. usable only by vermin keepers 35+
+f. adds 20% to the vermin keeper's max health.  (which in turn can affect swarms' health )
+
+9. Staff of the World Tree: Cost 150,000 gold
+a. requires 50 plant parts
+b. +7 magic skill staff
+c. can only be wielded by druids level 35+
+d. Verdant Surge DoT damage increased by 50%
+e. Similar to the vermin keeper sash, druids wielding this staff who summon treants and shamblers enhances the damage of the minion by placing a permanent buff on the minion that increases its damage by 25%. Shamblers that bud and grow from summoned shambling mounds also gain this buff.  This buff also increases the defense of plant minions by (druid level/5) when summoned and grants the minion a 25% health bonus.
+f. A druid who adopts the treant wild shape while wielding this staff, takes on the form of the World Tree instead.  everything is identical to the treant form and uses the same mechanics except for the following bonus change overrides:  x3 health instead of x2.  
 
 10. demon ichor - warlock enhancer
 
 11. aberration item - think
 
-12. hag eye 
+12. hag eye - mage enhancer 
 
 13. manticore spikes for missile weapons - bonus to ranger/artificer ranged
 
-14. yeti or werewolf items?
+14. yeti or werewolf items? 
 
 15. harpy or shrieker pieces for sonic/bard item
 
+9. Some undead summon item (from undead essences?)
+
+--- need warrior rogue monk cleric barbarian photomancer items?
+
+
+1. displacer beast : hide
+2. any construct tag: construct heart, construct head head, construct arm, construct leg, construct torso.
+3. any elemental tag: fire type drop fire essence, air types drop air essence, earth types drop earth essence, water types drop water essence
+4. any giant tag: drops giant heart
+5. any dragon tag: hide, heart
+6. any undead tag: undead essence
+7. any troll monster: blood
+8. any vermin tag: vermin parts
+9. any slime tag: ichor
+10.any plant tag: plant parts
+11.any demon tag: demon ichor
+12. any aberration tag: aberration parts
+12. any hag monster: hag eye 
+13. manticore: manticore spikes
+14. yeti: yeti hide
+15.werewolf: werewolf blood
+15. harpy: harpy parts
+16. shrieker: shrieker parts
 
 special quests from quest giver (random chance per hour?) - you have a vision
 - kill X of X 
@@ -2779,7 +3149,11 @@ special quests from quest giver (random chance per hour?) - you have a vision
 
 
 
-
+BIG change:
+redo all monster types and attacks 
+give all monsers types or subtypes
+and label attack damage with types
+do the same for player attacks, powers abilities, summoned etc
 
 
 
@@ -2802,14 +3176,8 @@ todo:
 
 -----------------------------------------------------------------
 
-find and/or create Magic items:
-
-create a use item in combat button for all: these magic items have x charges and replenish those charges at the rate of 1 every 10 real world minutes.
-
-cloak of displacement - allows avoidance of any melee or ranged attack with a 30% chance.  does not apply to defensive intercept. 
 horn of valhalla - summons 2-5 einherjar warriors - incorporeal, last 1 fight
-pipes of the sewers - summons rat swarm, somewhat defensively, has a lot of health.  damage is dependent on health, and lowers the lower the swarm's health.  
-demon pentagram - summons a random 'demon' 
+pipes of the sewers - summons 10 (weak) rats, somewhat defensively, has a lot of health.  damage is dependent on health, and lowers the lower the swarm's health.  
 
 -----
 quest system
