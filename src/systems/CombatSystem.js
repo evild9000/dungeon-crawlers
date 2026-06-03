@@ -1513,18 +1513,21 @@ export class CombatSystem {
             shooter.mana = Math.max(0, (shooter.mana || 0) - RANGER_RICOCHET_MP_COST);
             const rTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
             alreadyHit.add(rTarget.id);
-            let rDmg = Math.max(1, Math.round(origDmg * RANGER_RICOCHET_DAMAGE_MULT));
-            let rCrit = false;
-            const rCritChance = RANGED_CRIT_CHANCE + shooter.getRangedCritBonus();
-            if (Math.random() < rCritChance && !this._isCritImmune(rTarget)) { rDmg *= 2; rCrit = true; }
             const rTargetDef = ENEMY_TYPES[rTarget.type];
             const rTargetTags = (rTargetDef && rTargetDef.tags) ? rTargetDef.tags : [];
             const rIsFavored = favoredTags.length > 0 && favoredTags.some(tag => rTargetTags.includes(tag));
+            let rDmg = randomInt(RANGED_DAMAGE_MIN, RANGED_DAMAGE_MAX);
+            rDmg += shooter.getWeaponBonus('ranged');
+            rDmg += shooter.getClassDamageBonus('ranged');
+            rDmg += this._getPartyMemberDamageMod(shooter);
+            rDmg = this._applyOutgoingDamageBonuses(shooter, rDmg, 'ranged');
+            if (rIsFavored) rDmg = Math.round(rDmg * (1 + shooter.level * 0.02));
+            rDmg = Math.max(1, Math.round(rDmg * RANGER_RICOCHET_DAMAGE_MULT));
             if (rIsFavored) {
                 const rInstakill = shooter.getFavoredEnemyInstakillChance() * RANGER_RICOCHET_INSTAKILL_MULT;
                 if (rInstakill > 0 && Math.random() < rInstakill) {
                     if (rTarget.isBoss || rTarget.isMegaBoss || rTarget.isSuperBoss) {
-                        const bDmg = Math.max(1, Math.round(origDmg * 4));
+                        const bDmg = Math.max(1, Math.round(rDmg * 4));
                         const bDealt = this._damageEnemy(rTarget, bDmg, true, false, 0, true);
                         this._addLog(`🏹 Ricochet! ${shooter.name}'s arrow strikes ${this._eName(rTarget)} — Boss resists! (×4: ${bDealt})`);
                         this._applyWeaponRider(shooter, rTarget, bDealt);
@@ -1539,6 +1542,9 @@ export class CombatSystem {
                     continue;
                 }
             }
+            let rCrit = false;
+            const rCritChance = RANGED_CRIT_CHANCE + shooter.getRangedCritBonus();
+            if (Math.random() < rCritChance && !this._isCritImmune(rTarget)) { rDmg *= 2; rCrit = true; }
             const rDealt = this._damageEnemy(rTarget, rDmg, rIsFavored, false, 0, true);
             const rCritStr = rCrit ? ' 💥 CRIT!' : '';
             const rFavStr = rIsFavored ? ' [Favored]' : '';
