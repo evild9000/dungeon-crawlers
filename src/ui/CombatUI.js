@@ -919,9 +919,13 @@ export class CombatUI {
         };
 
         const damageWords = 'damage|bonus damage|explosion|fire|acid|poison|psychic|cold|lightning|sonic|plague|cutting grit|ranged|melee|magic';
+        // Allow up to 3 descriptor words (e.g. "defense-ignoring", "radiant") between
+        // the number and the damage keyword so phrases like
+        // "takes 42 defense-ignoring magic damage" still highlight the amount.
+        const descriptors = '(?:[A-Za-z][A-Za-z-]*\\s+){0,3}?';
         addMatches(new RegExp(`\\bfor\\s+(\\d+)(?=\\s*(?:${damageWords}|[!.()]|$))`, 'gi'));
-        addMatches(new RegExp(`\\btakes\\s+(\\d+)(?=\\s+(?:${damageWords}))`, 'gi'));
-        addMatches(new RegExp(`\\bsuffers\\s+(\\d+)(?=\\s+(?:${damageWords}))`, 'gi'));
+        addMatches(new RegExp(`\\btakes\\s+(\\d+)(?=\\s+${descriptors}(?:${damageWords}))`, 'gi'));
+        addMatches(new RegExp(`\\bsuffers\\s+(\\d+)(?=\\s+${descriptors}(?:${damageWords}))`, 'gi'));
         addMatches(new RegExp(`\\b(\\d+)\\s+(?:${damageWords})\\b`, 'gi'));
         addMatches(/\((?:x|×)4[^:)]*:\s*(\d+)\s+damage\)/gi);
 
