@@ -3011,9 +3011,16 @@ j. if the leprechaun is alive at the end of the fight, the party gains a bonus t
 
 ultrathink through this all taking all the time you need, to craft this carefully, test every feature, and implement or suggest things I may have forgotten or overlooked with respect to each feature.  everything needs to work smoothely without errors or unclear interface issues.  ask any clarifying questions if something is not clear.  update all sections of the class help files, tooltips and character ability screen, monster lorebook information screens as necessary.  doublecheck files for missing or extra brackets or other typoes as these have in the past broken the game.  make sure the game loads correctly when you are done.
 
+confirm:
+1. change the mandrake root damage reflection.  instead of reflecting 40% of the damage back, have it do a magic AOE sonic attack against all party members using the mandrake roots own statistics.
 
 
-=========================================================================================
+confirm:
+1. change ricochet shot so that the first ricochet chance after a hit is 75%.  it can continue to ricochet but the chance of each ricochet after the first is reduced by 10%.  any failure and the chain stops.  the chain restarts and the chance resets to 75% for the next arrow attack. so for example a level 35 ranger uses a ranged attack and fires 7 arrows.  each arrow has a 75% chance to ricochet once, a 65% chance to ricochet twice, followed by 55, 45, 35, 25, 15 and 5 for ricochet chances 3 through 8.  
+this is basically what it is now, except the chances are changed.  and make sure each primary arrow attack the ricochet chance is reset.  also do not use the primary arrow's damage as the base for the ricochet.  reroll damage new against the target but at the 50% damage rate.  as before ricochet shots can crit, insta-kill, etc
+
+
+confirm:
 Here is a tweak/expansion for new mechanic for artificers level 35+ to create special items.  items that are not augments to current enchanted items (see below for listed cases) can be selected from a drop down and then the components required and cost will be shown.  if the requirements are met, the craft button becomes available.
 
 remove the current cloak of displacement, demon pentagram, horn of valhalla, and pipes of the sewers items. replace them with the following
@@ -3103,6 +3110,49 @@ d. Verdant Surge DoT damage increased by 50%
 e. Similar to the vermin keeper sash, druids wielding this staff who summon treants and shamblers enhances the damage of the minion by placing a permanent buff on the minion that increases its damage by 25%. Shamblers that bud and grow from summoned shambling mounds also gain this buff.  This buff also increases the defense of plant minions by (druid level/5) when summoned and grants the minion a 25% health bonus.
 f. A druid who adopts the treant wild shape while wielding this staff, takes on the form of the World Tree instead.  everything is identical to the treant form and uses the same mechanics except for the following bonus change overrides:  x3 health instead of x2.  
 
+
+confirm:
+1. in the combat log change the color of the amount of any damage done to yellow and bold it for better visibility.  if it is a crit change it to red and bold it
+do this for both player and monster side of the log
+
+
+confirm:
+1. in the combat log put the notification of what the DoT damage and round duration in cyan/light blue color will be.  when the DoT actually fires and does damage, it is still in yellow though.  
+2. i notice ranger explosive shot damage was not in yellow.
+3. check that ranger damage and crits didnt get somehow negatively affects after the changes to ricochet shot
+4. black pudding DoT needs a debuff / DoT indicator for any targets it applies the dot to
+5. make sure changing the colors to yellow didnt somehow mess with Crit notification or damage
+
+in progress: ?
+1. a monster (rhemorhaz) was already dead, slain by a rogue in a round, but at the end of the round, damage messages for bleed DoTs on the rhemoraz still fired and reported in the log even though it was already dead.
+2. demi-lich magic spell should also be in yellow
+
+in progress:
+1. enhance the level 35 artificer skill sabotage.  in addition to the chance for instant kill counters, apply a debuff to the targets defense = (artificer level/10).  this is a permanent debuff, that stacks with other sabotage hits.  also apply a 'malfunction' DoT that does damage = 50% of the originating hit to the target for 3 rounds.  the malfunction DoTs also stack. Sabotage detonation on an instant kill should also AoE damage to all surrounding enemies at to (artificer level/3)% of the remaining current health of the construct.  
+2. a wolf applied a bleed DoT but it did not use the blue notifer text for a DoT application.  also for wolf bleed DoTs use the little red blood dripping icon in the combat log
+3. summoned pit fiend damage messages should be written in a way so that the yellow damage text applies
+4. Adjust Ranger Permanent Beast Companions to have attack skills scale at ranger level *3 instead of *2.  in addition apply a bonus to the minions damage = (ranger level)%  
+5. for warlocks awakened lords.  change their skills in melee, ranged, and magic to warlock level *5 instead of *3
+
+confirm:
+1. update ricochet shot help under ranger class to display the correct formula for extra shots.  
+2. update ranger class: rangers who crit do normal crit muliple + additional damage = (ranger level x2)%. this stacks with favored enemy increased damage.
+3. wide the artificer crafting modal subscreen, the mismatched golem and some other items extend too far and require scrolling which looks not that great
+
+
+todo:
+1. a way for liches to heal (magic and/or drain)
+2. the golem tab on the artificer crafting modal doesnt show the entire cost sometimes because there is too much text.  move the cost beneath each golem's description
+
+
+
+=========================================================================================
+
+** work on badges and logging **
+
+
+items to make yet
+
 10. demon ichor - warlock enhancer
 
 11. aberration item - think
@@ -3139,32 +3189,42 @@ f. A druid who adopts the treant wild shape while wielding this staff, takes on 
 15. harpy: harpy parts
 16. shrieker: shrieker parts
 
+QUESTS:
+===================================================================================
+
 special quests from quest giver (random chance per hour?) - you have a vision
 - kill X of X 
 - collect X number of X parts
 - killed named X
 
-
+Super boss fight
 - reward = special item or special follower
 
+===================================================================================
 
-
-BIG change:
+BIG type tag change:
 redo all monster types and attacks 
 give all monsers types or subtypes
 and label attack damage with types
 do the same for player attacks, powers abilities, summoned etc
+add in flying tag
+add in spellcaster tag
+
+===================================================================================
 
 
+new special abilities:
+1. element specialization:  for each DoT/weapon rider of a certain element the person does extra damage and or increases the damage of the DoT(s)
+2. same for bleed DoTs (bloodletting)
+3. battle field spike growth - melee attackers suffer damage, incorporeal immune
+4. add a FLYING tag for this purpose and for prone attacks
+5. add silence ability to bards.  prevent spellcasting?
 
 
-=============================================================================================
+===================================================================================
+
 todo: maybe the bonuses to regen for class or species should be per level per minute
 
-todo:
-1. add silence ability to bards.  prevent spellcasting?
-
-1. change damage taken from intercept, breakdown by type, melee, ranged, aoe?
 
 1. institude racial paragon abilities at level 35
 - human +1 hp regen, +1 st regen 
@@ -3180,7 +3240,7 @@ horn of valhalla - summons 2-5 einherjar warriors - incorporeal, last 1 fight
 pipes of the sewers - summons 10 (weak) rats, somewhat defensively, has a lot of health.  damage is dependent on health, and lowers the lower the swarm's health.  
 
 -----
-quest system
+
 go outside the dungeon/different tiles
 better character sprites?  what is the pixel size of the pic
 --
