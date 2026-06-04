@@ -73,9 +73,13 @@ export class Inventory {
     }
 
     getItemCount(itemId) {
-        const entry = this.items.find(i => i.itemId === itemId);
-        if (entry) this._rechargeEntry(entry);
-        return entry ? entry.quantity : 0;
+        let total = 0;
+        for (const entry of this.items) {
+            if (!entry || entry.itemId !== itemId) continue;
+            this._rechargeEntry(entry);
+            total += entry.quantity || 0;
+        }
+        return total;
     }
 
     _rechargeEntry(entry, def = null) {

@@ -5456,6 +5456,7 @@ const DRAWERS = {
     earth_elemental: drawEarthElemental,
     air_elemental:   drawAirElemental,
     water_elemental: drawWaterElemental,
+    void_elemental:  drawVoidWraith,
     // Phase 13 new monsters
     dungeon_ape:  drawDungeonApe,
     hag:          drawHag,

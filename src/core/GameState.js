@@ -31,6 +31,7 @@ export class GameState {
         this.bardMusicEnabled = true;        // whether the bard song loop plays (persisted toggle)
         this.shadowSimulacraTemplates = [];  // saved Photomancer Shadow Simulacra power templates
         this.achievementStats = GameState.createAchievementStats();
+        this.migrations = { grantGirdleGiantStrengthRefund20260604: true };
     }
 
     static createAchievementStats() {
@@ -317,6 +318,7 @@ export class GameState {
                 })).filter(t => t.name)
                 : [],
             achievementStats: this.ensureAchievementStats(),
+            migrations: { ...(this.migrations || {}) },
         };
         // Only include id when updating an existing save;
         // omitting it lets IndexedDB auto-generate the key.
@@ -359,6 +361,11 @@ export class GameState {
             ? data.achievementStats
             : GameState.createAchievementStats();
         s.ensureAchievementStats();
+        s.migrations = (data.migrations && typeof data.migrations === 'object') ? { ...data.migrations } : {};
+        if (!s.migrations.grantGirdleGiantStrengthRefund20260604) {
+            s.inventory.addItem('girdle_giant_strength', 1);
+            s.migrations.grantGirdleGiantStrengthRefund20260604 = true;
+        }
         return s;
     }
 

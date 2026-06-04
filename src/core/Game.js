@@ -935,6 +935,7 @@ export class Game {
         if (!data) return;
         this.gameState = GameState.fromSaveData(data);
         fixSimulacraExtraDefense(this.gameState.party);
+        await this.saveManager.save(this.gameState.toSaveData());
         this._hidePauseLoadPicker();
         this._enterGame(false);
     }

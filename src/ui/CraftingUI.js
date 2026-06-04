@@ -748,13 +748,27 @@ export class CraftingUI {
         btn.title = `Cost: ${this._formatCost(recipe.cost)}`;
         btn.addEventListener('click', () => {
             if (!this._canPay(state, recipe.cost)) return;
-            this._pay(state, recipe.cost);
+            if (recipe.kind !== 'summon' && !getItemDef(recipe.id)) {
+                this._log(`Cannot craft ${recipe.name || recipe.id}: item definition is missing.`);
+                return;
+            }
             if (recipe.kind === 'summon') {
+                this._pay(state, recipe.cost);
                 if (this._combatSystem && typeof this._combatSystem.craftMismatchedGolem === 'function') {
                     this._combatSystem.craftMismatchedGolem(artificer);
                 }
             } else {
+                const beforeCount = state.inventory.getItemCount(recipe.id);
+                this._pay(state, recipe.cost);
                 state.inventory.addItem(recipe.id, qty);
+                const afterCount = state.inventory.getItemCount(recipe.id);
+                if (afterCount < beforeCount + qty) {
+                    this._refund(state, recipe.cost);
+                    this._log(`Crafting failed: ${display.name || recipe.name} could not be added to inventory.`);
+                    this._onChanged();
+                    this._render();
+                    return;
+                }
             }
             this._log(`${display.icon || '✨'} ${artificer.name} crafts ${display.name || recipe.name}.`);
             this._onChanged();
@@ -799,6 +813,22 @@ export class CraftingUI {
         for (const [key, amount] of Object.entries(cost)) {
             if (!key.startsWith('material_') || !amount) continue;
             inv.removeItem(key, amount);
+        }
+    }
+
+    _refund(state, cost) {
+        const inv = state.inventory;
+        if ((cost.gold || 0) > 0) inv.addGold(cost.gold);
+        for (const [key, amount] of Object.entries(cost || {})) {
+            if (!amount || key === 'gold') continue;
+            if (key === 'common') inv.addItem('reagent_common', amount);
+            else if (key === 'uncommon') inv.addItem('reagent_uncommon', amount);
+            else if (key === 'rare') inv.addItem('reagent_rare', amount);
+            else if (key === 'epic') inv.addItem('reagent_epic', amount);
+            else if (key === 'legendary') inv.addItem('reagent_legendary', amount);
+            else if (key === 'mythic') inv.addItem('reagent_mythic', amount);
+            else if (key === 'divine') inv.addItem('reagent_divine', amount);
+            else if (key.startsWith('material_')) inv.addItem(key, amount);
         }
     }
 
