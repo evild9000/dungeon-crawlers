@@ -537,6 +537,7 @@ export const CONSUMABLES = {
         elementalDevice: 'water',
         maxCharges: 10,
         rechargeMs: 3600000,
+        sellValue: 7500,
     },
     elemental_stone: {
         id: 'elemental_stone',
@@ -550,6 +551,7 @@ export const CONSUMABLES = {
         elementalDevice: 'earth',
         maxCharges: 10,
         rechargeMs: 3600000,
+        sellValue: 7500,
     },
     elemental_censer: {
         id: 'elemental_censer',
@@ -563,6 +565,7 @@ export const CONSUMABLES = {
         elementalDevice: 'air',
         maxCharges: 10,
         rechargeMs: 3600000,
+        sellValue: 7500,
     },
     elemental_brazier: {
         id: 'elemental_brazier',
@@ -576,6 +579,7 @@ export const CONSUMABLES = {
         elementalDevice: 'fire',
         maxCharges: 10,
         rechargeMs: 3600000,
+        sellValue: 7500,
     },
     elemental_sceptre: {
         id: 'elemental_sceptre',
@@ -589,6 +593,7 @@ export const CONSUMABLES = {
         elementalDevice: 'void',
         maxCharges: 10,
         rechargeMs: 3600000,
+        sellValue: 7500,
     },
 };
 
@@ -622,6 +627,7 @@ export const WEAPONS = {
         power: 7,
         requiredClass: 'necromancer',
         requiredLevel: 35,
+        sellValue: 75000,
         description: '+7 magic. Necromancer 35+: shorter Lich Form phylactery, stronger undead summons, stronger necromantic AoE, and +5% Control the Dead.',
         icon: '\u{1F480}',
     },
@@ -633,6 +639,7 @@ export const WEAPONS = {
         power: 7,
         requiredClass: 'druid',
         requiredLevel: 35,
+        sellValue: 75000,
         description: '+7 magic. Druid 35+: empowers Verdant Surge, plant summons, and Treant Wild Shape into World Tree form.',
         icon: '\u{1F333}',
     },
@@ -644,6 +651,7 @@ export const WEAPONS = {
         power: 7,
         requiredClass: 'paladin',
         requiredLevel: 35,
+        sellValue: 75000,
         description: '+7 melee. Paladin 35+: Smite and AoE Smite deal +50% damage; Dragonslayer adds +10% damage against dragons.',
         icon: '\u{1F531}',
     },
@@ -802,6 +810,7 @@ TRINKETS.displacer_cloak = {
     trinketSlots: ['cloak'],
     bonusTypes: { defense: 7, melee: 7, ranged: 7, magic: 7 },
     tier: 7,
+    sellValue: 75000,
     description: 'Crafted cloak. +7 defense, melee, ranged, and magic. Permanent 25% avoidance against melee, ranged, and single-target magic; stacks with Blur but not Invisibility.',
     icon: '\u{1F9E5}',
 };
@@ -814,6 +823,7 @@ TRINKETS.girdle_giant_strength = {
     trinketSlots: ['belt'],
     bonusTypes: { melee: 14, defense: 7 },
     tier: 7,
+    sellValue: 75000,
     description: 'Crafted belt. +14 melee and +7 defense.',
     icon: '\u{1F4AA}',
 };
@@ -829,6 +839,7 @@ TRINKETS.sash_vermin_keeper = {
     requiredClass: 'verminkeeper',
     requiredLevel: 35,
     tier: 7,
+    sellValue: 75000,
     description: 'Vermin Keeper 35+ belt. +20% max health and empowers vermin/slime summons, swarms, Insect Plague, and Minions Frenzy.',
     icon: '\u{1F577}\uFE0F',
 };
@@ -1140,6 +1151,8 @@ export function getItemBuyPrice(itemId) {
  * potions isn't completely worthless).
  */
 export function getItemSellPrice(itemId) {
+    const def = getItemDef(itemId);
+    if (def && typeof def.sellValue === 'number') return Math.max(0, Math.floor(def.sellValue));
     const buy = getItemBuyPrice(itemId);
     if (buy > 0) return Math.floor(buy / 2);
     // Craft-only fallbacks:

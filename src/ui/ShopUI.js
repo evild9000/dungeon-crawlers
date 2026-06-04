@@ -271,6 +271,12 @@ export class ShopUI {
         if (def.category === 'weapon') return 'weapon';
         if (def.category === 'armor' || def.category === 'shield') return 'armor';
         if (def.category === 'trinket') {
+            if (def.bonusTypes && typeof def.bonusTypes === 'object') {
+                if (typeof def.bonusTypes.melee === 'number') return 'melee';
+                if (typeof def.bonusTypes.ranged === 'number') return 'ranged';
+                if (typeof def.bonusTypes.magic === 'number') return 'magic';
+                if (typeof def.bonusTypes.defense === 'number') return 'defense';
+            }
             if (def.dualAspect && def.bonusType2) return def.bonusType2;
             return def.bonusType; // 'defense'|'melee'|'ranged'|'magic'
         }
@@ -322,6 +328,12 @@ export class ShopUI {
             const bonus2 = def.bonusType2  ? def.bonusType2.charAt(0).toUpperCase()  + def.bonusType2.slice(1)  : '';
             const dualTag = def.dualAspect ? ' ✦ dual-aspect' : '';
             if (kind)   lines.push(`${kind} trinket (tier ${def.tier || 1})${dualTag}`);
+            if (def.bonusTypes && typeof def.bonusTypes === 'object') {
+                for (const [type, value] of Object.entries(def.bonusTypes)) {
+                    if (typeof value !== 'number' || value === 0) continue;
+                    lines.push(`+${value} ${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                }
+            }
             if (bonus)  lines.push(`+${def.bonusValue  || 0} ${bonus}`);
             if (bonus2) lines.push(`+${def.bonusValue2 || 0} ${bonus2}`);
         } else {
