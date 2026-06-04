@@ -667,13 +667,14 @@ export class CraftingUI {
             const isUnlocked = unlocked.indexOf(tier) !== -1;
             row.innerHTML = `<div class="craft-row-info"><b>${preset.icon} ${tier.name}</b>` +
                 (isUnlocked ? '' : ` <span class="craft-locked">(unlocks at Lv ${tier.unlockLevel})</span>`) +
-                `<br><span class="craft-desc">${tier.description}</span></div>`;
+                `<br><span class="craft-desc">${tier.description}</span>` +
+                `<br><span class="craft-owned">Cost: ${this._formatCost(tier.cost)}</span></div>`;
 
             const canPay = isUnlocked && !atCap && this._canPay(state, tier.cost);
             const btn = document.createElement('button');
             btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
             btn.disabled = !canPay;
-            btn.textContent = `Forge — ${this._formatCost(tier.cost)}`;
+            btn.textContent = 'Forge';
             btn.title = atCap
                 ? `You command ${existingGolems.length}/${maxGolems} golems. Dismiss one first.`
                 : (isUnlocked ? 'Forge this golem.' : `Requires artificer level ${tier.unlockLevel}.`);

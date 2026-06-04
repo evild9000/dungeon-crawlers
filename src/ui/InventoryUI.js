@@ -57,7 +57,7 @@ import {
     BARBARIAN_WEREBEAR_REGEN,
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
     NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
-    NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
+    NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
@@ -1008,9 +1008,9 @@ export class InventoryUI {
             const minDrain = Math.max(1, Math.floor((member.level || 1) / NECRO_SIPHON_POWER_MIN_DIVISOR));
             const maxDrain = Math.max(minDrain, Math.floor((member.level || 1) * NECRO_SIPHON_POWER_MAX_MULT));
             perk.push(`Control the Dead: ${NECRO_CONTROL_DEAD_MANA_COST} MP`);
-            perk.push(`Siphon Power: ${NECRO_SIPHON_POWER_MANA_COST} MP AoE drain`);
+            perk.push(`Siphon Power: passive drain`);
             perkDetails.push(`Necromancer L${NECRO_L35_UNLOCK_LEVEL} Control the Dead:\n  Costs ${NECRO_CONTROL_DEAD_MANA_COST} MP and uses your turn.\n  Targets undead only, bypasses undead charm immunity, and uses Bard Charm scaling (${controlChancePct}% chance, ${controlDur} rounds).\n  Bosses, mega-bosses, and super bosses are immune.`);
-            perkDetails.push(`Necromancer L${NECRO_L35_UNLOCK_LEVEL} Siphon Power:\n  Costs ${NECRO_SIPHON_POWER_MANA_COST} MP and uses your turn.\n  AoE drains each vulnerable enemy for ${minDrain}-${maxDrain} ST and MP (rolled separately per target).\n  Undead, constructs, and elementals are immune.`);
+            perkDetails.push(`Necromancer L${NECRO_L35_UNLOCK_LEVEL} Siphon Power (passive):\n  No separate button or mana cost.\n  Necromancer magic attacks fold Siphon Power into Life Drain, draining each vulnerable enemy hit for ${minDrain}-${maxDrain} ST and MP.\n  Undead, constructs, elementals, and drain-immune enemies are immune.`);
         }
         if (member.classId === 'ranger' && member.level >= RANGER_TOTEM_UNLOCK_LEVEL) {
             perk.push(`Animal Totem: ${RANGER_TOTEM_MANA_PER_ROUND} MP/rd`);
@@ -1050,7 +1050,7 @@ export class InventoryUI {
         if (cls.drainPerLevel) {
             const drainPct = Math.round((0.05 + ((member.level || 1) / 2) / 100) * 100);
             perk.push(`Life drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance, ${drainPct}% undead HP`);
-            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance per enemy hit by magic (AoE rolls independently)\n  Heals only this necromancer's own undead for ${drainPct}% of each undead summon max HP.\n  Formula: 5% + (necromancer level / 2)%.`);
+            perkDetails.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% chance per enemy hit by magic (AoE rolls independently)\n  Heals this necromancer's own undead for ${drainPct}% of each undead summon max HP.\n  Formula: 5% + (necromancer level / 2)%.\n  L20+: also heals this necromancer while in Lich Form for 5% of the damage dealt by that magic hit.\n  L35 Siphon Power passive: magic hits also drain vulnerable enemies' ST and MP.`);
         }
         // Ranger favored enemy — show all selected tags + instakill pct
         if (member.classId === 'ranger') {

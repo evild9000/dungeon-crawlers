@@ -2730,10 +2730,7 @@ export class CombatSystem {
                 if (this._tryStunEnemy(e))
                     this._addLog(`  ⚡ ${this._eName(e)} is stunned by arcane force!`);
             }
-            // Necromancer drain: roll per target hit
-            if (m.classId === 'necromancer' && Math.random() < NECRO_LIFE_DRAIN_CHANCE) {
-                this._drainHeal(m);
-            }
+            this._applyNecromancerLifeDrainOnMagicHit(m, e, dealt);
             if (e.health <= 0) this._addLog(`  ☠️ ${this._eName(e)} is defeated!`);
         }
 
@@ -2803,6 +2800,7 @@ export class CombatSystem {
                 const _qsmDefIgnore = m.classId === 'mage' ? Math.min(1, (m.level || 1) / 100) : 0;
                 const _qsmDealt = this._damageEnemy(_qsmTarget, _qsmDmg, false, true, _qsmDefIgnore);
                 this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus bolt at ${this._eName(_qsmTarget)} for ${_qsmDealt}!${_qsmExh ? ' (exhausted!)' : ''}`);
+                this._applyNecromancerLifeDrainOnMagicHit(m, _qsmTarget, _qsmDealt);
                 if (_qsmTarget.health <= 0) this._addLog(`  \u{1F480} ${this._eName(_qsmTarget)} is defeated!`);
             }
         }
@@ -2810,7 +2808,32 @@ export class CombatSystem {
         this._advancePlayerTurn();
     }
 
-    _drainHeal(necro) {
+    _applyNecromancerLifeDrainOnMagicHit(necro, enemy, dealt = 0) {
+        if (!necro || necro.classId !== 'necromancer' || !enemy || dealt <= 0) return;
+        if ((necro.level || 1) >= NECRO_L35_UNLOCK_LEVEL) {
+            this._applyNecromancerSiphonPowerOnHit(necro, enemy);
+        }
+        if (Math.random() >= NECRO_LIFE_DRAIN_CHANCE) return;
+        this._drainHeal(necro, dealt);
+    }
+
+    _applyNecromancerSiphonPowerOnHit(necro, enemy) {
+        if (!necro || !enemy || enemy.health <= 0) return;
+        if (this._isEnemySiphonPowerImmune(enemy)) return;
+        const minDrain = Math.max(1, Math.floor((necro.level || 1) / NECRO_SIPHON_POWER_MIN_DIVISOR));
+        const maxDrain = Math.max(minDrain, Math.floor((necro.level || 1) * NECRO_SIPHON_POWER_MAX_MULT));
+        const roll = randomInt(minDrain, maxDrain);
+        const beforeSt = Math.max(0, enemy.stamina || 0);
+        const beforeMp = Math.max(0, enemy.mana || 0);
+        const stDrained = Math.min(beforeSt, roll);
+        const mpDrained = Math.min(beforeMp, roll);
+        if (stDrained <= 0 && mpDrained <= 0) return;
+        enemy.stamina = Math.max(0, beforeSt - stDrained);
+        enemy.mana = Math.max(0, beforeMp - mpDrained);
+        this._addLog(`  \u{1F9FF} Life Drain siphons ${stDrained} ST and ${mpDrained} MP from ${this._eName(enemy)}.`);
+    }
+
+    _drainHeal(necro, dealt = 0) {
         let healPct = 0.05 + ((necro.level || 1) / 2) / 100;
         if (this._hasEquipped(necro, 'staff_of_necromancy')) healPct *= 2;
         const targets = this.party.filter(
@@ -2832,6 +2855,13 @@ export class CombatSystem {
         }
         if (totalGained > 0) {
             this._addLog(`\u{1FA78} Life drain! ${necro.name}'s undead recover ${totalGained} total HP (${Math.round(healPct * 100)}% max HP each, ${healedCount} healed).`);
+        }
+        if ((necro.level || 1) >= NECRO_LICH_FORM_UNLOCK_LEVEL && necro.isLichForm && !necro.lichPhial && necro.health > 0 && dealt > 0) {
+            const lichHeal = Math.max(1, Math.floor(dealt * 0.05));
+            const before = necro.health;
+            necro.health = Math.min(necro.maxHealth, necro.health + lichHeal);
+            const gained = necro.health - before;
+            if (gained > 0) this._addLog(`\u{1FA78} Life drain feeds ${necro.name}'s Lich Form for ${gained} HP (5% of damage dealt).`);
         }
     }
 
@@ -16047,6 +16077,8 @@ export class CombatSystem {
             m.rangerTotem = null;
             m.avatarActive = false;
             m.avatarElement = 'fire';
+            m.quickstepSongActive = false;
+            m.quickstepHasteActive = false;
             m.activeEffects = (m.activeEffects || []).filter(fx => !(fx && fx.type === 'cloak_of_displacement'));
             if (m.health <= 0) continue;          // do NOT revive
             m.health  = Math.min(m.maxHealth,  m.health  + POST_COMBAT_RECOVERY);

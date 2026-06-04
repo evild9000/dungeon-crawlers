@@ -1280,6 +1280,8 @@ export class PartyMember {
         this.golemBerserkActive = false;
         this.golemBerserkUsed   = false;
         this.thunderousDrumsActive = false;
+        this.quickstepSongActive = false;
+        this.quickstepHasteActive = false;
         this.symphonyActive = false;
         this.symphonyRound = 0;
         this.symphonyManaCost = 0;

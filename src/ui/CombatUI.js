@@ -126,7 +126,7 @@ import {
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
     NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
     NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
-    NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
+    NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
     ARTIFICER_BERSERK_UNLOCK_LEVEL, ARTIFICER_BERSERK_DMG_PER_LEVEL,
     ARTIFICER_BERSERK_OVERLOAD_PCT, ARTIFICER_BERSERK_MIN_HP_PCT,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
@@ -1255,7 +1255,13 @@ export class CombatUI {
         if (m.classId === 'mage') magicTip.push(`Mage: ignores ${Math.min(100, m.level || 1)}% enemy defense on magic/AoE hits (level%).`);
         if (m.classId === 'necromancer') {
             const drainPct = Math.round((0.05 + ((m.level || 1) / 2) / 100) * 100);
-            magicTip.push(`Necromancer: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% per enemy hit to heal this necromancer's undead for ${drainPct}% max HP.`);
+            magicTip.push(`Necromancer Life Drain: ${Math.round(NECRO_LIFE_DRAIN_CHANCE * 100)}% per enemy hit to heal own undead for ${drainPct}% max HP.`);
+            if ((m.level || 1) >= 20) magicTip.push('L20: Life Drain also heals this necromancer in Lich Form for 5% of damage dealt.');
+            if ((m.level || 1) >= NECRO_L35_UNLOCK_LEVEL) {
+                const minDrain = Math.max(1, Math.floor((m.level || 1) / NECRO_SIPHON_POWER_MIN_DIVISOR));
+                const maxDrain = Math.max(minDrain, Math.floor((m.level || 1) * NECRO_SIPHON_POWER_MAX_MULT));
+                magicTip.push(`L35 Siphon Power passive: each magic hit drains ${minDrain}-${maxDrain} ST and MP from vulnerable enemies.`);
+            }
         }
         if (inAbyssForm) magicTip.push('Disabled while in Tentacled Horror form.');
         magicBtn.title = magicTip.join('\n');
@@ -1992,18 +1998,6 @@ export class CombatUI {
                     !controlCan ? 'Not enough mana.' : '',
                 ].filter(Boolean).join('\n');
 
-                const siphonCan = m.mana >= NECRO_SIPHON_POWER_MANA_COST;
-                const minDrain = Math.max(1, Math.floor(m.level / NECRO_SIPHON_POWER_MIN_DIVISOR));
-                const maxDrain = Math.max(minDrain, Math.floor(m.level * NECRO_SIPHON_POWER_MAX_MULT));
-                const siphonBtn = this._addBtn(`🧿 Siphon Power (-${NECRO_SIPHON_POWER_MANA_COST} MP)`, siphonCan, () => this.combat.necroSiphonPower());
-                siphonBtn.classList.add('combat-special-btn');
-                siphonBtn.title = [
-                    `Necromancer L${NECRO_L35_UNLOCK_LEVEL}: Siphon Power (${NECRO_SIPHON_POWER_MANA_COST} MP).`,
-                    `AoE drain: each enemy loses random ST and MP from ${minDrain} to ${maxDrain}.`,
-                    'Uses your turn.',
-                    'Immune: undead, constructs, elementals, and drain-immune enemies.',
-                    !siphonCan ? 'Not enough mana.' : '',
-                ].filter(Boolean).join('\n');
             }
         }
 
