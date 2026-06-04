@@ -1732,7 +1732,7 @@ export const RANGER_BEAST_COMPANION_TYPES = {
         name: 'Sabre Tooth Cat', icon: '🦁', enemySprite: 'cave_lion', row: 'front', attackType: 'melee',
         description: 'Apex ambush predator. floor(level/10) attacks, all same foe. Claw (50%): 100% damage Bleed for floor(level/6) rds. Bite (50%): floor(level/3)% instakill chance. Bosses: ×4 dmg. Immune types (undead/elemental/construct/incorporeal/plant): normal damage.' },
     megaconda:   { id: 'megaconda',   summonType: 'bc_megaconda',   beastKind: 'bc_megaconda',
-        name: 'Mega-conda',      icon: '🐍', enemySprite: 'tunnel_worm', row: 'front', attackType: 'melee',
+        name: 'Mega-conda',      icon: '🐍', enemySprite: 'megaconda', row: 'front', attackType: 'melee',
         description: 'Titanic serpent. Single-target constrict: (300%+100%×floor(level/10)) base damage. Attempts hold for floor(level/5) rounds (normal resistances). On successful hold: escalating crush DoT (base→×1.5→×2.0... per tick).' },
     megaloceros: { id: 'megaloceros', summonType: 'bc_megaloceros', beastKind: 'bc_megaloceros',
         name: 'Megaloceros',     icon: '🦌', enemySprite: 'megaloceros', row: 'front', attackType: 'melee',

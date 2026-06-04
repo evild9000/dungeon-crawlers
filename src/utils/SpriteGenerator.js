@@ -1794,6 +1794,112 @@ function drawTunnelWorm(c, r) {
     }
 }
 
+function drawMegaconda(c, r) {
+    const scaleG = r.int(95, 135);
+    const scales = `rgb(${r.int(35,60)},${scaleG},${r.int(35,55)})`;
+    const dark = `rgb(${r.int(18,35)},${r.int(55,85)},${r.int(22,38)})`;
+    const belly = `rgb(${r.int(170,205)},${r.int(165,190)},${r.int(105,135)})`;
+
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+
+    // Massive overlapping coils.
+    c.strokeStyle = dark;
+    c.lineWidth = 17;
+    c.beginPath();
+    c.moveTo(7, 50);
+    c.bezierCurveTo(16, 34, 44, 34, 55, 48);
+    c.bezierCurveTo(42, 61, 17, 60, 7, 50);
+    c.stroke();
+
+    c.strokeStyle = scales;
+    c.lineWidth = 13;
+    c.beginPath();
+    c.moveTo(9, 50);
+    c.bezierCurveTo(18, 37, 42, 37, 53, 48);
+    c.bezierCurveTo(41, 57, 19, 57, 9, 50);
+    c.stroke();
+
+    c.strokeStyle = dark;
+    c.lineWidth = 14;
+    c.beginPath();
+    c.moveTo(18, 44);
+    c.bezierCurveTo(25, 30, 47, 29, 58, 38);
+    c.stroke();
+
+    c.strokeStyle = scales;
+    c.lineWidth = 10;
+    c.beginPath();
+    c.moveTo(19, 44);
+    c.bezierCurveTo(27, 32, 46, 32, 57, 38);
+    c.stroke();
+
+    // Pale belly crescent on the front coil.
+    c.strokeStyle = belly;
+    c.lineWidth = 4;
+    c.beginPath();
+    c.moveTo(18, 54);
+    c.bezierCurveTo(29, 60, 43, 57, 51, 50);
+    c.stroke();
+
+    // Raised neck and blunt constrictor head.
+    c.strokeStyle = dark;
+    c.lineWidth = 12;
+    c.beginPath();
+    c.moveTo(31, 39);
+    c.bezierCurveTo(29, 28, 33, 19, 43, 14);
+    c.stroke();
+
+    c.strokeStyle = scales;
+    c.lineWidth = 8;
+    c.beginPath();
+    c.moveTo(31, 39);
+    c.bezierCurveTo(30, 28, 34, 20, 43, 15);
+    c.stroke();
+
+    c.fillStyle = dark;
+    c.beginPath();
+    c.ellipse(48, 12, 11, 8, -0.2, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = scales;
+    c.beginPath();
+    c.ellipse(47, 13, 10, 7, -0.2, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = belly;
+    c.beginPath();
+    c.ellipse(51, 16, 5, 3, -0.15, 0, Math.PI * 2);
+    c.fill();
+
+    // Anaconda blotches.
+    c.fillStyle = 'rgba(12,35,18,0.55)';
+    const blotches = [[18,44,4,2.5], [29,38,3.5,2], [40,37,4,2.4], [31,53,4,2], [44,51,3.5,2], [36,26,3,2], [47,10,3.5,2]];
+    for (const [x, y, w, h] of blotches) {
+        c.beginPath();
+        c.ellipse(x + r.vary(0, 0.8), y + r.vary(0, 0.6), w, h, r.vary(0, 0.3), 0, Math.PI * 2);
+        c.fill();
+    }
+
+    // Eyes, nostrils, and forked tongue.
+    c.fillStyle = '#f5d65b';
+    c.beginPath(); c.arc(49, 10, 1.8, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#111';
+    c.beginPath(); c.arc(49, 10, 0.8, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#241008';
+    c.beginPath(); c.arc(56, 14, 0.9, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#c73549';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(56, 16);
+    c.lineTo(63, 18);
+    c.moveTo(63, 18);
+    c.lineTo(60, 16);
+    c.moveTo(63, 18);
+    c.lineTo(60, 20);
+    c.stroke();
+    c.lineCap = 'butt';
+    c.lineJoin = 'miter';
+}
+
 // ────────────────────────────────────────────────
 // New monsters added in the second roster batch
 // ────────────────────────────────────────────────
@@ -5439,6 +5545,7 @@ const DRAWERS = {
     ghoul_pup: drawGhoulPup, myconid: drawMyconid,
     dust_devil: drawDustDevil, vampire_bat: drawVampireBat,
     tunnel_worm: drawTunnelWorm,
+    megaconda: drawMegaconda,
     // New roster batch
     banshee: drawBanshee, lich: drawLich, minotaur: drawMinotaur,
     shadow: drawShadow, ogre: drawOgre, dark_elf: drawDarkElf,
