@@ -1330,7 +1330,7 @@ export const MAGIC_ITEM_RECIPES = [
         id: 'lance_dragon_king',
         kind: 'equipment',
         quantity: 1,
-        cost: { gold: 150000, material_dragon_heart: 10 },
+        cost: { gold: 150000, material_dragon_heart: 25 },
     },
     {
         id: 'sash_vermin_keeper',
