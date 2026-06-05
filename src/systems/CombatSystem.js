@@ -3305,12 +3305,9 @@ export class CombatSystem {
         this._applyWeaponRider(m, targetEnemy, dealt, 'offhand');
         if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
 
-        // L20+ Rogue: Backstab applies a bleed DoT (immune: undead, construct, elemental, incorporeal, plant)
+        // L20+ Rogue: Backstab applies a bleed DoT through the central monster immunity checker.
         if (targetEnemy.health > 0 && m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL && dealt > 0) {
-            const tDef = ENEMY_TYPES[targetEnemy.type] || {};
-            const tTags = tDef.tags || [];
-            const bleedImmune = tTags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant', 'slime'].includes(t));
-            if (!bleedImmune) {
+            if (!this._enemyHasImmunity(targetEnemy, 'bleed')) {
                 const bleedDmg    = Math.max(1, Math.floor(dealt * ROGUE_BACKSTAB_BLEED_FRAC));
                 const bleedRounds = Math.max(1, Math.floor(m.level / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR));
                 if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
@@ -3377,10 +3374,7 @@ export class CombatSystem {
 
         // Offhand bleed (L20+, independent DoT)
         if (m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL && ofDealt > 0) {
-            const tDef = ENEMY_TYPES[targetEnemy.type] || {};
-            const tTags = tDef.tags || [];
-            const bleedImmune = tTags.some(t => ['undead', 'construct', 'elemental', 'incorporeal', 'plant', 'slime'].includes(t));
-            if (!bleedImmune) {
+            if (!this._enemyHasImmunity(targetEnemy, 'bleed')) {
                 const bleedDmg    = Math.max(1, Math.floor(ofDealt * ROGUE_BACKSTAB_BLEED_FRAC));
                 const bleedRounds = Math.max(1, Math.floor(m.level / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR));
                 if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
@@ -6836,7 +6830,7 @@ export class CombatSystem {
     }
 
     /**
-     * Paladin L30: Divine Judgment — once per combat, 50 ST + 50 MP.
+     * Paladin L30: Divine Judgment — once per combat, 50 ST + 25 MP.
      * Deals (33% + level/3%) of the target's CURRENT health as holy damage,
      * ignoring all defense. Bosses take half; mega bosses take one quarter.
      * Target must be smiteable (undead, demon, or dragon with Dragonslayer active).
@@ -6885,9 +6879,9 @@ export class CombatSystem {
         const effPct  = basePct / divisor;
         const rawDmg  = Math.max(1, Math.floor(targetEnemy.health * effPct));
 
-        // isMagic=true: skips remorhaz burn retaliate, shieldBlock, displaceChance, physResist
-        // ignoreDefense=true: holy wrath bypasses all defense
-        const dealt = this._damageEnemy(targetEnemy, rawDmg, true, true);
+        // isMagic=true avoids physical contact/avoidance rules; ignoreMagicResistance
+        // keeps the holy percentage damage from being reduced as ordinary spell damage.
+        const dealt = this._damageEnemy(targetEnemy, rawDmg, true, true, 0, false, { ignoreMagicResistance: true });
 
         const pctStr = (effPct * 100).toFixed(1);
         let jLog = `⚡✨ ${m.name} calls down Divine Judgment upon ${eName} — ${pctStr}% of current HP! (${dealt} holy damage)`;
@@ -7672,7 +7666,6 @@ export class CombatSystem {
         const hits     = Math.max(1, Math.floor(lvl / DRUID_WILD_WOLF_ATTACKS_DIVISOR));
         const bleedC   = DRUID_WILD_WOLF_BLEED_BASE + lvl * DRUID_WILD_WOLF_BLEED_PER_LEVEL;
         const bleedDur = Math.max(1, Math.floor(lvl / DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR));
-        const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
         this._addLog(`\u{1F43A} ${m.name} lunges in Wolf Form!`);
         for (let i = 0; i < hits; i++) {
             if (targetEnemy.health <= 0) break;
@@ -7681,8 +7674,7 @@ export class CombatSystem {
             const out    = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
             const dealt  = this._damageEnemy(target, out, false, false, 0, false, { contactAttacker: m });
             this._addLog(`\u{1F43A} ${m.name} bites ${this._eName(target)} for ${dealt}!`);
-            const eTags = (ENEMY_TYPES[target.type] || {}).tags || [];
-            if (target.health > 0 && dealt > 0 && Math.random() < bleedC && !eTags.some(t => bleedImmune.includes(t))) {
+            if (target.health > 0 && dealt > 0 && Math.random() < bleedC && !this._enemyHasImmunity(target, 'bleed')) {
                 const bleedDmg = Math.max(1, Math.round(dealt * DRUID_WILD_WOLF_BLEED_FRACTION));
                 target.activeEffects = target.activeEffects || [];
                 target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedDur });
@@ -8569,6 +8561,7 @@ export class CombatSystem {
             if (stats.divineSoul) {
                 const AL = stats.artificerLevel || 1;
                 const numTargets = Math.max(1, Math.floor(AL / 3));
+                const divineDamageMult = 1 + (Math.pow(Math.sqrt(Math.max(1, AL)) * 2, 2) / 100);
                 const preset = GOLEM_PRESETS[m.summonType];
                 const icon = (preset && preset.icon) || '\u{1F4AB}';
                 this._addLog(`${icon} ${m.name} smites with divine power — striking ${numTargets} enem${numTargets !== 1 ? 'ies' : 'y'}!`);
@@ -8576,9 +8569,8 @@ export class CombatSystem {
                 for (let i = 0; i < numTargets && i < shuffled.length; i++) {
                     const t = shuffled[i];
                     if (!t || t.health <= 0) continue;
-                    const dmg = rollGolemDamage(stats.meleeMin ?? 3, stats.meleeMax ?? 13);
-                    // Ignores half of enemy defense
-                    const dealt = this._damageSummonEnemy(t, dmg, false, true);
+                    const dmg = Math.max(1, Math.round(rollGolemDamage(stats.meleeMin ?? 3, stats.meleeMax ?? 13) * divineDamageMult));
+                    const dealt = this._damageSummonEnemy(t, dmg, true);
                     this._addLog(`  ↪️ divine smite hits ${this._eName(t)} for ${dealt}!`);
                     // 20% chance to stun — respects stun immunity
                     if (t.health > 0) {
@@ -8869,14 +8861,12 @@ export class CombatSystem {
             const dmgMult_wolf  = stats.wildShapeDmgMult || 1;
             let extraAttacks = Math.floor(summonerLevel / 33);
             if (stats.wildShapeExtraAttack) extraAttacks++;
-            const bleedImmuneTags = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
             const _wolfBite = (target) => {
                 let dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 7);
                 dmg = Math.max(1, Math.round(dmg * dmgMult_wolf));
                 const dealt = this._damageSummonEnemy(target, dmg, false, false, { contactAttacker: m });
                 this._addLog(`\u{1F43A} ${m.name} bites ${this._eName(target)} for ${dealt}!`);
-                const tTags = (ENEMY_TYPES[target.type] || {}).tags || [];
-                if (target.health > 0 && dealt > 0 && !tTags.some(t => bleedImmuneTags.includes(t))) {
+                if (target.health > 0 && dealt > 0 && !this._enemyHasImmunity(target, 'bleed')) {
                     const bleedDmg = Math.max(1, Math.round(dealt * 1.0));
                     target.activeEffects = target.activeEffects || [];
                     target.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedDuration });
@@ -8931,15 +8921,13 @@ export class CombatSystem {
             const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
             const numAttacks = Math.max(1, Math.floor(rl / 10));
             const bleedRounds = Math.max(1, Math.floor(rl / 6));
-            const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
                 const dmg = rollCompanionDamage(stats.meleeMin, stats.meleeMax);
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 this._addLog(`🐺 ${m.name} bites ${this._eName(t)} for ${dealt}!`);
-                const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
-                if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
+                if (t.health > 0 && dealt > 0 && !this._enemyHasImmunity(t, 'bleed')) {
                     t.activeEffects = t.activeEffects || [];
                     t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
                     this._addLog(`\u{1FA78} ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
@@ -8954,7 +8942,6 @@ export class CombatSystem {
             const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
             const numAttacks = Math.max(1, Math.floor(rl / 10));
             const bleedRounds = Math.max(1, Math.floor(rl / 6));
-            const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
@@ -8963,8 +8950,7 @@ export class CombatSystem {
                 if (Math.random() < 0.5) {
                     // Claw: bleed
                     this._addLog(`🐻 ${m.name} claws ${this._eName(t)} for ${dealt}!`);
-                    const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
-                    if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
+                    if (t.health > 0 && dealt > 0 && !this._enemyHasImmunity(t, 'bleed')) {
                         t.activeEffects = t.activeEffects || [];
                         t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
                         this._addLog(`\u{1FA78} ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
@@ -9010,7 +8996,6 @@ export class CombatSystem {
             const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
             const numAttacks = Math.max(1, Math.floor(rl / 10));
             const bleedRounds = Math.max(1, Math.floor(rl / 6));
-            const bleedImmune = ['undead', 'construct', 'elemental', 'incorporeal', 'plant'];
             const instakillImmune = ['undead', 'elemental', 'construct', 'incorporeal', 'plant'];
             const instakillChance = Math.floor(rl / 3) / 100;
             const t = targets[Math.floor(Math.random() * targets.length)];
@@ -9021,8 +9006,7 @@ export class CombatSystem {
                 if (Math.random() < 0.5) {
                     // Claw: bleed
                     this._addLog(`🐯 ${m.name} claws ${this._eName(t)} for ${dealt}!`);
-                    const tTags = (ENEMY_TYPES[t.type] || {}).tags || [];
-                    if (t.health > 0 && dealt > 0 && !tTags.some(tag => bleedImmune.includes(tag))) {
+                    if (t.health > 0 && dealt > 0 && !this._enemyHasImmunity(t, 'bleed')) {
                         t.activeEffects = t.activeEffects || [];
                         t.activeEffects.push({ type: 'bleed', damage: Math.max(1, dealt), rounds: bleedRounds });
                         this._addLog(`\u{1FA78} ${this._eName(t)} is Bleeding! (${Math.max(1, dealt)}/rd × ${bleedRounds} rds)`);
@@ -13586,7 +13570,7 @@ export class CombatSystem {
     // ────────────────────────────────────────────
 
     /** Apply raw damage to an enemy after its entangle defense debuff is taken into account.
-     *  @param {boolean} isMagic  — if true, checks enemy halfMagicDamage flag (efreeti etc.)
+     *  @param {boolean} isMagic  — if true, checks enemy magic resistance unless options.ignoreMagicResistance is set
      */
     _damageEnemy(enemy, amount, ignoreDefense = false, isMagic = false, defenseIgnorePct = 0, isRanged = false, options = {}) {
         // Invisible Stalker: 60% miss chance on all incoming attacks
@@ -13597,22 +13581,23 @@ export class CombatSystem {
                 return 0;
             }
         }
+        const ignoreMagicResistance = !!(options && options.ignoreMagicResistance);
         // Efreeti / fireborn magic resistance: half magic damage.
-        if (isMagic) {
+        if (isMagic && !ignoreMagicResistance) {
             const eDef = ENEMY_TYPES[enemy.type] || {};
             if (eDef.halfMagicDamage) {
                 amount = Math.max(1, Math.floor(amount * 0.5));
             }
         }
         // Will-o'-Wisp: 90% magic/AoE resistance
-        if (isMagic) {
+        if (isMagic && !ignoreMagicResistance) {
             const eDef = ENEMY_TYPES[enemy?.type] || {};
             if (eDef.resistMagic90) {
                 amount = Math.max(1, Math.floor(amount * 0.10));
             }
         }
         // Clockwork Horror: fully immune to all magic attacks
-        if (isMagic) {
+        if (isMagic && !ignoreMagicResistance) {
             const _eDef = ENEMY_TYPES[enemy.type] || {};
             if (_eDef.fullMagicImmune) {
                 this._addLog(`⚙️ ${this._eName(enemy)} is fully immune to magic!`);
@@ -15219,9 +15204,13 @@ export class CombatSystem {
                 this._addLog(`🎵🏹 ${eName} (charmed) shoots a bone arrow at ${eN(t)}!`);
                 const dealt = cHit(t, dmg);
                 if (t.health > 0 && dealt > 0 && Math.random() < 0.25) {
-                    const fractureTick = Math.max(1, Math.floor(dealt * 0.30));
-                    cEffect(t, { type: 'fracture', damage: fractureTick, rounds: fractureDur });
-                    this._addLog(`🦴 A bone arrow splinters in ${eN(t)}'s wound! (${fractureTick} bleed/rd, ${fractureDur} rds)`);
+                    if (this._enemyHasImmunity(t, 'bleed')) {
+                        this._addLog(`🦴 ${eN(t)} is immune to splintering arrow wounds!`);
+                    } else {
+                        const fractureTick = Math.max(1, Math.floor(dealt * 0.30));
+                        cEffect(t, { type: 'fracture', damage: fractureTick, rounds: fractureDur });
+                        this._addLog(`🦴 A bone arrow splinters in ${eN(t)}'s wound! (${fractureTick} bleed/rd, ${fractureDur} rds)`);
+                    }
                 }
             }
 
@@ -15352,8 +15341,12 @@ export class CombatSystem {
                         t.webbedRounds = Math.max(t.webbedRounds || 0, 2);
                     }
                     const bleedDur = Math.max(2, Math.floor(dlvl / 5));
-                    cEffect(t, { type: 'fracture', damage: Math.max(1, Math.floor(dmg * 0.30)), rounds: bleedDur });
-                    this._addLog(`🐊 ${eN(t)} is DEATH ROLLED! (${holdText}, bleed)`);
+                    if (this._enemyHasImmunity(t, 'bleed')) {
+                        this._addLog(`🐊 ${eN(t)} is DEATH ROLLED! (${holdText}, immune to bleed)`);
+                    } else {
+                        cEffect(t, { type: 'fracture', damage: Math.max(1, Math.floor(dmg * 0.30)), rounds: bleedDur });
+                        this._addLog(`🐊 ${eN(t)} is DEATH ROLLED! (${holdText}, bleed)`);
+                    }
                 }
             }
 
@@ -15366,7 +15359,7 @@ export class CombatSystem {
                 let dmg = Math.max(1, Math.round(randomInt(dmin + 3, dmax + 3) * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
                 const dealt = cHit(t, dmg);
-                if (t.health > 0 && dealt > 0) cEffect(t, { type: 'fracture', damage: dealt, rounds: bleedDur });
+                if (t.health > 0 && dealt > 0 && !this._enemyHasImmunity(t, 'bleed')) cEffect(t, { type: 'fracture', damage: dealt, rounds: bleedDur });
             }
             const tGore = pick();
             if (tGore && this._enemyCanAttemptStaminaAttack(e)) {
@@ -15518,8 +15511,12 @@ export class CombatSystem {
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
                 const dealt = cHit(t, dmg);
                 if (t.health > 0 && dealt > 0 && Math.random() < 0.30) {
-                    cEffect(t, { type: 'fracture', damage: Math.max(1, Math.floor(dealt * 0.25)), rounds: bleedDur });
-                    this._addLog(`🗡️ ${eN(t)} bleeds from the assassin's blade!`);
+                    if (this._enemyHasImmunity(t, 'bleed')) {
+                        this._addLog(`🗡️ ${eN(t)} is immune to bleed from the assassin's blade!`);
+                    } else {
+                        cEffect(t, { type: 'fracture', damage: Math.max(1, Math.floor(dealt * 0.25)), rounds: bleedDur });
+                        this._addLog(`🗡️ ${eN(t)} bleeds from the assassin's blade!`);
+                    }
                 }
             }
 
@@ -17683,9 +17680,9 @@ export class CombatSystem {
             if (!target || target.health <= 0) return 0;
             const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
             const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
-            const itemMult = Math.max(1, Number(st.itemDamageMult) || 1);
-            const raw = Math.max(1, Math.round(randomInt(min, max) * mult * itemMult));
-            const options = kind === 'melee' ? { contactAttacker: demon } : {};
+            const awakenedMult = st.awakened ? Math.max(1, Number(st.awakenedDamageMult) || (1 + (st.warlockLevel || demon.level || 1) / 10)) : 1;
+            const raw = Math.max(1, Math.round(randomInt(min, max) * awakenedMult * mult));
+            const options = kind === 'melee' ? { contactAttacker: demon } : { sourceMember: demon };
             if (kind === 'magic') options.isMagic = true;
             return this._damageSummonEnemy(target, raw, ignoreDefense, false, options);
         };

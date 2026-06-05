@@ -25,6 +25,7 @@ import {
     TRAP_TYPES,
     POISON_DURATION_ROUNDS, POISON_DAMAGE_FRACTION,
     ROGUE_TRAP_UNLOCK_LEVEL,
+    ROGUE_EXTRA_LOOT_UNLOCK_LEVEL, ROGUE_EXTRA_LOOT_GOLD_PCT,
     BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD,
     ENABLE_SHADOWS,
     XP_LEVEL_BASE,
@@ -1946,6 +1947,27 @@ export class Game {
         this._attemptDisarm(trap, rogue);
     }
 
+    _getRogueExtraLootExplorationBonus() {
+        const party = this.gameState?.party || [];
+        const rogues = party.filter(m =>
+            m && !m.isSummoned && m.health > 0
+            && m.classId === 'rogue'
+            && m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
+        );
+        const pct = rogues.reduce((sum, rogue) => sum + ROGUE_EXTRA_LOOT_GOLD_PCT + (rogue.level || 1), 0);
+        return { pct, rogues };
+    }
+
+    _applyRogueExtraLootExplorationGold(baseGold, sourceLabel = 'treasure') {
+        const gold = Math.max(0, Math.floor(baseGold || 0));
+        const { pct, rogues } = this._getRogueExtraLootExplorationBonus();
+        if (gold <= 0 || pct <= 0) return { totalGold: gold, bonusGold: 0, pct: 0, names: '' };
+        const bonusGold = Math.floor(gold * pct / 100);
+        const names = rogues.map(m => m.name).join(' & ');
+        this._log(`🪙 Extra Loot (${names}): +${pct}% ${sourceLabel} gold! (+${bonusGold})`);
+        return { totalGold: gold + bonusGold, bonusGold, pct, names };
+    }
+
     _attemptDisarm(trap, rogue) {
         const def    = this._trapDef(trap);
         const chance = TRAP_DISARM_BASE + TRAP_DISARM_PER_LEVEL * Math.max(0, rogue.level - 1);
@@ -1966,7 +1988,9 @@ export class Game {
                 const dlvl = this.gameState.dungeonLevel || 1;
                 const low  = TRAP_TREASURE_MIN * dlvl * 2;
                 const high = TRAP_TREASURE_MAX * dlvl * 2;
-                gold = low + Math.floor(Math.random() * (high - low + 1));
+                const baseGold = low + Math.floor(Math.random() * (high - low + 1));
+                const extraLoot = this._applyRogueExtraLootExplorationGold(baseGold, 'trap-cache');
+                gold = extraLoot.totalGold;
                 this.gameState.inventory.addGold(gold);
                 this.gameState.recordGoldCollected?.(gold, rogue);
                 this._log(`\u{1F48E} A hidden cache reveals ${gold} gold!`);
@@ -2792,7 +2816,8 @@ export class Game {
             const low = TRAP_TREASURE_MIN * dlvl * 2;
             const high = TRAP_TREASURE_MAX * dlvl * 2;
             const baseGold = low + Math.floor(Math.random() * (high - low + 1));
-            gold = baseGold * 100;
+            const extraLoot = this._applyRogueExtraLootExplorationGold(baseGold * 100, 'chest');
+            gold = extraLoot.totalGold;
             this.gameState.inventory.addGold(gold);
             this.gameState.recordGoldCollected?.(gold);
 

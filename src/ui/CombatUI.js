@@ -1442,8 +1442,8 @@ export class CombatUI {
                     : `L${ROGUE_TWIN_FANGS_UNLOCK_LEVEL}: Twin Fangs unlocks — offhand melee follow-up strike on every Backstab.`,
                 shadowActive ? `🌑 Shadow Step active (${(m.activeEffects.find(fx => fx.type === 'shadow_step') || {}).rounds || 0} rds) — Backstab deals ×${ROGUE_SHADOW_STEP_BACKSTAB_MULT} damage!` : '',
                 m.level >= ROGUE_EXTRA_LOOT_UNLOCK_LEVEL
-                    ? `L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL} Extra Loot: this rogue adds +${ROGUE_EXTRA_LOOT_GOLD_PCT + (m.level || 1)}% combat gold (100% + rogue level%). Multiple rogues stack additively.`
-                    : `L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL}: Extra Loot unlocks — adds 100% + rogue level% combat gold.`,
+                    ? `L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL} Extra Loot: this rogue adds +${ROGUE_EXTRA_LOOT_GOLD_PCT + (m.level || 1)}% gold from combat, magical chests, and trap caches (100% + rogue level%). Multiple rogues stack additively.`
+                    : `L${ROGUE_EXTRA_LOOT_UNLOCK_LEVEL}: Extra Loot unlocks — adds 100% + rogue level% gold from combat, magical chests, and trap caches.`,
             ].filter(Boolean).join('\n')
 
             if (m.level >= ROGUE_TRAP_UNLOCK_LEVEL) {
@@ -2862,6 +2862,7 @@ export class CombatUI {
                         `Warlock L${WARLOCK_L35_UNLOCK_LEVEL}: free action toggle, no mana cost, does not consume turn.`,
                         `When ON, every ${WARLOCK_AWAKEN_TRIGGER_SUMMONS} successful cauldron summons are consumed to manifest an Awakened Lord.`,
                         'Awakened Lords are globally unique across all warlocks in the same combat.',
+                        'Lord attacks roll 10-20 + warlock level x2 skill, then gain +(warlock level/10 x 100)% damage before Lord-specific modifiers.',
                         `This warlock has already manifested ${awakenedUsed}/10 unique Awakened Lords this combat.`,
                         'If all eligible Lords are exhausted, the summon counter is not consumed and normal demons remain.',
                     ].join('\n');
@@ -3292,7 +3293,7 @@ export class CombatUI {
                 djBtn.title = [
                     `Paladin L${PALADIN_L30_UNLOCK_LEVEL} special: Divine Judgment (once per combat).`,
                     `Costs ${PALADIN_DIVINE_JUDGMENT_STAMINA_COST} stamina and ${PALADIN_DIVINE_JUDGMENT_MANA_COST} mana. Front-row only.`,
-                    `Calls holy wrath on a smiteable target, dealing ${_curPct.toFixed(1)}% of their current HP as holy damage (ignores all defense).`,
+                    `Calls holy wrath on a smiteable target, dealing ${_curPct.toFixed(1)}% of their current HP as holy damage (ignores defense and magic resistance).`,
                     `vs bosses: ${_bossPct.toFixed(1)}% of current HP. vs mega bosses: ${_megaPct.toFixed(1)}% of current HP.`,
                     `Hits hardest on healthy targets — powerful opener.`,
                     m.level >= PALADIN_DRAGONSLAYER_UNLOCK_LEVEL && m.dragonslayerActive

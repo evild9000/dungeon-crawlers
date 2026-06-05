@@ -1476,7 +1476,7 @@ export const GOLEM_TIERS = [
         divineSoul: true,
         halfDmgSpecial: true,
         immune: ['poison', 'stun', 'web'],
-        description: 'A vessel of pure divine will. Each turn strikes floor(AL/3) enemies with divine melee damage, ignoring half their defense, with a 20% chance to stun each target. Each living ally (including summoned beasts) has a 33% independent chance per round to be healed for 10% of that ally\'s lost HP. Takes half damage from magic, AoE, and ranged. As a construct: immune to poison, stun, paralysis, and petrification.',
+        description: 'A vessel of pure divine will. Each turn strikes floor(AL/3) enemies with divine melee damage, ignoring all armor/defense, with +((sqrt(AL) x 2) squared)% damage and a 20% chance to stun each target. Each living ally (including summoned beasts) has a 33% independent chance per round to be healed for 10% of that ally\'s lost HP. Takes half damage from magic, AoE, and ranged. As a construct: immune to poison, stun, paralysis, and petrification.',
     },
 ];
 
@@ -1662,7 +1662,7 @@ export const RANGER_EXTRA_FAVORED_PER_5_LV     = 5;   // gain one slot every 5 l
 // After a backstab at L20+, the target gains a bleed DoT.
 // Bleed damage = floor(dealt * ROGUE_BACKSTAB_BLEED_FRAC) per round.
 // Duration = floor(rogueLevel / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR) rounds.
-// Tags immune to bleed: 'undead', 'construct', 'elemental', 'incorporeal'.
+// Tags immune to bleed are defined centrally in CombatSystem._enemyHasImmunity.
 export const ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL   = 20;
 export const ROGUE_BACKSTAB_BLEED_FRAC           = 0.33;  // 33% of dealt damage per tick
 export const ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR = 7;   // floor(level/7) rounds; L20 → 2, L30 → 4

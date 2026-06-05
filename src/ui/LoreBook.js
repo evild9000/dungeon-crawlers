@@ -70,7 +70,7 @@ function buildAbilityList(def) {
     if (tags.includes('demon')) {
         lines.push('Demon: vulnerable to Paladin Smite — Smite and AoE Smite deal bonus damage and can destroy demons outright');
         lines.push('Demon: vulnerable to Cleric Banishment (L30) — divine power can expel demonic entities; cleric level% instant destruction (bosses/mega-bosses immune to instant kill but still take ×20 holy force damage) or ×20 magic damage ignoring all defense');
-        lines.push('Demon Lore: Warlock L35 Awaken can manifest ten unique Awakened Lords from repeated cauldron summons; no duplicate Lord can exist across warlocks in the same combat');
+        lines.push('Demon Lore: Warlock L35 Awaken can manifest ten unique Awakened Lords from repeated cauldron summons; no duplicate Lord can exist across warlocks in the same combat. Their offensive skills are warlock level x2, each attack starts at 10-20 + skill damage, and they gain +(warlock level/10 x 100)% damage before Lord-specific modifiers');
     }
     if (tags.includes('plant')) {
         lines.push('Plant: fungal or plant-type creature — vulnerable to fire and nature magic');
@@ -103,6 +103,7 @@ function buildAbilityList(def) {
     }
     if (tags.includes('slime')) {
         lines.push('Slime: valid target for Vermin Keeper Charm Vermin (L20)');
+        lines.push('Slime: immune to bleed effects — ooze bodies have no blood-bearing anatomy');
         lines.push('Slime: immune to Photomancer Radiant Burst and its blind effect');
         lines.push('Slime: if charmed/summoned under a level 35 Vermin Keeper, can gain Minions\' Frenzy extra actions and obey that keeper\'s Hive Mind mark (special swarms excluded)');
     }

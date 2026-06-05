@@ -884,7 +884,7 @@ export const WARLOCK_AWAKENED_IDS = Object.keys(WARLOCK_AWAKENED_PRESETS);
 export function rollWarlockAwakenedStats(warlockLevel = 1, warlockMaxHealth = 20, awakenedId = WARLOCK_AWAKENED_IDS[0]) {
     const level = Math.max(1, warlockLevel | 0);
     const maxHealthBase = Math.max(1, Math.floor((warlockMaxHealth || 1) * 5));
-    const offense = Math.max(1, Math.floor(level * 5));
+    const offense = Math.max(1, Math.floor(level * 2));
     const defense = Math.max(1, Math.floor(level * 2.5));
     const preset = WARLOCK_AWAKENED_PRESETS[awakenedId] || WARLOCK_AWAKENED_PRESETS[WARLOCK_AWAKENED_IDS[0]];
 
@@ -894,12 +894,6 @@ export function rollWarlockAwakenedStats(warlockLevel = 1, warlockMaxHealth = 20
         vaelkor_the_mind_flense: 0.9,
         xelthara_the_storm_blade: 0.9,
     };
-    const offenseMultById = {
-        xelthara_the_storm_blade: 1.25,
-        vaelkor_the_mind_flense: 1.2,
-        azramor_the_ember_crown: 1.1,
-        drozhar_the_iron_maw: 0.95,
-    };
     const defenseMultById = {
         varkhul_the_chain_tyrant: 1.1,
         drozhar_the_iron_maw: 1.2,
@@ -907,24 +901,25 @@ export function rollWarlockAwakenedStats(warlockLevel = 1, warlockMaxHealth = 20
     };
 
     const maxHealth = Math.max(1, Math.floor(maxHealthBase * (healthMultById[awakenedId] || 1)));
-    const offenseScaled = Math.max(1, Math.floor(offense * (offenseMultById[awakenedId] || 1)));
+    const offenseScaled = offense;
     const defenseScaled = Math.max(1, Math.floor(defense * (defenseMultById[awakenedId] || 1)));
 
     return {
         maxHealth,
         maxStamina: 0,
         maxMana: 0,
-        meleeMin: offenseScaled,
-        meleeMax: offenseScaled + 4,
-        rangedMin: offenseScaled,
-        rangedMax: offenseScaled + 4,
-        magicMin: offenseScaled,
-        magicMax: offenseScaled + 4,
+        meleeMin: 10 + offenseScaled,
+        meleeMax: 20 + offenseScaled,
+        rangedMin: 10 + offenseScaled,
+        rangedMax: 20 + offenseScaled,
+        magicMin: 10 + offenseScaled,
+        magicMax: 20 + offenseScaled,
         meleeSkill: offenseScaled,
         rangedSkill: offenseScaled,
         magicSkill: offenseScaled,
         defense: defenseScaled,
         warlockLevel: level,
+        awakenedDamageMult: 1 + level / 10,
         beastKind: 'warlock_demon',
         demonType: awakenedId,
         awakened: true,
