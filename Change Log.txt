@@ -3161,8 +3161,42 @@ confirm:
 in progress:
 1. make a more snake-like HUD card for the megaconda.  right now it is using the tunnelworm icon, and i rather have it look more like a giant snake like a python or anaconda
 
-todo:
+confirm:
 1. lance of the dragon king requires 25 dragon hearts
+
+
+in progress:
+
+10. Eldritch Amulet - need 100 demon ichors and 150,000 gold
+a. usable only by warlock level 35+
+b. +7 magic and +7 defense
+c. necklace/amulet slot items
+d. gain +1 additional tentacle attack while in abyss form (not one additional series of attacks, just +1 single tentacle)
+e. gain +10% damage bonus to tentacle attacks
+f. summoned demons and awakened lords gain a buff when summoned that grants +15% more damage.
+
+
+12. Hag Eye Rod - requires 10 Hag Eyes and 150,000 gold
+a. usable only by a mage level 35%
+b. +7 magic bonus
+c. equippable in the offhand/shield slot for mages (code a special overwrite for this).
+d. Elementals summoned via a Rift or from magic items gain +15% health upon summoning as well as a buff that grants them +15% damage and +5 defense.
+e. grants a +15% bonus to max mana
+f. add 5% to chance for the mage to crit with magic AOE attacks
+g. adds +1 mirror image when cast
+
+
+
+confirm:
+1. some bleeding DoT is not respecting slime tag immunity to bleed
+
+confirm:
+2. divine judgment doesnt seem to be calculating damage right. it said calls down dj on will o wisp 45% of current hp (1062) and the wow had 22375 after the DJ 26284 max.
+
+in progress:
+3. Currently the damage calculation for warlock awakened lords is: any offensive melee, ranged, magic skills are = warlock level x 3.  i want to change this to be warlock level x2.  on top of that awakened lords have a flat base damage of 10 to 20 for any melee, ranged or magic/aoe attack.  so the skill is added to this base for each and every attack. and in addition i want a damage bonus percentage applied on top of this: of 100% * (warlock level/10).  thus a level 35 warlock awakened lord will have a damage bonus of 350% to all its attacks.  various awakened lords have other bonuses or adjustments on top of this potentiually.
+4. change divine golems to ignore all armor and defense of the target of their divine attacks.  furthermore add a damage bonus of  ( (square root of the artificer level) *2) squared, as a percent bonus.  thus a level 36 artificer divine golem has a damage bonus of 144%  and a level 100 artificer divine golem has a damage bonus of 400%
+5. i want rogue level 35 loot bonus to apply to chests as well as gold discovered from disarming traps.  this includes the bonus from all rogues in the party
 
 
 =========================================================================================
