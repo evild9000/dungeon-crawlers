@@ -684,6 +684,31 @@ export class CombatSystem {
         return Object.values(member.equipment).includes(itemId);
     }
 
+    _hasEldritchAmulet(member) {
+        return member && member.classId === 'warlock' && (member.level || 1) >= 35 && this._hasEquipped(member, 'eldritch_amulet');
+    }
+
+    _hasHagEyeRod(member) {
+        return member && member.classId === 'mage' && (member.level || 1) >= 35 && this._hasEquipped(member, 'hag_eye_rod');
+    }
+
+    _empowerSummonDamageStats(stats, mult, flag) {
+        if (!stats || !mult || mult <= 1) return;
+        stats.itemDamageMult = Math.max(stats.itemDamageMult || 1, mult);
+        if (flag) stats[flag] = true;
+    }
+
+    _applyHagEyeRodElementalBuff(mage, elemental) {
+        if (!this._hasHagEyeRod(mage) || !elemental) return false;
+        const bonusHp = Math.max(1, Math.floor((elemental.maxHealth || 1) * 0.15));
+        elemental.maxHealth += bonusHp;
+        elemental.health = Math.min(elemental.maxHealth, (elemental.health || 0) + bonusHp);
+        elemental.summonStats = elemental.summonStats || {};
+        elemental.summonStats.defense = Math.max(0, (elemental.summonStats.defense || 0) + 5);
+        this._empowerSummonDamageStats(elemental.summonStats, 1.15, 'hagEyeRodBuff');
+        return true;
+    }
+
     _isColoredDragonType(type, color) {
         const t = String(type || '').toLowerCase();
         return t.includes(`${color}_dragon`) || t.includes(`${color} dragon`);
@@ -959,6 +984,9 @@ export class CombatSystem {
         }
 
         const awakenStats = rollWarlockAwakenedStats(warlock.level || 1, warlock.maxHealth, chosenId);
+        if (this._hasEldritchAmulet(warlock)) {
+            this._empowerSummonDamageStats(awakenStats, 1.15, 'eldritchAmuletBuff');
+        }
         const existingCount = (this.party || []).filter(p => p && p.isSummoned && p.summonerId === warlock.id && p.summonType === chosenId).length;
         const awakened = new PartyMember({
             name: `${warlock.name}'s ${preset.name}${existingCount > 0 ? ` #${existingCount + 1}` : ''}`,
@@ -987,7 +1015,7 @@ export class CombatSystem {
         warlock.warlockAwakenSummons = Math.max(0, (warlock.warlockAwakenSummons || 0) - WARLOCK_AWAKEN_TRIGGER_SUMMONS);
         warlock.warlockAwakenSummonIds = trackedIds.slice(WARLOCK_AWAKEN_TRIGGER_SUMMONS);
 
-        this._addLog(`🕳️ ${warlock.name} awakens ${preset.name}! ${removed} bound demon${removed === 1 ? '' : 's'} are sacrificed to the void.`);
+        this._addLog(`🕳️ ${warlock.name} awakens ${preset.name}! ${removed} bound demon${removed === 1 ? '' : 's'} are sacrificed to the void.${awakenStats.eldritchAmuletBuff ? ' Eldritch Amulet grants +15% damage.' : ''}`);
         return true;
     }
 
@@ -2715,7 +2743,7 @@ export class CombatSystem {
             let finalDmg = dmg;
             let critNote = '';
             if (m.classId === 'mage' && m.level >= MAGE_MIRROR_IMAGE_UNLOCK_LEVEL) {
-                const critChance = Math.floor(m.level / 2) * MAGE_AOE_CRIT_CHANCE_PER_2LV;
+                const critChance = Math.floor(m.level / 2) * MAGE_AOE_CRIT_CHANCE_PER_2LV + (this._hasHagEyeRod(m) ? 0.05 : 0);
                 if (critChance > 0 && Math.random() < critChance && !this._isCritImmune(e)) {
                     const critMult = MAGE_AOE_CRIT_DAMAGE_BASE + m.level * MAGE_AOE_CRIT_DAMAGE_PER_LV;
                     finalDmg = Math.floor(finalDmg * critMult);
@@ -2759,7 +2787,7 @@ export class CombatSystem {
                     bDmg += this._getPartyMemberDamageMod(m);
                     bDmg = Math.max(1, Math.round(bDmg * (m.getMagicDamageMultiplier?.() || 1)));
                     let bCritNote = '';
-                    const bCritChance = Math.floor(m.level / 2) * MAGE_AOE_CRIT_CHANCE_PER_2LV;
+                    const bCritChance = Math.floor(m.level / 2) * MAGE_AOE_CRIT_CHANCE_PER_2LV + (this._hasHagEyeRod(m) ? 0.05 : 0);
                     if (bCritChance > 0 && Math.random() < bCritChance && !this._isCritImmune(e)) {
                         const bCritMult = MAGE_AOE_CRIT_DAMAGE_BASE + m.level * MAGE_AOE_CRIT_DAMAGE_PER_LV;
                         bDmg = Math.floor(bDmg * bCritMult);
@@ -4431,7 +4459,7 @@ export class CombatSystem {
             return;
         }
         m.mana -= MAGE_MIRROR_IMAGE_MANA_COST;
-        const count = Math.max(1, Math.floor(m.level / MAGE_MIRROR_IMAGE_COUNT_DIVISOR));
+        const count = Math.max(1, Math.floor(m.level / MAGE_MIRROR_IMAGE_COUNT_DIVISOR)) + (this._hasHagEyeRod(m) ? 1 : 0);
         m.mirrorImages = (m.mirrorImages || 0) + count;
         this._addLog(`🪞 ${m.name} conjures ${count} Mirror Image${count > 1 ? 's' : ''}! (${m.mirrorImages} total)`);
         this._advancePlayerTurn();
@@ -5435,9 +5463,10 @@ export class CombatSystem {
             },
         });
         elem.health = cfg.hp;
+        const hagBuff = this._applyHagEyeRodElementalBuff(mage, elem);
         this.party.push(elem);
         this._registerNewSummon(elem);
-        this._addLog(`\u{1F300}${cfg.icon} A ${cfg.name} surges through the rift!`);
+        this._addLog(`\u{1F300}${cfg.icon} A ${cfg.name} surges through the rift!${hagBuff ? ' Hag Eye Rod empowers it (+15% HP/damage, +5 def).' : ''}`);
     }
 
     getAvailableNecroTiers(necroLevel) {
@@ -7927,9 +7956,10 @@ export class CombatSystem {
             },
         });
         elemental.health = hp;
+        const hagBuff = this._applyHagEyeRodElementalBuff(actor, elemental);
         this.party.push(elemental);
         this._registerNewSummon(elemental);
-        this._addLog(`${preset.icon || '✨'} ${actor.name} calls forth a ${preset.name}!`);
+        this._addLog(`${preset.icon || '✨'} ${actor.name} calls forth a ${preset.name}!${hagBuff ? ' Hag Eye Rod empowers it (+15% HP/damage, +5 def).' : ''}`);
         return true;
     }
 
@@ -9105,6 +9135,7 @@ export class CombatSystem {
         }
 
         // ── Rift Elementals ──────────────────────────────────────────────────
+        const riftDamageMult = Math.max(1, Number(stats.itemDamageMult) || 1);
         if (beastKind === 'rift_earth') {
             const mLvl = stats.mageLevel ?? 1;
             const aoeChance = Math.min(1, (20 + mLvl / 2) / 100);
@@ -9112,7 +9143,7 @@ export class CombatSystem {
             const halfStun = Math.min(1, mLvl / 200);
             if (Math.random() < aoeChance) {
                 // Earthquake AoE
-                let dmg = randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5);
+                let dmg = Math.max(1, Math.round(randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5) * riftDamageMult));
                 this._addLog(`\u{1FAA8} ${m.name} slams the earth — shockwave ripples through all enemies!`);
                 for (const e of this.aliveHostileEnemies.slice()) {
                     const dealt = this._damageSummonEnemy(e, dmg);
@@ -9124,7 +9155,7 @@ export class CombatSystem {
             } else {
                 // Single melee
                 const t = targets[Math.floor(Math.random() * targets.length)];
-                let dmg = randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5);
+                let dmg = Math.max(1, Math.round(randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 5) * riftDamageMult));
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 this._addLog(`\u{1FAA8} ${m.name} slams ${this._eName(t)} for ${dealt}!`);
                 if (t.health > 0 && !this._enemyHasImmunity(t, 'stun') && Math.random() < stunChance_earth)
@@ -9137,7 +9168,7 @@ export class CombatSystem {
         if (beastKind === 'rift_air') {
             const mLvl = stats.mageLevel ?? 1;
             const stunChance_air = Math.min(1, mLvl / 100);
-            let dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            let dmg = Math.max(1, Math.round(randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5) * riftDamageMult));
             this._addLog(`\u{1F4A8} ${m.name} unleashes a howling gale — all enemies are battered!`);
             for (const e of this.aliveHostileEnemies.slice()) {
                 const dealt = this._damageSummonEnemy(e, dmg, false, true);
@@ -9153,7 +9184,7 @@ export class CombatSystem {
             const mLvl = stats.mageLevel ?? 1;
             const drownRounds = Math.max(1, Math.floor(mLvl / 10));
             const drownImmuneTags = ['undead', 'elemental', 'construct', 'incorporeal', 'demon', 'plant'];
-            let dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            let dmg = Math.max(1, Math.round(randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5) * riftDamageMult));
             this._addLog(`\u{1F30A} ${m.name} erupts in a surging wave — all enemies are swept under!`);
             for (const e of this.aliveHostileEnemies.slice()) {
                 const dealt = this._damageSummonEnemy(e, dmg, false, true);
@@ -9177,7 +9208,7 @@ export class CombatSystem {
             const mLvl = stats.mageLevel ?? 1;
             const stunChance_fire = Math.min(1, mLvl / 100);
             const burnRounds = Math.max(1, Math.floor(mLvl / 10));
-            let dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            let dmg = Math.max(1, Math.round(randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5) * riftDamageMult));
             this._addLog(`\u{1F525} ${m.name} erupts in a column of fire — all enemies are scorched!`);
             for (const e of this.aliveHostileEnemies.slice()) {
                 if (this._enemyHasImmunity(e, 'fire')) {
@@ -9202,7 +9233,7 @@ export class CombatSystem {
 
         if (beastKind === 'rift_void') {
             const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5);
+            const dmg = Math.max(1, Math.round(randomInt(stats.magicMin ?? 1, stats.magicMax ?? 5) * riftDamageMult));
             const dealt = this._damageSummonEnemy(t, dmg, false, false, { isMagic: true });
             this._addLog(`🌑 ${m.name} tears at ${this._eName(t)} with void force for ${dealt}!`);
             if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
@@ -16847,6 +16878,9 @@ export class CombatSystem {
             const normalStats = rollWarlockDemonStats(warlock.level || 1, baseWarlockMax, magicSkill, preset.id);
             stats.abyssFormHpBonus = Math.max(0, stats.maxHealth - normalStats.maxHealth);
         }
+        if (this._hasEldritchAmulet(warlock)) {
+            this._empowerSummonDamageStats(stats, 1.15, 'eldritchAmuletBuff');
+        }
         const num = this.party.filter(p => p.isSummoned && p.summonerId === warlock.id && p.summonType === preset.id).length + 1;
         const demon = new PartyMember({
             name: `${warlock.name}'s ${preset.name} #${num}`,
@@ -16866,7 +16900,7 @@ export class CombatSystem {
         });
         this.party.push(demon);
         this._registerNewSummon(demon);
-        this._addLog(`\u{1F608} ${preset.name} claws into reality for ${warlock.name}! (HP ${demon.maxHealth}, atk ${stats.meleeMin}-${stats.meleeMax}, def ${stats.defense})`);
+        this._addLog(`\u{1F608} ${preset.name} claws into reality for ${warlock.name}! (HP ${demon.maxHealth}, atk ${stats.meleeMin}-${stats.meleeMax}, def ${stats.defense}${stats.eldritchAmuletBuff ? ', +15% dmg' : ''})`);
         if (this._initiativeOrder.length > 0) {
             const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
             if (!this._initiativeOrder.some(slot => slot.ref === demon))
@@ -17034,8 +17068,9 @@ export class CombatSystem {
     warlockTentacleAttack() {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'warlock' || !m.abyssFormActive) return;
-        const count = Math.max(1, Math.floor((m.level || 1) / 3));
-        const dmgMult = 1 + ((m.level || 1) * 3) / 100;
+        const hasAmulet = this._hasEldritchAmulet(m);
+        const count = Math.max(1, Math.floor((m.level || 1) / 3)) + (hasAmulet ? 1 : 0);
+        const dmgMult = (1 + ((m.level || 1) * 3) / 100) * (hasAmulet ? 1.10 : 1);
         const level = Math.max(1, m.level || 1);
         const hookedActive = level >= WARLOCK_L35_UNLOCK_LEVEL;
         const critChance = Math.min(1, level * WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL);
@@ -17085,7 +17120,7 @@ export class CombatSystem {
 
         // Quickstep Song haste: one extra round of tentacle attacks
         if (m.quickstepHasteActive && this.aliveHostileEnemies.length > 0) {
-            const _qstCount = Math.max(1, Math.floor((m.level || 1) / 3));
+            const _qstCount = count;
             this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus tentacle strike!`);
             for (let _qi = 0; _qi < _qstCount && this.aliveHostileEnemies.length > 0; _qi++) {
                 const _qstTgts = this.aliveHostileEnemies;
@@ -17648,7 +17683,8 @@ export class CombatSystem {
             if (!target || target.health <= 0) return 0;
             const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
             const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
-            const raw = Math.max(1, Math.round(randomInt(min, max) * mult));
+            const itemMult = Math.max(1, Number(st.itemDamageMult) || 1);
+            const raw = Math.max(1, Math.round(randomInt(min, max) * mult * itemMult));
             const options = kind === 'melee' ? { contactAttacker: demon } : {};
             if (kind === 'magic') options.isMagic = true;
             return this._damageSummonEnemy(target, raw, ignoreDefense, false, options);

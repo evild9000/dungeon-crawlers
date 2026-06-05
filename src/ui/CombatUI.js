@@ -1290,7 +1290,8 @@ export class CombatUI {
 
             // ── Mirror Image (L20)
             const miUnlocked = m.level >= MAGE_MIRROR_IMAGE_UNLOCK_LEVEL;
-            const miCount    = Math.floor(m.level / MAGE_MIRROR_IMAGE_COUNT_DIVISOR);
+            const hasHagEyeRod = !!(m.equipment && Object.values(m.equipment).includes('hag_eye_rod') && m.level >= 35);
+            const miCount    = Math.floor(m.level / MAGE_MIRROR_IMAGE_COUNT_DIVISOR) + (hasHagEyeRod ? 1 : 0);
             const miActive   = (m.mirrorImages || 0) > 0;
             const miCan      = miUnlocked && !miActive && m.mana >= MAGE_MIRROR_IMAGE_MANA_COST;
             const miLabel    = miUnlocked
@@ -1304,6 +1305,7 @@ export class CombatUI {
             miBtn.title = [
                 `Mage L${MAGE_MIRROR_IMAGE_UNLOCK_LEVEL}: Mirror Image.`,
                 `Costs ${MAGE_MIRROR_IMAGE_MANA_COST} mana. Creates ${miCount} illusory duplicate(s).`,
+                hasHagEyeRod ? 'Hag Eye Rod: +1 Mirror Image and +5% magic AoE crit chance.' : '',
                 'Each image absorbs ONE hit of any type (melee, ranged, magic, or AoE) before shattering.',
                 'While images remain, all incoming hits strike a random image instead of the mage.',
                 !miUnlocked ? `Requires mage level ${MAGE_MIRROR_IMAGE_UNLOCK_LEVEL}.` : '',
@@ -2923,7 +2925,8 @@ export class CombatUI {
                 ].filter(Boolean).join('\n');
 
                 if (m.abyssFormActive) {
-                    const tentacleCount = Math.max(1, Math.floor(m.level / 3));
+                    const hasEldritchAmulet = !!(m.equipment && Object.values(m.equipment).includes('eldritch_amulet') && m.level >= 35);
+                    const tentacleCount = Math.max(1, Math.floor(m.level / 3)) + (hasEldritchAmulet ? 1 : 0);
                     const hookedCritChance = Math.max(0, Math.min(1, (m.level || 1) * WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL));
                     const hookedCritBonus = WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_BASE + (m.level || 1) * WARLOCK_HOOKED_TENTACLE_CRIT_BONUS_PER_LEVEL;
                     const hookedBleedChance = Math.max(0, Math.min(1, WARLOCK_HOOKED_TENTACLE_BLEED_BASE_CHANCE + (m.level || 1) * WARLOCK_HOOKED_TENTACLE_BLEED_CHANCE_PER_LEVEL));
@@ -2932,7 +2935,8 @@ export class CombatUI {
                     tentacleBtn.classList.add('combat-special-btn');
                     tentacleBtn.title = [
                         `Attacks ${tentacleCount} random available target(s) from the back row.`,
-                        `Uses warlock magic skill for melee damage with +${m.level * 3}% bonus.`,
+                        `Uses warlock magic skill for melee damage with +${m.level * 3}% bonus${hasEldritchAmulet ? ', then Eldritch Amulet adds +10% damage' : ''}.`,
+                        hasEldritchAmulet ? 'Eldritch Amulet: +1 tentacle attack.' : '',
                         `${m.level}% stun chance per hit; normal monster and type immunities still apply.`,
                         `Hooked Tentacles (L${WARLOCK_L35_UNLOCK_LEVEL} passive): ${Math.round(hookedCritChance * 100)}% chance per hit to crit for +${Math.round(hookedCritBonus * 100)}% damage.`,
                         `Separate ${Math.round(hookedBleedChance * 100)}% chance per hit to apply Bleed DoT (${hookedBleedRounds} rounds, damage per tick = half of that hit).`,

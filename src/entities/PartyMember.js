@@ -363,6 +363,17 @@ export class PartyMember {
         return pct;
     }
 
+    getEquipmentMaxManaPct() {
+        if (this.isSummoned) return 0;
+        let pct = 0;
+        for (const itemId of Object.values(this.equipment || {})) {
+            if (!itemId) continue;
+            const def = getItemDef(itemId);
+            if (def && typeof def.maxManaPct === 'number') pct += def.maxManaPct;
+        }
+        return pct;
+    }
+
     getRoundHealthRegenPct() {
         if (this.isSummoned) return 0;
         let pct = 0;
@@ -394,10 +405,11 @@ export class PartyMember {
         const baseStamina = Math.max(0, this.maxStamina - (old.stamina || 0));
         const baseMana = Math.max(0, this.maxMana - (old.mana || 0));
         const pct = this.getTrinketPoolAugmentPct();
+        const manaPct = pct + this.getEquipmentMaxManaPct();
         const next = {
             health: Math.floor(baseHealth * pct),
             stamina: Math.floor(baseStamina * pct),
-            mana: Math.floor(baseMana * pct),
+            mana: Math.floor(baseMana * manaPct),
         };
         this.maxHealth = baseHealth + next.health;
         this.maxStamina = baseStamina + next.stamina;
@@ -770,6 +782,11 @@ export class PartyMember {
 
         // Off-hand weapon validation.
         if (slotHint === 'offhand') {
+            if (def.specialOffhandSlot) {
+                if (def.category !== ITEM_CATEGORY.WEAPON) {
+                    return { ok: false, reason: 'Only special weapons can use this off hand slot.' };
+                }
+            } else
             if (def.category !== ITEM_CATEGORY.WEAPON || def.subtype !== 'melee') {
                 return { ok: false, reason: 'Only melee weapons can be used in the off hand.' };
             }
@@ -803,7 +820,7 @@ export class PartyMember {
         let slot;
         if (def.category === ITEM_CATEGORY.WEAPON) {
             // Dual-wield: place in offhand slot when explicitly requested.
-            slot = (slotHint === 'offhand') ? 'offhand' : 'weapon';
+            slot = (slotHint === 'offhand' || def.specialOffhandSlot) ? 'offhand' : 'weapon';
         } else if (def.category === ITEM_CATEGORY.ARMOR)    slot = 'armor';
         else if (def.category === ITEM_CATEGORY.SHIELD)   slot = 'shield';
         else if (def.category === ITEM_CATEGORY.TRINKET) {
@@ -824,7 +841,7 @@ export class PartyMember {
 
         this.removeItem(itemId);
         this.equipment[slot] = itemId;
-        if (def.category === ITEM_CATEGORY.TRINKET) {
+        if (def.category === ITEM_CATEGORY.TRINKET || typeof def.maxManaPct === 'number') {
             this.refreshTrinketPoolBonuses(true);
         }
 
@@ -857,7 +874,8 @@ export class PartyMember {
         if (slot === 'weapon' || slot === 'offhand' || slot === 'armor' || slot === 'shield') {
             if (this.equipmentEnchants) this.equipmentEnchants[slot] = null;
         }
-        if (['cloak', 'neck', 'ring1', 'ring2', 'belt'].includes(slot)) {
+        const def = getItemDef(itemId);
+        if (['cloak', 'neck', 'ring1', 'ring2', 'belt'].includes(slot) || (def && typeof def.maxManaPct === 'number')) {
             this.refreshTrinketPoolBonuses(false);
         }
         this.addItem(itemId);
@@ -880,11 +898,11 @@ export class PartyMember {
         }
 
         // Dual-wield: add off-hand melee weapon power + enchant level.
-        if (attackType === 'melee') {
+        if (attackType === 'melee' || attackType === 'magic') {
             const offId = this.equipment.offhand;
             if (offId) {
                 const def = WEAPONS[offId];
-                if (def && def.subtype === 'melee') {
+                if (def && def.subtype === attackType) {
                     const offEnch = this.equipmentEnchants && this.equipmentEnchants.offhand;
                     const offEnchLvl = offEnch && offEnch.level ? offEnch.level : 0;
                     bonus += (def.power || 0) + offEnchLvl;

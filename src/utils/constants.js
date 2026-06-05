@@ -1327,6 +1327,18 @@ export const MAGIC_ITEM_RECIPES = [
         cost: { gold: 150000, material_lich_part: 10, material_undead_essence: 30 },
     },
     {
+        id: 'eldritch_amulet',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_demon_ichor: 100 },
+    },
+    {
+        id: 'hag_eye_rod',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_hag_eye: 10 },
+    },
+    {
         id: 'lance_dragon_king',
         kind: 'equipment',
         quantity: 1,

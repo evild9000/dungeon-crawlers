@@ -3141,53 +3141,75 @@ confirm:
 
 
 todo:
-1. a way for liches to heal (magic and/or drain)
-2. the golem tab on the artificer crafting modal doesnt show the entire cost sometimes because there is too much text.  move the cost beneath each golem's description
+1. change necromancer life drain ability to:
+a. (at level 20) also heal necromancers in lich form. damage healed is 5% of the damage done to each enemy.
+b. move the siphon power mechanics to Life Drain instead of a separate button.  Necromancers magical attacks also now steal mana and stamina.  
+c. Siphon Power is now passive, and its button in combat can be removed.
+d. update the necromancer class help file to reflect these changes.
 
+2. the golem tab on the artificer crafting modal doesnt show the entire cost sometimes because there is too much text.  move the cost beneath each golem's description
+3. bard quickstep song buff and player HUD card buff note should disappear at the end  of combat
+4. for the artificer class help move the sabotage ability information to after Dual Drone so that the level 35 skill is in order correctly.
+
+confirm:
+1. void elemental lost its sprite card in the monster HUD
+2. i crafted a girdle of giant strength and it did not appear in the group inventory.  it took my gold and the giant parts.  fix this and also on the next load put a girdle of giant strength into the inventory of my group.
+
+confirm:
+1. girdle of giant strength as wel as any other of the new crafted level 35 artificer magic items do not seem to have  a value associated and do not show up in the list of items i can sell to the tinker shopkeeper vendor
+
+in progress:
+1. make a more snake-like HUD card for the megaconda.  right now it is using the tunnelworm icon, and i rather have it look more like a giant snake like a python or anaconda
+
+todo:
+1. lance of the dragon king requires 25 dragon hearts
 
 
 =========================================================================================
+add ranger, rogue or warlock
+
+
 
 ** work on badges and logging **
 
 
 items to make yet
 
-10. demon ichor - warlock enhancer
+10. Eldritch Amulet - need 100 demon ichors and 150,000 gold
+a. usable only by warlock level 35+
+b. +7 magic and +7 defense
+c. necklace/amulet slot items
+d. gain +1 additional tentacle attack while in abyss form (not one additional series of attacks, just +1 single tentacle)
+e. gain +10% damage bonus to tentacle attacks
+f. summoned demons and awakened lords gain a buff when summoned that grants +15% more damage.
 
-11. aberration item - think
 
-12. hag eye - mage enhancer 
+12. Hag Eye Rod - requires 10 Hag Eyes and 150,000 gold
+a. usable only by a mage level 35%
+b. +7 magic bonus
+c. equippable in the offhand/shield slot for mages (code a special overwrite for this).
+d. Elementals summoned via a Rift or from magic items gain +15% health upon summoning as well as a buff that grants them +15% damage and +5 defense.
+e. grants a +15% bonus to max mana
+f. add 5% to chance for the mage to crit with magic AOE attacks
+g. adds +1 mirror image when cast
 
-13. manticore spikes for missile weapons - bonus to ranger/artificer ranged
-
-14. yeti or werewolf items? 
+13. Manticore Ballista - requires 150,000 gold and 15 manticore spikes to craft
+a. usable only by level 35 or higher rangers or artificers
+b. targets struck by the ballista knocked prone?
+c. bonus to crits..?
+d. extra ricochets or scatters?
+e. more 
 
 15. harpy or shrieker pieces for sonic/bard item
 
+14. yeti or werewolf items? 
+
 9. Some undead summon item (from undead essences?)
+
+11. aberration item (100) items - think - summons random - aberration to fight for party
 
 --- need warrior rogue monk cleric barbarian photomancer items?
 
-
-1. displacer beast : hide
-2. any construct tag: construct heart, construct head head, construct arm, construct leg, construct torso.
-3. any elemental tag: fire type drop fire essence, air types drop air essence, earth types drop earth essence, water types drop water essence
-4. any giant tag: drops giant heart
-5. any dragon tag: hide, heart
-6. any undead tag: undead essence
-7. any troll monster: blood
-8. any vermin tag: vermin parts
-9. any slime tag: ichor
-10.any plant tag: plant parts
-11.any demon tag: demon ichor
-12. any aberration tag: aberration parts
-12. any hag monster: hag eye 
-13. manticore: manticore spikes
-14. yeti: yeti hide
-15.werewolf: werewolf blood
-15. harpy: harpy parts
-16. shrieker: shrieker parts
 
 QUESTS:
 ===================================================================================
@@ -3236,14 +3258,9 @@ todo: maybe the bonuses to regen for class or species should be per level per mi
 
 -----------------------------------------------------------------
 
-horn of valhalla - summons 2-5 einherjar warriors - incorporeal, last 1 fight
-pipes of the sewers - summons 10 (weak) rats, somewhat defensively, has a lot of health.  damage is dependent on health, and lowers the lower the swarm's health.  
-
------
-
 go outside the dungeon/different tiles
 better character sprites?  what is the pixel size of the pic
---
+
 
 
 

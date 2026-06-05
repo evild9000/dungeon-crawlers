@@ -1229,7 +1229,7 @@ export class PartyHUD {
         const eqRow = card.querySelector('.party-equip-row');
         if (eqRow) {
             eqRow.innerHTML = '';
-            const slots = ['weapon', 'armor', 'shield'];
+            const slots = ['weapon', 'offhand', 'armor', 'shield'];
             for (const slot of slots) {
                 if (member.equipment[slot]) {
                     const def = getItemDef(member.equipment[slot]);
@@ -1256,6 +1256,14 @@ export class PartyHUD {
                 b.title = tip;
                 partyStatusRow.appendChild(b);
             };
+            if (member.isSummoned && member.summonStats?.eldritchAmuletBuff) {
+                mkPB('📿', '+15% DMG', 'rgba(95,35,135,0.95)',
+                    'Eldritch Amulet: this warlock demon or Awakened Lord deals +15% damage.');
+            }
+            if (member.isSummoned && member.summonStats?.hagEyeRodBuff) {
+                mkPB('👁️', 'Rod', 'rgba(35,95,145,0.95)',
+                    'Hag Eye Rod: this elemental gained +15% health, +15% damage, and +5 defense when summoned.');
+            }
             // Stunned
             if (member.stunned)
                 mkPB('⚡', 'Stunned', 'rgba(220,200,0,0.9)', 'Stunned: cannot act this turn');

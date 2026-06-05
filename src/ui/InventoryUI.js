@@ -615,24 +615,26 @@ export class InventoryUI {
                     const isMelee = def.category === ITEM_CATEGORY.WEAPON
                         && def.subtype === WEAPON_SUBTYPE.MELEE;
 
-                    if (isMelee) {
+                    if (isMelee || def.specialOffhandSlot) {
                         // Main hand button
-                        const mainBtn = document.createElement('button');
-                        mainBtn.className = 'pinv-action-btn pinv-equip-btn';
-                        mainBtn.textContent = 'Main';
-                        const mainCheck = member.canEquip(entry.itemId, 'weapon');
-                        if (!mainCheck.ok) {
-                            mainBtn.disabled = true;
-                            mainBtn.title = mainCheck.reason;
-                            mainBtn.classList.add('pinv-equip-btn-disabled');
-                        } else {
-                            mainBtn.addEventListener('click', () => {
-                                member.equip(entry.itemId, 'weapon');
-                                this._onChanged();
-                                this._renderPersonal();
-                            });
+                        if (isMelee) {
+                            const mainBtn = document.createElement('button');
+                            mainBtn.className = 'pinv-action-btn pinv-equip-btn';
+                            mainBtn.textContent = 'Main';
+                            const mainCheck = member.canEquip(entry.itemId, 'weapon');
+                            if (!mainCheck.ok) {
+                                mainBtn.disabled = true;
+                                mainBtn.title = mainCheck.reason;
+                                mainBtn.classList.add('pinv-equip-btn-disabled');
+                            } else {
+                                mainBtn.addEventListener('click', () => {
+                                    member.equip(entry.itemId, 'weapon');
+                                    this._onChanged();
+                                    this._renderPersonal();
+                                });
+                            }
+                            btnGroup.appendChild(mainBtn);
                         }
-                        btnGroup.appendChild(mainBtn);
 
                         // Off hand button
                         const offBtn = document.createElement('button');
@@ -1386,6 +1388,8 @@ export class InventoryUI {
             const subtypeName = def.subtype ? def.subtype.charAt(0).toUpperCase() + def.subtype.slice(1) : '';
             lines.push(`${subtypeName} weapon`);
             lines.push(`+${def.power} ${subtypeName.toLowerCase()} damage`);
+            if (def.specialOffhandSlot) lines.push('Equips in the off hand.');
+            if (typeof def.maxManaPct === 'number') lines.push(`+${Math.round(def.maxManaPct * 100)}% max mana`);
             if (enchant && enchant.level > 0) {
                 lines.push(`✨ Enchanted +${enchant.level} (bonus damage)`);
             }

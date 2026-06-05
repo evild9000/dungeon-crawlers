@@ -643,6 +643,20 @@ export const WEAPONS = {
         description: '+7 magic. Druid 35+: empowers Verdant Surge, plant summons, and Treant Wild Shape into World Tree form.',
         icon: '\u{1F333}',
     },
+    hag_eye_rod: {
+        id: 'hag_eye_rod',
+        name: 'Hag Eye Rod',
+        category: ITEM_CATEGORY.WEAPON,
+        subtype: WEAPON_SUBTYPE.MAGIC,
+        power: 7,
+        requiredClass: 'mage',
+        requiredLevel: 35,
+        specialOffhandSlot: true,
+        maxManaPct: 0.15,
+        sellValue: 75000,
+        description: '+7 magic. Mage 35+: equips in the off hand, +15% max mana, +5% magic AoE crit chance, +1 Mirror Image, and empowers rift/device elementals with +15% health, +15% damage, and +5 defense.',
+        icon: '\u{1FA84}',
+    },
     lance_dragon_king: {
         id: 'lance_dragon_king',
         name: 'Lance of the Dragon King',
@@ -826,6 +840,21 @@ TRINKETS.girdle_giant_strength = {
     sellValue: 75000,
     description: 'Crafted belt. +14 melee and +7 defense.',
     icon: '\u{1F4AA}',
+};
+
+TRINKETS.eldritch_amulet = {
+    id: 'eldritch_amulet',
+    name: 'Eldritch Amulet',
+    category: ITEM_CATEGORY.TRINKET,
+    trinketKind: TRINKET_KIND.NECK,
+    trinketSlots: ['neck'],
+    bonusTypes: { magic: 7, defense: 7 },
+    requiredClass: 'warlock',
+    requiredLevel: 35,
+    tier: 7,
+    sellValue: 75000,
+    description: 'Warlock 35+ amulet. +7 magic and +7 defense. Abyss Form gains +1 tentacle attack and +10% tentacle damage; summoned demons and awakened lords gain +15% damage.',
+    icon: '\u{1F4FF}',
 };
 
 TRINKETS.sash_vermin_keeper = {

@@ -316,6 +316,8 @@ export class ShopUI {
         if (def.category === ITEM_CATEGORY.WEAPON) {
             const st = def.subtype ? def.subtype.charAt(0).toUpperCase() + def.subtype.slice(1) : '';
             lines.push(`${st} weapon — +${def.power} damage`);
+            if (def.specialOffhandSlot) lines.push('Equips in the off hand.');
+            if (typeof def.maxManaPct === 'number') lines.push(`+${Math.round(def.maxManaPct * 100)}% max mana`);
         } else if (def.category === ITEM_CATEGORY.ARMOR) {
             const type = def.armorType ? def.armorType.charAt(0).toUpperCase() + def.armorType.slice(1) : '';
             if (type) lines.push(`${type} armor`);
