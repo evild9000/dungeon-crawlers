@@ -825,14 +825,9 @@ export class CombatSystem {
 
     craftMismatchedGolem(artificer) {
         if (!artificer || !Array.isArray(this.party)) return null;
-        const existing = this.party.find(p => p && p.isSummoned && p.summonStats?.mismatchedGolem && p.summonerId === artificer.id && p.health > 0);
-        if (existing) {
-            this._syncMismatchedGolemStats(existing);
-            this._addLog(`🔧 ${artificer.name}'s Mismatched Golem is already active.`);
-            return existing;
-        }
+        const golemNumber = this.party.filter(p => p && p.isSummoned && p.summonStats?.mismatchedGolem && p.summonerId === artificer.id).length + 1;
         const golem = new PartyMember({
-            name: `${artificer.name}'s Mismatched Golem`,
+            name: `${artificer.name}'s Mismatched Golem #${golemNumber}`,
             classId: 'summoned',
             speciesId: 'human',
             level: artificer.level || 1,

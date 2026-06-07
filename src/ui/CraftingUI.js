@@ -35,6 +35,7 @@ import {
 } from '../utils/constants.js';
 import { getItemDef, WEAPONS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';
+import { PartyMember } from '../entities/PartyMember.js';
 
 const RIDER_ICONS = {
     fire:      '\u{1F525}',
@@ -693,6 +694,60 @@ export class CraftingUI {
         }
     }
 
+    _syncMismatchedGolemStats(golem, artificer) {
+        if (!golem || !artificer || !golem.summonStats?.mismatchedGolem) return;
+        const al = Math.max(1, artificer.level || golem.level || 1);
+        const oldMax = Math.max(1, golem.maxHealth || 1);
+        const nextMax = Math.max(1, Math.floor((artificer.maxHealth || oldMax) * 3));
+        golem.level = al;
+        golem.maxHealth = nextMax;
+        if (nextMax > oldMax) golem.health += nextMax - oldMax;
+        golem.health = Math.min(Math.max(1, golem.health || nextMax), nextMax);
+        const skill = Math.max(1, Math.floor(al * 2));
+        Object.assign(golem.summonStats, {
+            artificerLevel: al,
+            defense: skill,
+            baseDefense: skill,
+            meleeMin: Math.max(1, Math.floor(al * 1.5)),
+            meleeMax: Math.max(2, Math.floor(al * 2.5)),
+            meleeSkill: skill,
+            rangedSkill: skill,
+            magicSkill: skill,
+            halfDmgSpecial: true,
+            immune: ['poison', 'stun', 'paralyze', 'petrify'],
+        });
+    }
+
+    _craftMismatchedGolemDirect(state, artificer) {
+        if (!state || !Array.isArray(state.party) || !artificer) return { ok: false, reason: 'Party state is unavailable.' };
+        const golemNumber = state.party.filter(p => p && p.isSummoned && p.summonStats?.mismatchedGolem && p.summonerId === artificer.id).length + 1;
+        const golem = new PartyMember({
+            name: `${artificer.name}'s Mismatched Golem #${golemNumber}`,
+            classId: 'summoned',
+            speciesId: 'human',
+            level: artificer.level || 1,
+            maxHealth: Math.max(1, Math.floor((artificer.maxHealth || 1) * 3)),
+            maxStamina: 0,
+            maxMana: 0,
+            portraitSeed: Math.floor(Math.random() * 100000),
+            isSummoned: true,
+            summonType: 'mismatched_golem',
+            summonerId: artificer.id,
+            isPersistent: true,
+            canBeHealed: false,
+            row: 'front',
+            summonStats: {
+                tierId: 'mismatched_golem',
+                mismatchedGolem: true,
+                beastKind: 'golem',
+            },
+        });
+        golem.health = golem.maxHealth;
+        this._syncMismatchedGolemStats(golem, artificer);
+        state.party.push(golem);
+        return { ok: true, golem, alreadyActive: false };
+    }
+
     // ── Magic Items tab (Artificer L35+) ─────────────────────────────────────
     _renderMagicItems(body, state, artificer) {
         if ((artificer.level || 0) < ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL) {
@@ -702,7 +757,7 @@ export class CraftingUI {
 
         const intro = document.createElement('div');
         intro.className = 'craft-note';
-        intro.textContent = 'Choose a special level 35 artificer recipe. Elemental devices create 10 combat charges; equipment is added to group inventory; the Mismatched Golem joins its creator.';
+        intro.textContent = 'Choose a special level 35 artificer recipe. Elemental devices create 10 combat charges; equipment is added to group inventory; each Mismatched Golem joins its creator and does not count against normal golem limits.';
         body.appendChild(intro);
 
         const picker = document.createElement('div');
@@ -730,10 +785,14 @@ export class CraftingUI {
         const row = document.createElement('div');
         row.className = 'craft-row';
         const owned = def ? state.inventory.getItemCount(recipe.id) : 0;
+        const summonCount = recipe.kind === 'summon' && Array.isArray(state.party)
+            ? state.party.filter(p => p && p.isSummoned && p.summonStats?.mismatchedGolem && p.summonerId === artificer.id && p.health > 0).length
+            : 0;
         const info = document.createElement('div');
         info.className = 'craft-row-info';
         const ownedText = recipe.kind === 'device' ? ` <span class="craft-owned">(charges: ${owned}/${def?.maxCharges || MAGIC_ITEM_CRAFT_CHARGES})</span>` :
-                          recipe.kind === 'equipment' ? ` <span class="craft-owned">(owned: ${owned})</span>` : '';
+                          recipe.kind === 'equipment' ? ` <span class="craft-owned">(owned: ${owned})</span>` :
+                          recipe.kind === 'summon' && summonCount > 0 ? ` <span class="craft-owned">(active: ${summonCount})</span>` : '';
         info.innerHTML =
             `<b>${display.icon || ''} ${display.name || recipe.name}</b>${ownedText}<br>` +
             `<span>${display.description || recipe.description || ''}</span>`;
@@ -753,41 +812,14 @@ export class CraftingUI {
                 return;
             }
             if (recipe.kind === 'summon') {
-                if (!this._combatSystem || typeof this._combatSystem.craftMismatchedGolem !== 'function') {
-                    this._log(`Crafting failed: ${display.name || recipe.name} could not be assembled right now.`);
-                    return;
-                }
-                this._combatSystem.setInventory(state.inventory);
-                this._combatSystem.party = state.party;
-                const alreadyActive = state.party.find(p => p && p.isSummoned && p.summonStats?.mismatchedGolem && p.summonerId === artificer.id && p.health > 0);
-                if (alreadyActive) {
-                    this._combatSystem.craftMismatchedGolem(artificer);
-                    this._log(`${display.icon || '🔧'} ${artificer.name}'s ${display.name || recipe.name} is already active.`);
-                    this._onChanged();
-                    this._render();
-                    return;
-                }
                 this._pay(state, recipe.cost);
-                let golem = null;
-                try {
-                    golem = this._combatSystem.craftMismatchedGolem(artificer);
-                } catch (err) {
+                const result = this._craftMismatchedGolemDirect(state, artificer);
+                if (!result.ok || !result.golem) {
                     this._refund(state, recipe.cost);
-                    this._log(`Crafting failed: ${display.name || recipe.name} could not be assembled. Cost refunded.`);
-                    console.error('Mismatched Golem craft failed:', err);
+                    this._log(`Crafting failed: ${display.name || recipe.name} could not join the party. ${result.reason || 'Cost refunded.'}`);
                     this._onChanged();
                     this._render();
                     return;
-                }
-                if (!golem) {
-                    this._refund(state, recipe.cost);
-                    this._log(`Crafting failed: ${display.name || recipe.name} could not join the party. Cost refunded.`);
-                    this._onChanged();
-                    this._render();
-                    return;
-                }
-                if (!state.party.some(p => p && p.id === golem.id)) {
-                    state.party.push(golem);
                 }
             } else {
                 const beforeCount = state.inventory.getItemCount(recipe.id);
