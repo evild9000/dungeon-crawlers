@@ -287,6 +287,8 @@ import {
     PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
     PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS, PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL,
     PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY, PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_BASE_KILL, PHOTOMANCER_DISINTEGRATE_KILL_PER_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_BOSS_MULT,
     PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
     PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
     PHOTOMANCER_RADIANT_BURST_BLIND_ROUNDS, PHOTOMANCER_RADIANT_BURST_BLIND_LOCKOUT_ROUNDS,
@@ -4648,6 +4650,7 @@ export class CombatSystem {
         const level = m.level || 1;
         const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY));
         const dmgMult = 1 + PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + (level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL);
+        const killChance = Math.min(0.95, PHOTOMANCER_DISINTEGRATE_BASE_KILL + level * PHOTOMANCER_DISINTEGRATE_KILL_PER_LEVEL);
         this._addLog(`\u{1F52C} ${m.name} fires ${beams} disintegrating light beam${beams !== 1 ? 's' : ''}!`);
         for (let i = 0; i < beams; i++) {
             if (!targetEnemy || targetEnemy.health <= 0) break;
@@ -4655,8 +4658,19 @@ export class CombatSystem {
                 this._addLog(`${this._eName(targetEnemy)} is immune to Disintegrate's magic.`);
                 break;
             }
-            const dealt = this._damageEnemy(targetEnemy, this._rollPhotomancerMagicDamage(m, dmgMult), true, true);
-            this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} takes ${dealt} disintegration damage.`);
+            const killRoll = Math.random() < killChance;
+            if (killRoll && (targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss)) {
+                const dealt = this._damageEnemy(targetEnemy, Math.max(1, Math.round(this._rollPhotomancerMagicDamage(m, dmgMult) * PHOTOMANCER_DISINTEGRATE_BOSS_MULT)), true, true);
+                this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} resists disintegration but takes ${dealt} damage! (x${PHOTOMANCER_DISINTEGRATE_BOSS_MULT})`);
+            } else if (killRoll) {
+                const hp = targetEnemy.health;
+                targetEnemy.health = 0;
+                if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
+                this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} is disintegrated! (${hp} damage)`);
+            } else {
+                const dealt = this._damageEnemy(targetEnemy, this._rollPhotomancerMagicDamage(m, dmgMult), true, true);
+                this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} takes ${dealt} disintegration damage.`);
+            }
         }
         if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
         this._advancePlayerTurn();
