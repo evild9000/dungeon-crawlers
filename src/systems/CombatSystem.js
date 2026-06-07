@@ -16281,6 +16281,8 @@ export class CombatSystem {
             m.isLichForm = false; // lich form reset
             m.faeTokens = 0; // fae tokens reset
             m.rangerTotem = null;
+            m.naturesCharmActive = false;
+            m.vkSwarmProtectActive = false;
             m.avatarActive = false;
             m.avatarElement = 'fire';
             m.quickstepSongActive = false;

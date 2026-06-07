@@ -753,9 +753,28 @@ export class CraftingUI {
                 return;
             }
             if (recipe.kind === 'summon') {
-                this._pay(state, recipe.cost);
-                if (this._combatSystem && typeof this._combatSystem.craftMismatchedGolem === 'function') {
+                if (!this._combatSystem || typeof this._combatSystem.craftMismatchedGolem !== 'function') {
+                    this._log(`Crafting failed: ${display.name || recipe.name} could not be assembled right now.`);
+                    return;
+                }
+                this._combatSystem.setInventory(state.inventory);
+                this._combatSystem.party = state.party;
+                const alreadyActive = state.party.find(p => p && p.isSummoned && p.summonStats?.mismatchedGolem && p.summonerId === artificer.id && p.health > 0);
+                if (alreadyActive) {
                     this._combatSystem.craftMismatchedGolem(artificer);
+                    this._log(`${display.icon || '🔧'} ${artificer.name}'s ${display.name || recipe.name} is already active.`);
+                    this._onChanged();
+                    this._render();
+                    return;
+                }
+                this._pay(state, recipe.cost);
+                const golem = this._combatSystem.craftMismatchedGolem(artificer);
+                if (!golem) {
+                    this._refund(state, recipe.cost);
+                    this._log(`Crafting failed: ${display.name || recipe.name} could not join the party. Cost refunded.`);
+                    this._onChanged();
+                    this._render();
+                    return;
                 }
             } else {
                 const beforeCount = state.inventory.getItemCount(recipe.id);
@@ -1024,7 +1043,9 @@ export class CraftingUI {
 
             const isDual = !!(def.bonusType2 && def.bonusValue2);
             const enchObj = target.trinketEnchants && target.trinketEnchants[slot];
-            const enchLvl = (enchObj && enchObj.level) || 0;
+            const slotEnchLvl = (enchObj && enchObj.level) || 0;
+            const bakedEnchLvl = (def && def.enchantLevel) || 0;
+            const enchLvl = Math.max(slotEnchLvl, bakedEnchLvl);
             const costMult = isDual ? 2 : 1;
 
             const panel = document.createElement('div');
@@ -1032,8 +1053,17 @@ export class CraftingUI {
 
             const titleEl = document.createElement('div');
             titleEl.className = 'craft-slot-title';
-            const bonusDesc  = def.bonusType  ? `+${(def.bonusValue  || 0) + enchLvl} ${def.bonusType}`  : '';
-            const bonus2Desc = isDual         ? ` / +${(def.bonusValue2 || 0) + enchLvl} ${def.bonusType2}` : '';
+            let bonusDesc = '';
+            let bonus2Desc = '';
+            if (def.bonusTypes && typeof def.bonusTypes === 'object') {
+                bonusDesc = Object.entries(def.bonusTypes)
+                    .filter(([, value]) => typeof value === 'number' && value !== 0)
+                    .map(([type, value]) => `+${value + slotEnchLvl} ${type}`)
+                    .join(' / ');
+            } else {
+                bonusDesc  = def.bonusType ? `+${(def.bonusValue || 0) + slotEnchLvl} ${def.bonusType}` : '';
+                bonus2Desc = isDual ? ` / +${(def.bonusValue2 || 0) + slotEnchLvl} ${def.bonusType2}` : '';
+            }
             const augmentLevel = (enchObj && enchObj.augmentLevel) || 0;
             const augmentPct = TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augmentLevel] || 0;
             const regenAugmentLevel = (enchObj && enchObj.regenAugmentLevel) || 0;
@@ -1050,7 +1080,8 @@ export class CraftingUI {
                 const next = enchLvl + 1;
                 // Cost tier is based on TOTAL bonus (base bonusValue + enchant level + 1).
                 // A +4 trinket going to +5 costs the same as any other +4 -> +5 upgrade.
-                const costTier = Math.min(7, (def.bonusValue || 0) + enchLvl + 1);
+                const baseBonusValue = def.bonusValue || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'));
+                const costTier = Math.min(7, baseBonusValue + enchLvl + 1);
                 const base = ENCHANT_WEAPON_COSTS[costTier];
                 const cost = {};
                 for (const [k, v] of Object.entries(base)) {
@@ -1061,7 +1092,7 @@ export class CraftingUI {
                 upgradeBtn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
                 upgradeBtn.disabled = !canPay;
                 // Show total effective bonus after upgrade (base bonusValue + new enchant level)
-                const nextTotal = (def.bonusValue || 0) + next;
+                const nextTotal = baseBonusValue + next;
                 upgradeBtn.textContent = `Upgrade to +${nextTotal} — ${this._formatCost(cost)}${isDual ? ' (dual ×2)' : ''}`;
                 upgradeBtn.title = isDual
                     ? 'Upgrades both bonus aspects by +1. Costs twice as much.'
@@ -1080,7 +1111,7 @@ export class CraftingUI {
                 panel.appendChild(this._note('Already at +7 — maximum trinket upgrade.'));
             }
 
-            const totalTrinketLevel = (def.bonusValue || 0) + enchLvl;
+            const totalTrinketLevel = (def.bonusValue || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'))) + enchLvl;
             if (artificer.level >= ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL) {
                 if (totalTrinketLevel >= TRINKET_AUGMENT_MIN_LEVEL) {
                     if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {

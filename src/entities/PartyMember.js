@@ -1285,6 +1285,8 @@ export class PartyMember {
         this.hunterMarkEnemyId   = null;
         this.bonusTurnPending    = false;
         this.beastlordActive     = false;
+        this.naturesCharmActive  = false;
+        this.vkSwarmProtectActive = false;
         // Lich form is a combat-only transformation — always collapse it when
         // leaving combat (flee, defeat, victory all call clearCombatState).
         this.isLichForm = false;
