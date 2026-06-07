@@ -692,6 +692,40 @@ export class CombatSystem {
         return member && member.classId === 'mage' && (member.level || 1) >= 35 && this._hasEquipped(member, 'hag_eye_rod');
     }
 
+    _hasManticoreBallista(member) {
+        return member && ['ranger', 'artificer'].includes(member.classId)
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'manticore_ballista');
+    }
+
+    _hasBardInstrument(member) {
+        return member && member.classId === 'bard'
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'instrument_bards');
+    }
+
+    _hasHolySymbolPotentPower(member) {
+        return member && member.classId === 'cleric'
+            && (member.level || 1) >= 25
+            && this._hasEquipped(member, 'holy_symbol_potent_power');
+    }
+
+    _manticoreCritChanceBonus(member) {
+        return this._hasManticoreBallista(member) ? 0.05 : 0;
+    }
+
+    _applyManticoreCriticalDamageBonus(member, damage, didCrit) {
+        if (!didCrit || !this._hasManticoreBallista(member)) return damage;
+        return Math.max(1, Math.floor(damage * 1.15));
+    }
+
+    _tryManticoreBallistaProne(member, enemy) {
+        if (!this._hasManticoreBallista(member) || !enemy || enemy.health <= 0) return;
+        if (this._tryTripEnemy(enemy, member)) {
+            this._addLog(`  \u23EC ${this._eName(enemy)} is knocked prone by the Manticore Ballista!`);
+        }
+    }
+
     _empowerSummonDamageStats(stats, mult, flag) {
         if (!stats || !mult || mult <= 1) return;
         stats.itemDamageMult = Math.max(stats.itemDamageMult || 1, mult);
@@ -1212,7 +1246,7 @@ export class CombatSystem {
     _getDivineShroudReduction(member) {
         if (!member || member.isSummoned || member.health <= 0) return 0;
         if (member.classId !== 'cleric' || !member.divineShroudActive || (member.level || 1) < CLERIC_L35_UNLOCK_LEVEL) return 0;
-        return Math.min(0.95, (member.level || 1) * CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL);
+        return Math.min(0.95, (member.level || 1) * CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL + (this._hasHolySymbolPotentPower(member) ? 0.05 : 0));
     }
 
     _applyDivineShroudReduction(member, damage, sourceLabel = 'damage') {
@@ -1228,7 +1262,7 @@ export class CombatSystem {
     _tryDivineShroudRevive(member) {
         if (!member || member.isSummoned || member.health > 0) return false;
         if (member.classId !== 'cleric' || !member.divineShroudActive || (member.level || 1) < CLERIC_L35_UNLOCK_LEVEL) return false;
-        const chance = Math.min(1, (member.level || 1) / 100);
+        const chance = Math.min(1, (member.level || 1) / 100 + (this._hasHolySymbolPotentPower(member) ? 0.05 : 0));
         if (Math.random() < chance) {
             const restored = Math.max(1, Math.ceil((member.maxHealth || 1) * CLERIC_DIVINE_SHROUD_REVIVE_HP_FRAC));
             member.health = restored;
@@ -1426,6 +1460,11 @@ export class CombatSystem {
         );
     }
 
+    _getThunderousDrumsPotency(bard) {
+        if (!bard || bard.health <= 0 || bard.classId !== 'bard') return 0;
+        return Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, (bard.level || 1) / 100 + (this._hasBardInstrument(bard) ? 0.05 : 0));
+    }
+
     // Returns extra damage fraction from Blood Frenzy (barbarian L30, raging, bleeds on target).
     _getBloodFrenzyBonus(barbarian, target) {
         if (!barbarian.isRaging || barbarian.level < BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL) return 0;
@@ -1573,7 +1612,8 @@ export class CombatSystem {
         if (initialHitEnemy) alreadyHit.add(initialHitEnemy.id);
         for (const chance of RANGER_RICOCHET_CHANCES) {
             if ((shooter.mana || 0) < RANGER_RICOCHET_MP_COST) break;
-            if (Math.random() >= chance) break;
+            const cascadeChance = Math.min(0.95, chance + (this._hasManticoreBallista(shooter) ? 0.05 : 0));
+            if (Math.random() >= cascadeChance) break;
             const validTargets = this.aliveHostileEnemies.filter(e => !alreadyHit.has(e.id) && e.health > 0);
             if (validTargets.length === 0) break;
             shooter.mana = Math.max(0, (shooter.mana || 0) - RANGER_RICOCHET_MP_COST);
@@ -1609,9 +1649,10 @@ export class CombatSystem {
                 }
             }
             let rCrit = false;
-            const rCritChance = RANGED_CRIT_CHANCE + shooter.getRangedCritBonus();
+            const rCritChance = RANGED_CRIT_CHANCE + shooter.getRangedCritBonus() + this._manticoreCritChanceBonus(shooter);
             if (Math.random() < rCritChance && !this._isCritImmune(rTarget)) { rDmg *= 2; rCrit = true; }
             rDmg = this._applyRangerCritDamageBonus(shooter, rDmg, rCrit);
+            rDmg = this._applyManticoreCriticalDamageBonus(shooter, rDmg, rCrit);
             const rDealt = this._damageEnemy(rTarget, rDmg, rIsFavored, false, 0, true);
             const rCritStr = rCrit ? ` 💥 CRIT! (+${Math.round((shooter.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
             const rFavStr = rIsFavored ? ' [Favored]' : '';
@@ -2336,7 +2377,7 @@ export class CombatSystem {
         if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
 
         let isCrit = false;
-        const critChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus();
+        const critChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus() + this._manticoreCritChanceBonus(m);
         if (Math.random() < critChance && !this._isCritImmune(targetEnemy)) {
             dmg *= 2;
             isCrit = true;
@@ -2344,6 +2385,7 @@ export class CombatSystem {
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'ranged');
         dmg = this._applyRangerCritDamageBonus(m, dmg, isCrit);
         if (isFavored) dmg = Math.round(dmg * (1 + m.level * 0.02));
+        dmg = this._applyManticoreCriticalDamageBonus(m, dmg, isCrit);
 
         const dealt = this._damageEnemy(targetEnemy, dmg, isFavored, false, 0, true);
 
@@ -2355,6 +2397,7 @@ export class CombatSystem {
 
         this._applyWeaponRider(m, targetEnemy, dealt);
         this._applyRangerTotemOnHit(m, targetEnemy, dealt, 'ranged');
+        this._tryManticoreBallistaProne(m, targetEnemy);
 
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
         this._checkHunterMarkKill(targetEnemy);
@@ -2402,11 +2445,12 @@ export class CombatSystem {
             sdmg += m.getClassDamageBonus('ranged');
             if (shotExhausted) sdmg = Math.max(1, Math.floor(sdmg / 2));
             let scrit = false;
-            const scritChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus();
+            const scritChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus() + this._manticoreCritChanceBonus(m);
             if (Math.random() < scritChance && !this._isCritImmune(curT)) { sdmg *= 2; scrit = true; }
             sdmg = this._applyOutgoingDamageBonuses(m, sdmg, 'ranged');
             sdmg = this._applyRangerCritDamageBonus(m, sdmg, scrit);
             if (xtFavored) sdmg = Math.round(sdmg * (1 + m.level * 0.02));
+            sdmg = this._applyManticoreCriticalDamageBonus(m, sdmg, scrit);
             const sTargetName = this._eName(curT);
             const sDealt = this._damageEnemy(curT, sdmg, xtFavored, false, 0, true);
             const sExhaust = shotExhausted ? ' (exhausted!)' : '';
@@ -2474,9 +2518,10 @@ export class CombatSystem {
         if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
 
         let isCrit = false;
-        const critChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus() + deconstructCritBonus;
+        const critChance = RANGED_CRIT_CHANCE + m.getRangedCritBonus() + deconstructCritBonus + this._manticoreCritChanceBonus(m);
         if (Math.random() < critChance && !this._isCritImmune(targetEnemy)) { dmg *= 2; isCrit = true; }
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'ranged');
+        dmg = this._applyManticoreCriticalDamageBonus(m, dmg, isCrit);
 
         const dealt = this._damageEnemy(targetEnemy, dmg, false, false, 0, true);
         const eName = this._eName(targetEnemy);
@@ -2486,6 +2531,7 @@ export class CombatSystem {
         this._addLog(`\u{1F4A3} ${m.name} fires Scatter Shot at ${eName} for ${dealt} damage!${exhaustStr}${critStr}${deconStr}`);
         this._applyWeaponRider(m, targetEnemy, dealt);
         this._applyRangerTotemOnHit(m, targetEnemy, dealt, 'ranged');
+        this._tryManticoreBallistaProne(m, targetEnemy);
         if (targetEnemy.health <= 0) this._addLog(`${eName} is defeated!`);
 
         // L25 Deconstruct — bonus damage vs constructs + scavenge heal on own golems
@@ -2516,7 +2562,7 @@ export class CombatSystem {
         }
 
         // Splash shots
-        const splashCount = SCATTER_SPLASH_BASE + Math.floor(m.level / SCATTER_SPLASH_EVERY);
+        const splashCount = SCATTER_SPLASH_BASE + Math.floor(m.level / SCATTER_SPLASH_EVERY) + (this._hasManticoreBallista(m) ? 2 : 0);
         // Splash fraction: 50% base + 1% per artificer level, capped at 100%.
         const splashFraction = Math.min(1.0, SCATTER_SPLASH_FRACTION + m.level * 0.01);
         // Build splash target pool: alive enemies excluding the primary, then
@@ -2536,6 +2582,7 @@ export class CombatSystem {
             let sCritFlag = false;
             if (Math.random() < critChance && !this._isCritImmune(t)) { sdmg *= 2; sCritFlag = true; }
             sdmg = this._applyOutgoingDamageBonuses(m, sdmg, 'ranged');
+            sdmg = this._applyManticoreCriticalDamageBonus(m, sdmg, sCritFlag);
 
             const sName = this._eName(t);
             const sDealt = this._damageEnemy(t, sdmg, false, false, 0, true);
@@ -3591,8 +3638,9 @@ export class CombatSystem {
         baseDmg += m.getClassDamageBonus('magic');
         // 2× base damage, then ×(1 + 5% per cleric level)
         baseDmg = Math.max(1, Math.round(baseDmg * CLERIC_TURN_UNDEAD_DAMAGE_MULT * (1 + 0.05 * m.level)));
+        if (this._hasHolySymbolPotentPower(m)) baseDmg = Math.max(1, Math.round(baseDmg * 3));
 
-        const debuffMag = CLERIC_TURN_UNDEAD_DEBUFF_BASE + Math.floor(m.level / CLERIC_TURN_UNDEAD_DEBUFF_EVERY);
+        const debuffMag = CLERIC_TURN_UNDEAD_DEBUFF_BASE + Math.floor(m.level / CLERIC_TURN_UNDEAD_DEBUFF_EVERY) + (this._hasHolySymbolPotentPower(m) ? 2 : 0);
         const debuffRounds = 2 + Math.floor(m.level / CLERIC_TURN_UNDEAD_DEBUFF_EVERY);
 
         this._addLog(`\u271D\uFE0F ${m.name} channels divine power — holy light sears the undead!`);
@@ -3736,9 +3784,10 @@ export class CombatSystem {
             return;
         }
 
-        const count    = Math.max(1, Math.floor(m.level / CLERIC_MASS_REVIVE_COUNT_DIVISOR));
+        const count    = Math.max(1, Math.floor(m.level / CLERIC_MASS_REVIVE_COUNT_DIVISOR) + (this._hasHolySymbolPotentPower(m) ? 1 : 0));
         const healFrac = CLERIC_MASS_REVIVE_HEAL_BASE
-            + Math.floor(m.level / 3) * CLERIC_MASS_REVIVE_HEAL_PER_3LV;
+            + Math.floor(m.level / 3) * CLERIC_MASS_REVIVE_HEAL_PER_3LV
+            + (this._hasHolySymbolPotentPower(m) ? 0.05 : 0);
         const toRevive = fallen.slice(0, count);
 
         m.mana -= CLERIC_MASS_REVIVE_MANA_COST;
@@ -3854,7 +3903,7 @@ export class CombatSystem {
     _resolveClericBanishmentTarget(cleric, targetEnemy, isAoe = false) {
         const eName = this._eName(targetEnemy);
         const isBoss = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss);
-        const banishRoll = !isBoss && Math.random() < Math.min(1, (cleric.level || 1) / 100);
+        const banishRoll = !isBoss && Math.random() < Math.min(1, (cleric.level || 1) / 100 + (this._hasHolySymbolPotentPower(cleric) ? 0.05 : 0));
         if (banishRoll) {
             targetEnemy.health = 0;
             if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
@@ -5216,11 +5265,12 @@ export class CombatSystem {
             if (exhausted) raw = Math.max(1, Math.floor(raw / 2));
 
             // Half normal crit chance
-            const critChance = (RANGED_CRIT_CHANCE + m.getRangedCritBonus()) * RANGER_EXPLOSIVE_ARROW_CRIT_MULT;
+            const critChance = (RANGED_CRIT_CHANCE + m.getRangedCritBonus() + this._manticoreCritChanceBonus(m)) * RANGER_EXPLOSIVE_ARROW_CRIT_MULT;
             let isCrit = false;
             if (Math.random() < critChance && !this._isCritImmune(target)) { raw *= 2; isCrit = true; }
             raw = this._applyOutgoingDamageBonuses(m, raw, 'aoe');
             raw = this._applyRangerCritDamageBonus(m, raw, isCrit);
+            raw = this._applyManticoreCriticalDamageBonus(m, raw, isCrit);
             if (isFav) raw = Math.round(raw * (1 + m.level * 0.02));
 
             // Replicate _damageEnemy defense calculation without modifying health yet,
@@ -7059,6 +7109,7 @@ export class CombatSystem {
 
         const scale   = Math.max(1, Math.floor(m.level / 3));
         const debuff  = scale;
+        const hasInstrument = this._hasBardInstrument(m);
         const dmgBonusPct = Math.max(0, m.level * 2);
 
         this._addLog(`\u{1F3B6} ${m.name} unleashes a dissonant chord! AoE disruption!`);
@@ -7077,14 +7128,16 @@ export class CombatSystem {
 
             // Magic damage via _damageEnemy (handles entangle/debuff interactions)
             const baseDmg = Math.max(1, randomInt(1, 4) + m.getClassDamageBonus('magic'));
-            const dmg = this._applyOutgoingDamageBonuses(m, Math.max(1, Math.round(baseDmg * (1 + (dmgBonusPct / 100)))), 'magic');
+            let dmg = Math.max(1, Math.round(baseDmg * (1 + (dmgBonusPct / 100))));
+            if (hasInstrument) dmg = Math.max(1, Math.round(dmg * 3));
+            dmg = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
             const dealt = this._damageEnemy(e, dmg, false, true);
             const eName = this._eName(e);
             this._addLog(`  🎵 ${eName} takes ${dealt} magic dmg (+${dmgBonusPct}% damage, -${debuff} atk/-${debuff} def)`);
             if (e.health <= 0) this._addLog(`${eName} is defeated!`);
 
             // 50% stun (boss/mega-boss resist applies)
-            if (Math.random() < 0.5 && this._tryStunEnemy(e)) {
+            if (Math.random() < (hasInstrument ? 0.60 : 0.50) && this._tryStunEnemy(e)) {
                 stunCount++;
             }
         }
@@ -7111,7 +7164,7 @@ export class CombatSystem {
         const otherBards = (this.party || []).filter(t =>
             t && t !== m && t.health > 0 && !t.isSummoned && t.classId === 'bard'
         ).length;
-        const restoreFrac = Math.min(0.15, BARD_RALLYING_MELODY_RESTORE_FRACTION + Math.min(5, otherBards) * 0.01);
+        const restoreFrac = Math.min(0.20, BARD_RALLYING_MELODY_RESTORE_FRACTION + Math.min(5, otherBards) * 0.01 + (this._hasBardInstrument(m) ? 0.05 : 0));
 
         // Caster cannot benefit from their own melody; exclude summoned undead and golems
         const targets = this.party.filter(t => {
@@ -7955,6 +8008,115 @@ export class CombatSystem {
         return true;
     }
 
+    _rollDeviceMonsterStats(type, actor) {
+        const typeDef = ENEMY_TYPES[type] || {};
+        const lvl = Math.max(1, this.dungeonLevel || actor?.level || 1);
+        const rH = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const rS = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const rM = Math.round(randomInt(ENEMY_STAT_MIN, ENEMY_STAT_MAX) * lvl);
+        const hpExtra = Math.max(0, lvl - (MONSTER_HP_BONUS_THRESHOLD - 1));
+        const hpScale = hpExtra > 0 ? Math.pow(1 + MONSTER_HP_BONUS_PER_LEVEL, hpExtra) : 1;
+        const hp = Math.max(5, Math.round((hpExtra > 0 ? Math.round(rH * hpScale) : rH) * (typeDef.hpMult || 1)));
+        const def = Math.max(0, Math.round(Math.floor(lvl / 2) * MONSTER_DEFENSE_PER_2_LVL * (typeDef.defenseMult || 1)));
+        return { level: lvl, hp, stamina: Math.max(5, rS), mana: Math.max(5, rM), defense: def };
+    }
+
+    _summonCharmedMonsterDeviceAlly(type, actor) {
+        if (!actor || !ENEMY_TYPES[type]) return false;
+        const st = this._rollDeviceMonsterStats(type, actor);
+        const isLord = type === 'werewolf';
+        const monster = {
+            id: `device_charm_${type}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+            type,
+            seed: Math.floor(Math.random() * 100000),
+            level: st.level,
+            health: st.hp,
+            maxHealth: st.hp,
+            stamina: st.stamina,
+            maxStamina: st.stamina,
+            mana: st.mana,
+            maxMana: st.mana,
+            defense: st.defense,
+            activeEffects: [],
+            stunned: false,
+            isBoss: false,
+            isMegaBoss: false,
+            isSuperBoss: false,
+            bossAtkBonus: 0,
+            bossDL: 0,
+            charmedRounds: 9999,
+            charmerId: actor.id || null,
+            magicItemPermanentCharm: true,
+            whiteWerewolfLord: isLord,
+            name: isLord ? 'White Werewolf Lord' : null,
+            sprite: null,
+            createSprite: () => {},
+            addEffect: function(fx) { this.activeEffects = this.activeEffects || []; this.activeEffects.push(fx); },
+        };
+        this.enemies.push(monster);
+        this._initiativeOrder.push({ kind: 'enemy', ref: monster, init: 1 + Math.floor(Math.random() * 6), skipThisRound: true });
+        this._addLog(`${isLord ? '\u{1F43A}' : '\u2744\uFE0F'} ${actor.name} summons ${this._eName(monster)} to the party's side for this fight!`);
+        if (isLord) this._applyWhiteWerewolfLordAura(monster);
+        return true;
+    }
+
+    _isWolfAlly(memberOrEnemy) {
+        if (!memberOrEnemy || memberOrEnemy.health <= 0) return false;
+        if (memberOrEnemy.whiteWerewolfLord) return false;
+        const summonType = String(memberOrEnemy.summonType || '');
+        const beastKind = String(memberOrEnemy.summonStats?.beastKind || '');
+        const type = String(memberOrEnemy.type || '');
+        return summonType.includes('wolf') || beastKind.includes('wolf') || type.includes('wolf');
+    }
+
+    _getLivingWhiteWerewolfLords() {
+        return (this.enemies || []).filter(e => e && e.whiteWerewolfLord && e.health > 0 && (e.charmedRounds || 0) > 0);
+    }
+
+    _removeWhiteWerewolfLordAura() {
+        const clear = (target) => {
+            if (!target || !Array.isArray(target.activeEffects)) return;
+            const fx = target.activeEffects.find(e => e && e.type === 'white_werewolf_lord_aura');
+            if (fx && fx.maxHealthBonus) {
+                target.maxHealth = Math.max(1, (target.maxHealth || 1) - fx.maxHealthBonus);
+                target.health = Math.min(target.health || 0, target.maxHealth);
+            }
+            target.activeEffects = target.activeEffects.filter(e => !(e && e.type === 'white_werewolf_lord_aura'));
+        };
+        for (const p of this.party || []) clear(p);
+        for (const e of this.enemies || []) clear(e);
+    }
+
+    _applyWhiteWerewolfLordAura(lord) {
+        if (!lord || lord.health <= 0) return;
+        this._removeWhiteWerewolfLordAura();
+        const targets = [
+            ...(this.party || []).filter(p => this._isWolfAlly(p)),
+            ...(this.enemies || []).filter(e => e !== lord && (e.charmedRounds || 0) > 0 && this._isWolfAlly(e)),
+        ];
+        for (const t of targets) {
+            t.activeEffects = t.activeEffects || [];
+            const hpBonus = Math.max(1, Math.floor((t.maxHealth || 1) * 0.25));
+            t.maxHealth += hpBonus;
+            t.health = Math.min(t.maxHealth, (t.health || 0) + hpBonus);
+            t.activeEffects.push({
+                type: 'white_werewolf_lord_aura',
+                sourceId: lord.id,
+                maxHealthBonus: hpBonus,
+                defenseBonus: 10,
+                damageMult: 1.25,
+                regenPct: 0.15,
+                permanent: true,
+            });
+        }
+        if (targets.length > 0) this._addLog(`\u{1F43A} ${this._eName(lord)} empowers ${targets.length} allied wolf${targets.length === 1 ? '' : 'ves'}!`);
+    }
+
+    _getWhiteWerewolfLordDamageMult(actor) {
+        const fx = (actor?.activeEffects || []).find(e => e && e.type === 'white_werewolf_lord_aura');
+        return fx ? (fx.damageMult || 1) : 1;
+    }
+
     /**
      * Use a combat-usable item from personal or group inventory.
      * @param {string} itemId      — item to use
@@ -8058,6 +8220,12 @@ export class CombatSystem {
             case 'elemental_sceptre': {
                 const def = getItemDef(itemId);
                 applied = this._summonElementalDeviceAlly(def?.elementalDevice || 'fire', actor);
+                break;
+            }
+            case 'yeti_totem':
+            case 'werewolf_blood_vial': {
+                const def = getItemDef(itemId);
+                applied = this._summonCharmedMonsterDeviceAlly(def?.charmedMonsterDevice || 'yeti', actor);
                 break;
             }
             default:
@@ -8858,7 +9026,7 @@ export class CombatSystem {
             const summoner = this.party.find(p => p.id === m.summonerId);
             const summonerLevel = summoner?.level ?? 1;
             const bleedDuration = Math.floor(3 + summonerLevel / 33);
-            const dmgMult_wolf  = stats.wildShapeDmgMult || 1;
+            const dmgMult_wolf  = (stats.wildShapeDmgMult || 1) * this._getWhiteWerewolfLordDamageMult(m);
             let extraAttacks = Math.floor(summonerLevel / 33);
             if (stats.wildShapeExtraAttack) extraAttacks++;
             const _wolfBite = (target) => {
@@ -10104,6 +10272,7 @@ export class CombatSystem {
      */
     _executeOneEnemyTurn(e) {
         this._logTarget = 'enemy';
+        if (e.whiteWerewolfLord) this._applyWhiteWerewolfLordAura(e);
         const eName = this._eName(e);
         const liveFront = this.aliveFront;
         if (liveFront.length === 0) {
@@ -11094,7 +11263,7 @@ export class CombatSystem {
                     } else {
                         let _sucCharmResisted = false;
                         for (const _bd of this._getAllBardsWithDrums()) {
-                            if (Math.random() < Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _bd.level / 100)) {
+                            if (Math.random() < this._getThunderousDrumsPotency(_bd)) {
                                 this._addLog(`🥁 ${_succHit.name} resists ${eName}'s charm — ${_bd.name}'s Thunderous Drums shields their mind!`);
                                 soundManager.playThunderousDrums();
                                 _sucCharmResisted = true;
@@ -11790,7 +11959,7 @@ export class CombatSystem {
                         } else {
                             let resistedByDrums = false;
                             for (const bard of this._getAllBardsWithDrums()) {
-                                if (Math.random() < Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, bard.level / 100)) {
+                                if (Math.random() < this._getThunderousDrumsPotency(bard)) {
                                     this._addLog(`🥁 ${_hit.name} resists the psychic madness — ${bard.name}'s Thunderous Drums shields their mind!`);
                                     soundManager.playThunderousDrums();
                                     resistedByDrums = true;
@@ -11831,7 +12000,7 @@ export class CombatSystem {
                         } else {
                             let _abolResisted = false;
                             for (const _bd of this._getAllBardsWithDrums()) {
-                                if (Math.random() < Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _bd.level / 100)) {
+                                if (Math.random() < this._getThunderousDrumsPotency(_bd)) {
                                     this._addLog(`🥁 ${_hit.name} resists ${eName}'s enslavement — ${_bd.name}'s Thunderous Drums shields their mind!`);
                                     soundManager.playThunderousDrums();
                                     _abolResisted = true;
@@ -11954,7 +12123,7 @@ export class CombatSystem {
                     } else {
                         let _vampResisted = false;
                         for (const _bd of this._getAllBardsWithDrums()) {
-                            if (Math.random() < Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _bd.level / 100)) {
+                            if (Math.random() < this._getThunderousDrumsPotency(_bd)) {
                                 this._addLog(`🥁 ${shuffled[gi].name} resists the hypnotic gaze — ${_bd.name}'s Thunderous Drums!`);
                                 soundManager.playThunderousDrums();
                                 _vampResisted = true;
@@ -12938,7 +13107,7 @@ export class CombatSystem {
             const _drumBards = this._getAllBardsWithDrums();
             if (_drumBards.length > 0) {
                 const _drumReduction = Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION,
-                    _drumBards.reduce((sum, b) => sum + b.level / 100, 0));
+                    _drumBards.reduce((sum, b) => sum + this._getThunderousDrumsPotency(b), 0));
                 const _dmgBefore = dmg;
                 dmg = Math.max(1, Math.floor(dmg * (1 - _drumReduction)));
                 if (_dmgBefore !== dmg) {
@@ -13300,7 +13469,7 @@ export class CombatSystem {
                     let _stunResisted = false;
                     if (_isStunSonicPsychic) {
                         for (const _bd of this._getAllBardsWithDrums()) {
-                            if (Math.random() < Math.min(BARD_THUNDEROUS_DRUMS_MAX_REDUCTION, _bd.level / 100)) {
+                            if (Math.random() < this._getThunderousDrumsPotency(_bd)) {
                                 const _label = typeDef.sonic ? 'sonic' : 'psychic';
                                 this._addLog(`\uD83E\uDD41 ${target.name} resists the ${_label} stun \u2014 ${_bd.name}'s Thunderous Drums!`);
                                 soundManager.playThunderousDrums();
@@ -13929,6 +14098,7 @@ export class CombatSystem {
      */
     _tickPartyEffects() {
         this._processEternalRainbows();
+        if (this._getLivingWhiteWerewolfLords().length === 0) this._removeWhiteWerewolfLordAura();
         for (const m of this.party) {
             if (m.health <= 0) continue;
             const effects = m.activeEffects || [];
@@ -14604,6 +14774,14 @@ export class CombatSystem {
                     }
                     e.rounds--;
                 }
+                if (e.type === 'white_werewolf_lord_aura' && m.health < m.maxHealth) {
+                    const healAmt = Math.max(1, Math.floor(m.maxHealth * (e.regenPct || 0.15)));
+                    const healed = Math.min(healAmt, m.maxHealth - m.health);
+                    if (healed > 0) {
+                        m.health += healed;
+                        this._addLog(`\u{1F43A} ${m.name} regenerates ${healed} HP from the White Werewolf Lord's blessing!`);
+                    }
+                }
             }
             m.expireEffects();
         }
@@ -14713,7 +14891,7 @@ export class CombatSystem {
         // Damage helpers — use _damageEnemy so resistances / death callbacks all fire correctly
         const cHit = (target, dmg, isMagic = false, contactAttacker = null, opts = {}) => {
             if (!target || target.health <= 0) return 0;
-            dmg = Math.max(1, Math.round(dmg * frenzyMult));
+            dmg = Math.max(1, Math.round(dmg * frenzyMult * this._getWhiteWerewolfLordDamageMult(e)));
             const attackKind = opts.attackKind || (isMagic ? 'magic' : 'melee');
             const options = contactAttacker ? { contactAttacker } : {};
             dmg = this._applyEnemyResourceExhaustion(e, dmg);
@@ -16007,7 +16185,7 @@ export class CombatSystem {
             }
 
             // Charm duration tick: decrement charmedRounds each enemy round
-            if (e.charmedRounds > 0) {
+            if (e.charmedRounds > 0 && !e.magicItemPermanentCharm) {
                 e.charmedRounds--;
                 if (e.charmedRounds <= 0) {
                     e.charmedRounds = 0;

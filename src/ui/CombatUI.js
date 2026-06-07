@@ -1772,7 +1772,8 @@ export class CombatUI {
 
             // ── Mass Revive — unlocked at level 20
             const massReviveUnlocked = m.level >= CLERIC_MASS_REVIVE_UNLOCK_LEVEL;
-            const massReviveCount    = Math.floor(m.level / CLERIC_MASS_REVIVE_COUNT_DIVISOR);
+            const hasHolySymbol = Object.values(m.equipment || {}).includes('holy_symbol_potent_power');
+            const massReviveCount    = Math.floor(m.level / CLERIC_MASS_REVIVE_COUNT_DIVISOR) + (hasHolySymbol ? 1 : 0);
             const hasFallenAllies    = (this.combat.party || []).some(pm => !pm.isSummoned && pm.health <= 0 && !pm.lichPhial);
             const canMassRevive = massReviveUnlocked && m.mana >= CLERIC_MASS_REVIVE_MANA_COST && hasFallenAllies;
             const massReviveLabel = massReviveUnlocked
@@ -1780,7 +1781,7 @@ export class CombatUI {
                 : `🕊️ Mass Revive (L${CLERIC_MASS_REVIVE_UNLOCK_LEVEL})`;
             const massReviveBtn = this._addBtn(massReviveLabel, canMassRevive, () => this.combat.clericMassRevive());
             massReviveBtn.classList.add('combat-special-btn');
-            const reviveHealPct = Math.round((CLERIC_MASS_REVIVE_HEAL_BASE + Math.floor(m.level / 3) * CLERIC_MASS_REVIVE_HEAL_PER_3LV) * 100);
+            const reviveHealPct = Math.round((CLERIC_MASS_REVIVE_HEAL_BASE + Math.floor(m.level / 3) * CLERIC_MASS_REVIVE_HEAL_PER_3LV + (hasHolySymbol ? 0.05 : 0)) * 100);
             massReviveBtn.title = [
                 `Cleric L20 special: Mass Revive (unlocks at level ${CLERIC_MASS_REVIVE_UNLOCK_LEVEL}).`,
                 `Costs ${CLERIC_MASS_REVIVE_MANA_COST} mana.`,
@@ -1839,7 +1840,7 @@ export class CombatUI {
                     }
                 });
                 banBtn.classList.add('combat-special-btn');
-                const banishChance = Math.min(100, m.level);
+                const banishChance = Math.min(100, m.level + (Object.values(m.equipment || {}).includes('holy_symbol_potent_power') ? 5 : 0));
                 const bonusDamageText = isAoeBanish ? ` L35 upgrade: affects ALL valid targets and adds +${m.level}% damage on top of the ×${CLERIC_BANISHMENT_DAMAGE_MULT} holy force damage.` : '';
                 banBtn.title = [
                     `Cleric L${CLERIC_BANISHMENT_UNLOCK_LEVEL}${isAoeBanish ? '/L35' : ''}: ${banName}.`,
@@ -1856,8 +1857,9 @@ export class CombatUI {
             if (m.level >= CLERIC_L35_UNLOCK_LEVEL) {
                 const shroudActive = !!m.divineShroudActive;
                 const shroudCan = shroudActive || m.mana >= CLERIC_DIVINE_SHROUD_MANA_PER_ROUND;
-                const reduction = Math.round(Math.min(0.95, (m.level || 1) * CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL) * 100);
-                const revive = Math.min(100, m.level || 1);
+                const hasHolySymbol = Object.values(m.equipment || {}).includes('holy_symbol_potent_power');
+                const reduction = Math.round(Math.min(0.95, (m.level || 1) * CLERIC_DIVINE_SHROUD_REDUCTION_PER_LEVEL + (hasHolySymbol ? 0.05 : 0)) * 100);
+                const revive = Math.min(100, (m.level || 1) + (hasHolySymbol ? 5 : 0));
                 const shroudLabel = shroudActive
                     ? `✨ Divine Shroud: ON (-${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP/round)`
                     : `✨ Divine Shroud: OFF (-${CLERIC_DIVINE_SHROUD_MANA_PER_ROUND} MP/round)`;
@@ -2191,7 +2193,8 @@ export class CombatUI {
 
         if (m.classId === 'bard' && m.level >= BARD_RALLYING_MELODY_UNLOCK_LEVEL) {
             const canRally = m.mana >= BARD_RALLYING_MELODY_MANA_COST;
-            const restorePct = Math.round(BARD_RALLYING_MELODY_RESTORE_FRACTION * 100);
+            const hasInstrument = Object.values(m.equipment || {}).includes('instrument_bards');
+            const restorePct = Math.round((BARD_RALLYING_MELODY_RESTORE_FRACTION + (hasInstrument ? 0.05 : 0)) * 100);
             const rallyLabel = `🎶 Rallying Melody (-${BARD_RALLYING_MELODY_MANA_COST} MP)`;
             const rallyBtn = this._addBtn(rallyLabel, canRally, () => this.combat.bardRallyingMelody());
             rallyBtn.classList.add('combat-special-btn');
@@ -2199,6 +2202,7 @@ export class CombatUI {
                 `Bard L${BARD_RALLYING_MELODY_UNLOCK_LEVEL}: Rallying Melody.`,
                 `Costs ${BARD_RALLYING_MELODY_MANA_COST} mana.`,
                 `Restores ${restorePct}% of max HP, mana, and stamina to living party members.`,
+                hasInstrument ? 'Instrument of the Bards: +5% additional recovery.' : '',
                 'Does NOT affect golems or summoned undead.',
                 !canRally ? 'Not enough mana.' : '',
             ].filter(Boolean).join('\n');

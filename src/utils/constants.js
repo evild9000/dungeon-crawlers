@@ -1321,6 +1321,36 @@ export const MAGIC_ITEM_RECIPES = [
         cost: { gold: 150000, material_giant_heart: 10 },
     },
     {
+        id: 'manticore_ballista',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_manticore_spikes: 15 },
+    },
+    {
+        id: 'instrument_bards',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_harpy_parts: 10, material_shrieker_parts: 10 },
+    },
+    {
+        id: 'yeti_totem',
+        kind: 'device',
+        quantity: MAGIC_ITEM_CRAFT_CHARGES,
+        cost: { gold: 30000, material_yeti_hide: 5 },
+    },
+    {
+        id: 'werewolf_blood_vial',
+        kind: 'device',
+        quantity: MAGIC_ITEM_CRAFT_CHARGES,
+        cost: { gold: 40000, material_werewolf_blood: 10 },
+    },
+    {
+        id: 'holy_symbol_potent_power',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_undead_essence: 100 },
+    },
+    {
         id: 'staff_of_necromancy',
         kind: 'equipment',
         quantity: 1,

@@ -492,8 +492,23 @@ export class PartyMember {
     }
 
     getMagicDamageMultiplier() {
-        if (this.classId !== 'mage') return 1;
-        return 1 + this.getFamiliarLevel() * MAGE_FAMILIAR_MAGIC_PER_LEVEL;
+        let mult = this.classId === 'mage'
+            ? 1 + this.getFamiliarLevel() * MAGE_FAMILIAR_MAGIC_PER_LEVEL
+            : 1;
+        if (this.classId === 'bard' && Object.values(this.equipment || {}).includes('instrument_bards')) {
+            mult *= 1.15;
+        }
+        return mult;
+    }
+
+    getEquipmentDefenseBonus() {
+        if (this.isSummoned) return 0;
+        let total = 0;
+        for (const itemId of Object.values(this.equipment || {})) {
+            const def = itemId ? getItemDef(itemId) : null;
+            if (def && typeof def.defenseBonus === 'number') total += def.defenseBonus;
+        }
+        return total;
     }
 
     getFamiliarSummary() {
@@ -529,6 +544,7 @@ export class PartyMember {
              + (c.defensePerLevel || 0) * beyond
              + this.getFamiliarDefenseBonus()
              + this.getRangerTotemDefenseBonus()
+             + this.getEquipmentDefenseBonus()
              + this.getTrinketBonus('defense')
              + this.getEffectModifier('defense')
              + (this.wildShapeDefBonus || 0)
@@ -741,6 +757,10 @@ export class PartyMember {
         const def = getItemDef(itemId);
         if (!def) return { ok: false, reason: 'Unknown item.' };
 
+        if (Array.isArray(def.requiredClasses) && !def.requiredClasses.includes(this.classId)) {
+            const names = def.requiredClasses.map(c => `${c}s`).join(' or ');
+            return { ok: false, reason: `${def.name} can only be equipped by ${names}.` };
+        }
         if (def.requiredClass && this.classId !== def.requiredClass) {
             return { ok: false, reason: `${def.name} can only be equipped by ${def.requiredClass}s.` };
         }
@@ -1056,7 +1076,8 @@ export class PartyMember {
     getClericCleanseChance() {
         if (this.classId !== 'cleric') return 0;
         if (this.level < CLERIC_CLEANSE_UNLOCK_LEVEL) return 0;
-        return Math.min(1, this.level * CLERIC_CLEANSE_CHANCE_PER_LEVEL);
+        const holyBonus = Object.values(this.equipment || {}).includes('holy_symbol_potent_power') ? 0.05 : 0;
+        return Math.min(1, this.level * CLERIC_CLEANSE_CHANCE_PER_LEVEL + holyBonus);
     }
 
     /**

@@ -62,6 +62,11 @@ const COMBINED_SONG = {
         `+${Math.min(BARD_HASTE_MAX, scale)} initiative · +${Math.min(BARD_BATTLE_MAX, scale)} atk/def · +${scale} HP regen/min`,
 };
 
+function hasBardInstrument(member) {
+    return !!(member && member.classId === 'bard' && (member.level || 1) >= 35
+        && Object.values(member.equipment || {}).includes('instrument_bards'));
+}
+
 // Minimum level for paladin out-of-combat revive.
 const PALADIN_REVIVE_MIN_LEVEL = 20;
 // Cleric mass heal minimum level (matches combat unlock).
@@ -152,6 +157,14 @@ export class PartySpellModal {
 
             if (m.activeSongs.includes('combined')) {
                 const effects = COMBINED_SONG.makeEffects(scale);
+                if (hasBardInstrument(m)) {
+                    for (const eff of effects) {
+                        if (typeof eff.initiativeBonus === 'number') eff.initiativeBonus += 1;
+                        if (typeof eff.damageBonus === 'number') eff.damageBonus += 1;
+                        if (typeof eff.defenseBonus === 'number') eff.defenseBonus += 1;
+                        if (typeof eff.hpPerMin === 'number') eff.hpPerMin += 1;
+                    }
+                }
                 for (const member of party) {
                     if (member.health <= 0) continue;
                     // Don't apply songs to summoned undead or golems
@@ -388,7 +401,7 @@ export class PartySpellModal {
 
         btn.title = [
             'Bard Song: a rousing melody that inspires the whole party.',
-            COMBINED_SONG.description(scale),
+            COMBINED_SONG.description(scale + (hasBardInstrument(bard) ? 1 : 0)),
             `Ongoing cost: ${BARD_SONG_MANA_PER_MIN} MP per in-game minute.`,
             'Deactivates automatically when the bard runs out of mana.',
             `Bonuses scale with bard level (currently scale: ${scale}).`,

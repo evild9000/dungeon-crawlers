@@ -172,8 +172,8 @@ function buildAbilityList(def) {
     if (def.isHydraAI)       lines.push('Multi-Head: attacks with each head every round (6 base + 1 per 5 dungeon levels); heads count as melee contact attacks but can reach back-row targets; regenerates 15% HP per round');
     if (def.isManticoreAI)   lines.push('Spike Volley: 5 ranged attacks per turn (+3 bonus), can hit back row; poison tail DoT equal to damage dealt');
     if (def.isEvilPriestAI)  lines.push('Dark Ministry: 50% chance to mass-heal all non-undead enemies for 15% HP; 50% chance to unleash AoE magic blast');
-    if (def.isWerewolfAI)    lines.push('Lycanthropy: regenerates 25% max HP per round; defense bonus (+50%)');
-    if (def.isYetiAI)        lines.push('Feral Fury: attacks twice with fists each turn, can stun, applies ice DoT on hits');
+    if (def.isWerewolfAI)    lines.push('Lycanthropy: regenerates 25% max HP per round; defense bonus (+50%). A crafted Werewolf Blood Vial can summon a White Werewolf Lord; while alive it empowers allied wolves with +25% HP, +25% damage, +10 defense, and 15% HP regeneration per round.');
+    if (def.isYetiAI)        lines.push('Feral Fury: attacks twice with fists each turn, can stun, applies ice DoT on hits. A crafted Yeti Totem can summon a charmed yeti ally for the full fight.');
 
     // Phase 14: Level-25+ Deep Dungeon monster abilities
     if (def.isIceDemonAI)           lines.push('Glacial Fury: 4 powerful melee strikes per turn with +5 bonus; each hit applies ice chill (30% bonus cold damage, -2 attack for 2 rounds)');

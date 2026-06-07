@@ -977,12 +977,13 @@ export class InventoryUI {
         if (member.classId === 'cleric' && member.level >= CLERIC_CLEANSE_UNLOCK_LEVEL) {
             const cleanse = Math.round(member.getClericCleanseChance() * 100);
             perk.push(`Heal cleanse: ${cleanse}%`);
-            perkDetails.push(`Cleric L25 Cleansing Grace: Heal and Mass Heal have a ${cleanse}% chance to purge harmful states\n  Costs ${CLERIC_CLEANSE_MANA_PER_STATE} MP per harmful state removed.`);
+            perkDetails.push(`Cleric L25 Cleansing Grace: Heal and Mass Heal have a ${cleanse}% chance to purge harmful states\n  Costs ${CLERIC_CLEANSE_MANA_PER_STATE} MP per harmful state removed.${Object.values(member.equipment || {}).includes('holy_symbol_potent_power') ? '\n  Holy Symbol of Potent Power: +5% cleanse chance; Turn Undead, Mass Revive, Banishment, and Divine Shroud are empowered.' : ''}`);
         }
         if (member.classId === 'bard' && member.level >= BARD_RALLYING_MELODY_UNLOCK_LEVEL) {
-            const restore = Math.round(BARD_RALLYING_MELODY_RESTORE_FRACTION * 100);
+            const hasInstrument = Object.values(member.equipment || {}).includes('instrument_bards');
+            const restore = Math.round((BARD_RALLYING_MELODY_RESTORE_FRACTION + (hasInstrument ? 0.05 : 0)) * 100);
             perk.push(`Rallying Melody: ${restore}% restore`);
-            perkDetails.push(`Bard L25 Rallying Melody: costs ${BARD_RALLYING_MELODY_MANA_COST} MP\n  Restores ${restore}% of max HP, mana, and stamina to every living party member.\n  Does NOT affect golems or summoned undead.`);
+            perkDetails.push(`Bard L25 Rallying Melody: costs ${BARD_RALLYING_MELODY_MANA_COST} MP\n  Restores ${restore}% of max HP, mana, and stamina to every living party member.\n  Does NOT affect golems or summoned undead.${hasInstrument ? '\n  Instrument of the Bards also empowers Disrupt, Bard Song, Thunderous Drums, and regular magic attacks.' : ''}`);
         }
         if (member.classId === 'artificer' && member.level >= 25) {
             perk.push('Advanced Augments');
@@ -1389,6 +1390,9 @@ export class InventoryUI {
             lines.push(`${subtypeName} weapon`);
             lines.push(`+${def.power} ${subtypeName.toLowerCase()} damage`);
             if (def.specialOffhandSlot) lines.push('Equips in the off hand.');
+            if (Array.isArray(def.requiredClasses)) lines.push(`Requires: ${def.requiredClasses.join(' or ')} level ${def.requiredLevel || 1}+`);
+            if (def.requiredClass) lines.push(`Requires: ${def.requiredClass} level ${def.requiredLevel || 1}+`);
+            if (typeof def.defenseBonus === 'number') lines.push(`+${def.defenseBonus} defense`);
             if (typeof def.maxManaPct === 'number') lines.push(`+${Math.round(def.maxManaPct * 100)}% max mana`);
             if (enchant && enchant.level > 0) {
                 lines.push(`✨ Enchanted +${enchant.level} (bonus damage)`);
