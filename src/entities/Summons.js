@@ -113,7 +113,7 @@ export const UNDEAD_TIERS = [
             '25% chance to block any incoming melee attack.',
             'Stun chance: (33 + necroLevel)% on melee hit (undead & incorporeal immune).',
             '5% max HP regeneration at the start of each turn.',
-            'Instakill non-boss enemies: (2 + necroLevel/2)% chance.',
+            'Deadly Blow: (2 + necroLevel/2)% chance to deal damage multiplied by necroLevel/3 instead of instant death.',
             ...UNDEAD_COMMON_ABILITIES,
         ] },
 ];

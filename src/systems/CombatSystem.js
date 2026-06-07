@@ -285,7 +285,8 @@ import {
     PHOTOMANCER_INVISIBILITY_MANA_COST, PHOTOMANCER_ILLUSION_UNLOCK_LEVEL,
     PHOTOMANCER_ILLUSION_MANA_COST, PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL,
     PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
-    PHOTOMANCER_DISINTEGRATE_BASE_KILL, PHOTOMANCER_DISINTEGRATE_BOSS_MULT,
+    PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS, PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY, PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL,
     PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
     PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
     PHOTOMANCER_RADIANT_BURST_BLIND_ROUNDS, PHOTOMANCER_RADIANT_BURST_BLIND_LOCKOUT_ROUNDS,
@@ -4644,9 +4645,9 @@ export class CombatSystem {
             return;
         }
         m.mana -= PHOTOMANCER_DISINTEGRATE_MANA_COST;
-        const beams = 1 + Math.floor((m.level || 1) / 33);
-        const killChance = Math.min(0.95, PHOTOMANCER_DISINTEGRATE_BASE_KILL + ((m.level || 1) / 2) / 100);
-        const dmgMult = 1 + 2 + ((m.level || 1) * 2) / 100;
+        const level = m.level || 1;
+        const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY));
+        const dmgMult = 1 + PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + (level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL);
         this._addLog(`\u{1F52C} ${m.name} fires ${beams} disintegrating light beam${beams !== 1 ? 's' : ''}!`);
         for (let i = 0; i < beams; i++) {
             if (!targetEnemy || targetEnemy.health <= 0) break;
@@ -4654,20 +4655,8 @@ export class CombatSystem {
                 this._addLog(`${this._eName(targetEnemy)} is immune to Disintegrate's magic.`);
                 break;
             }
-            if (Math.random() < killChance) {
-                if (targetEnemy.isBoss || targetEnemy.isMegaBoss || targetEnemy.isSuperBoss) {
-                    const dealt = this._damageEnemy(targetEnemy, Math.max(1, Math.round(this._rollPhotomancerMagicDamage(m, dmgMult) * PHOTOMANCER_DISINTEGRATE_BOSS_MULT)), true, true);
-                    this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} resists annihilation but takes ${dealt} damage!`);
-                } else {
-                    const hp = targetEnemy.health;
-                    targetEnemy.health = 0;
-                    if (!targetEnemy._deathHandled) { targetEnemy._deathHandled = true; this._onEnemyDeath(targetEnemy); }
-                    this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} is disintegrated! (${hp} damage)`);
-                }
-            } else {
-                const dealt = this._damageEnemy(targetEnemy, this._rollPhotomancerMagicDamage(m, dmgMult), true, true);
-                this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} takes ${dealt} radiant force damage.`);
-            }
+            const dealt = this._damageEnemy(targetEnemy, this._rollPhotomancerMagicDamage(m, dmgMult), true, true);
+            this._addLog(`  \u{1F52C} ${this._eName(targetEnemy)} takes ${dealt} disintegration damage.`);
         }
         if (targetEnemy.health <= 0) this._addLog(`${this._eName(targetEnemy)} is defeated!`);
         this._advancePlayerTurn();
@@ -9804,7 +9793,7 @@ export class CombatSystem {
             if (healed > 0) this._addLog(`\u{1F9DB} ${m.name} drains ${healed} HP from ${this._eName(t)}!`);
         }
 
-        // ── Death Knight: stun chance + instakill non-boss ───────────────────
+        // ── Death Knight: stun chance + deadly blow ──────────────────────────
         if (t.health > 0 && m.summonType === 'death_knight') {
             const nl = (m.summonStats && m.summonStats.necroLevel) || m.level || 1;
             const tDef  = ENEMY_TYPES[t.type] || {};
@@ -9814,19 +9803,11 @@ export class CombatSystem {
                 if (this._tryStunEnemy(t))
                     this._addLog(`\u2620\uFE0F ${this._eName(t)} is STUNNED by the Death Knight's strike!`);
             }
-            const dkInstakillRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.005);
-            if (dkInstakillRoll) {
-                if (t.isBoss || t.isMegaBoss) {
-                    // Boss/mega-boss immune to instant death — x4 pre-defense damage instead
-                    const dkBossDmg = Math.max(1, Math.round(dmg * 4));
-                    const dkBossDealt = this._damageSummonEnemy(t, dkBossDmg, false, false, { contactAttacker: m });
-                    this._addLog(`\u{1F480} ${m.name} attempts a death strike on ${this._eName(t)} — Boss resists! (x4: ${dkBossDealt} damage)`);
-                    if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
-                } else {
-                    t.health = 0;
-                    if (!t._deathHandled) { t._deathHandled = true; this._onEnemyDeath(t); }
-                    this._addLog(`\u{1F480} ${m.name} performs a death strike — ${this._eName(t)} is SLAIN INSTANTLY!`);
-                }
+            const deadlyBlowRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.005);
+            if (deadlyBlowRoll) {
+                const deadlyDmg = Math.max(1, Math.round(dmg * Math.max(1, nl / 3)));
+                const deadlyDealt = this._damageSummonEnemy(t, deadlyDmg, false, false, { contactAttacker: m });
+                this._addLog(`\u{1F480} ${m.name} lands a deadly blow on ${this._eName(t)} for ${deadlyDealt} damage! (x${(Math.max(1, nl / 3)).toFixed(1)})`);
             }
         }
 

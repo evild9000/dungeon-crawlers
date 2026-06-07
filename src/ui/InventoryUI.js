@@ -61,6 +61,9 @@ import {
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL,
     MONK_AVATAR_UNLOCK_LEVEL, MONK_AVATAR_MANA_PER_ROUND,
+    PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
+    PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS, PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY, PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL,
     PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
     PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
 } from '../utils/constants.js';
@@ -1047,6 +1050,13 @@ export class InventoryUI {
             perk.push(`Death Burst: ${burstDmg} dmg on death`);
             perkDetails.push(`Mage L${MAGE_L35_UNLOCK_LEVEL} Mana Shield:\n  Free action in combat, once per combat, costs ${MAGE_MANA_SHIELD_MANA_COST} MP.\n  Grants temporary shield HP equal to max mana.\n  Incoming damage is checked against shield HP last, right before HP damage is applied; overflow hits normal HP.`);
             perkDetails.push(`Mage L${MAGE_L35_UNLOCK_LEVEL} Death Burst (passive):\n  Triggers when this mage dies.\n  Hits all enemies not immune to magic for ${burstDmg} damage.\n  Formula: max mana × (2 + level × 2%).`);
+        }
+        if (member.classId === 'photomancer' && member.level >= PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) {
+            const level = member.level || 1;
+            const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY));
+            const bonusPct = Math.round((PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL) * 100);
+            perk.push(`Disintegrate: ${beams} beam${beams === 1 ? '' : 's'}`);
+            perkDetails.push(`Photomancer L${PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL} Disintegrate:\n  Costs ${PHOTOMANCER_DISINTEGRATE_MANA_COST} MP.\n  Fires ${beams} focused magic beam${beams === 1 ? '' : 's'} that ignore defense.\n  Damage is normal magic +${bonusPct}% now; formula is +300% + level × 3%.\n  Gains +1 beam every ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY} levels above ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL}.`);
         }
         if (member.classId === 'photomancer' && member.level >= PHOTOMANCER_L35_UNLOCK_LEVEL) {
             const statBonus = Math.max(1, Math.floor((member.level || 1) / 5));

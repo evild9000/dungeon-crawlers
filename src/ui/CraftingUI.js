@@ -33,7 +33,7 @@ import {
     ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
     ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL, MAGIC_ITEM_CRAFT_CHARGES, MAGIC_ITEM_RECIPES,
 } from '../utils/constants.js';
-import { getItemDef, WEAPONS } from '../items/ItemTypes.js';
+import { getItemDef, WEAPONS, TRINKETS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';
 import { PartyMember } from '../entities/PartyMember.js';
 
@@ -1041,6 +1041,22 @@ export class CraftingUI {
         body.appendChild(panel);
     }
 
+    _findMatchingTrinketId(def, totalLevel) {
+        if (!def || totalLevel < 1 || totalLevel > 4) return null;
+        const targetTier = Math.max(1, Math.min(4, totalLevel | 0));
+        for (const [id, candidate] of Object.entries(TRINKETS)) {
+            if (!candidate || candidate.trinketKind !== def.trinketKind) continue;
+            if ((candidate.tier || 0) !== targetTier) continue;
+            if (!!candidate.dualAspect !== !!def.dualAspect) continue;
+            if (def.dualAspect) {
+                if (candidate.bonusType === def.bonusType && candidate.bonusType2 === def.bonusType2) return id;
+            } else if (candidate.bonusType === def.bonusType && !candidate.dualAspect) {
+                return id;
+            }
+        }
+        return null;
+    }
+
     // ── Trinket upgrade tab (Artificer L20+) ────────────────────────────────────────
     _renderTrinkets(body, state, artificer) {
         if (artificer.level < 20) {
@@ -1146,8 +1162,17 @@ export class CraftingUI {
                     if (!this._canPay(state, cost)) return;
                     this._pay(state, cost);
                     const existing = target.trinketEnchants[slot] || {};
-                    target.trinketEnchants[slot] = { ...existing, level: next };
-                    this._log(`✨ ${artificer.name} upgrades ${target.name}'s ${def.name} to +${next}.`);
+                    const renameId = nextTotal <= 4 ? this._findMatchingTrinketId(def, nextTotal) : null;
+                    if (renameId && renameId !== itemId) {
+                        const renamedDef = getItemDef(renameId);
+                        target.equipment[slot] = renameId;
+                        const { level, ...rest } = existing;
+                        target.trinketEnchants[slot] = Object.keys(rest).length ? { ...rest } : null;
+                        this._log(`✨ ${artificer.name} upgrades ${target.name}'s ${def.name} into ${renamedDef?.name || renameId}.`);
+                    } else {
+                        target.trinketEnchants[slot] = { ...existing, level: next };
+                        this._log(`✨ ${artificer.name} upgrades ${target.name}'s ${def.name} to +${nextTotal}.`);
+                    }
                     this._onChanged();
                     this._render();
                 });

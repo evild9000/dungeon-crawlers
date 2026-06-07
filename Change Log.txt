@@ -3198,51 +3198,78 @@ in progress:
 4. change divine golems to ignore all armor and defense of the target of their divine attacks.  furthermore add a damage bonus of  ( (square root of the artificer level) *2) squared, as a percent bonus.  thus a level 36 artificer divine golem has a damage bonus of 144%  and a level 100 artificer divine golem has a damage bonus of 400%
 5. i want rogue level 35 loot bonus to apply to chests as well as gold discovered from disarming traps.  this includes the bonus from all rogues in the party
 
-
-=========================================================================================
-add ranger, rogue or warlock
-
-
-
-** work on badges and logging **
-
-
-items to make yet
-
-10. Eldritch Amulet - need 100 demon ichors and 150,000 gold
-a. usable only by warlock level 35+
-b. +7 magic and +7 defense
-c. necklace/amulet slot items
-d. gain +1 additional tentacle attack while in abyss form (not one additional series of attacks, just +1 single tentacle)
-e. gain +10% damage bonus to tentacle attacks
-f. summoned demons and awakened lords gain a buff when summoned that grants +15% more damage.
-
-
-12. Hag Eye Rod - requires 10 Hag Eyes and 150,000 gold
-a. usable only by a mage level 35%
-b. +7 magic bonus
-c. equippable in the offhand/shield slot for mages (code a special overwrite for this).
-d. Elementals summoned via a Rift or from magic items gain +15% health upon summoning as well as a buff that grants them +15% damage and +5 defense.
-e. grants a +15% bonus to max mana
-f. add 5% to chance for the mage to crit with magic AOE attacks
-g. adds +1 mirror image when cast
+in progress:
+Items to make:
+Here are some new items to make in the Artificer magic item crafting area
 
 13. Manticore Ballista - requires 150,000 gold and 15 manticore spikes to craft
 a. usable only by level 35 or higher rangers or artificers
-b. targets struck by the ballista knocked prone?
-c. bonus to crits..?
-d. extra ricochets or scatters?
-e. more 
+b. targets struck by the ballista are knocked prone (only on core target of ranged or scattershot, ricochets, scattershots and explosive arrows don't count). normal immunity to prone/holds apply as well as duration immunity if they have been recently knocked prone
+c. add 5% bonus chance to crit on all skills that can crit.  adds 15% damage to any critical damage roll (muliply after all effects) - can affects scattershot, explosive arrows, ricochets, but not drones.
+d. adds 5% to each ricochet chance through the cascade. 
+e. adds +2 targets to scattershot
 
-15. harpy or shrieker pieces for sonic/bard item
+15. Instrument of the Bards: requires 10 harpy and 10 shrieker parts and 150,000 gold to craft
+a. bard disrupt does triple damage, and is 10% harder to resist
+b. adds 5% additional recovery to melody
+c. +1 init, +1 attack/defense, and health regen to generic bard song
+d. an extra 5% potency to thundrous drums damage reduction and resistance chance.
+e. replaces main hand weapon.  +7 magic +7 defense
+f. adds 15% to bard regular magic damage attack
+g. usable only by bards level 35 or higher
 
-14. yeti or werewolf items? 
 
-9. Some undead summon item (from undead essences?)
+14. Yeti Totem - requires 5 yeti hides and 30,000 gold
+a. clickable charged usable item - starts with 10 charges, regains 1 charge per real hour
+b. summons a yeti to join the party.  This is a monster yeti that is immediately created and moved to the charmed monster HUD ranks. It lasts the entire fight and has no duration.  Create a regular monster yeti and put it into charmed status when the item is used.
+
+15. Werewolf Blood Vial - requires 10 werewolf bloods and 40,000 gold
+a. clickable charged usable item - starts with 10 charges, regains 1 charge per real hour
+b. summons a werewolf to join the party.  This is a monster werewolf that is immediately created and moved to the charmed monster HUD ranks. It lasts the entire fight and has no duration.  Create a regular monster werewolf and put it into charmed status when the item is used.  Give it a special name: White Werewolf Lord
+c. The white werewolf lord increases potency of all party summoned wolves.  Each round on the White Werewolf Lord's turn in addition to its normal attack routine, it casts a buff that affects all party wolves (druid, ranger, vampire summoned, etc ) as well as any wolves that are charmed by the group.  The buff adds 25% health, 25% damage bonus and 10 to the defense of the target.  It also adds a special regen buff to the wolves of 15% of their health per turn (stacking with any other regen buffs).  the buff lasts as long as the WWW Lord is alive, if it is killed remove the buff from all wolves.  
+
+9. Holy Symbol of Potent Power (from 100 undead essences) 150,000 gold
+a. adds a bonus the wearers cleric turn undead damage of +200%
+b. add -2 to undead debuffs 
+c. can only be worn by clerics level 25 or higher
+d. fits in the trinket neck slot and is already enchanted to +7 magic and +7 defense
+e. add 5% to the chance for the cleric's mass heal to remove a debuff
+f. adds +1 target to the clerics mass revive and +5% to the revival health of the target being revived
+g. adds 5% to banish and mass banish chance
+h. add 5% to divine shround damage reduction and 5% bonus to divine shround auto-revival chance
+
+confirm:
+
+1. make sure natures charms is turned off and the icons indicates so when the next combat starts.  i think i had a case where natures charms was already on in a new fight when I did not cast it.
+2. i think warlock swarm protect seemed to be auto-on also from a previous fight.  this should toggle off at the end of a fight
+3. when i attempt to create a mismatched golem in the artificer tab, it says i have the components but when i click to craft it nothing happens and a golem doesnt appear.  i am not sure if it is taking components and gold and just failing or something, fix it and also tell me if it was taking components and failing.
+4. special magic items made from artificer crafting that are already +7 bonuses count as such for enchanting purposes.  they cannot be enchanted beyond +7 and are already considered enchanted to +7 for weapon riders, armor enchants, or trinket enchants. this should include lance of the dragon king, displacer cloak, girdle of giant strength, staff of necromancy, eldritch amulet, hag eye rod, sash of the vermin keeper, staff of the world tree, manticore ballista, instrument of the bards and holy symbol of potent power.
+
+
+confirm:
+1. gold awarded at the end should be rounded to the nearest integer
+2. mismastched golem says i have the parts and gold but when i click the button to make it, nothing happens.
+
+in progress:
+1. i tried yet again to make a mismatched golem and it still doesnt work.  you need to figure this out.  i click the button and nothing happens.  i have all the parts required and the gold
+2. it should not matter if the artificer already has a living mismatched golem.  those dont count against their limit and there is no limit to mismatched golems, although make sure to number them in case there is more than 1
+
+in progress:
+1.  change photomancer disintegrate damage to:  +300% + (photomancer level x3)% and gain one additional beam every 10 levels above 20.  make sure any help files are updated to reflect this change.
+2. change death knight instant kill chance to a chance to do a deadly blow that does damage x its (level/3).   make sure any help files are updated to reflect this change.
+3. when an artificer enchants a trinket that is less than +4, granting it an additional bonus, also rename the item to the name that matches the bonus.  for example an artificer upgrades a ring of the dauntless of blades that is +3 melee and +3 defense to +4/+4.  change the name to Signet of the Worldshield of Blades so that it matches the bonuses.  Do this for all items that are less than +4 individually or +4/+4 as a dual trinket. upgrading to +5 or +5/+5 does not change the name.
+ 
+
+
+
+
+=========================================================================================
+** work on badges and logging **
 
 11. aberration item (100) items - think - summons random - aberration to fight for party
 
---- need warrior rogue monk cleric barbarian photomancer items?
+--- need warrior rogue monk barbarian (belt)
+photomancer items? - increase simulacrum potency?
 
 
 QUESTS:

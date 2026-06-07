@@ -182,7 +182,9 @@ import {
     PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_INVISIBILITY_MANA_COST,
     PHOTOMANCER_ILLUSION_UNLOCK_LEVEL, PHOTOMANCER_ILLUSION_MANA_COST,
     PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL,
-    PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL,
+    PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS,
+    PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL, PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY,
+    PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL, PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL,
     PHOTOMANCER_PRISMATIC_SPHERE_MANA_COST,
     PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
     PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
@@ -3018,13 +3020,13 @@ export class CombatUI {
             }
 
             if (m.level >= PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) {
-                const beams = 1 + Math.floor(m.level / 33);
-                const kill = Math.round((0.03 + (m.level / 2) / 100) * 100);
+                const beams = 1 + Math.max(0, Math.floor((m.level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY));
+                const bonus = Math.round((PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + m.level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL) * 100);
                 const disBtn = this._addBtn(`\u{1F52C} Disintegrate (-${PHOTOMANCER_DISINTEGRATE_MANA_COST} MP)`, m.mana >= PHOTOMANCER_DISINTEGRATE_MANA_COST, () => {
                     this._pickTarget(e => this.combat.photomancerDisintegrate(e), { prompt: 'Disintegrate which enemy?' });
                 });
                 disBtn.classList.add('combat-special-btn');
-                disBtn.title = `${beams} beam(s). ${kill}% instant kill chance; bosses take x4 damage instead. Magic immunity blocks it.`;
+                disBtn.title = `${beams} beam(s). Damage is normal magic +${bonus}% and ignores defense. Gains +1 beam every ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY} levels above ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL}. Magic immunity blocks it.`;
             }
 
             if (m.level >= PHOTOMANCER_PRISMATIC_SPHERE_UNLOCK_LEVEL) {
