@@ -768,13 +768,26 @@ export class CraftingUI {
                     return;
                 }
                 this._pay(state, recipe.cost);
-                const golem = this._combatSystem.craftMismatchedGolem(artificer);
+                let golem = null;
+                try {
+                    golem = this._combatSystem.craftMismatchedGolem(artificer);
+                } catch (err) {
+                    this._refund(state, recipe.cost);
+                    this._log(`Crafting failed: ${display.name || recipe.name} could not be assembled. Cost refunded.`);
+                    console.error('Mismatched Golem craft failed:', err);
+                    this._onChanged();
+                    this._render();
+                    return;
+                }
                 if (!golem) {
                     this._refund(state, recipe.cost);
                     this._log(`Crafting failed: ${display.name || recipe.name} could not join the party. Cost refunded.`);
                     this._onChanged();
                     this._render();
                     return;
+                }
+                if (!state.party.some(p => p && p.id === golem.id)) {
+                    state.party.push(golem);
                 }
             } else {
                 const beforeCount = state.inventory.getItemCount(recipe.id);

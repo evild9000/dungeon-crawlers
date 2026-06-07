@@ -16496,6 +16496,7 @@ export class CombatSystem {
             this._addLog(`\u{1F340} Leprechaun's Reward (${lepNames}): +${lepPct}% final gold bonus! (+${lepGold})`);
         }
 
+        totalGold = Math.round(totalGold);
         this.loot = { gold: totalGold, items };
 
         if (totalGold > 0) this._addLog(`Found ${totalGold} gold!`);
