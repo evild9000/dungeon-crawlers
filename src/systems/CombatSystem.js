@@ -472,6 +472,9 @@ export class CombatSystem {
         const n = this.enemies.length;
         const lvlStr = this.dungeonLevel > 1 ? ` (dungeon L${this.dungeonLevel})` : '';
         this._addLog(`${n} enem${n > 1 ? 'ies' : 'y'} encountered${lvlStr}!`);
+        if (this.isStatueEvent) {
+            this._addLog(`🗿 *** STATUE GAUNTLET: Wave 1 of ${STATUE_EVENT_ROUND_SUPER_BOSS} ***`);
+        }
 
         // Roll initiative for all combatants and log the order.
         this._initiativeOrder = this._buildInitiativeOrder();
@@ -16536,6 +16539,11 @@ export class CombatSystem {
             e.stunned = false;
             this.enemies.push(e);
         }
+        if (wave === STATUE_EVENT_ROUND_BOSS || wave === STATUE_EVENT_ROUND_MEGA_BOSS || wave === STATUE_EVENT_ROUND_SUPER_BOSS) {
+            const bossTier = newEnemies.filter(e => e.isBoss || e.isMegaBoss || e.isSuperBoss);
+            const names = bossTier.map(e => this._eName(e)).join(', ');
+            this._addLog(`🗿 ${bossTier.length} boss-tier foe${bossTier.length === 1 ? '' : 's'} appear: ${names}`);
+        }
 
         // Rebuild initiative to include the new arrivals.
         this._initiativeOrder = this._buildInitiativeOrder();
@@ -16569,10 +16577,11 @@ export class CombatSystem {
         for (let i = 0; i < livingCount; i++) {
             const type = pool[Math.floor(Math.random() * pool.length)];
             const e = new Enemy({ type, gridX: 0, gridZ: 0, level: dl });
-            if (isMegaBossWave) {
+            if (isMegaBossWave && i === 0) {
                 e.isMegaBoss = true;
                 e.isBoss = true;
                 e.bossDL = dl;
+                e.name = this._statueBossName(type, 'mega');
                 e.health    = Math.floor(e.health * 5);
                 e.maxHealth = e.health;
                 e.stamina   = Math.floor(e.stamina * 5);
@@ -16580,9 +16589,10 @@ export class CombatSystem {
                 e.mana      = Math.floor(e.mana * 5);
                 e.maxMana   = e.mana;
                 e.defense   = Math.floor(e.defense * 2);
-            } else if (isBossWave) {
+            } else if (isBossWave && i === 0) {
                 e.isBoss = true;
                 e.bossDL = dl;
+                e.name = this._statueBossName(type, 'boss');
                 e.health    = Math.floor(e.health * 2);
                 e.maxHealth = e.health;
                 e.stamina   = Math.floor(e.stamina * 2);
@@ -16619,12 +16629,23 @@ export class CombatSystem {
 
         // Pick a name from SUPERBOSS_NAMES
         const nameList = SUPERBOSS_NAMES[type];
+        const fallbackName = type
+            .split('_')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
         const baseName = nameList
             ? nameList[Math.floor(Math.random() * nameList.length)]
-            : `The ${type.charAt(0).toUpperCase() + type.slice(1)} Ascendant`;
+            : `The ${fallbackName} Ascendant`;
         e.name = `\u{1F7E3} ${baseName}`;
 
         return e;
+    }
+
+    _statueBossName(type, tier, index = 0, total = 1) {
+        const base = (ENEMY_TYPES[type] || { name: 'Enemy' }).name;
+        const suffix = total > 1 ? ` #${index + 1}` : '';
+        if (tier === 'mega') return `💀 Statue Mega Boss ${base}${suffix}`;
+        return `👑 Statue Boss ${base}${suffix}`;
     }
 
     // ────────────────────────────────────────────

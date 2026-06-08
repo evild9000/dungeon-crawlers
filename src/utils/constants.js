@@ -1920,7 +1920,8 @@ export const MAGE_DEATH_BURST_DAMAGE_PER_LEVEL   = 0.02;
 // the battle never ends before wave 15.  Wave 5 = boss, 10 = mega boss,
 // 15 = named super mega boss (4 actions, ×20 HP, purple HUD border).
 export const STATUE_MIN_DUNGEON_LEVEL              = 30;
-export const STATUE_SPAWN_CHANCE                   = 0.125;  // half of CHEST_SPAWN_CHANCE
+export const STATUE_SPAWN_CHANCE_NORMAL            = 0.125;  // production value; restore after testing
+export const STATUE_SPAWN_CHANCE                   = 0.75;   // TESTING: temporarily high statue spawn chance
 export const STATUE_PROXIMITY                      = 2.5;    // same trigger radius as chests
 
 // Wave schedule
