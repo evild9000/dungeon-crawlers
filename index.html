@@ -522,7 +522,7 @@
         }
         .craft-content {
             position: relative;
-            width: min(920px, 98vw); max-width: 98vw; max-height: 86vh;
+            width: min(1120px, 98vw); max-width: 98vw; max-height: 86vh;
             overflow-y: auto;
             background: linear-gradient(180deg, #1b1a24 0%, #0f0e14 100%);
             border: 1px solid #3d2a55; border-radius: 6px;
@@ -568,10 +568,11 @@
             padding: 7px 14px; border-radius: 4px; cursor: pointer;
             background: #3d2a55; color: #fff;
             border: 1px solid #5a3f7a; font-size: 12px;
-            white-space: nowrap;
-            max-width: 340px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            max-width: 620px;
+            overflow-wrap: anywhere;
+            line-height: 1.25;
+            text-align: center;
         }
         .craft-btn:hover:not(:disabled) { background: #5a3f7a; }
         .craft-btn-disabled, .craft-btn:disabled {
