@@ -297,6 +297,7 @@ export class CraftingUI {
         const enchLvl = isOffhand ? target.getOffhandEnchantLevel() :
                         slot === 'weapon' ? target.getWeaponEnchantLevel() :
                         slot === 'shield' ? target.getShieldEnchantLevel() : target.getArmorEnchantLevel();
+        const enchCostTier = Math.min(7, Math.max(0, enchLvl));
         const rider = (slot === 'weapon' || isOffhand)
             ? (isOffhand ? target.getOffhandRider() : target.getWeaponRider())
             : null;
@@ -353,7 +354,7 @@ export class CraftingUI {
             const armorEnch = target.equipmentEnchants[slot] || {};
             const hasSpiked  = !!armorEnch.spiked;
             const hasAoeWard = !!armorEnch.aoeWard;
-            const qualityCost = costsTable[enchLvl];
+            const qualityCost = costsTable[enchCostTier];
 
             const qualityHeader = document.createElement('div');
             qualityHeader.className = 'craft-note';
@@ -1105,9 +1106,11 @@ export class CraftingUI {
             const isDual = !!(def.bonusType2 && def.bonusValue2);
             const enchObj = target.trinketEnchants && target.trinketEnchants[slot];
             const slotEnchLvl = (enchObj && enchObj.level) || 0;
-            const bakedEnchLvl = (def && def.enchantLevel) || 0;
+            const legendaryMaxed = !!(def && def.isLegendary && ((def.enchantLevel || 0) >= 7 || (def.tier || 0) >= 7 || (def.bonusValue || 0) >= 7));
+            const bakedEnchLvl = (def && def.enchantLevel) || (legendaryMaxed ? 7 : 0);
             const enchLvl = Math.max(slotEnchLvl, bakedEnchLvl);
             const costMult = isDual ? 2 : 1;
+            const baseBonusValue = def.bonusValue || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'));
 
             const panel = document.createElement('div');
             panel.className = 'craft-slot-panel';
@@ -1141,7 +1144,6 @@ export class CraftingUI {
                 const next = enchLvl + 1;
                 // Cost tier is based on TOTAL bonus (base bonusValue + enchant level + 1).
                 // A +4 trinket going to +5 costs the same as any other +4 -> +5 upgrade.
-                const baseBonusValue = def.bonusValue || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'));
                 const costTier = Math.min(7, baseBonusValue + enchLvl + 1);
                 const base = ENCHANT_WEAPON_COSTS[costTier];
                 const cost = {};
@@ -1181,7 +1183,7 @@ export class CraftingUI {
                 panel.appendChild(this._note('Already at +7 — maximum trinket upgrade.'));
             }
 
-            const totalTrinketLevel = (def.bonusValue || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'))) + enchLvl;
+            const totalTrinketLevel = baseBonusValue + slotEnchLvl;
             if (artificer.level >= ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL) {
                 if (totalTrinketLevel >= TRINKET_AUGMENT_MIN_LEVEL) {
                     if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {

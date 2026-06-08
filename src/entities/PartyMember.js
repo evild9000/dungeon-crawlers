@@ -994,10 +994,14 @@ export class PartyMember {
         return Math.max(slotLevel, defLevel);
     }
 
-    /** Current armor enchant level (0-3). */
+    /** Current armor enchant level (0-7). Legendary items bake in enchantLevel on the def. */
     getArmorEnchantLevel() {
         const ench = this.equipmentEnchants && this.equipmentEnchants.armor;
-        return (ench && ench.level) || 0;
+        const slotLevel = (ench && ench.level) || 0;
+        const armorId = this.equipment && this.equipment.armor;
+        const def = armorId ? getItemDef(armorId) : null;
+        const defLevel = (def && def.enchantLevel) || 0;
+        return Math.max(slotLevel, defLevel);
     }
 
     /** Current shield enchant level (0-7). Legendary items bake in enchantLevel on the def. */
