@@ -168,7 +168,7 @@ export const ENEMY_TYPES = {
     harpy:           { name: 'Harpy',            spriteW: 1.6, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.25, sonic: true, tags: ['beast', 'monster'] },
     giant_scorpion:  { name: 'Giant Scorpion',   spriteW: 2.0, spriteH: 1.2, poisonChance: 0.50, tags: ['beast', 'vermin'] },
     wight:           { name: 'Wight',            spriteW: 1.4, spriteH: 1.8, lifeDrain: 0.35, stunChance: 0.25, tags: ['undead'] },
-    gargoyle:        { name: 'Gargoyle',         spriteW: 1.6, spriteH: 2.0, stunChance: 0.35, regenPercent: 0.05, tags: ['construct', 'monster'] },
+    gargoyle:        { name: 'Gargoyle',         spriteW: 1.6, spriteH: 2.0, stunChance: 0.35, regenPercent: 0.05, tags: ['construct', 'monster'], immune: ['stun'] },
     phase_spider:    { name: 'Phase Spider',     spriteW: 1.8, spriteH: 1.2, phaseStrike: true, poisonChance: 0.40, tags: ['beast', 'vermin'] },
     tentacle_horror: { name: 'Tentacle Horror',  spriteW: 2.0, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.30, webChance: 0.40, tags: ['aberration'] },
     ice_troll:       { name: 'Ice Troll',        spriteW: 1.8, spriteH: 2.2, stunChance: 0.30, regenPercent: 0.20, attackDebuff: 2, tags: ['humanoid'], immune: ['cold'] },
@@ -501,7 +501,7 @@ export const ENEMY_TYPES = {
 
     gargoyle_sentinel:{ name: 'Gargoyle Sentinel',   spriteW: 1.8, spriteH: 2.2,
         isGargoyleSentinelAI: true, regenPercent: 0.10,
-        tags: ['construct', 'monster'] },
+        tags: ['construct', 'monster'], immune: ['stun'] },
 
     gibbering_mouther:{ name: 'Gibbering Mouther',   spriteW: 1.6, spriteH: 1.4,
         isGibberingMoutherAI: true,
@@ -1921,7 +1921,7 @@ export const MAGE_DEATH_BURST_DAMAGE_PER_LEVEL   = 0.02;
 // 15 = named super mega boss (4 actions, ×20 HP, purple HUD border).
 export const STATUE_MIN_DUNGEON_LEVEL              = 30;
 export const STATUE_SPAWN_CHANCE_NORMAL            = 0.125;  // production value; restore after testing
-export const STATUE_SPAWN_CHANCE                   = 0.75;   // TESTING: temporarily high statue spawn chance
+export const STATUE_SPAWN_CHANCE                   = STATUE_SPAWN_CHANCE_NORMAL;
 export const STATUE_PROXIMITY                      = 2.5;    // same trigger radius as chests
 
 // Wave schedule

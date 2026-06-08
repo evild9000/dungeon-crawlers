@@ -191,9 +191,10 @@ import {
     PHOTOMANCER_L35_UNLOCK_LEVEL, PHOTOMANCER_RADIANT_BURST_MANA_COST,
     PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST,
     RANGER_BEAST_COMPANION_TYPES,
+    STATUE_EVENT_ROUND_SUPER_BOSS,
 } from '../utils/constants.js';
 import { generateEnemySprite } from '../utils/SpriteGenerator.js';
-import { getItemDef } from '../items/ItemTypes.js';
+import { getItemDef, getItemDisplayColor } from '../items/ItemTypes.js';
 import { soundManager } from '../utils/SoundManager.js';
 import { BEAST_TYPES, GOLEM_PRESETS, getSummonPreset, getWarlockUnlockedDemons, WARLOCK_DEMON_PRESETS, WARLOCK_AWAKENED_PRESETS } from '../entities/Summons.js';
 
@@ -322,7 +323,10 @@ export class CombatUI {
         this._updateLog();
         this._updateActions();
         if (this._roundCounterEl) {
-            this._roundCounterEl.textContent = `Round ${this.combat.turnNumber}`;
+            const waveText = this.combat.isStatueEvent
+                ? `  |  Wave ${this.combat.statueWave || 1}/${STATUE_EVENT_ROUND_SUPER_BOSS}`
+                : '';
+            this._roundCounterEl.textContent = `Round ${this.combat.turnNumber}${waveText}`;
         }
         this._updateTurnIndicators();
 
@@ -1233,6 +1237,7 @@ export class CombatUI {
                 : `Magic (-${magicManaCost} MP)`;
         if (magicTotalBonus > 0) magicLabel += ` +${magicTotalBonus}`;
         if (magicExhausted) magicLabel += ' [HALF]';
+        if (m.classId === 'warlock' && inAbyssForm) magicLabel += ' [ABYSS FORM]';
         const magicBtn = this._addBtn(magicLabel, !inDefendMode && !m.wildShapeForm && !inAbyssForm, () => {
             soundManager.playMagic();
             if (m.classId === 'warlock') {
@@ -2795,8 +2800,10 @@ export class CombatUI {
             const hexPenalty = Math.max(1, Math.floor(m.level / WARLOCK_HEX_PENALTY_DIVISOR));
             const hexRounds = Math.max(1, Math.floor(m.level / WARLOCK_HEX_DURATION_DIVISOR));
             const hexUsedThisRound = m.warlockEvilEyeRound === this.combat.turnNumber;
-            const canHex = m.mana >= WARLOCK_HEX_UPKEEP_MANA && !hexUsedThisRound;
-            const hexBtn = this._addBtn(`\u{1F441} Evil Eye Hex (free)`, canHex, () => {
+            const hasHexTarget = (this.combat.aliveHostileEnemies || []).length > 0;
+            const canHex = !hexUsedThisRound && hasHexTarget;
+            const hexLabel = `\u{1F441} Evil Eye Hex (free)${hexUsedThisRound ? ' [USED]' : ''}${!hasHexTarget ? ' [NO TARGET]' : ''}`;
+            const hexBtn = this._addBtn(hexLabel, canHex, () => {
                 this._pickTarget(e => this.combat.warlockEvilEye(e), { prompt: 'Hex which enemy?' });
             });
             hexBtn.classList.add('combat-special-btn');
@@ -2805,7 +2812,8 @@ export class CombatUI {
                 `Applies -${hexPenalty} defense, melee, ranged, and magic damage for ${hexRounds} round(s).`,
                 `Costs ${WARLOCK_HEX_UPKEEP_MANA} MP per round to maintain while any of this warlock's hexes remain.`,
                 hexUsedThisRound ? 'Already used this round.' : '',
-                m.mana < WARLOCK_HEX_UPKEEP_MANA ? `Need ${WARLOCK_HEX_UPKEEP_MANA} MP to maintain a hex.` : '',
+                !hasHexTarget ? 'No hostile enemies available.' : '',
+                m.mana < WARLOCK_HEX_UPKEEP_MANA ? `Current mana is below upkeep; the hex can be cast, but it may fade at upkeep if mana is still empty.` : '',
             ].filter(Boolean).join('\n');
 
             if (m.level >= WARLOCK_CAULDRON_UNLOCK_LEVEL) {
@@ -2952,7 +2960,7 @@ export class CombatUI {
                     ].join('\n');
 
                     const targets = Math.max(1, Math.floor(m.level / WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR));
-                    const signBtn = this._addBtn(`\u{1F52E} Eldritch Sign (${targets})`, !!m.eldritchSignReady, () => this.combat.warlockEldritchSign());
+                    const signBtn = this._addBtn(`\u{1F52E} Eldritch Sign (${targets})${m.eldritchSignReady ? '' : ' [RECHARGING]'}`, !!m.eldritchSignReady, () => this.combat.warlockEldritchSign());
                     signBtn.classList.add('combat-special-btn');
                     if (!m.eldritchSignReady) signBtn.style.opacity = '0.55';
                     signBtn.title = [
@@ -4263,6 +4271,8 @@ export class CombatUI {
                     itemEl.textContent = item.quantity > 1
                         ? `${icon}${item.quantity}x ${def ? def.name : item.itemId}`
                         : `${icon}${def ? def.name : item.itemId}`;
+                    const displayColor = getItemDisplayColor(item.itemId);
+                    if (displayColor) itemEl.style.color = displayColor;
                     lootDiv.appendChild(itemEl);
                 }
                 if (loot.gold === 0 && loot.items.length === 0) {

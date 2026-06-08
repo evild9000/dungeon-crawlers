@@ -15,7 +15,7 @@
  * Summoned creatures are skipped here — they have no inventory UI.
  */
 
-import { getItemDef, ITEM_CATEGORY, WEAPON_SUBTYPE } from '../items/ItemTypes.js';
+import { getItemDef, getItemDisplayColor, ITEM_CATEGORY, WEAPON_SUBTYPE } from '../items/ItemTypes.js';
 import { generatePortrait } from '../utils/PortraitGenerator.js';
 import { soundManager } from '../utils/SoundManager.js';
 import { getFamiliarDef } from '../entities/Familiars.js';
@@ -337,6 +337,11 @@ export class InventoryUI {
                     <span class="inv-item-name">${def.name}</span>
                     <span class="inv-item-qty">x${quantity}</span>
                     <span class="inv-item-desc">${def.description}</span>`;
+                const displayColor = getItemDisplayColor(itemId);
+                if (displayColor) {
+                    const nameEl = info.querySelector('.inv-item-name');
+                    if (nameEl) nameEl.style.color = displayColor;
+                }
                 info.title = this._getItemTooltip(def);
                 row.appendChild(info);
 
@@ -604,6 +609,8 @@ export class InventoryUI {
                 const info = document.createElement('span');
                 info.className = 'pinv-item-info';
                 info.textContent = `${icon} ${def.name}${entry.quantity > 1 ? ` x${entry.quantity}` : ''}`;
+                const displayColor = getItemDisplayColor(entry.itemId);
+                if (displayColor) info.style.color = displayColor;
                 info.title = this._getItemTooltip(def);
                 row.appendChild(info);
 
@@ -1369,6 +1376,9 @@ export class InventoryUI {
                 ? ` (Enchant +${effectiveEnchant.level || 0})`
                 : '';
             nameEl.textContent = `${icon}${def ? def.name : itemId}${shieldEnchantSuffix}`;
+            const trinketEnchant = member.trinketEnchants && member.trinketEnchants[slot];
+            const displayColor = getItemDisplayColor(itemId, trinketEnchant);
+            if (displayColor) nameEl.style.color = displayColor;
             if (def) nameEl.title = this._getItemTooltip(def, effectiveEnchant);
             row.appendChild(nameEl);
 

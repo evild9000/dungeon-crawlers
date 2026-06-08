@@ -16555,11 +16555,8 @@ export class CombatSystem {
         const dl = this.dungeonLevel;
         const theme = this.statueTheme;
 
-        if (wave === STATUE_EVENT_ROUND_SUPER_BOSS) {
-            return [this._createStatueSuperBoss(theme)];
-        }
-
         // Determine tier
+        const isSuperBossWave = (wave === STATUE_EVENT_ROUND_SUPER_BOSS);
         const isMegaBossWave = (wave === STATUE_EVENT_ROUND_MEGA_BOSS);
         const isBossWave     = (wave === STATUE_EVENT_ROUND_BOSS);
 
@@ -16574,35 +16571,53 @@ export class CombatSystem {
         const pool = eligible.length > 0 ? eligible : Object.keys(ENEMY_TYPES);
 
         const result = [];
+        if (isSuperBossWave) {
+            result.push(this._createStatueSuperBoss(theme));
+            const megaType = pool[Math.floor(Math.random() * pool.length)];
+            result.push(this._createStatueBossTierEnemy(megaType, 'mega', 0, 1));
+            for (let b = 0; b < 3; b++) {
+                const bossType = pool[Math.floor(Math.random() * pool.length)];
+                result.push(this._createStatueBossTierEnemy(bossType, 'boss', b, 3));
+            }
+        }
         for (let i = 0; i < livingCount; i++) {
             const type = pool[Math.floor(Math.random() * pool.length)];
             const e = new Enemy({ type, gridX: 0, gridZ: 0, level: dl });
-            if (isMegaBossWave && i === 0) {
-                e.isMegaBoss = true;
-                e.isBoss = true;
-                e.bossDL = dl;
-                e.name = this._statueBossName(type, 'mega');
-                e.health    = Math.floor(e.health * 5);
-                e.maxHealth = e.health;
-                e.stamina   = Math.floor(e.stamina * 5);
-                e.maxStamina = e.stamina;
-                e.mana      = Math.floor(e.mana * 5);
-                e.maxMana   = e.mana;
-                e.defense   = Math.floor(e.defense * 2);
-            } else if (isBossWave && i === 0) {
-                e.isBoss = true;
-                e.bossDL = dl;
-                e.name = this._statueBossName(type, 'boss');
-                e.health    = Math.floor(e.health * 2);
-                e.maxHealth = e.health;
-                e.stamina   = Math.floor(e.stamina * 2);
-                e.maxStamina = e.stamina;
-                e.mana      = Math.floor(e.mana * 2);
-                e.maxMana   = e.mana;
-            }
-            result.push(e);
+            if (isMegaBossWave && i === 0) result.push(this._createStatueBossTierEnemy(type, 'mega'));
+            else if (isBossWave && i === 0) result.push(this._createStatueBossTierEnemy(type, 'boss'));
+            else result.push(e);
         }
         return result;
+    }
+
+    _createStatueBossTierEnemy(type, tier, index = 0, total = 1) {
+        const dl = this.dungeonLevel;
+        const e = new Enemy({ type, gridX: 0, gridZ: 0, level: dl });
+        if (tier === 'mega') {
+            e.isMegaBoss = true;
+            e.isBoss = true;
+            e.bossDL = dl;
+            e.name = this._statueBossName(type, 'mega', index, total);
+            e.health    = Math.floor(e.health * 5);
+            e.maxHealth = e.health;
+            e.stamina   = Math.floor(e.stamina * 5);
+            e.maxStamina = e.stamina;
+            e.mana      = Math.floor(e.mana * 5);
+            e.maxMana   = e.mana;
+            e.defense   = Math.floor(e.defense * 2);
+            return e;
+        }
+
+        e.isBoss = true;
+        e.bossDL = dl;
+        e.name = this._statueBossName(type, 'boss', index, total);
+        e.health    = Math.floor(e.health * 2);
+        e.maxHealth = e.health;
+        e.stamina   = Math.floor(e.stamina * 2);
+        e.maxStamina = e.stamina;
+        e.mana      = Math.floor(e.mana * 2);
+        e.maxMana   = e.mana;
+        return e;
     }
 
     _createStatueSuperBoss(theme) {

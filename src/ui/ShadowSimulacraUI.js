@@ -177,6 +177,8 @@ export class ShadowSimulacraUI {
         summary.textContent = `Limit ${owned.length}/${cap}. Cost ${cost.toLocaleString()} gold. ${slotCount} power slot${slotCount !== 1 ? 's' : ''} from photomancer level.`;
         this._body.appendChild(summary);
 
+        this._body.appendChild(this._buildExistingSimulacraSection(state, selected, owned));
+
         this._body.appendChild(this._buildTemplateRow(state, slotCount));
 
         const grid = document.createElement('div');
@@ -203,6 +205,47 @@ export class ShadowSimulacraUI {
             : 'Select at least one power.';
         formBtn.addEventListener('click', () => this._formSimulacra(selected));
         this._body.appendChild(formBtn);
+    }
+
+    _buildExistingSimulacraSection(state, photo, owned) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'background:#151225;border:1px solid #40325f;border-radius:6px;padding:10px;margin-bottom:12px;';
+        const title = document.createElement('div');
+        title.style.cssText = 'color:#d5c0ff;font-weight:bold;margin-bottom:8px;';
+        title.textContent = 'Existing Shadow Simulacra';
+        wrap.appendChild(title);
+
+        if (!owned.length) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'color:#8f82b8;font-size:12px;';
+            empty.textContent = 'None formed by this photomancer.';
+            wrap.appendChild(empty);
+            return wrap;
+        }
+
+        for (const sim of owned) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:6px;';
+            const info = document.createElement('div');
+            const powers = (sim.summonStats?.powers || []).map(getShadowPowerName).join(', ');
+            info.style.cssText = 'color:#cfc6ec;font-size:12px;min-width:0;overflow-wrap:anywhere;';
+            info.textContent = `${sim.name} (${sim.health}/${sim.maxHealth} HP, ${sim.row || 'front'} row${powers ? `, ${powers}` : ''})`;
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.style.cssText = this._buttonStyle('#4e1f2a', '#9b3d52');
+            removeBtn.title = 'Permanently removes this Shadow Simulacra from the party.';
+            removeBtn.addEventListener('click', () => {
+                const idx = state.party.findIndex(p => p && p.id === sim.id);
+                if (idx === -1) return;
+                state.party.splice(idx, 1);
+                this._log(`🌑 ${photo.name} releases ${sim.name}.`);
+                this._onChanged();
+                this._render();
+            });
+            row.append(info, removeBtn);
+            wrap.appendChild(row);
+        }
+        return wrap;
     }
 
     _buildTemplateRow(state, slotCount) {

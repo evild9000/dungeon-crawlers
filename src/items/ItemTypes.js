@@ -1146,6 +1146,34 @@ export function getItemDef(itemId) {
     return ALL_ITEMS[itemId] || null;
 }
 
+export const ARTIFICER_SPECIAL_ITEM_IDS = new Set([
+    'displacer_cloak',
+    'elemental_bowl',
+    'elemental_stone',
+    'elemental_censer',
+    'elemental_brazier',
+    'elemental_sceptre',
+    'girdle_giant_strength',
+    'manticore_ballista',
+    'instrument_bards',
+    'yeti_totem',
+    'werewolf_blood_vial',
+    'holy_symbol_potent_power',
+    'staff_of_necromancy',
+    'eldritch_amulet',
+    'hag_eye_rod',
+    'lance_dragon_king',
+    'staff_world_tree',
+    'sash_vermin_keeper',
+]);
+
+export function getItemDisplayColor(itemId, enchant = null) {
+    if (typeof itemId === 'string' && itemId.startsWith('legendary_')) return '#c678ff';
+    if (ARTIFICER_SPECIAL_ITEM_IDS.has(itemId)) return '#ff9f2f';
+    if (enchant && (enchant.roundRegenAugment || enchant.regenAugmentLevel || enchant.augmentLevel)) return '#ff9f2f';
+    return '';
+}
+
 // ──────────────────────────────────────────
 // Loot helpers
 // ──────────────────────────────────────────
