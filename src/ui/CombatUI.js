@@ -3374,6 +3374,30 @@ export class CombatUI {
                 const canActivate   = berserkGolems.some(g => !g.golemBerserkActive && !g.golemBerserkUsed);
                 const canDeactivate = anyBerserk;
 
+                const bAllOnBtn = this._addBtn('⚡ All Berserk ON (free)', canActivate, () => {
+                    this.combat.golemBerserkAllOn();
+                });
+                bAllOnBtn.classList.add('combat-special-btn');
+                const dmgPct = Math.round(ARTIFICER_BERSERK_DMG_PER_LEVEL * 100);
+                bAllOnBtn.title = [
+                    `Artificer L${ARTIFICER_BERSERK_UNLOCK_LEVEL}: activate Berserk Mode on all eligible owned golems (free action).`,
+                    `Only affects living golems that are not already berserk and have not spent their Berserk charge this combat.`,
+                    `Damage multiplier: 1 + level × ${dmgPct}% (e.g. level 30 = +60%).`,
+                    `Overload: ${Math.round(ARTIFICER_BERSERK_OVERLOAD_PCT * 100)}% current HP self-damage per round.`,
+                    `Auto-exits at ${Math.round(ARTIFICER_BERSERK_MIN_HP_PCT * 100)}% max HP; cannot repair while berserk.`,
+                    !canActivate ? (hasLive ? 'No eligible golem (already berserk, used, or dead).' : 'No living golem.') : '',
+                ].filter(Boolean).join('\n');
+
+                const bAllOffBtn = this._addBtn('⚙️ All Berserk OFF (free)', canDeactivate, () => {
+                    this.combat.golemBerserkAllOff();
+                });
+                bAllOffBtn.classList.add('combat-special-btn');
+                bAllOffBtn.title = [
+                    'Disengage Berserk Mode on all currently berserk owned golems (free action).',
+                    'Marks each disengaged golem charge as used for this combat — they cannot re-enter.',
+                    !canDeactivate ? 'No golem is currently in Berserk Mode.' : '',
+                ].filter(Boolean).join('\n');
+
                 const bOnBtn = this._addBtn('⚡ Berserk ON (free)', canActivate, () => {
                     this._pickPartyTarget(t => this.combat.golemBerserkOn(t), {
                         filter: (pm) => pm && pm.isSummoned && pm.summonerId === m.id &&
@@ -3383,7 +3407,6 @@ export class CombatUI {
                     });
                 });
                 bOnBtn.classList.add('combat-special-btn');
-                const dmgPct = Math.round(ARTIFICER_BERSERK_DMG_PER_LEVEL * 100);
                 bOnBtn.title = [
                     `Artificer L${ARTIFICER_BERSERK_UNLOCK_LEVEL}: Golem Berserk Mode (free action, one use per combat).`,
                     `Damage multiplier: 1 + level × ${dmgPct}% (e.g. level 30 = +60%).`,

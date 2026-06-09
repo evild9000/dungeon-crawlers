@@ -6474,6 +6474,54 @@ export class CombatSystem {
         this._notify();
     }
 
+    golemBerserkAllOn() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'artificer') return;
+        if (m.level < ARTIFICER_BERSERK_UNLOCK_LEVEL) {
+            this._addLog(`${m.name} needs to reach level ${ARTIFICER_BERSERK_UNLOCK_LEVEL} to use Golem Berserk Mode.`);
+            return;
+        }
+
+        const targets = (this.party || []).filter(pm =>
+            pm && pm.isSummoned && pm.summonerId === m.id &&
+            GOLEM_PRESETS[pm.summonType] && pm.health > 0 &&
+            !pm.golemBerserkActive && !pm.golemBerserkUsed
+        );
+        if (targets.length === 0) {
+            this._addLog(`${m.name} has no eligible golems to overclock.`);
+            return;
+        }
+
+        for (const golem of targets) {
+            golem.golemBerserkActive = true;
+        }
+        this._addLog(`⚡⚙️ ${m.name} overclocks ${targets.length} golem${targets.length > 1 ? 's' : ''} — BERSERK MODE ENGAGED! Damage x(1+level*${ARTIFICER_BERSERK_DMG_PER_LEVEL}); ${Math.round(ARTIFICER_BERSERK_OVERLOAD_PCT * 100)}% HP overload per round.`);
+        this._notify();
+    }
+
+    golemBerserkAllOff() {
+        const m = this.currentMember;
+        if (!m || m.health <= 0) return;
+        if (m.classId !== 'artificer') return;
+
+        const targets = (this.party || []).filter(pm =>
+            pm && pm.isSummoned && pm.summonerId === m.id &&
+            GOLEM_PRESETS[pm.summonType] && pm.golemBerserkActive
+        );
+        if (targets.length === 0) {
+            this._addLog(`${m.name} has no golems currently in Berserk Mode.`);
+            return;
+        }
+
+        for (const golem of targets) {
+            golem.golemBerserkActive = false;
+            golem.golemBerserkUsed = true;
+        }
+        this._addLog(`⚙️ ${m.name} disengages Berserk Mode on ${targets.length} golem${targets.length > 1 ? 's' : ''}. (used for this combat)`);
+        this._notify();
+    }
+
     // ── Enemy death hook ─────────────────────────────────────────────────────
     _onEnemyDeath(enemy) {
         this._checkHunterMarkKill(enemy);
