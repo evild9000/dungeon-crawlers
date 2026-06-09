@@ -22,6 +22,7 @@ const TAG_INFO = {
 function buildAbilityList(def) {
     const lines = [];
     const tags = def.tags || [];
+    const name = String(def.name || '').toLowerCase();
 
     // Passive tag-based traits
     if (tags.includes('incorporeal')) {
@@ -106,6 +107,21 @@ function buildAbilityList(def) {
         lines.push('Slime: immune to bleed effects — ooze bodies have no blood-bearing anatomy');
         lines.push('Slime: immune to Photomancer Radiant Burst and its blind effect');
         lines.push('Slime: if charmed/summoned under a level 35 Vermin Keeper, can gain Minions\' Frenzy extra actions and obey that keeper\'s Hive Mind mark (special swarms excluded)');
+    }
+    if (name === 'dark treant') {
+        lines.push('Material Drop: level 25+ dark treants have an independent chance to drop Dark Treant Wood in addition to normal plant materials');
+    }
+    if (name === 'mummy') {
+        lines.push('Material Drop: level 25+ mummies have an independent chance to drop Mummy Wraps in addition to normal undead materials');
+    }
+    if (name === 'evil berserker') {
+        lines.push('Material Drop: level 25+ evil berserkers have an independent chance to drop Evil Berserker Furs');
+    }
+    if (name === 'assassin lord') {
+        lines.push('Material Drop: level 25+ assassin lords have an independent chance to drop an Assassin Lord Blade');
+    }
+    if (name === 'beholder') {
+        lines.push('Material Drop: level 25+ beholders have an independent chance to drop a Beholder Eye Lens in addition to normal aberration materials');
     }
     // Immunity from the immune[] array on the type definition.
     // Elemental types (fire, cold, lightning, acid, poison) get "damage and DoT" wording.

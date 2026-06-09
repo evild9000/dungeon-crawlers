@@ -758,10 +758,24 @@ export class CombatSystem {
         if (!enemy || enemy.health > 0) return;
         const type = String(enemy.type || '').toLowerCase();
         const tags = this._getEnemyTags(enemy);
+        const lvl = Math.max(1, Number(enemy.level) || 1);
+
+        const addIndependentAdvancedDrop = (itemId) => {
+            if (lvl < ADVANCED_MATERIAL_DROP_MIN_LEVEL) return;
+            if (Math.random() < ADVANCED_MATERIAL_DROP_CHANCE) {
+                this._addLootItemStack(items, itemId, 1);
+            }
+        };
 
         if ((type.includes('lich') || type.includes('dracolich')) && Math.random() < 0.33) {
             this._addLootItemStack(items, 'material_lich_part', 1);
         }
+
+        if (type === 'dark_treant') addIndependentAdvancedDrop('material_dark_treant_wood');
+        if (type === 'mummy') addIndependentAdvancedDrop('material_mummy_wraps');
+        if (type === 'evil_berserker') addIndependentAdvancedDrop('material_evil_berserker_furs');
+        if (type === 'assassin_lord') addIndependentAdvancedDrop('material_assassin_lord_blade');
+        if (type === 'beholder') addIndependentAdvancedDrop('material_beholder_eye_lens');
 
         const isDragon = tags.includes('dragon');
         const isDracolich = type.includes('dracolich');

@@ -463,6 +463,46 @@ export const CONSUMABLES = {
         icon: '\u{1F344}',
         stackable: true,
     },
+    material_dark_treant_wood: {
+        id: 'material_dark_treant_wood',
+        name: 'Dark Treant Wood',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Cursed heartwood cut from a dark treant.',
+        icon: '\u{1FAB5}',
+        stackable: true,
+    },
+    material_mummy_wraps: {
+        id: 'material_mummy_wraps',
+        name: 'Mummy Wraps',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Ancient funerary wraps steeped in desert necromancy.',
+        icon: '\u{1F9FB}',
+        stackable: true,
+    },
+    material_evil_berserker_furs: {
+        id: 'material_evil_berserker_furs',
+        name: 'Evil Berserker Furs',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Blood-matted furs stripped from an evil berserker.',
+        icon: '\u{1F9E5}',
+        stackable: true,
+    },
+    material_assassin_lord_blade: {
+        id: 'material_assassin_lord_blade',
+        name: 'Assassin Lord Blade',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A sinister blade recovered from an assassin lord.',
+        icon: '\u{1F5E1}\uFE0F',
+        stackable: true,
+    },
+    material_beholder_eye_lens: {
+        id: 'material_beholder_eye_lens',
+        name: 'Beholder Eye Lens',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A polished lens from a beholder eye stalk.',
+        icon: '\u{1F441}\uFE0F',
+        stackable: true,
+    },
 
     // Phase 12 — potions (craftable at an artificer's workbench).
     minor_healing_potion: {
