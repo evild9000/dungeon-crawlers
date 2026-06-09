@@ -1483,6 +1483,12 @@ export class InventoryUI {
                 const bonus2 = def.bonusType2.charAt(0).toUpperCase() + def.bonusType2.slice(1);
                 lines.push(`+${def.bonusValue2 || 0} ${bonus2}`);
             }
+            if (enchant && enchant.roundRegenAugment) {
+                lines.push('Ring of Regeneration: restores 10% max HP each combat round.');
+            }
+            if (enchant && enchant.displacementAugment) {
+                lines.push('Cloak of Displacement: 25% avoidance against melee, ranged, and single-target magic attacks.');
+            }
             lines.push('Equips to: ' + (def.trinketSlots || []).join(' or '));
         } else if (def.category === ITEM_CATEGORY.CONSUMABLE) {
             lines.push(def.description);

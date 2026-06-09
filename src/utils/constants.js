@@ -1263,12 +1263,6 @@ export const ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL = 35;
 export const MAGIC_ITEM_CRAFT_CHARGES = 10;
 export const MAGIC_ITEM_RECIPES = [
     {
-        id: 'displacer_cloak',
-        kind: 'equipment',
-        quantity: 1,
-        cost: { gold: 150000, material_displacer_beast_hide: 10 },
-    },
-    {
         id: 'mismatched_golem',
         name: 'Mismatched Golem',
         icon: '\u{1F916}',

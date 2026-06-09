@@ -1139,10 +1139,12 @@ export class CraftingUI {
             const regenAugmentLevel = (enchObj && enchObj.regenAugmentLevel) || 0;
             const regenAugmentPct = TRINKET_AUGMENT_REGEN_BY_LEVEL[regenAugmentLevel] || 0;
             const hasRoundRegen = !!(enchObj && enchObj.roundRegenAugment);
+            const hasDisplacement = !!(enchObj && enchObj.displacementAugment);
             const augmentBits = [`+${enchLvl} enchant`];
             if (augmentLevel) augmentBits.push(`L${augmentLevel} vitality`);
             if (regenAugmentLevel) augmentBits.push(`L${regenAugmentLevel} regen`);
             if (hasRoundRegen) augmentBits.push('combat regen');
+            if (hasDisplacement) augmentBits.push('displacement');
             titleEl.textContent = `${def.icon || ''} ${slotNames[slot]}: ${def.name}  ${bonusDesc}${bonus2Desc}  [${augmentBits.join(', ')}]`;
             panel.appendChild(titleEl);
 
@@ -1281,6 +1283,32 @@ export class CraftingUI {
                                 this._render();
                             });
                             panel.appendChild(roundBtn);
+                        }
+                    }
+
+                    if (def.trinketKind === 'cloak') {
+                        if (hasDisplacement) {
+                            panel.appendChild(this._note('Cloak of Displacement augment active: 25% avoidance against melee, ranged, and single-target magic attacks.'));
+                        } else if (artificer.level < ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL) {
+                            panel.appendChild(this._note(`Cloak of Displacement augment unlocks at Artificer level ${ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL}.`));
+                        } else {
+                            const displacementCost = { gold: 150000, material_displacer_beast_hide: 10 };
+                            const canDisplace = this._canPay(state, displacementCost);
+                            const displacementBtn = document.createElement('button');
+                            displacementBtn.className = `craft-btn ${canDisplace ? '' : 'craft-btn-disabled'}`;
+                            displacementBtn.disabled = !canDisplace;
+                            displacementBtn.textContent = `Add Cloak of Displacement — ${this._formatCost(displacementCost)}`;
+                            displacementBtn.title = 'Requires a cloak of effective +4 or higher. Grants 25% avoidance against melee, ranged, and single-target magic attacks while equipped.';
+                            displacementBtn.addEventListener('click', () => {
+                                if (!this._canPay(state, displacementCost)) return;
+                                this._pay(state, displacementCost);
+                                const existing = target.trinketEnchants[slot] || {};
+                                target.trinketEnchants[slot] = { ...existing, displacementAugment: true };
+                                this._log(`🧥 ${artificer.name} weaves displacement into ${target.name}'s ${def.name}.`);
+                                this._onChanged();
+                                this._render();
+                            });
+                            panel.appendChild(displacementBtn);
                         }
                     }
                 } else {

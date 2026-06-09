@@ -1027,21 +1027,6 @@ export const TRINKETS = {};
     }
 })();
 
-TRINKETS.displacer_cloak = {
-    id: 'displacer_cloak',
-    name: 'Displacer Cloak',
-    category: ITEM_CATEGORY.TRINKET,
-    trinketKind: TRINKET_KIND.CLOAK,
-    trinketSlots: ['cloak'],
-    bonusTypes: { defense: 7, melee: 7, ranged: 7, magic: 7 },
-    tier: 7,
-    enchantLevel: 7,
-    isLegendary: true,
-    sellValue: 75000,
-    description: 'Crafted cloak. +7 defense, melee, ranged, and magic. Permanent 25% avoidance against melee, ranged, and single-target magic; stacks with Blur but not Invisibility.',
-    icon: '\u{1F9E5}',
-};
-
 TRINKETS.girdle_giant_strength = {
     id: 'girdle_giant_strength',
     name: 'Girdle of Giant Strength',
@@ -1133,6 +1118,23 @@ TRINKETS.ring_spell_focus = {
 // ──────────────────────────────────────────
 
 export const LEGENDARY_ITEMS = {
+    // Legacy only: old saves may still have the pre-augment Displacer Cloak.
+    // New Displacement is crafted as a cloak trinket add-on instead.
+    displacer_cloak: {
+        id: 'displacer_cloak',
+        name: 'Legacy Displacer Cloak',
+        category: ITEM_CATEGORY.TRINKET,
+        trinketKind: TRINKET_KIND.CLOAK,
+        trinketSlots: ['cloak'],
+        bonusTypes: { defense: 7, melee: 7, ranged: 7, magic: 7 },
+        tier: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        sellValue: 75000,
+        description: 'Legacy crafted cloak. New Displacement crafting is now added to an equipped cloak from the Trinkets tab.',
+        icon: '\u{1F9E5}',
+    },
+
     // ── Weapons ──────────────────────────────────────────────────────────────
     legendary_warblade: {
         id: 'legendary_warblade',
@@ -1339,7 +1341,7 @@ export const ARTIFICER_SPECIAL_ITEM_IDS = new Set([
 export function getItemDisplayColor(itemId, enchant = null) {
     if (typeof itemId === 'string' && itemId.startsWith('legendary_')) return '#c678ff';
     if (ARTIFICER_SPECIAL_ITEM_IDS.has(itemId)) return '#ff9f2f';
-    if (enchant && (enchant.roundRegenAugment || enchant.regenAugmentLevel || enchant.augmentLevel)) return '#ff9f2f';
+    if (enchant && (enchant.roundRegenAugment || enchant.displacementAugment || enchant.regenAugmentLevel || enchant.augmentLevel)) return '#ff9f2f';
     return '';
 }
 

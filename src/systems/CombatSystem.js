@@ -12736,9 +12736,12 @@ export class CombatSystem {
         if (!opts.covenantTransfer && !opts.aoe && ['melee', 'ranged', 'magic'].includes(attackKind)) {
             const legacyCloak = Array.isArray(target.activeEffects)
                 && target.activeEffects.some(fx => fx && fx.type === 'cloak_of_displacement');
-            const equippedCloak = this._hasEquipped(target, 'displacer_cloak');
-            if ((legacyCloak || equippedCloak) && Math.random() < (equippedCloak ? 0.25 : 0.30)) {
-                this._addLog(`\u{1F9E5} ${target.name}'s Displacer Cloak bends ${eName}'s ${attackKind} attack aside!`);
+            const legacyEquippedCloak = this._hasEquipped(target, 'displacer_cloak');
+            const displacementCloak = !!(target.equipment && target.equipment.cloak
+                && target.trinketEnchants && target.trinketEnchants.cloak
+                && target.trinketEnchants.cloak.displacementAugment);
+            if ((legacyCloak || legacyEquippedCloak || displacementCloak) && Math.random() < (legacyCloak ? 0.30 : 0.25)) {
+                this._addLog(`\u{1F9E5} ${target.name}'s Cloak of Displacement bends ${eName}'s ${attackKind} attack aside!`);
                 return null;
             }
         }
