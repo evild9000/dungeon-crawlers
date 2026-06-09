@@ -84,13 +84,23 @@ export class ShopUI {
 
     _renderBuy(state) {
         const inv = state.inventory;
+        const highestPartyLevel = Math.max(
+            0,
+            ...(state.party || [])
+                .filter(member => member && !member.isSummoned)
+                .map(member => member.level || 1)
+        );
+        const reagentItems = ['reagent_common', 'reagent_uncommon', 'reagent_rare'];
+        if (highestPartyLevel >= 35) {
+            reagentItems.push('reagent_epic', 'reagent_legendary', 'reagent_mythic', 'reagent_divine');
+        }
 
         // All purchasable items — only tier-1 trinkets are sold; higher tiers
         // are loot-only so they stay special.
         const shopItems = [
             'food', 'healing_potion', 'resurrection_potion',
             'torch', 'lantern', 'lantern_oil',
-            'reagent_common', 'reagent_uncommon', 'reagent_rare',
+            ...reagentItems,
             ...Object.keys(WEAPONS),
             ...Object.keys(ARMOR),
             ...Object.keys(SHIELDS),
@@ -120,38 +130,24 @@ export class ShopUI {
             priceEl.textContent = `${price}g`;
             row.appendChild(priceEl);
 
-            const buyBtn = document.createElement('button');
-            buyBtn.className = 'shop-action-btn shop-buy-btn';
-            buyBtn.textContent = 'Buy';
-            buyBtn.disabled = inv.gold < price;
-            buyBtn.addEventListener('click', () => {
-                if (inv.gold >= price) {
-                    inv.removeGold(price);
-                    inv.addItem(itemId);
-                    soundManager.playGold();
-                    this._onChanged();
-                    this._render();
-                }
-            });
-            row.appendChild(buyBtn);
-
-            if (def.reagentTier) {
-                const price10 = price * 10;
-                const buy10Btn = document.createElement('button');
-                buy10Btn.className = 'shop-action-btn shop-buy-btn';
-                buy10Btn.textContent = 'Buy 10';
-                buy10Btn.disabled = inv.gold < price10;
-                buy10Btn.title = `Buy 10 for ${price10}g`;
-                buy10Btn.addEventListener('click', () => {
-                    if (inv.gold >= price10) {
-                        inv.removeGold(price10);
-                        for (let i = 0; i < 10; i++) inv.addItem(itemId);
+            const purchaseQuantities = def.reagentTier ? [1, 10, 100] : [1];
+            for (const quantity of purchaseQuantities) {
+                const totalPrice = price * quantity;
+                const buyBtn = document.createElement('button');
+                buyBtn.className = 'shop-action-btn shop-buy-btn';
+                buyBtn.textContent = quantity === 1 ? 'Buy' : `Buy ${quantity}`;
+                buyBtn.disabled = inv.gold < totalPrice;
+                buyBtn.title = quantity === 1 ? `Buy for ${totalPrice}g` : `Buy ${quantity} for ${totalPrice}g`;
+                buyBtn.addEventListener('click', () => {
+                    if (inv.gold >= totalPrice) {
+                        inv.removeGold(totalPrice);
+                        inv.addItem(itemId, quantity);
                         soundManager.playGold();
                         this._onChanged();
                         this._render();
                     }
                 });
-                row.appendChild(buy10Btn);
+                row.appendChild(buyBtn);
             }
 
             this.content.appendChild(row);

@@ -3254,14 +3254,29 @@ in progress:
 1. i tried yet again to make a mismatched golem and it still doesnt work.  you need to figure this out.  i click the button and nothing happens.  i have all the parts required and the gold
 2. it should not matter if the artificer already has a living mismatched golem.  those dont count against their limit and there is no limit to mismatched golems, although make sure to number them in case there is more than 1
 
-in progress:
+confirm:
 1.  change photomancer disintegrate damage to:  +300% + (photomancer level x3)% and gain one additional beam every 10 levels above 20.  make sure any help files are updated to reflect this change.
 2. change death knight instant kill chance to a chance to do a deadly blow that does damage x its (level/3).   make sure any help files are updated to reflect this change.
 3. when an artificer enchants a trinket that is less than +4, granting it an additional bonus, also rename the item to the name that matches the bonus.  for example an artificer upgrades a ring of the dauntless of blades that is +3 melee and +3 defense to +4/+4.  change the name to Signet of the Worldshield of Blades so that it matches the bonuses.  Do this for all items that are less than +4 individually or +4/+4 as a dual trinket. upgrading to +5 or +5/+5 does not change the name.
  
+confirm:
+1. disintegrate should Have 3% chance + (photomancer level/2) to instant kill the target.  boss/mega bosses immune does x4 damage instead.
 
+confirm:
+fixed statue stuff
 
+confirm:
+1. change statue event chance back to the old value
+2. investigate why a warlock would have their evil eye and eldritch power greyed out
+3. gargoyle and gargoyle sentinels should be immune to stun
+4. during statue event, have a counter next to the Round indicator in combat as to what wave is is on
+5. special magic items obtained from the statue event should be in purple text
+6. special magic items created by artificer in the magic item crafting tab or enchanted in the enchantment tab but with special reagents (like ring of regen) should be in orange text but nor regular items that are enchanted.
+7. have a button in the photomancer simulacra modal to remove old simulacra
+8. in the final super boss wave with the super boss, it only summoned the super boss, it should have also summoned a wave of normal monsters with it as well. also, add one additional mega boss and 3 regular bosses to that wave.
 
+todo:
+1. special items obtained from statue events that are +7 or +8 should already be considered at max enchant for purposes of not allowing enchanters to add more enchant levels, and also for purposes of qualifying for extra enchant add ons like aoe ward, spikes, wearpon riders and so forth.
 
 =========================================================================================
 ** work on badges and logging **
@@ -3302,7 +3317,10 @@ new special abilities:
 3. battle field spike growth - melee attackers suffer damage, incorporeal immune
 4. add a FLYING tag for this purpose and for prone attacks
 5. add silence ability to bards.  prevent spellcasting?
-
+6. rallying melody has a 50% chance to not consume the bards turn (cannot do another rallying melody that turn though)
+7. new monster clockwork dragon
+8. elemental pets (add elemental riders to minions)
+4. paladin on steed can knock prone with lance?/ trample/impale
 
 ===================================================================================
 

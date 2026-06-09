@@ -1284,10 +1284,10 @@ export function getItemBuyPrice(itemId) {
     if (itemId === 'reagent_common')    return 500;
     if (itemId === 'reagent_uncommon')  return 2000;
     if (itemId === 'reagent_rare')      return 5000;
-    if (itemId === 'reagent_epic')      return 20000;
-    if (itemId === 'reagent_legendary') return 75000;
-    if (itemId === 'reagent_mythic')    return 250000;
-    if (itemId === 'reagent_divine')    return 1000000;
+    if (itemId === 'reagent_epic')      return 10000;
+    if (itemId === 'reagent_legendary') return 25000;
+    if (itemId === 'reagent_mythic')    return 50000;
+    if (itemId === 'reagent_divine')    return 100000;
     // magical_reagent (legacy) not sold; potions crafted by artificers only.
     return 0;
 }
