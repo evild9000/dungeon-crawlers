@@ -3275,38 +3275,72 @@ confirm:
 7. have a button in the photomancer simulacra modal to remove old simulacra
 8. in the final super boss wave with the super boss, it only summoned the super boss, it should have also summoned a wave of normal monsters with it as well. also, add one additional mega boss and 3 regular bosses to that wave.
 
-todo:
+confirm:
 1. special items obtained from statue events that are +7 or +8 should already be considered at max enchant for purposes of not allowing enchanters to add more enchant levels, and also for purposes of qualifying for extra enchant add ons like aoe ward, spikes, wearpon riders and so forth.
+
+confirmed:
+1. allow the purchase from the shop keeper vendor epic (10,000 gold) , legendary (25,000 gold), mythic (50,000 gold) and divine (100,000 gold) reagents. only allow these to appear if the highest level character is 35+.
+2. also allow these reagents to be purchasable in packs of 10 and 100.  add the ability to buy common, uncommon and rare reagents also in bundles of 100.  
+
+confirm:
+1. have a mass berserk on and berserk off button as well for artificers to enable or disable berserk mode for all their golems at once.
+
+confirm:
+1. vitality and regen augments should not cost double for dual trinkets.  only the numerical upgrades to the defense and attack stat should cost double.
+
+confirm:
+1. the regen augment to trinkets outside of combat is more or less useless by the time you can afford it.  change the regen aspect from +2 hp/sta/mp (per rank) outside of combat to 1% of max hp/sta/mana inside of combat per round, and outside of combat to that % per minute.  therefore with 5 trinkets each at 4 ranks of regen its 5x4 +20% regen per round, quite potent.  this stacks with the troll blood ring of regeneration as well. 
+
+todo:
+add the following new additional reagents to monster drops for the following types.  if the monster already drops another possible reagent, these are checked separately.
+1. dark treant: dark treant wood
+2. mummy: mummy wraps
+3. evil berserker: evil berserker furs
+4. assassin lord:  assassin lord blade
+5. beholder:  beholder eye lens
 
 =========================================================================================
 ** work on badges and logging **
+=========================================================================================
+1. aberration item (100) items - think - summons random - aberration to fight for party
+similar to yeti/werewolf items
 
-11. aberration item (100) items - think - summons random - aberration to fight for party
-
---- need warrior rogue monk barbarian (belt)
-photomancer items? - increase simulacrum potency?
+2. warrior shield - dark treant wood
+3. monk wraps - mummy wraps - weapon slots
+4. barbarian armor - evil berserker furs
+5. rogue blade - assassin lord blades
+6. photomancer items? - increase simulacrum potency? beholder eye lens...
+7. general caster item similar to girdle of giant strength 
+8. ranged item similar to girdle of giant strength 
 
 
 QUESTS:
 ===================================================================================
 
-special quests from quest giver (random chance per hour?) - you have a vision
+special quests from quest giver (random chance per hour?) - you have a vision (J quest journal)
 - kill X of X 
 - collect X number of X parts
 - killed named X
 
-Super boss fight
-- reward = special item or special follower
+rescue +Super boss fight
+- reward = special follower
+
+
 
 ===================================================================================
 
 BIG type tag change:
 redo all monster types and attacks 
 give all monsers types or subtypes
-and label attack damage with types
+label all attack damage with types - physical, fire, ice, lightning, acid, poison, sonic, psychic, magic, force, internal - note in the lorebook entry and when attack hits what type is is with a color coded damage indicator
+color code special effects such as stuns, holds, trips, charms, debuffs
+
 do the same for player attacks, powers abilities, summoned etc
+seaprate prone and trip attacks from hold.  add separate defenses like flying, incorporeal, vermin, plant, or beasts multi legged or large (giant , dragon)
 add in flying tag
 add in spellcaster tag
+add in giant tag (if not already)
+
 
 ===================================================================================
 
