@@ -934,8 +934,9 @@ export class InventoryUI {
             if (isRogue) {
                 const base = Math.round(BACKSTAB_INSTAKILL_CHANCE * 100);
                 const cur  = Math.round((BACKSTAB_INSTAKILL_CHANCE + member.getInstakillBonus()) * 100);
+                const hasAssassinsBlade = !!(member.equipment && Object.values(member.equipment).includes('assassins_blade') && (member.level || 1) >= 35);
                 perk.push(`Backstab instakill: ${cur}%`);
-                perkDetails.push(`Rogue Backstab Instakill: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  (+${Math.round(cls.instakillPerLevel * 100)}%/level)`);
+                perkDetails.push(`Rogue Backstab Instakill: base ${base}% + ${cur - base}% from levels/items = ${cur}% total\n  (+${Math.round(cls.instakillPerLevel * 100)}%/level${hasAssassinsBlade ? '; Assassin\'s Blade adds +2% instakill, +10% backstab damage, +5% evasion, and +5% bleed damage.' : ''})`);
             } else if (isPaladin) {
                 const base = Math.round((PALADIN_SMITE_INSTAKILL_BASE || 0) * 100);
                 const cur  = Math.round(((PALADIN_SMITE_INSTAKILL_BASE || 0) + member.getInstakillBonus()) * 100);
@@ -952,8 +953,9 @@ export class InventoryUI {
         if (cls.whirlwindPerLevel) {
             const base = Math.round(MONK_WHIRLWIND_CHANCE * 100);
             const cur  = Math.round((MONK_WHIRLWIND_CHANCE + member.getWhirlwindBonus()) * 100);
+            const hasMummyWraps = !!(member.equipment && Object.values(member.equipment).includes('mummy_fist_wraps') && (member.level || 1) >= 35);
             perk.push(`Whirlwind: ${cur}%`);
-            perkDetails.push(`Monk Whirlwind: base ${base}% + ${cur - base}% from levels = ${cur}% total\n  Chance to also hit EACH other enemy on melee. Costs ${MONK_MELEE_MANA_COST} extra MP per melee.\n  (+${Math.round(cls.whirlwindPerLevel * 100)}%/level)`);
+            perkDetails.push(`Monk Whirlwind: base ${base}% + ${cur - base}% from levels/items = ${cur}% total\n  Chance to also hit EACH other enemy on melee. Costs ${MONK_MELEE_MANA_COST} extra MP per melee.\n  (+${Math.round(cls.whirlwindPerLevel * 100)}%/level${hasMummyWraps ? '; Mummy Fist Wraps add +5% chance, +15% whirlwind damage, +5 Quivering Palm formula levels, +5% Avatar cleanse, and +10% Ki Surge damage.' : ''})`);
         }
         if (cls.healPercentPerLevel) {
             const isCleric  = member.classId === 'cleric';
@@ -967,8 +969,9 @@ export class InventoryUI {
         }
         if (member.classId === 'warrior' && member.level >= WARRIOR_RETALIATION_UNLOCK_LEVEL) {
             const chance = Math.round(member.getRetaliationChance() * 100);
+            const hasDarkWoodShield = !!(member.equipment && member.equipment.shield === 'shield_dark_wood' && (member.level || 1) >= 35);
             perk.push(`Intercept retaliation: ${chance}%`);
-            perkDetails.push(`Warrior L25 Retaliatory Strike: ${chance}% chance after a successful Defend Mode intercept\n  Deals 75% of a normal melee strike back to the attacker.`);
+            perkDetails.push(`Warrior L25 Retaliatory Strike: ${chance}% chance after a successful Defend Mode intercept\n  Deals 75% of a normal melee strike back to the attacker.${hasDarkWoodShield ? '\n  Shield of the Dark Wood adds +5% block, intercept, retaliation/riposte, and taunt chance.' : ''}`);
         }
         if (member.classId === 'warrior' && member.level >= WARRIOR_SQUIRE_UNLOCK_LEVEL) {
             const sqCount  = member.level >= WARRIOR_SQUIRE_COUNT_L90 ? 3 : member.level >= WARRIOR_SQUIRE_COUNT_L60 ? 2 : 1;
@@ -1016,8 +1019,11 @@ export class InventoryUI {
             perkDetails.push(`Barbarian L${BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL} Odin's Ravens:\n  On death, one-time per combat chance to summon a Valkyrie and revive the barbarian at 25% HP.`);
         }
         if (member.classId === 'barbarian' && member.level >= BARBARIAN_WEREBEAR_UNLOCK_LEVEL) {
+            const hasFurLoincloth = !!(member.equipment && Object.values(member.equipment).includes('fur_loincloth') && (member.level || 1) >= 35);
+            const hpPct = Math.round((BARBARIAN_WEREBEAR_HP_BONUS_FRAC + (hasFurLoincloth ? 0.10 : 0)) * 100);
+            const rageRegenPct = 5 + (hasFurLoincloth ? 2 : 0);
             perk.push(`Werebear: ${BARBARIAN_WEREBEAR_STAMINA_COST} ST + ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST/rd`);
-            perkDetails.push(`Barbarian L${BARBARIAN_WEREBEAR_UNLOCK_LEVEL} Werebear:\n  Once per combat. +${Math.round(BARBARIAN_WEREBEAR_HP_BONUS_FRAC * 100)}% max/current HP, ${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% max HP regen per round, weapon riders suppressed while active.\n  Costs ${BARBARIAN_WEREBEAR_STAMINA_COST} ST to activate and ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST each round to sustain.`);
+            perkDetails.push(`Barbarian L${BARBARIAN_WEREBEAR_UNLOCK_LEVEL} Werebear:\n  Once per combat. +${hpPct}% max/current HP, ${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% max HP regen per round, weapon riders suppressed while active.\n  Costs ${BARBARIAN_WEREBEAR_STAMINA_COST} ST to activate and ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST each round to sustain.${hasFurLoincloth ? `\n  Fur Loincloth also raises Rage regen to ${rageRegenPct}%, adds +1 rage strike, and raises Blood Frenzy cap by 15%.` : ''}`);
         }
         if (member.classId === 'necromancer' && member.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
             perk.push(`Demi-Lich: ${NECRO_DEMI_LICH_MANA_COST} MP`);
@@ -1038,8 +1044,9 @@ export class InventoryUI {
             perkDetails.push(`Ranger L25 Animal Totems:\n  Free combat activation/change; costs ${RANGER_TOTEM_MANA_PER_ROUND} MP per round.\n  Wolf adds bleed and +1 extra ranged attack each round, Bear adds stun and defense, Eagle adds ranged/explosive damage and ranged deflection (checked before warrior/shambling intercept), Pixie adds poison and halves magic/AoE damage to the ranger.`);
         }
         if (member.classId === 'monk' && member.level >= MONK_AVATAR_UNLOCK_LEVEL) {
+            const hasMummyWraps = !!(member.equipment && Object.values(member.equipment).includes('mummy_fist_wraps') && (member.level || 1) >= 35);
             perk.push(`Avatar: ${MONK_AVATAR_MANA_PER_ROUND} MP/rd`);
-            perkDetails.push(`Monk L25 Avatar:\n  Free toggle on; costs ${MONK_AVATAR_MANA_PER_ROUND} MP per round.\n  Regenerates 10% max HP/round, can shrug off harmful states at turn start, and adds a chosen elemental DoT to landed attacks except Quivering Palm.`);
+            perkDetails.push(`Monk L25 Avatar:\n  Free toggle on; costs ${MONK_AVATAR_MANA_PER_ROUND} MP per round.\n  Regenerates 10% max HP/round, can shrug off harmful states at turn start, and adds a chosen elemental DoT to landed attacks except Quivering Palm.${hasMummyWraps ? '\n  Mummy Fist Wraps add +5% to Avatar harmful-effect shrug chance.' : ''}`);
         }
         if (member.classId === 'mage' && member.level >= MAGE_FAMILIAR_UNLOCK_LEVEL) {
             const fam = member.getFamiliarSummary ? member.getFamiliarSummary() : null;
@@ -1062,18 +1069,22 @@ export class InventoryUI {
         }
         if (member.classId === 'photomancer' && member.level >= PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) {
             const level = member.level || 1;
-            const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY));
-            const bonusPct = Math.round((PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL) * 100);
-            const killPct = Math.round((PHOTOMANCER_DISINTEGRATE_BASE_KILL + level * PHOTOMANCER_DISINTEGRATE_KILL_PER_LEVEL) * 100);
+            const hasLens = !!(member.equipment && Object.values(member.equipment).includes('lens_photomancy') && level >= 35);
+            const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY)) + (hasLens ? 1 : 0);
+            const bonusPct = Math.round((PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL + (hasLens ? 0.20 : 0)) * 100);
+            const killPct = Math.round((PHOTOMANCER_DISINTEGRATE_BASE_KILL + level * PHOTOMANCER_DISINTEGRATE_KILL_PER_LEVEL + (hasLens ? 0.05 : 0)) * 100);
             perk.push(`Disintegrate: ${beams} beam${beams === 1 ? '' : 's'}`);
-            perkDetails.push(`Photomancer L${PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL} Disintegrate:\n  Costs ${PHOTOMANCER_DISINTEGRATE_MANA_COST} MP.\n  Fires ${beams} focused magic beam${beams === 1 ? '' : 's'} that ignore defense.\n  Damage is normal magic +${bonusPct}% now; formula is +300% + level × 3%.\n  Each beam has ${killPct}% instant kill chance; bosses/mega-bosses take x${PHOTOMANCER_DISINTEGRATE_BOSS_MULT} damage instead.\n  Gains +1 beam every ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY} levels above ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL}.`);
+            perkDetails.push(`Photomancer L${PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL} Disintegrate:\n  Costs ${PHOTOMANCER_DISINTEGRATE_MANA_COST} MP.\n  Fires ${beams} focused magic beam${beams === 1 ? '' : 's'} that ignore defense.\n  Damage is normal magic +${bonusPct}% now; formula is +300% + level x 3%${hasLens ? ' plus Lens of Photomancy +20%' : ''}.\n  Each beam has ${killPct}% instant kill chance; bosses/mega-bosses take x${PHOTOMANCER_DISINTEGRATE_BOSS_MULT} damage instead.\n  Gains +1 beam every ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY} levels above ${PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL}${hasLens ? '; Lens of Photomancy adds +1 beam and +5% instant kill chance.' : ''}.`);
         }
         if (member.classId === 'photomancer' && member.level >= PHOTOMANCER_L35_UNLOCK_LEVEL) {
             const statBonus = Math.max(1, Math.floor((member.level || 1) / 5));
             const reviveCount = Math.max(1, Math.floor((member.level || 1) / 10));
+            const hasLens = !!(member.equipment && Object.values(member.equipment).includes('lens_photomancy') && (member.level || 1) >= 35);
+            const blindChance = Math.min(100, (member.level || 1) + (hasLens ? 5 : 0));
+            const bossBlindChance = Math.min(100, 20 + (hasLens ? 5 : 0));
             perk.push(`Radiant Burst: ${PHOTOMANCER_RADIANT_BURST_MANA_COST} MP`);
             perk.push(`Eternal Rainbow: ${PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST} MP, 1/combat`);
-            perkDetails.push(`Photomancer L${PHOTOMANCER_L35_UNLOCK_LEVEL} Radiant Burst:\n  Living-only magic AoE. Constructs, elementals, undead, plants, slimes, and magic-immune monsters are unaffected.\n  Blind chance is level% (${member.level || 1}% now); boss-style monsters use 20%.\n  Blind lasts 2 rounds and causes 50% miss chance on single-target melee/ranged/magic attacks. Success or resist grants short reblind protection.`);
+            perkDetails.push(`Photomancer L${PHOTOMANCER_L35_UNLOCK_LEVEL} Radiant Burst:\n  Living-only magic AoE. Constructs, elementals, undead, plants, slimes, and magic-immune monsters are unaffected.\n  Blind chance is ${blindChance}% now; boss-style monsters use ${bossBlindChance}%.\n  Blind lasts 2 rounds and causes 50% miss chance on single-target melee/ranged/magic attacks. Success or resist grants short reblind protection.${hasLens ? '\n  Lens of Photomancy also buffs simulacra damage by 20% at combat start.' : ''}`);
             perkDetails.push(`Photomancer L${PHOTOMANCER_L35_UNLOCK_LEVEL} Eternal Rainbow:\n  Once/combat, builds one color each round.\n  Red: 10% max HP regen. Orange: 5% max MP/ST regen. Yellow: +${statBonus} melee/ranged/magic. Green: +${statBonus} defense.\n  Blue: revives up to ${reviveCount} fallen recruited member(s) at 50% HP.\n  Indigo: ${member.level || 1}% chance to immediately remove newly applied harmful monster effects from living allies.\n  Violet: summons a living Leprechaun minion with glamour defense, enemy defense curse, Golden Greed, and final victory gold bonus if alive.`);
         }
         if (cls.drainPerLevel) {
@@ -1417,10 +1428,11 @@ export class InventoryUI {
             if (def.requiredClass) lines.push(`Requires: ${def.requiredClass} level ${def.requiredLevel || 1}+`);
             if (typeof def.defenseBonus === 'number') lines.push(`+${def.defenseBonus} defense`);
             if (typeof def.maxManaPct === 'number') lines.push(`+${Math.round(def.maxManaPct * 100)}% max mana`);
-            if (enchant && enchant.level > 0) {
+            if (def.noAdditionalEnhancements) lines.push('Already at its special enchantment limit; cannot receive additional enchants or riders.');
+            if (!def.noAdditionalEnhancements && enchant && enchant.level > 0) {
                 lines.push(`✨ Enchanted +${enchant.level} (bonus damage)`);
             }
-            if (enchant && enchant.rider) {
+            if (!def.noAdditionalEnhancements && enchant && enchant.rider) {
                 const riderIcons = { fire: '🔥', acid: '🟢', poison: '🐍', lightning: '⚡', ice: '❄️' };
                 const riderDescs = {
                     fire:      'Fire rider: deals bonus fire damage and may Burn target.',

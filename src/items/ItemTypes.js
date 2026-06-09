@@ -503,6 +503,22 @@ export const CONSUMABLES = {
         icon: '\u{1F441}\uFE0F',
         stackable: true,
     },
+    material_spellcaster_focus: {
+        id: 'material_spellcaster_focus',
+        name: 'Spellcaster Focus',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A spell focus salvaged from a defeated spellcaster.',
+        icon: '\u{1F52E}',
+        stackable: true,
+    },
+    material_archer_quiver: {
+        id: 'material_archer_quiver',
+        name: 'Archer Quiver',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'A reinforced quiver recovered from a skilled archer.',
+        icon: '\u{1F3F9}',
+        stackable: true,
+    },
 
     // Phase 12 — potions (craftable at an artificer's workbench).
     minor_healing_potion: {
@@ -755,6 +771,7 @@ export const WEAPONS = {
         requiredClass: 'mage',
         requiredLevel: 35,
         specialOffhandSlot: true,
+        noAdditionalEnhancements: true,
         maxManaPct: 0.15,
         sellValue: 75000,
         description: '+7 magic. Mage 35+: equips in the off hand, +15% max mana, +5% magic AoE crit chance, +1 Mirror Image, and empowers rift/device elementals with +15% health, +15% damage, and +5 defense.',
@@ -774,6 +791,67 @@ export const WEAPONS = {
         description: '+7 melee. Paladin 35+: Smite and AoE Smite deal +50% damage; Dragonslayer adds +10% damage against dragons.',
         icon: '\u{1F531}',
     },
+    mummy_fist_wraps: {
+        id: 'mummy_fist_wraps',
+        name: 'Mummy Fist Wraps',
+        category: ITEM_CATEGORY.WEAPON,
+        subtype: WEAPON_SUBTYPE.MELEE,
+        power: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        requiredClass: 'monk',
+        requiredLevel: 35,
+        sellValue: 75000,
+        description: '+7 melee. Monk 35+: +5% Whirlwind chance, +15% Whirlwind damage, Quivering Palm calculates as +5 monk levels, Avatar cleanse +5%, and Ki Surge damage +10%.',
+        icon: '\u{1F94A}',
+    },
+    assassins_blade: {
+        id: 'assassins_blade',
+        name: "Assassin's Blade",
+        category: ITEM_CATEGORY.WEAPON,
+        subtype: WEAPON_SUBTYPE.MELEE,
+        power: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        requiredClass: 'rogue',
+        requiredLevel: 35,
+        sellValue: 75000,
+        description: '+7 melee. Rogue 35+: main hand or off hand. +2% Backstab instakill, +10% Backstab damage, +5% evasion, and +5% Backstab bleed damage.',
+        icon: '\u{1F5E1}\uFE0F',
+    },
+    lens_photomancy: {
+        id: 'lens_photomancy',
+        name: 'Lens of Photomancy',
+        category: ITEM_CATEGORY.WEAPON,
+        subtype: WEAPON_SUBTYPE.MAGIC,
+        power: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        requiredClass: 'photomancer',
+        requiredLevel: 35,
+        specialOffhandSlot: true,
+        noAdditionalEnhancements: true,
+        sellValue: 75000,
+        description: '+7 magic. Photomancer 35+: off-hand focus; Color Spray hits +2 enemies and gains +10% stun chance, Disintegrate gains +5% instant-kill chance, +20% damage, +1 beam, Radiant Burst blind chance +5%, and simulacra gain +20% damage.',
+        icon: '\u{1F50E}',
+    },
+    quiver_piercer: {
+        id: 'quiver_piercer',
+        name: 'Quiver of the Piercer',
+        category: ITEM_CATEGORY.WEAPON,
+        subtype: WEAPON_SUBTYPE.RANGED,
+        power: 14,
+        defenseBonus: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        requiredClasses: ['ranger', 'artificer'],
+        requiredLevel: 35,
+        specialOffhandSlot: true,
+        noAdditionalEnhancements: true,
+        sellValue: 75000,
+        description: '+14 ranged and +7 defense. Ranger or Artificer 35+: special off-hand quiver.',
+        icon: '\u{1F3F9}',
+    },
 };
 
 // ──────────────────────────────────────────
@@ -786,6 +864,20 @@ export const ARMOR = {
     leather_armor:   { id: 'leather_armor',   name: 'Leather Armor', category: ITEM_CATEGORY.ARMOR, armorType: 'leather', blocking: 2, description: 'Blocks 2 damage. (Leather)', icon: '\u{1F9E5}' },
     chainmail_armor: { id: 'chainmail_armor', name: 'Chainmail',     category: ITEM_CATEGORY.ARMOR, armorType: 'chain',   blocking: 3, description: 'Blocks 3 damage. (Chain)',   icon: '\u{26D3}\uFE0F' },
     plate_armor:     { id: 'plate_armor',     name: 'Plate Mail',    category: ITEM_CATEGORY.ARMOR, armorType: 'plate',   blocking: 4, description: 'Blocks 4 damage. (Plate)',   icon: '\u{1F9FE}' },
+    fur_loincloth: {
+        id: 'fur_loincloth',
+        name: 'Fur Loincloth',
+        category: ITEM_CATEGORY.ARMOR,
+        armorType: 'leather',
+        blocking: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        requiredClass: 'barbarian',
+        requiredLevel: 35,
+        sellValue: 75000,
+        description: '+7 defense. Barbarian 35+: Rage regen +2%, +1 rage strike, Werebear max health +10%, and Blood Frenzy cap +15%.',
+        icon: '\u{1F9E5}',
+    },
 };
 
 // ──────────────────────────────────────────
@@ -800,6 +892,20 @@ export const SHIELDS = {
         blockChance: 0.25,
         description: '25% chance to completely block an incoming attack.',
         icon: '\u{1F6E1}\uFE0F', // 🛡️ — distinct-looking variation for shields
+    },
+    shield_dark_wood: {
+        id: 'shield_dark_wood',
+        name: 'Shield of the Dark Wood',
+        category: ITEM_CATEGORY.SHIELD,
+        blockChance: 0.30,
+        defenseBonus: 7,
+        enchantLevel: 7,
+        isLegendary: true,
+        requiredClass: 'warrior',
+        requiredLevel: 35,
+        sellValue: 75000,
+        description: '+7 defense shield. Warrior 35+: +5% block, intercept, retaliatory strike, shield riposte, and taunt chance.',
+        icon: '\u{1F6E1}\uFE0F',
     },
 };
 
@@ -1001,6 +1107,22 @@ TRINKETS.sash_vermin_keeper = {
     sellValue: 75000,
     description: 'Vermin Keeper 35+ belt. +20% max health and empowers vermin/slime summons, swarms, Insect Plague, and Minions Frenzy.',
     icon: '\u{1F577}\uFE0F',
+};
+
+TRINKETS.ring_spell_focus = {
+    id: 'ring_spell_focus',
+    name: 'Ring of Spell Focus',
+    category: ITEM_CATEGORY.TRINKET,
+    trinketKind: TRINKET_KIND.RING,
+    trinketSlots: ['ring1', 'ring2'],
+    bonusTypes: { magic: 14, defense: 7 },
+    requiredLevel: 35,
+    tier: 7,
+    enchantLevel: 7,
+    isLegendary: true,
+    sellValue: 75000,
+    description: 'Level 35+ ring. +14 magic and +7 defense. Already maxed for stat enchantments, but can still receive the Ring of Regeneration add-on.',
+    icon: '\u{1F48D}',
 };
 
 // ──────────────────────────────────────────
@@ -1205,6 +1327,13 @@ export const ARTIFICER_SPECIAL_ITEM_IDS = new Set([
     'lance_dragon_king',
     'staff_world_tree',
     'sash_vermin_keeper',
+    'shield_dark_wood',
+    'mummy_fist_wraps',
+    'fur_loincloth',
+    'assassins_blade',
+    'lens_photomancy',
+    'ring_spell_focus',
+    'quiver_piercer',
 ]);
 
 export function getItemDisplayColor(itemId, enchant = null) {

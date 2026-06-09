@@ -1109,6 +1109,32 @@ export class PartyHUD {
             if (existing) existing.remove();
         }
 
+        // Lens of Photomancy badge — shown on simulacra empowered by the Lens at combat start
+        if (portraitWrap && member.isSummoned && member.summonStats?.lensPhotomancyBuff) {
+            let lensBadge = portraitWrap.querySelector('.party-lens-photomancy-badge');
+            if (!lensBadge) {
+                lensBadge = document.createElement('span');
+                lensBadge.className = 'party-lens-photomancy-badge';
+                lensBadge.style.position = 'absolute';
+                lensBadge.style.bottom = '40px';
+                lensBadge.style.right = '-4px';
+                lensBadge.style.background = 'rgba(30,80,120,0.95)';
+                lensBadge.style.border = '1px solid #66ccff';
+                lensBadge.style.borderRadius = '6px';
+                lensBadge.style.color = '#ccf2ff';
+                lensBadge.style.fontSize = '10px';
+                lensBadge.style.padding = '1px 3px';
+                lensBadge.style.pointerEvents = 'none';
+                portraitWrap.style.position = portraitWrap.style.position || 'relative';
+                portraitWrap.appendChild(lensBadge);
+            }
+            lensBadge.textContent = '🔎+20%';
+            lensBadge.title = 'Lens of Photomancy: this simulacrum deals +20% damage.';
+        } else if (portraitWrap) {
+            const existing = portraitWrap.querySelector('.party-lens-photomancy-badge');
+            if (existing) existing.remove();
+        }
+
         // Thunderous Drums badge — shown on the bard's card when drums are active
         if (portraitWrap && !member.isSummoned && member.classId === 'bard' && member.thunderousDrumsActive) {
             let drumsBadge = portraitWrap.querySelector('.party-drums-badge');

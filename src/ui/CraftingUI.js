@@ -301,6 +301,7 @@ export class CraftingUI {
         const rider = (slot === 'weapon' || isOffhand)
             ? (isOffhand ? target.getOffhandRider() : target.getWeaponRider())
             : null;
+        const blocksEnhancements = !!itemDef?.noAdditionalEnhancements;
 
         const slotLabel = isOffhand ? 'Off-hand' : slot[0].toUpperCase() + slot.slice(1);
 
@@ -350,7 +351,7 @@ export class CraftingUI {
         // ── Armor qualities (armor slot only, requires +4 or higher) ──────────
         // Both Spikes and AoE Ward can be applied independently; each is purchased
         // separately at the same cost as the current enchant level.
-        if (slot === 'armor' && enchLvl >= 4) {
+        if (slot === 'armor' && enchLvl >= 4 && !blocksEnhancements) {
             const armorEnch = target.equipmentEnchants[slot] || {};
             const hasSpiked  = !!armorEnch.spiked;
             const hasAoeWard = !!armorEnch.aoeWard;
@@ -480,7 +481,12 @@ export class CraftingUI {
 
         // Weapon rider (only for weapon/offhand slot, only if enchanted, only if no rider yet)
         if (slot === 'weapon' || slot === 'offhand') {
-            if (enchLvl === 0) {
+            if (blocksEnhancements) {
+                const hint = document.createElement('div');
+                hint.className = 'craft-note';
+                hint.textContent = 'This special item cannot receive additional weapon riders or enhancements.';
+                panel.appendChild(hint);
+            } else if (enchLvl === 0) {
                 const hint = document.createElement('div');
                 hint.className = 'craft-note';
                 hint.textContent = 'Enchant to +1 or higher before adding an elemental rider.';

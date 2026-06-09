@@ -561,7 +561,13 @@ export class PartyMember {
     getMeleeStunBonus()   { return (this.classDef.stunPerLevel || 0) * Math.max(0, this.level - 1); }
     getRangedCritBonus()  { return (this.classDef.critPerLevel || 0) * Math.max(0, this.level - 1); }
     getMagicStunBonus()   { return (this.classDef.magicStunPerLevel || 0) * Math.max(0, this.level - 1); }
-    getInstakillBonus()   { return (this.classDef.instakillPerLevel || 0) * Math.max(0, this.level - 1); }
+    getInstakillBonus() {
+        const itemBonus = this.classId === 'rogue'
+            && (this.level || 1) >= 35
+            && Object.values(this.equipment || {}).includes('assassins_blade')
+            ? 0.02 : 0;
+        return (this.classDef.instakillPerLevel || 0) * Math.max(0, this.level - 1) + itemBonus;
+    }
     getDodgeBonus()       { return (this.classDef.dodgePerLevel || 0) * Math.max(0, this.level - 1); }
 
     /**
@@ -574,7 +580,13 @@ export class PartyMember {
         return Math.min(MONK_DODGE_MAX, MONK_DODGE_CHANCE + this.getDodgeBonus());
     }
 
-    getWhirlwindBonus()   { return (this.classDef.whirlwindPerLevel || 0) * Math.max(0, this.level - 1); }
+    getWhirlwindBonus() {
+        const itemBonus = this.classId === 'monk'
+            && (this.level || 1) >= 35
+            && Object.values(this.equipment || {}).includes('mummy_fist_wraps')
+            ? 0.05 : 0;
+        return (this.classDef.whirlwindPerLevel || 0) * Math.max(0, this.level - 1) + itemBonus;
+    }
     getHealPercentBonus() { return (this.classDef.healPercentPerLevel || 0) * Math.max(0, this.level - 1); }
     getDrainBonus()       { return (this.classDef.drainPerLevel || 0) * Math.max(0, this.level - 1); }
 
@@ -916,21 +928,20 @@ export class PartyMember {
                 // Flat enchant level adds to damage (applies to whichever attack type
                 // matches the weapon subtype, so a war blade buffs melee only).
                 const ench = this.equipmentEnchants && this.equipmentEnchants.weapon;
-                const enchLvl = ench && ench.level ? ench.level : 0;
+                const enchLvl = def.noAdditionalEnhancements ? 0 : (ench && ench.level ? ench.level : 0);
                 bonus += (def.power || 0) + enchLvl;
             }
         }
 
-        // Dual-wield: add off-hand melee weapon power + enchant level.
-        if (attackType === 'melee' || attackType === 'magic') {
-            const offId = this.equipment.offhand;
-            if (offId) {
-                const def = WEAPONS[offId];
-                if (def && def.subtype === attackType) {
-                    const offEnch = this.equipmentEnchants && this.equipmentEnchants.offhand;
-                    const offEnchLvl = offEnch && offEnch.level ? offEnch.level : 0;
-                    bonus += (def.power || 0) + offEnchLvl;
-                }
+        // Off-hand weapons can contribute when their attack type matches.
+        // This includes normal melee dual-wielding and special off-hand foci/quivers.
+        const offId = this.equipment.offhand;
+        if (offId) {
+            const def = WEAPONS[offId];
+            if (def && def.subtype === attackType) {
+                const offEnch = this.equipmentEnchants && this.equipmentEnchants.offhand;
+                const offEnchLvl = def.noAdditionalEnhancements ? 0 : (offEnch && offEnch.level ? offEnch.level : 0);
+                bonus += (def.power || 0) + offEnchLvl;
             }
         }
 
@@ -950,6 +961,9 @@ export class PartyMember {
 
     /** Current weapon rider ('fire'|'acid'|'poison'|'lightning'|'ice'|null). */
     getWeaponRider() {
+        const wpnId = this.equipment && this.equipment.weapon;
+        const def = wpnId ? getItemDef(wpnId) : null;
+        if (def && def.noAdditionalEnhancements) return null;
         const ench = this.equipmentEnchants && this.equipmentEnchants.weapon;
         return (ench && ench.rider) || null;
     }
@@ -979,11 +993,14 @@ export class PartyMember {
         const def = WEAPONS[offId];
         if (!def || def.subtype !== 'melee') return 0;
         const offEnch = this.equipmentEnchants && this.equipmentEnchants.offhand;
-        return (def.power || 0) + ((offEnch && offEnch.level) ? offEnch.level : 0);
+        return (def.power || 0) + (def.noAdditionalEnhancements ? 0 : ((offEnch && offEnch.level) ? offEnch.level : 0));
     }
 
     /** Off-hand weapon rider (dual-wield only). */
     getOffhandRider() {
+        const offId = this.equipment && this.equipment.offhand;
+        const def = offId ? getItemDef(offId) : null;
+        if (def && def.noAdditionalEnhancements) return null;
         const ench = this.equipmentEnchants && this.equipmentEnchants.offhand;
         return (ench && ench.rider) || null;
     }
@@ -1072,7 +1089,8 @@ export class PartyMember {
     getRetaliationChance() {
         if (this.classId !== 'warrior') return 0;
         if (this.level < WARRIOR_RETALIATION_UNLOCK_LEVEL) return 0;
-        return Math.min(0.95, WARRIOR_RETALIATION_BASE_CHANCE + this.level * WARRIOR_RETALIATION_PER_LEVEL);
+        const darkWoodBonus = this.equipment && this.equipment.shield === 'shield_dark_wood' ? 0.05 : 0;
+        return Math.min(0.95, WARRIOR_RETALIATION_BASE_CHANCE + this.level * WARRIOR_RETALIATION_PER_LEVEL + darkWoodBonus);
     }
 
     getDragonAuraReduction() {

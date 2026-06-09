@@ -465,6 +465,7 @@ export class CombatSystem {
         for (const m of this.party) {
             if (typeof m.clearCombatState === 'function') m.clearCombatState();
         }
+        this._applyLensPhotomancySimulacraBuffs();
         this.prismaticSphere = null;
         this.eternalRainbows = [];
 
@@ -716,6 +717,36 @@ export class CombatSystem {
             && this._hasEquipped(member, 'holy_symbol_potent_power');
     }
 
+    _hasShieldDarkWood(member) {
+        return member && member.classId === 'warrior'
+            && (member.level || 1) >= 35
+            && member.equipment?.shield === 'shield_dark_wood';
+    }
+
+    _hasMummyFistWraps(member) {
+        return member && member.classId === 'monk'
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'mummy_fist_wraps');
+    }
+
+    _hasFurLoincloth(member) {
+        return member && member.classId === 'barbarian'
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'fur_loincloth');
+    }
+
+    _hasAssassinsBlade(member) {
+        return member && member.classId === 'rogue'
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'assassins_blade');
+    }
+
+    _hasLensPhotomancy(member) {
+        return member && member.classId === 'photomancer'
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'lens_photomancy');
+    }
+
     _manticoreCritChanceBonus(member) {
         return this._hasManticoreBallista(member) ? 0.05 : 0;
     }
@@ -723,6 +754,20 @@ export class CombatSystem {
     _applyManticoreCriticalDamageBonus(member, damage, didCrit) {
         if (!didCrit || !this._hasManticoreBallista(member)) return damage;
         return Math.max(1, Math.floor(damage * 1.15));
+    }
+
+    _applyLensPhotomancySimulacraBuffs() {
+        const hasLens = (this.party || []).some(m => this._hasLensPhotomancy(m) && m.health > 0);
+        if (!hasLens) return;
+        let buffed = 0;
+        for (const m of this.party || []) {
+            if (!m || !m.isSummoned || !['simulacrum', 'shadow_simulacra'].includes(m.summonType)) continue;
+            m.summonStats = m.summonStats || {};
+            m.summonStats.itemDamageMult = Math.max(m.summonStats.itemDamageMult || 1, 1.20);
+            m.summonStats.lensPhotomancyBuff = true;
+            buffed++;
+        }
+        if (buffed > 0) this._addLog(`🔎 Lens of Photomancy empowers ${buffed} simulacr${buffed === 1 ? 'um' : 'a'} with +20% damage.`);
     }
 
     _tryManticoreBallistaProne(member, enemy) {
@@ -776,6 +821,8 @@ export class CombatSystem {
         if (type === 'evil_berserker') addIndependentAdvancedDrop('material_evil_berserker_furs');
         if (type === 'assassin_lord') addIndependentAdvancedDrop('material_assassin_lord_blade');
         if (type === 'beholder') addIndependentAdvancedDrop('material_beholder_eye_lens');
+        if (tags.includes('spellcaster')) addIndependentAdvancedDrop('material_spellcaster_focus');
+        if (tags.includes('archer')) addIndependentAdvancedDrop('material_archer_quiver');
 
         const isDragon = tags.includes('dragon');
         const isDracolich = type.includes('dracolich');
@@ -1491,6 +1538,7 @@ export class CombatSystem {
         if (barbarian.werebearActive) {
             cap += (barbarian.level || 1) * BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL;
         }
+        if (this._hasFurLoincloth(barbarian)) cap += 0.15;
         return Math.min(raw, cap);
     }
 
@@ -1701,7 +1749,8 @@ export class CombatSystem {
 
     _avatarCleanseAtTurnStart(member) {
         if (!member || member.classId !== 'monk' || !member.avatarActive || member.level < MONK_AVATAR_UNLOCK_LEVEL) return;
-        const chance = Math.min(0.95, MONK_AVATAR_CLEANSE_BASE + (member.level || 1) * MONK_AVATAR_CLEANSE_PER_LEVEL);
+        const chance = Math.min(0.95, MONK_AVATAR_CLEANSE_BASE + (member.level || 1) * MONK_AVATAR_CLEANSE_PER_LEVEL
+            + (this._hasMummyFistWraps(member) ? 0.05 : 0));
         const removed = [];
         if (member.stunned && Math.random() < chance) {
             member.stunned = false;
@@ -1868,7 +1917,8 @@ export class CombatSystem {
         let chosen = null;
         for (const warrior of taunts) {
             const chance = Math.min(0.95, (warrior.level || 1) / 100
-                + (warrior.isDefendMode ? WARRIOR_TAUNT_DEFEND_CHANCE_BONUS : 0));
+                + (warrior.isDefendMode ? WARRIOR_TAUNT_DEFEND_CHANCE_BONUS : 0)
+                + (this._hasShieldDarkWood(warrior) ? 0.05 : 0));
             if (warrior === currentTarget || Math.random() < chance) {
                 chosen = warrior;
                 break;
@@ -2168,7 +2218,7 @@ export class CombatSystem {
                     let dmg = this._rollPlayerMeleeDamage(m);
                     if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
                     dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
-                    dmg = Math.round(dmg * (1 + m.level * 0.005));
+                    dmg = Math.round(dmg * (1 + m.level * 0.005) * (this._hasMummyFistWraps(m) ? 1.15 : 1));
                     const d = this._damageEnemy(other, dmg, false, false, 0, false, { contactAttacker: m });
                     this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}! [+${Math.floor(m.level / 2)}% level bonus]`);
                     if (!suppressWeaponRiders) {
@@ -2244,7 +2294,7 @@ export class CombatSystem {
 
         // Barbarian rage extra attacks: 1 per 4 levels, each costs BARBARIAN_RAGE_STAMINA_COST ST
         if (m.classId === 'barbarian' && m.isRaging && targetEnemy && targetEnemy.health > 0) {
-            const rageExtraCount = Math.floor((m.level || 1) / 4);
+            const rageExtraCount = Math.floor((m.level || 1) / 4) + (this._hasFurLoincloth(m) ? 1 : 0);
             for (let ra = 0; ra < rageExtraCount; ra++) {
                 if (targetEnemy.health <= 0) break;
                 const hasStamina = m.stamina >= BARBARIAN_RAGE_STAMINA_COST;
@@ -2970,8 +3020,9 @@ export class CombatSystem {
         }
         m.isRaging = true;
         m.usedRage = true;
-        const extraAttacks = Math.floor((m.level || 1) / 4);
-        this._addLog(`\u{1F534} ${m.name} flies into a RAGE! (half damage, stun immune, +${m.level} melee dmg, ${extraAttacks} bonus attack(s)/round, 5% HP regen/round)`);
+        const extraAttacks = Math.floor((m.level || 1) / 4) + (this._hasFurLoincloth(m) ? 1 : 0);
+        const regenPct = BARBARIAN_RAGE_HP_REGEN + (this._hasFurLoincloth(m) ? 0.02 : 0);
+        this._addLog(`\u{1F534} ${m.name} flies into a RAGE! (half damage, stun immune, +${m.level} melee dmg, ${extraAttacks} bonus attack(s)/round, ${Math.round(regenPct * 100)}% HP regen/round)`);
         // Rage is a free action — the UI will immediately prompt the player to
         // pick a target and strike. Turn advances after the melee resolves.
         this._notify();
@@ -3010,7 +3061,7 @@ export class CombatSystem {
         m.stamina = Math.max(0, (m.stamina || 0) - BARBARIAN_WEREBEAR_STAMINA_COST);
         m.werebearUsed = true;
         m.werebearActive = true;
-        m.werebearHpBonus = Math.max(1, Math.floor((m.maxHealth || 1) * BARBARIAN_WEREBEAR_HP_BONUS_FRAC));
+        m.werebearHpBonus = Math.max(1, Math.floor((m.maxHealth || 1) * (BARBARIAN_WEREBEAR_HP_BONUS_FRAC + (this._hasFurLoincloth(m) ? 0.10 : 0))));
         m.maxHealth += m.werebearHpBonus;
         m.health += m.werebearHpBonus;
 
@@ -3325,7 +3376,8 @@ export class CombatSystem {
 
         const instakillChance = BACKSTAB_INSTAKILL_CHANCE + m.getInstakillBonus();
         const bossImmune = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss);
-        const levelMult = 1 + BACKSTAB_DAMAGE_PER_LEVEL * Math.max(1, m.level);
+        const levelMult = (1 + BACKSTAB_DAMAGE_PER_LEVEL * Math.max(1, m.level))
+            * (this._hasAssassinsBlade(m) ? 1.10 : 1);
         const twinFangsReady = targetEnemy.health > 0
             && m.level >= ROGUE_TWIN_FANGS_UNLOCK_LEVEL
             && m.hasOffhandMeleeWeapon();
@@ -3370,7 +3422,8 @@ export class CombatSystem {
         // L20+ Rogue: Backstab applies a bleed DoT through the central monster immunity checker.
         if (targetEnemy.health > 0 && m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL && dealt > 0) {
             if (!this._enemyHasImmunity(targetEnemy, 'bleed')) {
-                const bleedDmg    = Math.max(1, Math.floor(dealt * ROGUE_BACKSTAB_BLEED_FRAC));
+                const bleedFrac   = ROGUE_BACKSTAB_BLEED_FRAC + (this._hasAssassinsBlade(m) ? 0.05 : 0);
+                const bleedDmg    = Math.max(1, Math.floor(dealt * bleedFrac));
                 const bleedRounds = Math.max(1, Math.floor(m.level / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR));
                 if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
                 targetEnemy.activeEffects.push({ type: 'bleed', damage: bleedDmg, rounds: bleedRounds });
@@ -4176,7 +4229,8 @@ export class CombatSystem {
         const eName = this._eName(targetEnemy);
 
         // Strike multiplier = 2 + level/100 (e.g. L30 → ×2.3, L100 → ×3.0)
-        const qpMult = 2 + (m.level / 100);
+        const qpLevel = (m.level || 1) + (this._hasMummyFistWraps(m) ? 5 : 0);
+        const qpMult = 2 + (qpLevel / 100);
         const dealt = this._damageEnemy(targetEnemy, this._applyOutgoingDamageBonuses(m, Math.round(base * qpMult), 'melee'), false, false, 0, false, { contactAttacker: m });
         this._addLog(`✋ ${m.name} strikes ${eName} with the Quivering Palm for ${dealt} damage! (×${qpMult.toFixed(1)})`);
 
@@ -4422,7 +4476,7 @@ export class CombatSystem {
         }
 
         const base = this._rollPlayerMeleeDamage(m);
-        const raw  = this._applyOutgoingDamageBonuses(m, base * ki, 'melee');
+        const raw  = Math.max(1, Math.round(this._applyOutgoingDamageBonuses(m, base * ki, 'melee') * (this._hasMummyFistWraps(m) ? 1.10 : 1)));
 
         this._addLog(`\u{1F9D8} ${m.name} unleashes a Ki Surge! (${ki} charge${ki !== 1 ? 's' : ''} × ${base} melee = ${raw} raw)`);
 
@@ -4553,10 +4607,10 @@ export class CombatSystem {
             this._addLog(`${m.name} needs ${PHOTOMANCER_COLOR_SPRAY_MANA_COST} MP for Color Spray.`);
             return;
         }
-        const targets = this.aliveHostileEnemies.slice().sort(() => Math.random() - 0.5).slice(0, Math.max(1, (m.level || 1) + 1));
+        const targets = this.aliveHostileEnemies.slice().sort(() => Math.random() - 0.5).slice(0, Math.max(1, (m.level || 1) + 1 + (this._hasLensPhotomancy(m) ? 2 : 0)));
         if (!targets.length) return;
         m.mana -= PHOTOMANCER_COLOR_SPRAY_MANA_COST;
-        const stunChance = Math.min(0.95, (m.level || 1) / 100);
+        const stunChance = Math.min(0.95, (m.level || 1) / 100 + (this._hasLensPhotomancy(m) ? 0.10 : 0));
         this._addLog(`\u{1F308} ${m.name} releases a Color Spray over ${targets.length} target${targets.length !== 1 ? 's' : ''}!`);
         for (const e of targets) {
             const dealt = this._damageEnemy(e, this._rollPhotomancerMagicDamage(m), false, true);
@@ -4665,9 +4719,12 @@ export class CombatSystem {
         }
         m.mana -= PHOTOMANCER_DISINTEGRATE_MANA_COST;
         const level = m.level || 1;
-        const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY));
-        const dmgMult = 1 + PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + (level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL);
-        const killChance = Math.min(0.95, PHOTOMANCER_DISINTEGRATE_BASE_KILL + level * PHOTOMANCER_DISINTEGRATE_KILL_PER_LEVEL);
+        const beams = 1 + Math.max(0, Math.floor((level - PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL) / PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY))
+            + (this._hasLensPhotomancy(m) ? 1 : 0);
+        const dmgMult = 1 + PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS + (level * PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL)
+            + (this._hasLensPhotomancy(m) ? 0.20 : 0);
+        const killChance = Math.min(0.95, PHOTOMANCER_DISINTEGRATE_BASE_KILL + level * PHOTOMANCER_DISINTEGRATE_KILL_PER_LEVEL
+            + (this._hasLensPhotomancy(m) ? 0.05 : 0));
         this._addLog(`\u{1F52C} ${m.name} fires ${beams} disintegrating light beam${beams !== 1 ? 's' : ''}!`);
         for (let i = 0; i < beams; i++) {
             if (!targetEnemy || targetEnemy.health <= 0) break;
@@ -4733,9 +4790,10 @@ export class CombatSystem {
         if (this._enemyHasActiveEffect(enemy, 'radiant_blind') || this._enemyHasActiveEffect(enemy, 'radiant_blind_lockout')) {
             return;
         }
-        const chance = (enemy.isBoss || enemy.isMegaBoss || enemy.isSuperBoss)
+        const baseChance = (enemy.isBoss || enemy.isMegaBoss || enemy.isSuperBoss)
             ? PHOTOMANCER_RADIANT_BURST_BOSS_BLIND_CHANCE
-            : Math.min(1, Math.max(0, (photomancer.level || 1) / 100));
+            : Math.max(0, (photomancer.level || 1) / 100);
+        const chance = Math.min(1, baseChance + (this._hasLensPhotomancy(photomancer) ? 0.05 : 0));
         const success = Math.random() < chance;
         enemy.activeEffects = enemy.activeEffects || [];
         if (success) {
@@ -8395,7 +8453,7 @@ export class CombatSystem {
         if (!m || m.classId !== 'warrior' || m.isSummoned || m.level < WARRIOR_TAUNT_UNLOCK_LEVEL) return;
         m.warriorTauntActive = !m.warriorTauntActive;
         if (m.warriorTauntActive) {
-            const chance = Math.min(95, (m.level || 1) + (m.isDefendMode ? Math.round(WARRIOR_TAUNT_DEFEND_CHANCE_BONUS * 100) : 0));
+            const chance = Math.min(95, (m.level || 1) + (m.isDefendMode ? Math.round(WARRIOR_TAUNT_DEFEND_CHANCE_BONUS * 100) : 0) + (this._hasShieldDarkWood(m) ? 5 : 0));
             const penalty = Math.max(1, Math.floor((m.level || 1) / (m.isDefendMode ? WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR : WARRIOR_TAUNT_PENALTY_DIVISOR)));
             this._addLog(`🛡️ ${m.name} begins taunting! (${chance}% draw check, -${penalty} attack on redirected hits, ${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST/round)`);
         } else {
@@ -12884,7 +12942,7 @@ export class CombatSystem {
             && target.level >= ROGUE_TRAP_UNLOCK_LEVEL
             && (attackKind === 'magic' || opts.aoe)
             && target.stamina >= ROGUE_EVASION_STAMINA_COST) {
-            const chance = Math.min(1, (target.level || 1) * 0.01);
+            const chance = Math.min(1, (target.level || 1) * 0.01 + (this._hasAssassinsBlade(target) ? 0.05 : 0));
             if (Math.random() < chance) {
                 target.stamina = Math.max(0, target.stamina - ROGUE_EVASION_STAMINA_COST);
                 this._addLog(`🗡️ ${target.name} evades ${eName}'s ${opts.aoe ? 'AoE' : 'magic'} attack! (-${ROGUE_EVASION_STAMINA_COST} ST)`);
@@ -14450,7 +14508,7 @@ export class CombatSystem {
             }
             // Barbarian rage: regenerate 5% max HP per round
             if (m.classId === 'barbarian' && m.isRaging && !m.werebearActive && m.health > 0) {
-                const regenAmt = Math.max(1, Math.floor(m.maxHealth * BARBARIAN_RAGE_HP_REGEN));
+                const regenAmt = Math.max(1, Math.floor(m.maxHealth * (BARBARIAN_RAGE_HP_REGEN + (this._hasFurLoincloth(m) ? 0.02 : 0))));
                 const healed = Math.min(regenAmt, m.maxHealth - m.health);
                 if (healed > 0) {
                     m.health += healed;

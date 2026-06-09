@@ -1251,11 +1251,14 @@ export class CombatUI {
             }
         });
         const magicStunPct = m.getMagicStunBonus() * 100;
+        const hasLensPhotomancy = !!(m.equipment && Object.values(m.equipment).includes('lens_photomancy') && m.level >= 35);
+        const colorSprayTargets = (m.level || 1) + 1 + (hasLensPhotomancy ? 2 : 0);
+        const colorSprayStun = Math.min(95, (m.level || 1) + (hasLensPhotomancy ? 10 : 0));
         const magicTip = [
             m.classId === 'warlock'
                 ? `Warlock Eldritch Bolt. Costs ${magicManaCost} mana. Single target, bypasses armor/defense, +${m.level || 1}% damage.`
                 : m.classId === 'photomancer'
-                    ? `Photomancer Color Spray. Costs ${PHOTOMANCER_COLOR_SPRAY_MANA_COST} mana. Hits ${m.level + 1} targets as magic/AoE with ${m.level}% stun chance.`
+                    ? `Photomancer Color Spray. Costs ${PHOTOMANCER_COLOR_SPRAY_MANA_COST} mana. Hits ${colorSprayTargets} targets as magic/AoE with ${colorSprayStun}% stun chance${hasLensPhotomancy ? ' (Lens of Photomancy included)' : ''}.`
                     : `Magic attack. Costs ${magicManaCost} mana.`,
             (m.classId === 'warlock' || m.classId === 'photomancer') ? null : `Hits ALL enemies.`,
         ];
@@ -3051,7 +3054,10 @@ export class CombatUI {
             if (m.level >= PHOTOMANCER_L35_UNLOCK_LEVEL) {
                 const rbBtn = this._addBtn(`\u2600\uFE0F Radiant Burst (-${PHOTOMANCER_RADIANT_BURST_MANA_COST} MP)`, m.mana >= PHOTOMANCER_RADIANT_BURST_MANA_COST, () => this.combat.photomancerRadiantBurst());
                 rbBtn.classList.add('combat-special-btn');
-                rbBtn.title = `Magic AoE against living enemies only. Constructs, elementals, undead, plants, slimes, and magic-immune monsters ignore it. Blind chance is photomancer level%; boss-style monsters use 20%. Blind causes 50% miss chance on single-target melee/ranged/magic attacks for 2 rounds and prevents immediate reblind.`;
+                const hasLens = !!(m.equipment && Object.values(m.equipment).includes('lens_photomancy') && m.level >= 35);
+                const normalBlind = Math.min(100, (m.level || 1) + (hasLens ? 5 : 0));
+                const bossBlind = Math.min(100, 20 + (hasLens ? 5 : 0));
+                rbBtn.title = `Magic AoE against living enemies only. Constructs, elementals, undead, plants, slimes, and magic-immune monsters ignore it. Blind chance is ${normalBlind}% now; boss-style monsters use ${bossBlind}%. Blind causes 50% miss chance on single-target melee/ranged/magic attacks for 2 rounds and prevents immediate reblind${hasLens ? ' (Lens of Photomancy included).' : '.'}`;
 
                 const rainbowActive = (this.combat.eternalRainbows || []).some(rb => rb && rb.casterId === m.id);
                 const erCan = !m.eternalRainbowUsed && m.mana >= PHOTOMANCER_ETERNAL_RAINBOW_MANA_COST;
@@ -3672,7 +3678,8 @@ export class CombatUI {
         // ── Warrior L35: Taunt toggle (FREE action)
         if (m.classId === 'warrior' && !m.isSummoned && m.level >= WARRIOR_TAUNT_UNLOCK_LEVEL) {
             const tauntOn = !!m.warriorTauntActive;
-            const drawChance = Math.min(95, (m.level || 1) + (m.isDefendMode ? Math.round(WARRIOR_TAUNT_DEFEND_CHANCE_BONUS * 100) : 0));
+            const hasDarkWoodShield = !!(m.equipment && m.equipment.shield === 'shield_dark_wood' && m.level >= 35);
+            const drawChance = Math.min(95, (m.level || 1) + (m.isDefendMode ? Math.round(WARRIOR_TAUNT_DEFEND_CHANCE_BONUS * 100) : 0) + (hasDarkWoodShield ? 5 : 0));
             const penalty = Math.max(1, Math.floor((m.level || 1) / (m.isDefendMode ? WARRIOR_TAUNT_DEFEND_PENALTY_DIVISOR : WARRIOR_TAUNT_PENALTY_DIVISOR)));
             const tauntBtn = this._addBtn(tauntOn ? `🛡️ Taunt: ON (${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST/rnd)` : '🛡️ Taunt: OFF', true, () => this.combat.warriorTauntToggle());
             tauntBtn.classList.add('combat-special-btn');
@@ -3681,7 +3688,7 @@ export class CombatUI {
                 `Warrior L${WARRIOR_TAUNT_UNLOCK_LEVEL}: Taunt — FREE action toggle.`,
                 `Costs ${WARRIOR_TAUNT_STAMINA_PER_ROUND} ST/round while active.`,
                 `Before single-target melee, ranged, or magic attacks resolve, taunting warriors are checked from highest health to lowest.`,
-                `Current draw chance: ${drawChance}%${m.isDefendMode ? ' (includes +10% from Defend Mode)' : ''}.`,
+                `Current draw chance: ${drawChance}%${m.isDefendMode || hasDarkWoodShield ? ` (includes${m.isDefendMode ? ' +10% Defend Mode' : ''}${m.isDefendMode && hasDarkWoodShield ? ',' : ''}${hasDarkWoodShield ? ' +5% Shield of the Dark Wood' : ''})` : ''}.`,
                 `If selected, the attack is redirected to this warrior and takes -${penalty} attack${m.isDefendMode ? ' (level/4 in Defend Mode)' : ' (level/6)'}.`,
                 tauntOn ? 'Currently ACTIVE.' : 'Currently INACTIVE.',
             ].join('\n');

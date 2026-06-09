@@ -17,6 +17,8 @@ const TAG_INFO = {
     dragon:       { label: '🐉 Dragon',       color: '#c06020' },
     plant:        { label: '🌿 Plant',        color: '#4a8040' },
     slime:        { label: '🧪 Slime',        color: '#8a8f63' },
+    archer:       { label: '🏹 Archer',       color: '#b08a40' },
+    spellcaster:  { label: '🔮 Spellcaster',  color: '#8060d0' },
 };
 
 function buildAbilityList(def) {
@@ -107,6 +109,12 @@ function buildAbilityList(def) {
         lines.push('Slime: immune to bleed effects — ooze bodies have no blood-bearing anatomy');
         lines.push('Slime: immune to Photomancer Radiant Burst and its blind effect');
         lines.push('Slime: if charmed/summoned under a level 35 Vermin Keeper, can gain Minions\' Frenzy extra actions and obey that keeper\'s Hive Mind mark (special swarms excluded)');
+    }
+    if (tags.includes('spellcaster')) {
+        lines.push('Spellcaster Material: level 25+ spellcaster-tagged monsters have an independent chance to drop a Spellcaster Focus in addition to other materials');
+    }
+    if (tags.includes('archer')) {
+        lines.push('Archer Material: level 25+ archer-tagged monsters have an independent chance to drop an Archer Quiver in addition to other materials');
     }
     if (name === 'dark treant') {
         lines.push('Material Drop: level 25+ dark treants have an independent chance to drop Dark Treant Wood in addition to normal plant materials');

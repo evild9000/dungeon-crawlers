@@ -135,7 +135,7 @@ export const ENEMY_TYPES = {
     // rangedAny: imp uses a ranged attack that can target any row (front or back).
     imp:      { name: 'Imp',      spriteW: 1.0, spriteH: 1.2, rangedAny: true, tags: ['demon'], immune: ['fire'] },
     basilisk: { name: 'Basilisk', spriteW: 1.8, spriteH: 1.4, poisonChance: 0.30, tags: ['beast', 'monster'] },
-    cultist:  { name: 'Cultist',  spriteW: 1.4, spriteH: 1.9, aoeMagic: true, tags: ['humanoid'] },
+    cultist:  { name: 'Cultist',  spriteW: 1.4, spriteH: 1.9, aoeMagic: true, tags: ['humanoid', 'spellcaster'] },
 
     centipede:    { name: 'Giant Centipede', spriteW: 2.0, spriteH: 0.8, poisonChance: 0.45, tags: ['beast', 'vermin'] },
     cave_crawler: { name: 'Cave Crawler',    spriteW: 1.4, spriteH: 1.0, stunChance: 0.30, tags: ['beast', 'vermin'] },
@@ -143,7 +143,7 @@ export const ENEMY_TYPES = {
     spore_fungus: { name: 'Spore Fungus',    spriteW: 1.4, spriteH: 1.6, aoeMagic: true, aoePoisonChance: 0.35, tags: ['monster', 'plant'] },
     shrieker:     { name: 'Shrieker',        spriteW: 1.2, spriteH: 1.6, aoeMagic: true, aoeStunChance: 0.20, sonic: true, tags: ['monster', 'plant'] },
     kobold:       { name: 'Kobold',          spriteW: 1.0, spriteH: 1.4, tags: ['humanoid'] },
-    kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, tags: ['humanoid'] },
+    kobold_shaman:{ name: 'Kobold Shaman',   spriteW: 1.0, spriteH: 1.5, aoeMagic: true, tags: ['humanoid', 'spellcaster'] },
     cave_fisher:  { name: 'Cave Fisher',     spriteW: 1.8, spriteH: 1.4, webChance: 0.50, tags: ['beast', 'vermin'] },
     stirge:       { name: 'Stirge',          spriteW: 1.2, spriteH: 1.0, isStirgeAI: true, tags: ['beast', 'vermin'] },
     acid_slime:   { name: 'Acid Slime',      spriteW: 1.2, spriteH: 1.0, poisonChance: 0.55, tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'] },
@@ -160,11 +160,11 @@ export const ENEMY_TYPES = {
 
     // ── New monsters (unbounded dungeon level) ────────────────────────
     banshee:         { name: 'Banshee',          spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeStunChance: 0.40, sonic: true, tags: ['undead', 'incorporeal'] },
-    lich:            { name: 'Lich',             spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeMagicDamageMult: 1.25, regenPercent: 0.05, tags: ['undead'] },
+    lich:            { name: 'Lich',             spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeMagicDamageMult: 1.25, regenPercent: 0.05, tags: ['undead', 'spellcaster'] },
     minotaur:        { name: 'Minotaur',         spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['humanoid', 'beast'] },
     shadow:          { name: 'Shadow',           spriteW: 1.2, spriteH: 2.0, phaseStrike: true, lifeDrain: 0.30, tags: ['undead', 'incorporeal'] },
     ogre:            { name: 'Ogre',             spriteW: 2.0, spriteH: 2.2, stunChance: 0.45, tags: ['humanoid'] },
-    dark_elf:        { name: 'Dark Elf',         spriteW: 1.2, spriteH: 1.8, rangedAny: true, poisonChance: 0.30, tags: ['humanoid'] },
+    dark_elf:        { name: 'Dark Elf',         spriteW: 1.2, spriteH: 1.8, rangedAny: true, poisonChance: 0.30, tags: ['humanoid', 'archer'] },
     harpy:           { name: 'Harpy',            spriteW: 1.6, spriteH: 1.8, aoeMagic: true, aoeStunChance: 0.25, sonic: true, tags: ['beast', 'monster'] },
     giant_scorpion:  { name: 'Giant Scorpion',   spriteW: 2.0, spriteH: 1.2, poisonChance: 0.50, tags: ['beast', 'vermin'] },
     wight:           { name: 'Wight',            spriteW: 1.4, spriteH: 1.8, lifeDrain: 0.35, stunChance: 0.25, tags: ['undead'] },
@@ -175,9 +175,9 @@ export const ENEMY_TYPES = {
     vampire_spawn:   { name: 'Vampire Spawn',    spriteW: 1.4, spriteH: 1.8, lifeDrain: 0.30, regenPercent: 0.08, tags: ['undead'] },
     mind_flayer:     { name: 'Mind Flayer',      spriteW: 1.4, spriteH: 2.0, aoeMagic: true, aoeStunChance: 0.50, aoeStunPsychic: true, tags: ['aberration'] },
     fire_elemental:  { name: 'Fire Elemental',   spriteW: 1.6, spriteH: 2.0, aoeFire: true, tags: ['construct', 'elemental', 'incorporeal'], immune: ['fire', 'stun', 'poison'] },
-    gnoll:           { name: 'Gnoll',            spriteW: 1.4, spriteH: 1.8, rangedAny: true, poisonChance: 0.20, tags: ['humanoid', 'beast'] },
+    gnoll:           { name: 'Gnoll',            spriteW: 1.4, spriteH: 1.8, rangedAny: true, poisonChance: 0.20, tags: ['humanoid', 'beast', 'archer'] },
     demon_knight:    { name: 'Demon Knight',     spriteW: 1.8, spriteH: 2.2, stunChance: 0.40, tags: ['demon', 'humanoid'] },
-    naga:            { name: 'Naga',             spriteW: 1.8, spriteH: 1.6, poisonChance: 0.45, constrict: 3, rangedAny: true, tags: ['monster', 'beast'] },
+    naga:            { name: 'Naga',             spriteW: 1.8, spriteH: 1.6, poisonChance: 0.45, constrict: 3, rangedAny: true, tags: ['monster', 'beast', 'archer'] },
     gelatinous_cube: { name: 'Gelatinous Cube',  spriteW: 1.8, spriteH: 1.8, poisonChance: 0.35, paralyzingBite: 2, tags: ['slime'], immune: ['acid', 'stun', 'hold', 'web', 'paralyze'] },
     // New slime variants
     grey_ooze:       { name: 'Grey Ooze',        spriteW: 1.6, spriteH: 1.1,
@@ -223,12 +223,12 @@ export const ENEMY_TYPES = {
     // hag: old witch, AoE magic caster.
     hag:          { name: 'Hag',          spriteW: 1.4, spriteH: 1.8,
         isHagAI: true, hagCurseChance: 0.30, aoeMagic: true,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'spellcaster'] },
 
     // bandit: rogue mercenary, can attack back row.
     bandit:       { name: 'Bandit',       spriteW: 1.2, spriteH: 1.8,
         rangedAny: true, poisonChance: 0.20,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'archer'] },
 
     // beholder: aberration, 6 random eye beams per turn with varied effects.
     // Special AI handles the eye beams; isBeholderAI flags it in _executeOneEnemyTurn.
@@ -297,7 +297,7 @@ export const ENEMY_TYPES = {
     // medusa: 3 poison arrows/turn, can hit back row, petrify attempt.
     medusa:       { name: 'Medusa',       spriteW: 1.6, spriteH: 2.0,
         isMedusaAI: true,
-        tags: ['humanoid', 'monster'] },
+        tags: ['humanoid', 'monster', 'archer'] },
 
     // hydra: 6+ melee-contact heads (1 per 5 dungeon levels), each can reach any row, regen 15%/round.
     hydra:        { name: 'Hydra',        spriteW: 2.4, spriteH: 1.8,
@@ -312,7 +312,7 @@ export const ENEMY_TYPES = {
     // evil_priest: 50/50 mass heal (15% HP to non-undead enemies) or AoE magic.
     evil_priest:  { name: 'Evil Priest',  spriteW: 1.4, spriteH: 1.9,
         isEvilPriestAI: true,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'spellcaster'] },
 
     // werewolf: +50% defense bonus, regen 25%/turn.
     werewolf:     { name: 'Werewolf',     spriteW: 1.8, spriteH: 2.2,
@@ -358,7 +358,7 @@ export const ENEMY_TYPES = {
     evil_necromancer: { name: 'Evil Necromancer',   spriteW: 1.4, spriteH: 1.9,
         isEvilNecromancerAI: true,
         hpMult: 1.5,
-        tags: ['humanoid'],
+        tags: ['humanoid', 'spellcaster'],
         minLevel: 25 },
 
     // hell_hound: 50% bite (melee + fire DoT) / 50% fire breath (front-row AoE + fire DoT).
@@ -392,7 +392,7 @@ export const ENEMY_TYPES = {
     // bone_archer: ranged-any; at lvl 15+ fires 3-arrow volley; 25% fracture DoT per arrow.
     bone_archer: { name: 'Bone Archer', spriteW: 1.2, spriteH: 1.9,
         isBoneArcherAI: true, rangedAny: true,
-        tags: ['undead'],
+        tags: ['undead', 'archer'],
         minLevel: 4 },
 
     // poltergeist: 50/50 ranged debris (40% stun) or phase-strike melee; cannot be backstabbed.
@@ -473,7 +473,7 @@ export const ENEMY_TYPES = {
 
     witch_doctor:     { name: 'Witch Doctor',        spriteW: 1.4, spriteH: 1.9,
         isWitchDoctorAI: true, hpMult: 0.5,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'spellcaster'] },
 
     gladiator:        { name: 'Gladiator',           spriteW: 1.8, spriteH: 2.0,
         isGladiatorAI: true, defenseMult: 1.5,
@@ -486,7 +486,7 @@ export const ENEMY_TYPES = {
 
     battle_mage:      { name: 'Battle Mage',         spriteW: 1.6, spriteH: 2.0,
         isBattleMageAI: true, defenseMult: 1.3, hpMult: 1.5,
-        tags: ['humanoid'],
+        tags: ['humanoid', 'spellcaster'],
         minLevel: 25 },
 
     iron_golem:       { name: 'Iron Golem',          spriteW: 2.0, spriteH: 2.4,
@@ -561,7 +561,7 @@ export const ENEMY_TYPES = {
     // ── New monsters ─────────────────────────────────────────────────────────
     evil_wizard:   { name: 'Evil Wizard',    spriteW: 1.4, spriteH: 1.9,
         aoeMagic: true, halfMagicDamage: true,
-        tags: ['humanoid'] },
+        tags: ['humanoid', 'spellcaster'] },
 
     dark_treant:   { name: 'Dark Treant',    spriteW: 2.0, spriteH: 2.4,
         isDarkTreantAI: true, hpMult: 1.5,
@@ -593,7 +593,7 @@ export const ENEMY_TYPES = {
 
     dread_cultist: { name: 'Dread Cultist',  spriteW: 1.4, spriteH: 1.9,
         isDreadCultistAI: true,
-        tags: ['humanoid'], minLevel: 20 },
+        tags: ['humanoid', 'spellcaster'], minLevel: 20 },
 };
 // Only enemy types (excludes tinkerer for spawning purposes)
 export const ENEMY_TYPE_KEYS = Object.keys(ENEMY_TYPES);
@@ -1385,6 +1385,48 @@ export const MAGIC_ITEM_RECIPES = [
         kind: 'equipment',
         quantity: 1,
         cost: { gold: 150000, material_plant_parts: 50 },
+    },
+    {
+        id: 'shield_dark_wood',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_dark_treant_wood: 10 },
+    },
+    {
+        id: 'mummy_fist_wraps',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_mummy_wraps: 5 },
+    },
+    {
+        id: 'fur_loincloth',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_evil_berserker_furs: 10 },
+    },
+    {
+        id: 'assassins_blade',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_assassin_lord_blade: 10 },
+    },
+    {
+        id: 'lens_photomancy',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_beholder_eye_lens: 10 },
+    },
+    {
+        id: 'ring_spell_focus',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_spellcaster_focus: 10 },
+    },
+    {
+        id: 'quiver_piercer',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_archer_quiver: 10 },
     },
 ];
 
