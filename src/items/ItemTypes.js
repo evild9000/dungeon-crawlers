@@ -729,7 +729,7 @@ export const WEAPONS = {
         requiredClass: 'bard',
         requiredLevel: 35,
         sellValue: 75000,
-        description: '+7 magic and +7 defense. Bard 35+: Disrupt deals triple damage and is harder to resist, Melody restores +5%, Bard Song gains +1 initiative/attack/defense/regen, Thunderous Drums gains +5% potency, and regular magic attacks deal +15% damage.',
+        description: '+7 magic and +7 defense. Bard 35+: Disrupt deals triple damage and is harder to resist, Symphony damage doubles, Melody restores +5%, Bard Song gains +1 initiative/attack/defense/regen, Thunderous Drums gains +5% potency, and regular magic attacks deal +15% damage.',
         icon: '\u{1F3B5}',
     },
     staff_of_necromancy: {

@@ -1102,6 +1102,8 @@ export class CombatUI {
                 `Symphony of Destruction — Round ${nextRound}`,
                 `Deals sonic AoE damage to ALL enemies at ×${nextMult} the base magic damage.`,
                 `Costs ${mc} MP and ${sc} ST this round (doubles each round).`,
+                `Instrument of the Bards doubles this bard's Symphony damage.`,
+                `If multiple bards are actively channeling Symphony, each Symphony is multiplied by 1.5^(active bards - 1).`,
                 `Incorporeal enemies are immune to the symphony.`,
                 !canContinue ? `Not enough mana and/or stamina (needs ${mc} MP, ${sc} ST).` : '',
             ].filter(Boolean).join('\n');
@@ -2237,6 +2239,8 @@ export class CombatUI {
                 `Costs ${symManaCost} MP and ${symStaCost} ST to start; doubles each round.`,
                 `Round 1: ×1 damage to ALL enemies.  Round 2: ×2.  Round 3: ×4, etc.`,
                 `Each round costs twice the previous round (10→20→40→80 MP/ST).`,
+                `Instrument of the Bards doubles this bard's Symphony damage.`,
+                `Multiple active symphonies amplify each other: 2 bards x1.5 each, 3 bards x2.25 each, 4 bards x3.375 each.`,
                 `Deals sonic AoE magic damage. Incorporeal enemies are immune.`,
                 `While channeling: all other abilities are locked. Stop is a free action.`,
                 `Ends if bard is stunned, webbed, or can no longer pay the doubled cost.`,

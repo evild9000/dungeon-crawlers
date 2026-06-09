@@ -1336,6 +1336,13 @@ export class PartyHUD {
                 mkPB('🌀', 'Blur', 'rgba(45,110,190,0.9)',
                     `Photomancer Blur: ${missPct}% miss chance against melee and ranged attacks — ${pblur.rounds} rds left.`);
             }
+            const soulful = pefx.find(x => x && x.type === 'soulful_melody_anthem' && x.rounds > 0);
+            if (soulful) {
+                const atk = soulful.damageBonus || 0;
+                const def = soulful.defenseBonus || 0;
+                mkPB('🎼', `Dirge +${atk}/+${def}`, 'rgba(90,55,135,0.95)',
+                    `Soulful Melody: +${atk} attack and +${def} defense — ${soulful.rounds} rds left${soulful.sourceName ? `.\nPlayed by ${soulful.sourceName}.` : '.'}`);
+            }
             const rbRed = pefx.find(x => x && x.type === 'rainbow_red' && x.rounds > 0);
             if (rbRed) mkPB('🔴', 'Red', 'rgba(170,40,35,0.95)',
                 `Eternal Rainbow Red: ${Math.round((rbRed.healPct || 0.10) * 100)}% max HP regen each round — refreshed by active rainbow.`);

@@ -998,7 +998,7 @@ export class InventoryUI {
             const hasInstrument = Object.values(member.equipment || {}).includes('instrument_bards');
             const restore = Math.round((BARD_RALLYING_MELODY_RESTORE_FRACTION + (hasInstrument ? 0.05 : 0)) * 100);
             perk.push(`Rallying Melody: ${restore}% restore`);
-            perkDetails.push(`Bard L25 Rallying Melody: costs ${BARD_RALLYING_MELODY_MANA_COST} MP\n  Restores ${restore}% of max HP, mana, and stamina to every living party member.\n  Does NOT affect golems or summoned undead.${hasInstrument ? '\n  Instrument of the Bards also empowers Disrupt, Bard Song, Thunderous Drums, and regular magic attacks.' : ''}`);
+            perkDetails.push(`Bard L25 Rallying Melody: costs ${BARD_RALLYING_MELODY_MANA_COST} MP\n  Restores ${restore}% of max HP, mana, and stamina to every living party member.\n  Does NOT affect golems or summoned undead.${hasInstrument ? '\n  Instrument of the Bards also doubles Symphony of Destruction damage and empowers Disrupt, Bard Song, Thunderous Drums, and regular magic attacks.' : ''}`);
         }
         if (member.classId === 'artificer' && member.level >= 25) {
             perk.push('Advanced Augments');

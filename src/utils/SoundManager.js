@@ -960,6 +960,10 @@ class SoundManager {
             this.playTone(notes[i], 'sine', 0.55, 0.18, this.masterGain, t + i * 0.28);
         }
     }
+
+    playSoulfulMelodyDirge() {
+        this.playPartyMemberKO();
+    }
 }
 
 export const soundManager = new SoundManager();

@@ -7389,16 +7389,30 @@ export class CombatSystem {
         }
     }
 
+    _getActiveSymphonyBardCount() {
+        return (this.party || []).filter(p => p && p.health > 0 && !p.isSummoned && p.classId === 'bard' && p.symphonyActive).length;
+    }
+
     /** Fire one round of the symphony AoE (all enemies, sonic damage, incorporeal immune). */
     _bardFireSymphony(m, round) {
         const damageMult = Math.pow(2, round - 1);
+        const instrumentMult = this._hasEquipped(m, 'instrument_bards') ? 2 : 1;
+        const symphonyBards = this._getActiveSymphonyBardCount();
+        const ensembleMult = Math.pow(1.5, Math.max(0, symphonyBards - 1));
         let dmg = randomInt(MAGIC_DAMAGE_MIN, MAGIC_DAMAGE_MAX);
         dmg += m.getWeaponBonus('magic');
         dmg += m.getClassDamageBonus('magic');
         dmg += this._getPartyMemberDamageMod(m);
         dmg = Math.max(1, Math.round(dmg * (m.getMagicDamageMultiplier?.() || 1)));
         dmg = Math.max(1, Math.round(dmg * damageMult));
+        dmg = Math.max(1, Math.round(dmg * instrumentMult * ensembleMult));
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
+        if (instrumentMult > 1 || ensembleMult > 1) {
+            const parts = [];
+            if (instrumentMult > 1) parts.push('Instrument x2');
+            if (ensembleMult > 1) parts.push(`${symphonyBards}-bard ensemble x${ensembleMult.toFixed(3).replace(/\.?0+$/, '')}`);
+            this._addLog(`  ♪ ${m.name}'s symphony is amplified (${parts.join(', ')}).`);
+        }
 
         const enemies = this.aliveHostileEnemies.slice();
         let hit = 0;
@@ -7488,6 +7502,11 @@ export class CombatSystem {
 
         const bard = bards.reduce((best, b) => b.mana > best.mana ? b : best, bards[0]);
         bard.mana -= BARD_SOULFUL_MELODY_MANA_COST;
+        if (!this._soulfulMelodyDirgeQueued) {
+            this._soulfulMelodyDirgeQueued = true;
+            soundManager.playSoulfulMelodyDirge?.();
+            setTimeout(() => { this._soulfulMelodyDirgeQueued = false; }, 0);
+        }
 
         const baseBonus = Math.max(1, Math.floor((bard.level || 1) / BARD_SOULFUL_MELODY_ATK_DEF_DIVISOR));
         const survivors = (this.party || []).filter(p => p && p.health > 0 && p !== deceased);
@@ -7502,6 +7521,8 @@ export class CombatSystem {
             } else {
                 survivor.activeEffects.push({
                     type: 'soulful_melody_anthem',
+                    source: 'soulful_melody',
+                    sourceName: bard.name,
                     damageBonus: baseBonus,
                     defenseBonus: baseBonus,
                     rounds: BARD_SOULFUL_MELODY_DURATION,
@@ -14377,6 +14398,12 @@ export class CombatSystem {
                 }
                 if (['rainbow_yellow', 'rainbow_green', 'rainbow_indigo'].includes(e.type) && e.rounds > 0) {
                     e.rounds--;
+                }
+                if (e.type === 'soulful_melody_anthem' && e.rounds > 0) {
+                    e.rounds--;
+                    if (e.rounds <= 0) {
+                        this._addLog(`\u{1F3B5} ${m.name}'s Soulful Melody inspiration fades.`);
+                    }
                 }
             }
             // Fracture DoT (Bone Archer — bleed from shattered bone)
