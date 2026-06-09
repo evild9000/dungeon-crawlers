@@ -1556,10 +1556,10 @@ export const TRINKET_AUGMENT_POOL_PCT_BY_LEVEL = {
     7: 0.20,
 };
 export const TRINKET_AUGMENT_REGEN_BY_LEVEL = {
-    4: 2,
-    5: 4,
-    6: 6,
-    7: 8,
+    4: 0.01,
+    5: 0.02,
+    6: 0.03,
+    7: 0.04,
 };
 export const ARTIFICER_GOLEM_ATTACHMENT_UNLOCK_LEVEL = 25;
 export const GOLEM_ATTACHMENT_LIMB_DAMAGE_MULT = 0.50;

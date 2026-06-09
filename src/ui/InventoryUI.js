@@ -863,8 +863,8 @@ export class InventoryUI {
             (member._trinketPoolBonus && (member._trinketPoolBonus.health || member._trinketPoolBonus.stamina || member._trinketPoolBonus.mana)
                 ? `Trinket vitality augments: +${member._trinketPoolBonus.health || 0} HP, +${member._trinketPoolBonus.stamina || 0} ST, +${member._trinketPoolBonus.mana || 0} MP.\n`
                 : '') +
-            (typeof member.getTrinketRegenAugmentBonus === 'function' && member.getTrinketRegenAugmentBonus() > 0
-                ? `Trinket regen augments: +${member.getTrinketRegenAugmentBonus()} HP/ST/MP regen per minute.\n`
+            (typeof member.getTrinketRegenAugmentPct === 'function' && member.getTrinketRegenAugmentPct() > 0
+                ? `Trinket regen augments: +${Math.round(member.getTrinketRegenAugmentPct() * 100)}% max HP/ST/MP per combat round and per exploration minute.\n`
                 : '') +
             `Regen per minute:\n` +
             `  HP: ${member.getRegenRate('hp')}\n` +
@@ -999,7 +999,7 @@ export class InventoryUI {
         }
         if (member.classId === 'artificer' && member.level >= 25) {
             perk.push('Advanced Augments');
-            perkDetails.push('Artificer L25 Advanced Augments:\n  Trinkets at effective level 4+ can receive separate vitality augments (+5/10/15/20% HP, ST, and MP at augment levels 4-7) and regen augments (+2/+4/+6/+8 HP, ST, and MP regen per minute at levels 4-7).\n  These two trinket augment tracks are purchased separately and can coexist.\n  Persistent golems can receive extra limbs, a golem shield, and golem trinkets from the Crafting menu.');
+            perkDetails.push('Artificer L25 Advanced Augments:\n  Trinkets at effective level 4+ can receive separate vitality augments (+5/10/15/20% HP, ST, and MP at augment levels 4-7) and regen augments (+1/2/3/4% max HP, ST, and MP per combat round and per exploration minute at levels 4-7).\n  These two trinket augment tracks are purchased separately and can coexist.\n  Persistent golems can receive extra limbs, a golem shield, and golem trinkets from the Crafting menu.');
         }
         if (member.classId === 'artificer' && member.level >= ARTIFICER_SABOTAGE_UNLOCK_LEVEL) {
             const sabotageChance = ((member.level || 1) / ARTIFICER_SABOTAGE_CHANCE_DIVISOR).toFixed(2);

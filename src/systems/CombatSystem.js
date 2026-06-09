@@ -14452,6 +14452,18 @@ export class CombatSystem {
                     this._addLog(`💍 ${m.name}'s Ring of Regeneration restores ${healed} HP!`);
                 }
             }
+            const trinketRegenPct = typeof m.getTrinketRegenAugmentPct === 'function' ? m.getTrinketRegenAugmentPct() : 0;
+            if (trinketRegenPct > 0 && m.health > 0) {
+                const hpRegen = m.health < m.maxHealth ? Math.min(Math.max(1, Math.floor(m.maxHealth * trinketRegenPct)), m.maxHealth - m.health) : 0;
+                const stRegen = m.stamina < m.maxStamina ? Math.min(Math.max(1, Math.floor(m.maxStamina * trinketRegenPct)), m.maxStamina - m.stamina) : 0;
+                const mpRegen = m.maxMana > 0 && m.mana < m.maxMana ? Math.min(Math.max(1, Math.floor(m.maxMana * trinketRegenPct)), m.maxMana - m.mana) : 0;
+                if (hpRegen > 0) m.health += hpRegen;
+                if (stRegen > 0) m.stamina += stRegen;
+                if (mpRegen > 0) m.mana += mpRegen;
+                if (hpRegen > 0 || stRegen > 0 || mpRegen > 0) {
+                    this._addLog(`🔄 ${m.name}'s trinket regen augments restore ${hpRegen} HP, ${stRegen} ST, ${mpRegen} MP!`);
+                }
+            }
             // Hunter's Mark: verify target alive, then deduct upkeep
             if (m.classId === 'ranger' && m.hunterMarkEnemyId && m.health > 0) {
                 const _markedEnemy = this.enemies.find(e => e.id === m.hunterMarkEnemyId);

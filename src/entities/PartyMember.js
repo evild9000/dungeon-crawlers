@@ -386,16 +386,20 @@ export class PartyMember {
         return pct;
     }
 
-    getTrinketRegenAugmentBonus() {
+    getTrinketRegenAugmentPct() {
         if (this.isSummoned) return 0;
-        let bonus = 0;
+        let pct = 0;
         const slots = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
         for (const s of slots) {
             if (!this.equipment[s]) continue;
             const augLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].regenAugmentLevel) || 0;
-            bonus += TRINKET_AUGMENT_REGEN_BY_LEVEL[augLevel] || 0;
+            pct += TRINKET_AUGMENT_REGEN_BY_LEVEL[augLevel] || 0;
         }
-        return bonus;
+        return pct;
+    }
+
+    getTrinketRegenAugmentBonus() {
+        return this.getTrinketRegenAugmentPct();
     }
 
     refreshTrinketPoolBonuses(fillAdded = false) {
@@ -634,18 +638,18 @@ export class PartyMember {
     /** Regen rate per minute for a given pool, including class + species bonuses. */
     getRegenRate(pool) {
         const c = this.classDef, s = this.speciesDef;
-        const trinketRegen = this.getTrinketRegenAugmentBonus();
+        const trinketRegenPct = this.getTrinketRegenAugmentPct();
         if (pool === 'hp') {
             const songEffect = this.activeEffects.find(e => e && e.type === 'bard_song_healing');
             const songBonus  = songEffect ? (songEffect.hpPerMin || 0) : 0;
-            return REGEN_HP_PER_MIN + (c.regenHp || 0) + (s.regenHp || 0) + songBonus + trinketRegen;
+            return REGEN_HP_PER_MIN + (c.regenHp || 0) + (s.regenHp || 0) + songBonus + (this.maxHealth * trinketRegenPct);
         }
         if (pool === 'st') {
-            return REGEN_ST_PER_MIN + (c.regenSt || 0) + (s.regenSt || 0) + trinketRegen;
+            return REGEN_ST_PER_MIN + (c.regenSt || 0) + (s.regenSt || 0) + (this.maxStamina * trinketRegenPct);
         }
         if (pool === 'mp') {
             if (this.maxMana <= 0) return 0;
-            return REGEN_MP_PER_MIN + (c.regenMp || 0) + (s.regenMp || 0) + trinketRegen;
+            return REGEN_MP_PER_MIN + (c.regenMp || 0) + (s.regenMp || 0) + (this.maxMana * trinketRegenPct);
         }
         return 0;
     }

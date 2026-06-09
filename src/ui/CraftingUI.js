@@ -1131,7 +1131,7 @@ export class CraftingUI {
             const augmentLevel = (enchObj && enchObj.augmentLevel) || 0;
             const augmentPct = TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augmentLevel] || 0;
             const regenAugmentLevel = (enchObj && enchObj.regenAugmentLevel) || 0;
-            const regenAugmentBonus = TRINKET_AUGMENT_REGEN_BY_LEVEL[regenAugmentLevel] || 0;
+            const regenAugmentPct = TRINKET_AUGMENT_REGEN_BY_LEVEL[regenAugmentLevel] || 0;
             const hasRoundRegen = !!(enchObj && enchObj.roundRegenAugment);
             const augmentBits = [`+${enchLvl} enchant`];
             if (augmentLevel) augmentBits.push(`L${augmentLevel} vitality`);
@@ -1235,8 +1235,8 @@ export class CraftingUI {
                         regenBtn.title = [
                             `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket regen augment.`,
                             `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
-                            `Grants +${TRINKET_AUGMENT_REGEN_BY_LEVEL[nextRegenAugment] || 0} HP, stamina, and mana regeneration per minute while equipped.`,
-                            `Current regen augment: ${regenAugmentLevel ? `L${regenAugmentLevel} (+${regenAugmentBonus}/min)` : 'none'}.`,
+                            `Grants +${Math.round((TRINKET_AUGMENT_REGEN_BY_LEVEL[nextRegenAugment] || 0) * 100)}% max HP, stamina, and mana regeneration per combat round, and the same percent per minute while exploring.`,
+                            `Current regen augment: ${regenAugmentLevel ? `L${regenAugmentLevel} (+${Math.round(regenAugmentPct * 100)}%)` : 'none'}.`,
                             'Cost is tracked separately from normal trinket enchant and vitality augment.',
                             'Characters with 0 maximum mana cannot regenerate mana above 0.',
                         ].join('\n');
@@ -1251,7 +1251,7 @@ export class CraftingUI {
                         });
                         panel.appendChild(regenBtn);
                     } else {
-                        panel.appendChild(this._note(`Regen augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${regenAugmentBonus}/min HP/ST/MP regen.`));
+                        panel.appendChild(this._note(`Regen augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${Math.round(regenAugmentPct * 100)}% max HP/ST/MP per combat round and per exploration minute.`));
                     }
 
                     if (def.trinketKind === 'ring') {
