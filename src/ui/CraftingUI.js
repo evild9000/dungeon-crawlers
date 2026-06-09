@@ -8,7 +8,7 @@
  *     (spikes or AoE reduction) at +4+.
  *   - Trinkets: upgrade equipped trinket bonusValue (+1 per level, 1..7),
  *     and at Artificer L25 add separate vitality/regen augments to L4+ trinkets.
- *     Requires artificer level 20+. Dual-aspect trinkets cost 2×.
+ *     Requires artificer level 20+. Dual-aspect stat upgrades cost 2×.
  *   - Potions & Scrolls: craft Minor / Greater healing potions and
  *     Warding / Wrath scrolls. Finished items go into the group inventory.
  *   - Golems: forge a persistent artificer summon, then at L25 install
@@ -1189,15 +1189,14 @@ export class CraftingUI {
                     if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
                         const nextAugment = augmentLevel > 0 ? augmentLevel + 1 : TRINKET_AUGMENT_MIN_LEVEL;
                         const base = ENCHANT_WEAPON_COSTS[nextAugment];
-                        const augCost = {};
-                        for (const [k, v] of Object.entries(base)) augCost[k] = costMult > 1 ? v * costMult : v;
+                        const augCost = { ...base };
                         const canAug = this._canPay(state, augCost);
                         const augBtn = document.createElement('button');
                         augBtn.className = `craft-btn ${canAug ? '' : 'craft-btn-disabled'}`;
                         augBtn.disabled = !canAug;
                         augBtn.textContent = augmentLevel
-                            ? `Upgrade Vitality Augment to L${nextAugment} — ${this._formatCost(augCost)}${isDual ? ' (dual ×2)' : ''}`
-                            : `Add Vitality Augment L${nextAugment} — ${this._formatCost(augCost)}${isDual ? ' (dual ×2)' : ''}`;
+                            ? `Upgrade Vitality Augment to L${nextAugment} — ${this._formatCost(augCost)}`
+                            : `Add Vitality Augment L${nextAugment} — ${this._formatCost(augCost)}`;
                         augBtn.title = [
                             `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket augment.`,
                             `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
@@ -1225,15 +1224,14 @@ export class CraftingUI {
                     if (regenAugmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
                         const nextRegenAugment = regenAugmentLevel > 0 ? regenAugmentLevel + 1 : TRINKET_AUGMENT_MIN_LEVEL;
                         const base = ENCHANT_WEAPON_COSTS[nextRegenAugment];
-                        const regenCost = {};
-                        for (const [k, v] of Object.entries(base)) regenCost[k] = costMult > 1 ? v * costMult : v;
+                        const regenCost = { ...base };
                         const canRegenAug = this._canPay(state, regenCost);
                         const regenBtn = document.createElement('button');
                         regenBtn.className = `craft-btn ${canRegenAug ? '' : 'craft-btn-disabled'}`;
                         regenBtn.disabled = !canRegenAug;
                         regenBtn.textContent = regenAugmentLevel
-                            ? `Upgrade Regen Augment to L${nextRegenAugment} — ${this._formatCost(regenCost)}${isDual ? ' (dual ×2)' : ''}`
-                            : `Add Regen Augment L${nextRegenAugment} — ${this._formatCost(regenCost)}${isDual ? ' (dual ×2)' : ''}`;
+                            ? `Upgrade Regen Augment to L${nextRegenAugment} — ${this._formatCost(regenCost)}`
+                            : `Add Regen Augment L${nextRegenAugment} — ${this._formatCost(regenCost)}`;
                         regenBtn.title = [
                             `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket regen augment.`,
                             `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
