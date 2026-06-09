@@ -56,7 +56,7 @@ import { CompassUI } from '../ui/CompassUI.js';
 import { MinimapSystem } from '../systems/MinimapSystem.js';
 import { MinimapUI } from '../ui/MinimapUI.js';
 import { POISON_EXPLORATION_TICK_SEC, FOOD_CHECK_INTERVAL, REAGENT_TIER_UNCOMMON_MIN, REAGENT_TIER_RARE_MIN, BARD_SONG_MANA_PER_MIN, FOUNTAIN_PROXIMITY, FOUNTAIN_BUFF_DURATION_MS, CHEST_PROXIMITY, STATUE_PROXIMITY, STATUE_MIN_DUNGEON_LEVEL } from '../utils/constants.js';
-import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, getItemDef, TRINKET_IDS } from '../items/ItemTypes.js';
+import { randomWeaponDrop, randomArmorDrop, randomShieldDrop, randomTrinketDrop, getItemDef } from '../items/ItemTypes.js';
 import { PartySpellModal } from '../ui/PartySpellModal.js';
 import { ShadowSimulacraUI } from '../ui/ShadowSimulacraUI.js';
 import { BeastMasteryUI } from '../ui/BeastMasteryUI.js';
@@ -2375,8 +2375,8 @@ export class Game {
                 this.gameState.inventory.gold += gold;
                 this.gameState.recordGoldCollected?.(gold);
                 let msg = `\u{1F48E} The fountain overflows with treasure! +${gold} gold!`;
-                if (Math.random() < 0.33 && TRINKET_IDS.length > 0) {
-                    const tid = TRINKET_IDS[Math.floor(Math.random() * TRINKET_IDS.length)];
+                if (Math.random() < 0.33) {
+                    const tid = randomTrinketDrop(dLvl);
                     this.gameState.inventory.addItem(tid, 1);
                     this.gameState.recordItemFound?.(tid, 1);
                     const tDef = getItemDef(tid);
@@ -2845,8 +2845,8 @@ export class Game {
 
             const trinketChance = Math.min(1, 0.66);
             for (let pass = 0; pass < 3; pass++) {
-                if (Math.random() < trinketChance && TRINKET_IDS.length > 0) {
-                    const tid = TRINKET_IDS[Math.floor(Math.random() * TRINKET_IDS.length)];
+                if (Math.random() < trinketChance) {
+                    const tid = randomTrinketDrop(dlvl);
                     this.gameState.inventory.addItem(tid, 1);
                     this.gameState.recordItemFound?.(tid, 1);
                     const tDef = getItemDef(tid);

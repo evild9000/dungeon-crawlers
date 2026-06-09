@@ -1354,6 +1354,10 @@ export const ARMOR_IDS   = Object.keys(ARMOR);
 export const SHIELD_IDS  = Object.keys(SHIELDS);
 export const TRINKET_IDS = Object.keys(TRINKETS);
 
+function isGenericLootEligible(itemId) {
+    return !ARTIFICER_SPECIAL_ITEM_IDS.has(itemId);
+}
+
 /** Pick a random weapon, weighted toward lower tiers. */
 export function randomWeaponDrop() {
     const roll = Math.random();
@@ -1363,7 +1367,7 @@ export function randomWeaponDrop() {
     else if (roll < 0.90) tier = 3;
     else                  tier = 4;
 
-    const candidates = WEAPON_IDS.filter(id => WEAPONS[id].power === tier);
+    const candidates = WEAPON_IDS.filter(id => isGenericLootEligible(id) && WEAPONS[id].power === tier);
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
@@ -1376,13 +1380,14 @@ export function randomArmorDrop() {
     else if (roll < 0.90) tier = 3;
     else                  tier = 4;
 
-    const candidates = ARMOR_IDS.filter(id => ARMOR[id].blocking === tier);
+    const candidates = ARMOR_IDS.filter(id => isGenericLootEligible(id) && ARMOR[id].blocking === tier);
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-/** Pick a random shield drop (currently only one type). */
+/** Pick a random non-crafted shield drop. */
 export function randomShieldDrop() {
-    return SHIELD_IDS[Math.floor(Math.random() * SHIELD_IDS.length)];
+    const candidates = SHIELD_IDS.filter(isGenericLootEligible);
+    return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
 /**
@@ -1424,7 +1429,7 @@ export function randomTrinketDrop(dungeonLevel = 1) {
     else if (roll < 0.97) tier = 3;
     else                  tier = 4;
 
-    const candidates = TRINKET_IDS.filter(id => TRINKETS[id].tier === tier && !TRINKETS[id].dualAspect);
+    const candidates = TRINKET_IDS.filter(id => isGenericLootEligible(id) && TRINKETS[id].tier === tier && !TRINKETS[id].dualAspect);
     return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
