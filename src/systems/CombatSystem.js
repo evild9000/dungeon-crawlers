@@ -867,7 +867,7 @@ export class CombatSystem {
 
         const isDragon = tags.includes('dragon');
         const isDracolich = type.includes('dracolich');
-        if (isDragon && !isDracolich && (guaranteedMaterialDrop || Math.random() < 0.40)) {
+        if (isDragon && !isDracolich && (guaranteedMaterialDrop || Math.random() < ADVANCED_MATERIAL_DROP_CHANCE)) {
             const colorMap = [
                 ['red', 'material_red_dragon_hide'],
                 ['white', 'material_white_dragon_hide'],
