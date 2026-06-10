@@ -517,6 +517,7 @@ export class CombatSystem {
         enemy.activeEffects = enemy.activeEffects || [];
         if (typeof enemy.addEffect !== 'function') {
             enemy.addEffect = function(effect) {
+                if (this.charmedRounds > 0 && effect && !effect.allowCharmedAllyEffect) return;
                 if (!this.activeEffects) this.activeEffects = [];
                 this.activeEffects.push(effect);
             };
@@ -1597,6 +1598,7 @@ export class CombatSystem {
     }
 
     _enemyHasImmunity(enemy, damageType) {
+        if (this._isCharmedAllyEnemy(enemy)) return true;
         const def = ENEMY_TYPES[enemy?.type] || {};
         const immune = Array.isArray(def.immune) ? def.immune : [];
         const tags = Array.isArray(def.tags) ? def.tags : [];
@@ -1608,6 +1610,10 @@ export class CombatSystem {
         if ((damageType === 'hold' || damageType === 'web' || damageType === 'paralyze') && tags.includes('slime')) return true;
         if (damageType === 'psychic' && tags.some(t => ['plant', 'undead', 'construct', 'elemental'].includes(t))) return true;
         return false;
+    }
+
+    _isCharmedAllyEnemy(enemy) {
+        return !!(enemy && enemy.health > 0 && (enemy.charmedRounds || 0) > 0);
     }
 
     _enemyIsTireless(enemy) {
@@ -1651,6 +1657,7 @@ export class CombatSystem {
 
     _refreshEnemyEffect(enemy, effect) {
         if (!enemy || !effect || !effect.type) return;
+        if (this._isCharmedAllyEnemy(enemy) && !effect.allowCharmedAllyEffect) return;
         enemy.activeEffects = (enemy.activeEffects || []).filter(fx => fx && fx.type !== effect.type);
         enemy.activeEffects.push(effect);
     }
@@ -1667,6 +1674,7 @@ export class CombatSystem {
     _applyRangerTotemOnHit(ranger, enemy, dealt, kind = 'ranged') {
         if (!ranger || ranger.classId !== 'ranger' || ranger.level < RANGER_TOTEM_UNLOCK_LEVEL) return;
         if (!ranger.rangerTotem || !enemy || enemy.health <= 0 || dealt <= 0) return;
+        if (this._isCharmedAllyEnemy(enemy)) return;
         if (kind !== 'ranged' && kind !== 'aoe') return;
         const rounds = Math.max(1, Math.floor((ranger.level || 1) / RANGER_TOTEM_DURATION_DIVISOR));
         const eName = this._eName(enemy);
@@ -9922,6 +9930,42 @@ export class CombatSystem {
             }
         }
 
+        // ── Death Knight: multiple dark blade attacks by necromancer level ───
+        if (m.summonType === 'death_knight') {
+            const nl = (m.summonStats && m.summonStats.necroLevel) || m.level || 1;
+            const attackCount = Math.max(1, Math.floor(nl / 10));
+            if (attackCount > 1) {
+                this._addLog(`\u2620\uFE0F ${m.name} advances with relentless purpose (${attackCount} attacks).`);
+            }
+            for (let atk = 0; atk < attackCount; atk++) {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) break;
+                const t = alive[Math.floor(Math.random() * alive.length)];
+                const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+                this._addLog(`${m.name} strikes ${this._eName(t)} for ${dealt}!`);
+
+                if (t.health > 0) {
+                    const tDef  = ENEMY_TYPES[t.type] || {};
+                    const tTags = Array.isArray(tDef.tags) ? tDef.tags : [];
+                    // Stun: undead/construct/elemental/incorporeal immunity handled by _tryStunEnemy
+                    if (Math.random() < (0.33 + nl * 0.01)) {
+                        if (this._tryStunEnemy(t))
+                            this._addLog(`\u2620\uFE0F ${this._eName(t)} is STUNNED by the Death Knight's strike!`);
+                    }
+                    const deadlyBlowRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.005);
+                    if (deadlyBlowRoll) {
+                        const deadlyDmg = Math.max(1, Math.round(dmg * Math.max(1, nl / 3)));
+                        const deadlyDealt = this._damageSummonEnemy(t, deadlyDmg, false, false, { contactAttacker: m });
+                        this._addLog(`\u{1F480} ${m.name} lands a deadly blow on ${this._eName(t)} for ${deadlyDealt} damage! (x${(Math.max(1, nl / 3)).toFixed(1)})`);
+                    }
+                }
+
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            }
+            return;
+        }
+
         // ── Undead / fallback: melee single-target ───────────────────────────
         // Spectre and Ghost are incorporeal — attacks phase through ALL armor.
         const isIncorporeal = m.summonType === 'spectre'
@@ -9978,24 +10022,6 @@ export class CombatSystem {
             m.health = Math.min(m.maxHealth, m.health + dealt);
             const healed = m.health - before;
             if (healed > 0) this._addLog(`\u{1F9DB} ${m.name} drains ${healed} HP from ${this._eName(t)}!`);
-        }
-
-        // ── Death Knight: stun chance + deadly blow ──────────────────────────
-        if (t.health > 0 && m.summonType === 'death_knight') {
-            const nl = (m.summonStats && m.summonStats.necroLevel) || m.level || 1;
-            const tDef  = ENEMY_TYPES[t.type] || {};
-            const tTags = Array.isArray(tDef.tags) ? tDef.tags : [];
-            // Stun: undead/construct/elemental/incorporeal immunity handled by _tryStunEnemy
-            if (Math.random() < (0.33 + nl * 0.01)) {
-                if (this._tryStunEnemy(t))
-                    this._addLog(`\u2620\uFE0F ${this._eName(t)} is STUNNED by the Death Knight's strike!`);
-            }
-            const deadlyBlowRoll = !tTags.includes('undead') && Math.random() < (0.02 + nl * 0.005);
-            if (deadlyBlowRoll) {
-                const deadlyDmg = Math.max(1, Math.round(dmg * Math.max(1, nl / 3)));
-                const deadlyDealt = this._damageSummonEnemy(t, deadlyDmg, false, false, { contactAttacker: m });
-                this._addLog(`\u{1F480} ${m.name} lands a deadly blow on ${this._eName(t)} for ${deadlyDealt} damage! (x${(Math.max(1, nl / 3)).toFixed(1)})`);
-            }
         }
 
         if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
@@ -12765,7 +12791,7 @@ export class CombatSystem {
                 attackKind === 'magic' || opts.aoe,
                 0,
                 attackKind === 'ranged',
-                { contactAttacker: e, sourceMember: null },
+                { contactAttacker: e, sourceMember: null, allowCharmedAllyDamage: true },
             );
             this._addLog(`🎵 ${eName}'s ${kindLabel} attack hits charmed ${tName} for ${dealt} damage!`);
             if (target.health <= 0) this._addLog(`🎵 ${tName} is defeated while fighting for the party!`);
@@ -13908,6 +13934,10 @@ export class CombatSystem {
      *  @param {boolean} isMagic  — if true, checks enemy magic resistance unless options.ignoreMagicResistance is set
      */
     _damageEnemy(enemy, amount, ignoreDefense = false, isMagic = false, defenseIgnorePct = 0, isRanged = false, options = {}) {
+        if (this._isCharmedAllyEnemy(enemy) && !options.allowCharmedAllyDamage) {
+            return 0;
+        }
+
         // Invisible Stalker: 60% miss chance on all incoming attacks
         {
             const eDef = ENEMY_TYPES[enemy?.type] || {};
@@ -13969,9 +13999,9 @@ export class CombatSystem {
                 this._addLog(`\u{1F406} ${this._eName(enemy)} phases out of the way — the attack misses!`);
                 return 0;
             }
-            // Remorhaz burn retaliate: only direct contact melee burns the actual attacker.
+            // Remorhaz burn retaliate: only explicit direct-contact melee burns the actual attacker.
             const contactAttacker = options && options.contactAttacker;
-            if (!isRanged && !isMagic && _eDef2.burnRetaliate && contactAttacker && contactAttacker.health > 0 && Math.random() < _eDef2.burnRetaliate) {
+            if (options.directContact !== false && !isRanged && !isMagic && _eDef2.burnRetaliate && contactAttacker && contactAttacker.health > 0 && Math.random() < _eDef2.burnRetaliate) {
                 const _reflectDmg = Math.max(1, Math.floor(amount * 0.30));
                 contactAttacker.health = Math.max(0, contactAttacker.health - _reflectDmg);
                 const _burnTick = Math.max(1, Math.floor(amount * DRAKE_FIRE_BURN_FRACTION));
@@ -14144,6 +14174,7 @@ export class CombatSystem {
      */
     _applyWeaponRider(attacker, enemy, rawDamage, slot = 'weapon') {
         if (!attacker || !enemy || enemy.health <= 0 || rawDamage <= 0) return;
+        if (this._isCharmedAllyEnemy(enemy)) return;
         const isOffhand = slot === 'offhand';
         const getRider   = isOffhand ? 'getOffhandRider'        : 'getWeaponRider';
         const getEnchLvl = isOffhand ? 'getOffhandEnchantLevel' : 'getWeaponEnchantLevel';
@@ -17048,6 +17079,7 @@ export class CombatSystem {
      */
     _tryHoldEnemy(enemy) {
         if (!enemy || enemy.health <= 0) return false;
+        if (this._isCharmedAllyEnemy(enemy)) return false;
         const def = ENEMY_TYPES[enemy.type] || {};
         const tags = Array.isArray(def.tags) ? def.tags : [];
         const immune = Array.isArray(def.immune) ? def.immune : [];
@@ -17083,6 +17115,7 @@ export class CombatSystem {
      */
     _tryParalyzeEnemy(enemy) {
         if (!enemy || enemy.health <= 0) return false;
+        if (this._isCharmedAllyEnemy(enemy)) return false;
         const def = ENEMY_TYPES[enemy.type] || {};
         const tags = Array.isArray(def.tags) ? def.tags : [];
         const immune = Array.isArray(def.immune) ? def.immune : [];

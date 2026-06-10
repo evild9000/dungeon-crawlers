@@ -111,6 +111,7 @@ export class Enemy {
     }
 
     addEffect(effect) {
+        if (this.charmedRounds > 0 && effect && !effect.allowCharmedAllyEffect) return;
         if (!this.activeEffects) this.activeEffects = [];
         this.activeEffects.push(effect);
     }

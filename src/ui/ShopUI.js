@@ -117,7 +117,7 @@ export class ShopUI {
             'torch', 'lantern', 'lantern_oil',
             ...reagentItems,
             ...Object.keys(WEAPONS).filter(id => !SHOP_BUY_EXCLUDED_ITEM_IDS.has(id)),
-            ...Object.keys(ARMOR),
+            ...Object.keys(ARMOR).filter(id => !SHOP_BUY_EXCLUDED_ITEM_IDS.has(id)),
             ...Object.keys(SHIELDS).filter(id => !SHOP_BUY_EXCLUDED_ITEM_IDS.has(id)),
             ...Object.keys(TRINKETS).filter(id => TRINKETS[id].tier === 1 && !TRINKETS[id].dualAspect),
         ];

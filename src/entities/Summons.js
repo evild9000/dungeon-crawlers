@@ -110,7 +110,8 @@ export const UNDEAD_TIERS = [
         kind: 'undead',
         abilities: [
             'Tier 8+: +1607% HP, +14 dmg, +7 defense (scales further with Necromancer level).',
-            '25% chance to block any incoming melee attack.',
+            '25% chance to block any incoming attack, including melee, ranged, magic, and AoE.',
+            'Attacks per round: floor(necromancer level / 10), minimum 1.',
             'Stun chance: (33 + necroLevel)% on melee hit (undead & incorporeal immune).',
             '5% max HP regeneration at the start of each turn.',
             'Deadly Blow: (2 + necroLevel/2)% chance to deal damage multiplied by necroLevel/3 instead of instant death.',
