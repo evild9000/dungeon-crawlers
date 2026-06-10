@@ -2536,7 +2536,7 @@ export class CombatUI {
                 });
                 const wpAfford  = m.mana >= DRUID_WITHER_PLANTS_MANA_COST;
                 const wpHas     = wpPlants.length > 0;
-                const wpMult    = (DRUID_WITHER_PLANTS_DAMAGE_BASE + m.level * 0.01).toFixed(2);
+                const wpMult    = ((DRUID_WITHER_PLANTS_DAMAGE_BASE + m.level * 0.01) * 3).toFixed(2);
                 const wpIK      = Math.round(m.level / DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR);
                 const wpLabel   = `\u{1F342} Wither Plants (-${DRUID_WITHER_PLANTS_MANA_COST} MP)${wpHas ? '' : ' (no plants)'}`;
                 const wpBtn     = this._addBtn(wpLabel, wpAfford && wpHas, () => this.combat.druidWitherPlants());
@@ -2545,7 +2545,7 @@ export class CombatUI {
                 wpBtn.title = [
                     `Druid L${DRUID_WITHER_PLANTS_UNLOCK_LEVEL}: Wither Plants.`,
                     `Costs ${DRUID_WITHER_PLANTS_MANA_COST} MP. Targets ALL plant-tagged enemies.`,
-                    `Magic AoE: base damage \xd7 ${wpMult} (${DRUID_WITHER_PLANTS_DAMAGE_BASE} + level/100).`,
+                    `Magic AoE: base damage \xd7 ${wpMult} [3 \xd7 (${DRUID_WITHER_PLANTS_DAMAGE_BASE} + level/100)].`,
                     `${wpIK}% instant death chance vs non-boss plants (level / ${DRUID_WITHER_PLANTS_INSTAKILL_DIVISOR}).`,
                     wpHas ? `${wpPlants.length} plant target${wpPlants.length !== 1 ? 's' : ''} visible.` : 'No plant enemies in combat.',
                     !wpAfford ? `Not enough mana (need ${DRUID_WITHER_PLANTS_MANA_COST} MP).` : '',

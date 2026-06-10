@@ -609,6 +609,10 @@ export class CombatSystem {
         else items.push({ itemId, quantity });
     }
 
+    _isBossTierEnemy(enemy) {
+        return !!(enemy && (enemy.isBoss || enemy.isMegaBoss || enemy.isSuperBoss));
+    }
+
     _getElementalEssenceItemId(enemy) {
         const type = String(enemy?.type || '').toLowerCase();
         if (type.includes('fire')) return 'material_fire_essence';
@@ -680,6 +684,21 @@ export class CombatSystem {
         const pool = this._getAdvancedMaterialDropPool(enemy);
         if (pool.length === 0) return null;
         return pool[Math.floor(Math.random() * pool.length)] || null;
+    }
+
+    _addAdvancedMaterialDrops(enemy, items) {
+        const lvl = Math.max(1, Number(enemy?.level) || 1);
+        if (lvl < ADVANCED_MATERIAL_DROP_MIN_LEVEL) return;
+
+        if (this._isBossTierEnemy(enemy)) {
+            for (const itemId of this._getAdvancedMaterialDropPool(enemy)) {
+                this._addLootItemStack(items, itemId, 1);
+            }
+            return;
+        }
+
+        const advancedMat = this._rollAdvancedMaterialDrop(enemy);
+        if (advancedMat) this._addLootItemStack(items, advancedMat, 1);
     }
 
     _isDragonEnemy(enemy) {
@@ -804,15 +823,16 @@ export class CombatSystem {
         const type = String(enemy.type || '').toLowerCase();
         const tags = this._getEnemyTags(enemy);
         const lvl = Math.max(1, Number(enemy.level) || 1);
+        const guaranteedMaterialDrop = this._isBossTierEnemy(enemy);
 
         const addIndependentAdvancedDrop = (itemId) => {
             if (lvl < ADVANCED_MATERIAL_DROP_MIN_LEVEL) return;
-            if (Math.random() < ADVANCED_MATERIAL_DROP_CHANCE) {
+            if (guaranteedMaterialDrop || Math.random() < ADVANCED_MATERIAL_DROP_CHANCE) {
                 this._addLootItemStack(items, itemId, 1);
             }
         };
 
-        if ((type.includes('lich') || type.includes('dracolich')) && Math.random() < 0.33) {
+        if ((type.includes('lich') || type.includes('dracolich')) && (guaranteedMaterialDrop || Math.random() < 0.33)) {
             this._addLootItemStack(items, 'material_lich_part', 1);
         }
 
@@ -826,7 +846,7 @@ export class CombatSystem {
 
         const isDragon = tags.includes('dragon');
         const isDracolich = type.includes('dracolich');
-        if (isDragon && !isDracolich && Math.random() < 0.40) {
+        if (isDragon && !isDracolich && (guaranteedMaterialDrop || Math.random() < 0.40)) {
             const colorMap = [
                 ['red', 'material_red_dragon_hide'],
                 ['white', 'material_white_dragon_hide'],
@@ -836,7 +856,7 @@ export class CombatSystem {
             ];
             const colored = colorMap.find(([color]) => this._isColoredDragonType(type, color));
             if (colored) {
-                this._addLootItemStack(items, Math.random() < 0.80 ? colored[1] : 'material_dragon_hide', 1);
+                this._addLootItemStack(items, guaranteedMaterialDrop || Math.random() < 0.80 ? colored[1] : 'material_dragon_hide', 1);
             } else {
                 this._addLootItemStack(items, 'material_dragon_hide', 1);
             }
@@ -1717,7 +1737,7 @@ export class CombatSystem {
             rDmg = this._applyRangerCritDamageBonus(shooter, rDmg, rCrit);
             rDmg = this._applyManticoreCriticalDamageBonus(shooter, rDmg, rCrit);
             const rDealt = this._damageEnemy(rTarget, rDmg, rIsFavored, false, 0, true);
-            const rCritStr = rCrit ? ` 💥 CRIT! (+${Math.round((shooter.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
+            const rCritStr = this._rangedCritLabel(shooter, rCrit);
             const rFavStr = rIsFavored ? ' [Favored]' : '';
             this._addLog(`🏹 Ricochet! ${shooter.name}'s arrow strikes ${this._eName(rTarget)} for ${rDealt}!${rCritStr}${rFavStr}`);
             this._applyWeaponRider(shooter, rTarget, rDealt);
@@ -1849,6 +1869,15 @@ export class CombatSystem {
     _applyRangerCritDamageBonus(member, damage, isCrit) {
         if (!isCrit || !member || member.classId !== 'ranger') return damage;
         return Math.max(1, Math.round(damage * (1 + (member.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL)));
+    }
+
+    _rangedCritLabel(member, isCrit, strong = false) {
+        if (!isCrit) return '';
+        const lead = strong ? ' CRITICAL HIT!' : ' CRIT!';
+        if (member && member.classId === 'ranger') {
+            return ` \u{1F4A5}${lead} (+${Math.round((member.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)`;
+        }
+        return ` \u{1F4A5}${lead}`;
     }
 
     /** Roll a Formation crit. Returns { damage, crit }. Crit chance = (level/2)%. Crit damage = base + 100% + level% (e.g. L30: +130% → ×2.30). */
@@ -2456,7 +2485,7 @@ export class CombatSystem {
 
         const eName = this._eName(targetEnemy);
         const exhaustStr = exhausted ? ' (exhausted!)' : '';
-        const critStr = isCrit ? ` \u{1F4A5} CRITICAL HIT! (+${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
+        const critStr = this._rangedCritLabel(m, isCrit, true);
         const favoredStr = isFavored ? ` [Favored Enemy — armor ignored, +${m.level * 2}% dmg]` : '';
         this._addLog(`${m.name} shoots ${eName} for ${dealt} damage!${exhaustStr}${critStr}${favoredStr}`);
 
@@ -2519,7 +2548,7 @@ export class CombatSystem {
             const sTargetName = this._eName(curT);
             const sDealt = this._damageEnemy(curT, sdmg, xtFavored, false, 0, true);
             const sExhaust = shotExhausted ? ' (exhausted!)' : '';
-            const sCrit = scrit ? ` \u{1F4A5} CRITICAL HIT! (+${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
+            const sCrit = this._rangedCritLabel(m, scrit, true);
             const sFav = xtFavored ? ` [Favored Enemy — armor ignored, +${m.level * 2}% dmg]` : '';
             this._addLog(`\u{1F3F9} ${m.name} looses another arrow at ${sTargetName} for ${sDealt} damage!${sExhaust}${sCrit}${sFav}`);
             this._applyWeaponRider(m, curT, sDealt);
@@ -5363,7 +5392,7 @@ export class CombatSystem {
             target.health = Math.max(0, target.health - dealt);
 
             const eName   = this._eName(target);
-            const critStr = isCrit ? ` 💥 CRIT! (+${Math.round((m.level || 1) * RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL * 100)}% ranger crit)` : '';
+            const critStr = this._rangedCritLabel(m, isCrit);
             const favStr  = isFav ? ` [Favored — armor ignored, +${m.level * 2}% dmg]` : '';
             this._addLog(`  ➡️ ${eName} takes ${dealt} explosion damage!${critStr}${favStr}`);
             this._applyWeaponRider(m, target, dealt);
@@ -7700,7 +7729,7 @@ export class CombatSystem {
 
     /**
      * Druid L35 Wither Plants — magic AoE targeting all plant-tagged enemies.
-     * Damage = base_magic × (DRUID_WITHER_PLANTS_DAMAGE_BASE + level/100).
+     * Damage = base_magic × (DRUID_WITHER_PLANTS_DAMAGE_BASE + level/100) × 3.
      * level/5 % instakill chance vs non-boss/mega-boss/super-boss plants.
      */
     druidWitherPlants() {
@@ -7751,7 +7780,7 @@ export class CombatSystem {
                 continue;
             }
 
-            const rawDmg = Math.max(1, Math.round(baseHit * mult));
+            const rawDmg = Math.max(1, Math.round(baseHit * mult * 3));
             const dmg = this._applyOutgoingDamageBonuses(m, rawDmg, 'magic');
             const dealt = this._damageEnemy(target, dmg, false, true);
             this._addLog(`\u{1F342} ${tName} takes ${dealt} magic damage from Wither Plants!`);
@@ -16481,9 +16510,8 @@ export class CombatSystem {
             const levelGoldScale = lvl <= 25 ? lvl : (lvl * lvl) / 25;
             totalGold += randomInt(LOOT_GOLD_MIN, LOOT_GOLD_MAX) * levelGoldScale * goldMult;
 
-            // Advanced materials: one independent, per-enemy roll (separate from reagents).
-            const advancedMat = this._rollAdvancedMaterialDrop(e);
-            if (advancedMat) this._addLootItemStack(items, advancedMat, 1);
+            // Advanced materials: normal enemies roll once; boss-tier enemies drop every eligible material.
+            this._addAdvancedMaterialDrops(e, items);
             this._addSpecialMaterialDrops(e, items);
 
             for (let roll = 0; roll < lootRolls; roll++) {

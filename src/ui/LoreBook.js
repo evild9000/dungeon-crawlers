@@ -78,7 +78,7 @@ function buildAbilityList(def) {
     if (tags.includes('plant')) {
         lines.push('Plant: fungal or plant-type creature — vulnerable to fire and nature magic');
         lines.push('Plant: immune to Photomancer Radiant Burst and its blind effect — plant bodies do not count as living targets for this spell');
-        lines.push('Plant: vulnerable to Druid Wither Plants (L35) — magic AoE at 3× base damage; non-boss plants have a level/5% chance of instant destruction');
+        lines.push('Plant: vulnerable to Druid Wither Plants (L35) — magic AoE at 3× its prior formula, base × 3 × (3 + druid level/100); non-boss plants have a level/5% chance of instant destruction');
         lines.push('Plant: susceptible to Druid Nature\'s Charms (L35) — charm bypasses normal plant charm immunity; 3 resists grant immunity for the rest of combat');
         lines.push('Plant: immune to Ranger Beast Companion Sabre Tooth Cat instakill — plant physiology resists a predator\'s killing bite; normal damage applies');
     }

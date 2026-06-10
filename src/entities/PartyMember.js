@@ -348,6 +348,18 @@ export class PartyMember {
         return total;
     }
 
+    _getTrinketAugmentCap(slot) {
+        const itemId = this.equipment && this.equipment[slot];
+        if (!itemId) return 0;
+        const def = TRINKETS[itemId] || getItemDef(itemId);
+        if (!def) return 0;
+        const enchLvl = (this.trinketEnchants && this.trinketEnchants[slot] && this.trinketEnchants[slot].level) || 0;
+        const baseBonusValue = def.bonusValue
+            || def.bonusValue2
+            || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'));
+        return Math.max(0, baseBonusValue + enchLvl);
+    }
+
     getTrinketPoolAugmentPct() {
         if (this.isSummoned) return 0;
         let pct = 0;
@@ -357,7 +369,8 @@ export class PartyMember {
             if (!itemId) continue;
             const def = TRINKETS[itemId] || getItemDef(itemId);
             if (def && typeof def.maxHealthPct === 'number') pct += def.maxHealthPct;
-            const augLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].augmentLevel) || 0;
+            const rawAugLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].augmentLevel) || 0;
+            const augLevel = Math.min(rawAugLevel, this._getTrinketAugmentCap(s));
             pct += TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[augLevel] || 0;
         }
         return pct;
@@ -392,7 +405,8 @@ export class PartyMember {
         const slots = ['cloak', 'neck', 'ring1', 'ring2', 'belt'];
         for (const s of slots) {
             if (!this.equipment[s]) continue;
-            const augLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].regenAugmentLevel) || 0;
+            const rawAugLevel = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].regenAugmentLevel) || 0;
+            const augLevel = Math.min(rawAugLevel, this._getTrinketAugmentCap(s));
             pct += TRINKET_AUGMENT_REGEN_BY_LEVEL[augLevel] || 0;
         }
         return pct;

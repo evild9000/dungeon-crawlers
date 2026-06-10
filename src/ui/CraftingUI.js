@@ -1117,6 +1117,7 @@ export class CraftingUI {
             const enchLvl = Math.max(slotEnchLvl, bakedEnchLvl);
             const costMult = isDual ? 2 : 1;
             const baseBonusValue = def.bonusValue || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'));
+            const totalTrinketLevel = baseBonusValue + slotEnchLvl;
 
             const panel = document.createElement('div');
             panel.className = 'craft-slot-panel';
@@ -1191,10 +1192,11 @@ export class CraftingUI {
                 panel.appendChild(this._note('Already at +7 — maximum trinket upgrade.'));
             }
 
-            const totalTrinketLevel = baseBonusValue + slotEnchLvl;
             if (artificer.level >= ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL) {
                 if (totalTrinketLevel >= TRINKET_AUGMENT_MIN_LEVEL) {
-                    if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
+                    if (augmentLevel > totalTrinketLevel) {
+                        panel.appendChild(this._note(`Vitality augment L${augmentLevel} is capped by this +${totalTrinketLevel} trinket base. Upgrade the trinket base to +${augmentLevel} to restore the full augment.`));
+                    } else if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL && augmentLevel < totalTrinketLevel) {
                         const nextAugment = augmentLevel > 0 ? augmentLevel + 1 : TRINKET_AUGMENT_MIN_LEVEL;
                         const base = ENCHANT_WEAPON_COSTS[nextAugment];
                         const augCost = { ...base };
@@ -1208,11 +1210,13 @@ export class CraftingUI {
                         augBtn.title = [
                             `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket augment.`,
                             `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
+                            `Cannot exceed the trinket's current +${totalTrinketLevel} base bonus.`,
                             `Grants +${Math.round((TRINKET_AUGMENT_POOL_PCT_BY_LEVEL[nextAugment] || 0) * 100)}% max health, stamina, and mana while equipped.`,
                             `Current augment: ${augmentLevel ? `L${augmentLevel} (+${Math.round(augmentPct * 100)}%)` : 'none'}.`,
                             'Cost is tracked separately from the normal trinket enchant.',
                         ].join('\n');
                         augBtn.addEventListener('click', () => {
+                            if (nextAugment > totalTrinketLevel) return;
                             if (!this._canPay(state, augCost)) return;
                             this._pay(state, augCost);
                             const existing = target.trinketEnchants[slot] || {};
@@ -1225,11 +1229,15 @@ export class CraftingUI {
                             this._render();
                         });
                         panel.appendChild(augBtn);
+                    } else if (augmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
+                        panel.appendChild(this._note(`Upgrade the trinket base above +${totalTrinketLevel} before raising vitality augment past L${augmentLevel}.`));
                     } else {
                         panel.appendChild(this._note(`Vitality augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${Math.round(augmentPct * 100)}% HP/ST/MP.`));
                     }
 
-                    if (regenAugmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
+                    if (regenAugmentLevel > totalTrinketLevel) {
+                        panel.appendChild(this._note(`Regen augment L${regenAugmentLevel} is capped by this +${totalTrinketLevel} trinket base. Upgrade the trinket base to +${regenAugmentLevel} to restore the full augment.`));
+                    } else if (regenAugmentLevel < TRINKET_AUGMENT_MAX_LEVEL && regenAugmentLevel < totalTrinketLevel) {
                         const nextRegenAugment = regenAugmentLevel > 0 ? regenAugmentLevel + 1 : TRINKET_AUGMENT_MIN_LEVEL;
                         const base = ENCHANT_WEAPON_COSTS[nextRegenAugment];
                         const regenCost = { ...base };
@@ -1243,12 +1251,14 @@ export class CraftingUI {
                         regenBtn.title = [
                             `Separate Artificer L${ARTIFICER_TRINKET_AUGMENT_UNLOCK_LEVEL} trinket regen augment.`,
                             `Requires an effective trinket level of ${TRINKET_AUGMENT_MIN_LEVEL}+; this trinket is level ${totalTrinketLevel}.`,
+                            `Cannot exceed the trinket's current +${totalTrinketLevel} base bonus.`,
                             `Grants +${Math.round((TRINKET_AUGMENT_REGEN_BY_LEVEL[nextRegenAugment] || 0) * 100)}% max HP, stamina, and mana regeneration per combat round, and the same percent per minute while exploring.`,
                             `Current regen augment: ${regenAugmentLevel ? `L${regenAugmentLevel} (+${Math.round(regenAugmentPct * 100)}%)` : 'none'}.`,
                             'Cost is tracked separately from normal trinket enchant and vitality augment.',
                             'Characters with 0 maximum mana cannot regenerate mana above 0.',
                         ].join('\n');
                         regenBtn.addEventListener('click', () => {
+                            if (nextRegenAugment > totalTrinketLevel) return;
                             if (!this._canPay(state, regenCost)) return;
                             this._pay(state, regenCost);
                             const existing = target.trinketEnchants[slot] || {};
@@ -1258,6 +1268,8 @@ export class CraftingUI {
                             this._render();
                         });
                         panel.appendChild(regenBtn);
+                    } else if (regenAugmentLevel < TRINKET_AUGMENT_MAX_LEVEL) {
+                        panel.appendChild(this._note(`Upgrade the trinket base above +${totalTrinketLevel} before raising regen augment past L${regenAugmentLevel}.`));
                     } else {
                         panel.appendChild(this._note(`Regen augment maxed at L${TRINKET_AUGMENT_MAX_LEVEL}: +${Math.round(regenAugmentPct * 100)}% max HP/ST/MP per combat round and per exploration minute.`));
                     }
