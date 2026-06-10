@@ -934,9 +934,11 @@ export class InventoryUI {
             if (isRogue) {
                 const base = Math.round(BACKSTAB_INSTAKILL_CHANCE * 100);
                 const cur  = Math.round((BACKSTAB_INSTAKILL_CHANCE + member.getInstakillBonus()) * 100);
-                const hasAssassinsBlade = !!(member.equipment && Object.values(member.equipment).includes('assassins_blade') && (member.level || 1) >= 35);
+                const assassinsBladeCount = (member.level || 1) >= 35 && typeof member.getEquippedItemCount === 'function'
+                    ? member.getEquippedItemCount('assassins_blade')
+                    : 0;
                 perk.push(`Backstab instakill: ${cur}%`);
-                perkDetails.push(`Rogue Backstab Instakill: base ${base}% + ${cur - base}% from levels/items = ${cur}% total\n  (+${Math.round(cls.instakillPerLevel * 100)}%/level${hasAssassinsBlade ? '; Assassin\'s Blade adds +2% instakill, +10% backstab damage, +5% evasion, and +5% bleed damage.' : ''})`);
+                perkDetails.push(`Rogue Backstab Instakill: base ${base}% + ${cur - base}% from levels/items = ${cur}% total\n  (+${Math.round(cls.instakillPerLevel * 100)}%/level${assassinsBladeCount > 0 ? `; Assassin's Blade x${assassinsBladeCount} adds +${assassinsBladeCount * 2}% instakill, +${assassinsBladeCount * 10}% backstab damage, +${assassinsBladeCount * 5}% evasion, and +${assassinsBladeCount * 5}% bleed damage.` : ''})`);
             } else if (isPaladin) {
                 const base = Math.round((PALADIN_SMITE_INSTAKILL_BASE || 0) * 100);
                 const cur  = Math.round(((PALADIN_SMITE_INSTAKILL_BASE || 0) + member.getInstakillBonus()) * 100);
@@ -953,9 +955,11 @@ export class InventoryUI {
         if (cls.whirlwindPerLevel) {
             const base = Math.round(MONK_WHIRLWIND_CHANCE * 100);
             const cur  = Math.round((MONK_WHIRLWIND_CHANCE + member.getWhirlwindBonus()) * 100);
-            const hasMummyWraps = !!(member.equipment && Object.values(member.equipment).includes('mummy_fist_wraps') && (member.level || 1) >= 35);
+            const mummyWrapsCount = (member.level || 1) >= 35 && typeof member.getEquippedItemCount === 'function'
+                ? member.getEquippedItemCount('mummy_fist_wraps')
+                : 0;
             perk.push(`Whirlwind: ${cur}%`);
-            perkDetails.push(`Monk Whirlwind: base ${base}% + ${cur - base}% from levels/items = ${cur}% total\n  Chance to also hit EACH other enemy on melee. Costs ${MONK_MELEE_MANA_COST} extra MP per melee.\n  (+${Math.round(cls.whirlwindPerLevel * 100)}%/level${hasMummyWraps ? '; Mummy Fist Wraps add +5% chance, +15% whirlwind damage, +5 Quivering Palm formula levels, +5% Avatar cleanse, and +10% Ki Surge damage.' : ''})`);
+            perkDetails.push(`Monk Whirlwind: base ${base}% + ${cur - base}% from levels/items = ${cur}% total\n  Chance to also hit EACH other enemy on melee. Costs ${MONK_MELEE_MANA_COST} extra MP per melee.\n  (+${Math.round(cls.whirlwindPerLevel * 100)}%/level${mummyWrapsCount > 0 ? `; Mummy Fist Wraps x${mummyWrapsCount} add +5% chance and +${mummyWrapsCount * 15}% Whirlwind damage, plus the listed monk bonuses.` : ''})`);
         }
         if (cls.healPercentPerLevel) {
             const isCleric  = member.classId === 'cleric';

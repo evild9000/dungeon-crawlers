@@ -258,7 +258,6 @@ function buildAbilityList(def) {
     if (def.isStarSpawnAI)          lines.push('Reality Distortion: each turn applies a random eldritch effect to EVERY party member independently — 35% magic damage, 20% mana drain (20% max mana), 20% Wither debuff (−damage 2 rds), 25% stun attempt; completely immune to all DoT effects (poison, burn, acid, bleed, etc.)');
 
     // Bestiary Expansion — Mixed
-    if (def.isVoidWraithAI)         lines.push('Void Drain: phase-strikes any party member (ignores ALL armor and defense); drains 25% of damage dealt as both HP AND mana simultaneously from the target; takes only half damage from physical attacks; on each kill gains a permanent stacking +10% damage bonus');
     if (def.isVampireLordAI)        lines.push('Vampire Lord: 40% life drain on melee hits; summons Vampire Spawn (40% per turn); AoE Hypnotic Gaze is a psychic charm effect that charms 1-2 party members for 2 rounds (20% per turn; Thunderous Drums can help resist); when HP drops below 15% dissolves into Gaseous Form (takes only 1 damage from all sources, regenerates 10% HP per round for 2 rounds, then re-solidifies); Paladin Smite deals triple bonus damage');
     if (def.isMyconidSovereignAI)   lines.push('Spore Sovereign: every turn blasts the ENTIRE party with toxic spore cloud (AoE magic + 40% poison DoT); 60% chance per turn to spawn 1-2 Myconid minions; higher HP, defense, and minimum dungeon level than standard Myconid');
 

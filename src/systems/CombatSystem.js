@@ -711,6 +711,14 @@ export class CombatSystem {
         return Object.values(member.equipment).includes(itemId);
     }
 
+    _getEquippedItemCount(member, itemId) {
+        if (!member || !member.equipment || !itemId) return 0;
+        if (typeof member.getEquippedItemCount === 'function') {
+            return member.getEquippedItemCount(itemId);
+        }
+        return Object.values(member.equipment).filter(id => id === itemId).length;
+    }
+
     _hasEldritchAmulet(member) {
         return member && member.classId === 'warlock' && (member.level || 1) >= 35 && this._hasEquipped(member, 'eldritch_amulet');
     }
@@ -749,6 +757,12 @@ export class CombatSystem {
             && this._hasEquipped(member, 'mummy_fist_wraps');
     }
 
+    _getMummyFistWrapsCount(member) {
+        return member && member.classId === 'monk' && (member.level || 1) >= 35
+            ? this._getEquippedItemCount(member, 'mummy_fist_wraps')
+            : 0;
+    }
+
     _hasFurLoincloth(member) {
         return member && member.classId === 'barbarian'
             && (member.level || 1) >= 35
@@ -759,6 +773,12 @@ export class CombatSystem {
         return member && member.classId === 'rogue'
             && (member.level || 1) >= 35
             && this._hasEquipped(member, 'assassins_blade');
+    }
+
+    _getAssassinsBladeCount(member) {
+        return member && member.classId === 'rogue' && (member.level || 1) >= 35
+            ? this._getEquippedItemCount(member, 'assassins_blade')
+            : 0;
     }
 
     _hasLensPhotomancy(member) {
@@ -2255,9 +2275,11 @@ export class CombatSystem {
                     let dmg = this._rollPlayerMeleeDamage(m);
                     if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
                     dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
-                    dmg = Math.round(dmg * (1 + m.level * 0.005) * (this._hasMummyFistWraps(m) ? 1.15 : 1));
+                    const monkLevel = m.level || 1;
+                    const mummyWrapsMultiplier = 1 + this._getMummyFistWrapsCount(m) * 0.15;
+                    dmg = Math.round(dmg * (1 + monkLevel * monkLevel * 0.0025) * mummyWrapsMultiplier);
                     const d = this._damageEnemy(other, dmg, false, false, 0, false, { contactAttacker: m });
-                    this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}! [+${Math.floor(m.level / 2)}% level bonus]`);
+                    this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}! [+${Math.round(monkLevel * monkLevel * 0.25)}% level bonus]`);
                     if (!suppressWeaponRiders) {
                         this._applyWeaponRider(m, other, d);
                         this._applyWeaponRider(m, other, d, 'offhand');
@@ -3413,8 +3435,9 @@ export class CombatSystem {
 
         const instakillChance = BACKSTAB_INSTAKILL_CHANCE + m.getInstakillBonus();
         const bossImmune = !!(targetEnemy.isBoss || targetEnemy.isMegaBoss);
+        const assassinBladeCount = this._getAssassinsBladeCount(m);
         const levelMult = (1 + BACKSTAB_DAMAGE_PER_LEVEL * Math.max(1, m.level))
-            * (this._hasAssassinsBlade(m) ? 1.10 : 1);
+            * (1 + assassinBladeCount * 0.10);
         const twinFangsReady = targetEnemy.health > 0
             && m.level >= ROGUE_TWIN_FANGS_UNLOCK_LEVEL
             && m.hasOffhandMeleeWeapon();
@@ -3459,7 +3482,7 @@ export class CombatSystem {
         // L20+ Rogue: Backstab applies a bleed DoT through the central monster immunity checker.
         if (targetEnemy.health > 0 && m.level >= ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL && dealt > 0) {
             if (!this._enemyHasImmunity(targetEnemy, 'bleed')) {
-                const bleedFrac   = ROGUE_BACKSTAB_BLEED_FRAC + (this._hasAssassinsBlade(m) ? 0.05 : 0);
+                const bleedFrac   = ROGUE_BACKSTAB_BLEED_FRAC + assassinBladeCount * 0.05;
                 const bleedDmg    = Math.max(1, Math.floor(dealt * bleedFrac));
                 const bleedRounds = Math.max(1, Math.floor(m.level / ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR));
                 if (!Array.isArray(targetEnemy.activeEffects)) targetEnemy.activeEffects = [];
@@ -12242,39 +12265,6 @@ export class CombatSystem {
                 if (this.aliveParty.length === 0) break;
             }
 
-        // ── Void Wraith: phase-strike drains HP+mana, half physical (resistPhysical), on kill +10% damage ──
-        } else if (typeDef.isVoidWraithAI) {
-            const dmin = MONSTER_MELEE_DAMAGE_MIN + 2 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
-            const dmax = MONSTER_MELEE_DAMAGE_MAX + 2 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
-            const dmgBonus = 1.0 + (e.voidWraithKillBonus || 0) * 0.10;
-            const anyAlive = this.aliveParty;
-            if (anyAlive.length > 0 && this._enemyCanAttemptStaminaAttack(e)) {
-                const target = anyAlive[Math.floor(Math.random() * anyAlive.length)];
-                this._spendEnemyStamina(e);
-                let dmg = randomInt(dmin, dmax);
-                dmg = Math.max(1, Math.round(dmg * MONSTER_DAMAGE_MULTIPLIER * dmgBonus));
-                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                const prevHP = target.health;
-                this._addLog(`\u{1F573}️ ${eName} phases through the void and tears at ${target.name}'s life force!`);
-                this._applyEnemyHit(e, target, dmg, 'melee', { phaseStrike: true, skipInterceptors: true });
-                const dealt = Math.max(0, prevHP - target.health);
-                if (dealt > 0) {
-                    // Drain 25% of dealt as HP and mana
-                    const drain = Math.floor(dealt * 0.25);
-                    e.health = Math.min(e.maxHealth, e.health + drain);
-                    if (this._isResourceDrainImmunePartyMember(target, 'mana')) {
-                        this._addLog(`\u{1F573}️ ${eName} drains ${drain} HP from ${target.name}, but cannot drain mana!`);
-                    } else {
-                        target.mana = Math.max(0, target.mana - Math.min(target.mana, drain));
-                        this._addLog(`\u{1F573}️ ${eName} drains ${drain} HP and mana from ${target.name}!`);
-                    }
-                }
-                if (target.health <= 0) {
-                    e.voidWraithKillBonus = (e.voidWraithKillBonus || 0) + 1;
-                    this._addLog(`\u{1F573}️ ${eName} absorbs ${target.name}'s essence — grows ${((e.voidWraithKillBonus) * 10)}% stronger!`);
-                }
-            }
-
         // ── Vampire Lord: gaseous near death, life drain, summons spawn, AoE hypnotic gaze ──
         } else if (typeDef.isVampireLordAI) {
             const dmin = MONSTER_MELEE_DAMAGE_MIN + 4 + MONSTER_DAMAGE_PER_LEVEL * lvlBoost + MONSTER_DAMAGE_BONUS_PER_LEVEL * lvlThreeBonus;
@@ -13021,7 +13011,7 @@ export class CombatSystem {
             && target.level >= ROGUE_TRAP_UNLOCK_LEVEL
             && (attackKind === 'magic' || opts.aoe)
             && target.stamina >= ROGUE_EVASION_STAMINA_COST) {
-            const chance = Math.min(1, (target.level || 1) * 0.01 + (this._hasAssassinsBlade(target) ? 0.05 : 0));
+            const chance = Math.min(1, (target.level || 1) * 0.01 + this._getAssassinsBladeCount(target) * 0.05);
             if (Math.random() < chance) {
                 target.stamina = Math.max(0, target.stamina - ROGUE_EVASION_STAMINA_COST);
                 this._addLog(`🗡️ ${target.name} evades ${eName}'s ${opts.aoe ? 'AoE' : 'magic'} attack! (-${ROGUE_EVASION_STAMINA_COST} ST)`);
@@ -14215,8 +14205,10 @@ export class CombatSystem {
 
         const enemyTypeDef = ENEMY_TYPES[enemy.type] || {};
         const enemyImmune  = Array.isArray(enemyTypeDef.immune) ? enemyTypeDef.immune : [];
+        const enemyTags = Array.isArray(enemyTypeDef.tags) ? enemyTypeDef.tags : [];
         const isEnemyImmuneTo = (dmgType) => enemyImmune.includes(dmgType)
-            || (dmgType === 'poison' && Array.isArray(enemyTypeDef.tags) && enemyTypeDef.tags.includes('undead'));
+            || (dmgType === 'poison' && enemyTags.includes('undead'))
+            || (dmgType === 'stun' && enemyTags.some(tag => ['undead', 'construct', 'elemental', 'incorporeal', 'plant', 'slime'].includes(tag)));
 
         switch (rider) {
             case 'fire': {
@@ -16016,25 +16008,6 @@ export class CombatSystem {
                         this._addLog(`⭐ ${eN(t)} is stunned!`);
                     }
                 }
-            }
-
-        } else if (typeDef.isVoidWraithAI) {
-            const dmgBonus = 1.0 + (e.voidWraithKillBonus || 0) * 0.10;
-            const t = pick();
-            if (t && this._enemyCanAttemptStaminaAttack(e)) {
-                this._spendEnemyStamina(e);
-                let dmg = Math.max(1, Math.round(randomInt(dmin + 2, dmax + 2) * MONSTER_DAMAGE_MULTIPLIER * dmgBonus));
-                dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                const prevHP = t.health;
-                this._addLog(`🎵🕳️ ${eName} (charmed) phases through the void and tears at ${eN(t)}!`);
-                cHit(t, dmg);
-                const dealt = Math.max(0, prevHP - t.health);
-                if (dealt > 0) {
-                    const drain = Math.floor(dealt * 0.25);
-                    e.health = Math.min(e.maxHealth, e.health + drain);
-                    if (t.mana) t.mana = Math.max(0, t.mana - Math.min(t.mana, drain));
-                }
-                if (t.health <= 0) e.voidWraithKillBonus = (e.voidWraithKillBonus || 0) + 1;
             }
 
         } else if (typeDef.isVampireLordAI) {

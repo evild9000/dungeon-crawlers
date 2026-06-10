@@ -516,11 +516,6 @@ export const ENEMY_TYPES = {
         tags: ['aberration'], immune: ['stun', 'poison'],
         minLevel: 30 },
 
-    void_wraith:      { name: 'Void Wraith',         spriteW: 1.6, spriteH: 2.2,
-        isVoidWraithAI: true, resistPhysical: true, phaseStrike: true,
-        tags: ['undead', 'incorporeal', 'elemental'], immune: ['cold', 'poison', 'stun', 'bleed', 'fire'],
-        minLevel: 25 },
-
     vampire_lord:     { name: 'Vampire Lord',        spriteW: 1.8, spriteH: 2.2,
         isVampireLordAI: true, lifeDrain: 0.40, regenPercent: 0.05,
         hpMult: 3.0, defenseMult: 1.5,
@@ -2007,7 +2002,6 @@ export const SUPERBOSS_NAMES = {
     poltergeist:      ['Phasix the Unseen', 'Wrex, Chaos Unbound'],
     shadow:           ['Umbrath the Formless', 'Kelvindras the Shade'],
     wight:            ['Corthax the Draining', 'Mortheus, Drinker of Life'],
-    void_wraith:      ['Velthrax the Annihilator', 'Zerophis, End of Light'],
     will_o_wisp:      ['Ixivara the Luring', 'Phosphen the Deceiver'],
     vampire_spawn:    ['Vorcath the Bloodborn', 'Serafina the Undying'],
     vampire_lord:     ['Lord Strahvikar the Ageless', 'Countess Lytheria the Ancient'],

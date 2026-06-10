@@ -575,11 +575,14 @@ export class PartyMember {
     getMeleeStunBonus()   { return (this.classDef.stunPerLevel || 0) * Math.max(0, this.level - 1); }
     getRangedCritBonus()  { return (this.classDef.critPerLevel || 0) * Math.max(0, this.level - 1); }
     getMagicStunBonus()   { return (this.classDef.magicStunPerLevel || 0) * Math.max(0, this.level - 1); }
+    getEquippedItemCount(itemId) {
+        if (!itemId || !this.equipment) return 0;
+        return Object.values(this.equipment).filter(id => id === itemId).length;
+    }
     getInstakillBonus() {
         const itemBonus = this.classId === 'rogue'
             && (this.level || 1) >= 35
-            && Object.values(this.equipment || {}).includes('assassins_blade')
-            ? 0.02 : 0;
+            ? this.getEquippedItemCount('assassins_blade') * 0.02 : 0;
         return (this.classDef.instakillPerLevel || 0) * Math.max(0, this.level - 1) + itemBonus;
     }
     getDodgeBonus()       { return (this.classDef.dodgePerLevel || 0) * Math.max(0, this.level - 1); }

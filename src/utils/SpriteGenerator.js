@@ -5635,7 +5635,6 @@ const DRAWERS = {
     gibbering_mouther: drawGibberingMouther,
     aboleth:           drawAboleth,
     star_spawn:        drawStarSpawn,
-    void_wraith:       drawVoidWraith,
     vampire_lord:      drawVampireLord,
     myconid_sovereign: drawMyconidSovereign,
     // New Monsters
