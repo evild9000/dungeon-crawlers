@@ -13,6 +13,21 @@ import {
 } from '../items/ItemTypes.js';
 import { soundManager } from '../utils/SoundManager.js';
 
+const SHOP_BUY_EXCLUDED_ITEM_IDS = new Set([
+    'instrument_bards',
+    'manticore_ballista',
+    'hag_eye_rod',
+    'staff_of_necromancy',
+    'staff_world_tree',
+    'lance_dragon_king',
+    'shield_dark_wood',
+    'mummy_fist_wraps',
+    'fur_loincloth',
+    'assassins_blade',
+    'lens_photomancy',
+    'quiver_piercer',
+]);
+
 export class ShopUI {
     /**
      * @param {() => import('../core/GameState.js').GameState} getState
@@ -101,10 +116,10 @@ export class ShopUI {
             'food', 'healing_potion', 'resurrection_potion',
             'torch', 'lantern', 'lantern_oil',
             ...reagentItems,
-            ...Object.keys(WEAPONS),
+            ...Object.keys(WEAPONS).filter(id => !SHOP_BUY_EXCLUDED_ITEM_IDS.has(id)),
             ...Object.keys(ARMOR),
-            ...Object.keys(SHIELDS),
-            ...Object.keys(TRINKETS).filter(id => TRINKETS[id].tier === 1),
+            ...Object.keys(SHIELDS).filter(id => !SHOP_BUY_EXCLUDED_ITEM_IDS.has(id)),
+            ...Object.keys(TRINKETS).filter(id => TRINKETS[id].tier === 1 && !TRINKETS[id].dualAspect),
         ];
 
         for (const itemId of shopItems) {
