@@ -29,6 +29,15 @@ export class Inventory {
 
         const isStackable = def.stackable || def.category === ITEM_CATEGORY.CONSUMABLE;
         if (isStackable) {
+            if (this._isRechargeableChargeItem(def)) {
+                let remaining = Math.max(0, quantity);
+                while (remaining > 0) {
+                    const entryQuantity = Math.min(def.maxCharges, remaining);
+                    this.items.push({ itemId, quantity: entryQuantity, lastRechargeAt: Date.now() });
+                    remaining -= entryQuantity;
+                }
+                return;
+            }
             const existing = this.items.find(i => i.itemId === itemId);
             if (existing) {
                 this._rechargeEntry(existing, def);
@@ -52,6 +61,28 @@ export class Inventory {
      * @returns {boolean} true if successful
      */
     removeItem(itemId, quantity = 1) {
+        const def = getItemDef(itemId);
+        if (this._isRechargeableChargeItem(def)) {
+            const entries = this.items
+                .filter(i => i && i.itemId === itemId)
+                .sort((a, b) => (b.quantity || 0) - (a.quantity || 0));
+            for (const entry of entries) this._rechargeEntry(entry, def);
+            const available = entries.reduce((sum, entry) => sum + (entry.quantity || 0), 0);
+            if (available < quantity) return false;
+
+            let remaining = quantity;
+            for (const entry of entries) {
+                if (remaining <= 0) break;
+                const take = Math.min(entry.quantity || 0, remaining);
+                if (take <= 0) continue;
+                if ((entry.quantity || 0) >= def.maxCharges) entry.lastRechargeAt = Date.now();
+                entry.quantity -= take;
+                if (!entry.lastRechargeAt) entry.lastRechargeAt = Date.now();
+                remaining -= take;
+            }
+            return true;
+        }
+
         const idx = this.items.findIndex(i => i.itemId === itemId);
         if (idx === -1) return false;
 
@@ -67,6 +98,18 @@ export class Inventory {
     }
 
     hasItem(itemId, quantity = 1) {
+        const def = getItemDef(itemId);
+        if (this._isRechargeableChargeItem(def)) {
+            let total = 0;
+            for (const entry of this.items) {
+                if (!entry || entry.itemId !== itemId) continue;
+                this._rechargeEntry(entry, def);
+                total += entry.quantity || 0;
+                if (total >= quantity) return true;
+            }
+            return false;
+        }
+
         const entry = this.items.find(i => i.itemId === itemId);
         if (entry) this._rechargeEntry(entry);
         return entry ? entry.quantity >= quantity : false;
@@ -78,6 +121,16 @@ export class Inventory {
             if (!entry || entry.itemId !== itemId) continue;
             this._rechargeEntry(entry);
             total += entry.quantity || 0;
+        }
+        return total;
+    }
+
+    getItemEntryCount(itemId) {
+        let total = 0;
+        for (const entry of this.items) {
+            if (!entry || entry.itemId !== itemId) continue;
+            this._rechargeEntry(entry);
+            total++;
         }
         return total;
     }
@@ -100,6 +153,10 @@ export class Inventory {
         entry.quantity = Math.min(itemDef.maxCharges, entry.quantity + gained);
         entry.lastRechargeAt += gained * itemDef.rechargeMs;
         if (entry.quantity >= itemDef.maxCharges) entry.lastRechargeAt = now;
+    }
+
+    _isRechargeableChargeItem(def) {
+        return !!(def && def.maxCharges && def.rechargeMs);
     }
 
     /**
@@ -155,6 +212,7 @@ export class Inventory {
     getItemSummary() {
         const map = new Map();
         for (const entry of this.items) {
+            this._rechargeEntry(entry);
             if (map.has(entry.itemId)) {
                 map.set(entry.itemId, map.get(entry.itemId) + entry.quantity);
             } else {

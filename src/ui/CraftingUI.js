@@ -31,7 +31,7 @@ import {
     calcScrollBonus, calcScrollCost,
     ARTIFICER_MULTI_GOLEM_UNLOCK_LEVEL,
     ARTIFICER_HEAL_GOLEM_PCT, ARTIFICER_FREE_REPAIR_CHANCE_PER_LEVEL,
-    ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL, MAGIC_ITEM_CRAFT_CHARGES, MAGIC_ITEM_RECIPES,
+    ARTIFICER_MAGIC_ITEM_UNLOCK_LEVEL, MAGIC_ITEM_RECIPES,
 } from '../utils/constants.js';
 import { getItemDef, WEAPONS, TRINKETS } from '../items/ItemTypes.js';
 import { GOLEM_TIERS, GOLEM_PRESETS, getArtificerUnlockedGolems } from '../entities/Summons.js';
@@ -797,7 +797,10 @@ export class CraftingUI {
             : 0;
         const info = document.createElement('div');
         info.className = 'craft-row-info';
-        const ownedText = recipe.kind === 'device' ? ` <span class="craft-owned">(charges: ${owned}/${def?.maxCharges || MAGIC_ITEM_CRAFT_CHARGES})</span>` :
+        const deviceCount = recipe.kind === 'device' && typeof state.inventory.getItemEntryCount === 'function'
+            ? state.inventory.getItemEntryCount(recipe.id)
+            : 0;
+        const ownedText = recipe.kind === 'device' ? ` <span class="craft-owned">(owned: ${deviceCount}, charges: ${owned})</span>` :
                           recipe.kind === 'equipment' ? ` <span class="craft-owned">(owned: ${owned})</span>` :
                           recipe.kind === 'summon' && summonCount > 0 ? ` <span class="craft-owned">(active: ${summonCount})</span>` : '';
         info.innerHTML =
@@ -805,11 +808,11 @@ export class CraftingUI {
             `<span>${display.description || recipe.description || ''}</span>`;
         row.appendChild(info);
 
+        const qty = recipe.quantity || 1;
         const canPay = this._canPay(state, recipe.cost);
         const btn = document.createElement('button');
         btn.className = `craft-btn ${canPay ? '' : 'craft-btn-disabled'}`;
         btn.disabled = !canPay;
-        const qty = recipe.quantity || 1;
         btn.textContent = `Craft${qty > 1 ? ` ${qty}` : ''} — ${this._formatCost(recipe.cost)}`;
         btn.title = `Cost: ${this._formatCost(recipe.cost)}`;
         btn.addEventListener('click', () => {

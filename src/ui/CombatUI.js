@@ -3881,7 +3881,10 @@ export class CombatUI {
             if (entry.quantity > 0) addEntry(entry.itemId, 'personal', entry.quantity);
         }
         // Group inventory
-        for (const entry of (this.combat.inventory?.items || [])) {
+        const groupItems = typeof this.combat.inventory?.getItemSummary === 'function'
+            ? this.combat.inventory.getItemSummary()
+            : (this.combat.inventory?.items || []);
+        for (const entry of groupItems) {
             if (entry.quantity > 0) addEntry(entry.itemId, 'group', entry.quantity);
         }
 
