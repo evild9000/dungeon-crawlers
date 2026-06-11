@@ -394,6 +394,7 @@ export class CombatSystem {
         this._lastDamageByEnemyId = Object.create(null);
         this.prismaticSphere = null;
         this.eternalRainbows = [];
+        this.yetiTotemColdBuffActive = false;
     }
 
     /** Game.js can assign the live inventory reference (also set in startCombat). */
@@ -436,6 +437,7 @@ export class CombatSystem {
         this.log = [];
         this.loot = null;
         this._mageShieldCasterId = null;
+        this.yetiTotemColdBuffActive = false;
         this.xpEarned = 0;
         this.levelUpLogs = [];
         this.turnNumber = 1;
@@ -511,6 +513,59 @@ export class CombatSystem {
 
     /** True when every real (non-summoned) party member is at 0 HP — even if summoned undead remain. */
     get allRealMembersDefeated() { return this.party.filter(p => !p.isSummoned).every(p => p.health <= 0); }
+
+    _getYetiTotemColdDamageMult() {
+        return this.yetiTotemColdBuffActive ? 1.5 : 1;
+    }
+
+    _applyYetiTotemColdDamageBonus(amount) {
+        const n = Number(amount) || 0;
+        if (!this.yetiTotemColdBuffActive || n <= 0) return amount;
+        return Math.max(1, Math.round(n * this._getYetiTotemColdDamageMult()));
+    }
+
+    _isYetiTotemColdDot(type) {
+        return type === 'frost_dot' || type === 'avatar_ice' || type === 'shadow_ice_dot';
+    }
+
+    _applyYetiTotemColdBuff() {
+        if (!this.yetiTotemColdBuffActive) return 0;
+        const targets = [
+            ...(this.party || []).filter(m => m && m.health > 0),
+            ...(this.enemies || []).filter(e => e && e.health > 0 && (e.charmedRounds || 0) > 0),
+        ];
+        let added = 0;
+        for (const target of targets) {
+            target.activeEffects = target.activeEffects || [];
+            const existing = target.activeEffects.find(fx => fx && fx.type === 'yeti_totem_cold_buff');
+            if (existing) {
+                existing.permanent = true;
+                existing.coldDamageMult = 1.5;
+                existing.allowCharmedAllyEffect = true;
+                continue;
+            }
+            target.activeEffects.push({
+                type: 'yeti_totem_cold_buff',
+                permanent: true,
+                coldDamageMult: 1.5,
+                allowCharmedAllyEffect: true,
+            });
+            added++;
+        }
+        return added;
+    }
+
+    _activateYetiTotemColdBuff(actor = null) {
+        const firstApplication = !this.yetiTotemColdBuffActive;
+        this.yetiTotemColdBuffActive = true;
+        const added = this._applyYetiTotemColdBuff();
+        if (firstApplication) {
+            const source = actor?.name ? `${actor.name}'s ` : '';
+            this._addLog(`❄️ ${source}Yeti Totem blankets allies in killing frost: +50% cold damage for this combat.`);
+        } else if (added > 0) {
+            this._addLog(`❄️ Yeti Totem cold blessing settles on ${added} new allied combatant${added === 1 ? '' : 's'}.`);
+        }
+    }
 
     _prepareCharmedAlly(enemy) {
         if (!enemy) return enemy;
@@ -1787,7 +1842,8 @@ export class CombatSystem {
         const meta = typeMap[element] || typeMap.fire;
         if (this._enemyHasImmunity(enemy, meta.immune)) return;
         const rounds = Math.max(1, Math.floor((monk.level || 1) / MONK_AVATAR_DOT_DURATION_DIVISOR));
-        const damage = Math.max(1, Math.floor(dealt * MONK_AVATAR_DOT_FRACTION));
+        let damage = Math.max(1, Math.floor(dealt * MONK_AVATAR_DOT_FRACTION));
+        if (meta.type === 'avatar_ice') damage = this._applyYetiTotemColdDamageBonus(damage);
         // Each hit adds an independent stack — same monk hitting twice or two monks
         // with the same element both apply separately.
         enemy.activeEffects = enemy.activeEffects || [];
@@ -2277,7 +2333,7 @@ export class CombatSystem {
                     dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
                     const monkLevel = m.level || 1;
                     const mummyWrapsMultiplier = 1 + this._getMummyFistWrapsCount(m) * 0.15;
-                    dmg = Math.round(dmg * (1 + monkLevel * monkLevel * 0.0025) * mummyWrapsMultiplier);
+                    dmg = Math.round(dmg * (1 + monkLevel * monkLevel * 0.0025) * 0.75 * mummyWrapsMultiplier);
                     const d = this._damageEnemy(other, dmg, false, false, 0, false, { contactAttacker: m });
                     this._addLog(`\u{1F300} Whirlwind hits ${this._eName(other)} for ${d}! [+${Math.round(monkLevel * monkLevel * 0.25)}% level bonus]`);
                     if (!suppressWeaponRiders) {
@@ -4428,7 +4484,7 @@ export class CombatSystem {
         m.mana = Math.max(0, m.mana - MONK_MELEE_MANA_COST);
 
         const kicks = Math.max(1, Math.floor((m.level || 1) / MONK_KICK_TRIP_ATTACK_DIVISOR));
-        const dmgMult = 1 + MONK_KICK_TRIP_DAMAGE_BASE_BONUS + (m.level || 1) * MONK_KICK_TRIP_DAMAGE_PER_LEVEL;
+        const dmgMult = (1 + MONK_KICK_TRIP_DAMAGE_BASE_BONUS + (m.level || 1) * MONK_KICK_TRIP_DAMAGE_PER_LEVEL) * 1.33;
         const critChance = Math.min(0.95, (m.level || 1) * MONK_KICK_TRIP_CRIT_PER_LEVEL);
         const tripChance = Math.min(0.95, MONK_KICK_TRIP_PRONE_BASE_CHANCE + ((m.level || 1) / 10) * MONK_KICK_TRIP_PRONE_PER_10_LEVELS);
         this._addLog(`🥾 ${m.name} unleashes Kick Trip on ${this._eName(targetEnemy)}! (${kicks} heavy kick${kicks !== 1 ? 's' : ''})`);
@@ -7612,7 +7668,7 @@ export class CombatSystem {
         this._addLog(`\u{1F33F} ${m.name} calls forth thorny vines!`);
 
         let affected = 0;
-        for (const e of this.aliveEnemies) {
+        for (const e of this.aliveHostileEnemies) {
             // Incorporeal creatures cannot be physically entangled.
             const eDef = ENEMY_TYPES[e.type] || {};
             if (Array.isArray(eDef.tags) && eDef.tags.includes('incorporeal')) {
@@ -8206,6 +8262,7 @@ export class CombatSystem {
         const hagBuff = this._applyHagEyeRodElementalBuff(actor, elemental);
         this.party.push(elemental);
         this._registerNewSummon(elemental);
+        this._applyYetiTotemColdBuff();
         this._addLog(`${preset.icon || '✨'} ${actor.name} calls forth a ${preset.name}!${hagBuff ? ' Hag Eye Rod empowers it (+15% HP/damage, +5 def).' : ''}`);
         return true;
     }
@@ -8258,6 +8315,7 @@ export class CombatSystem {
         this.enemies.push(monster);
         this._initiativeOrder.push({ kind: 'enemy', ref: monster, init: 1 + Math.floor(Math.random() * 6), skipThisRound: true });
         this._addLog(`${isLord ? '\u{1F43A}' : '\u2744\uFE0F'} ${actor.name} summons ${this._eName(monster)} to the party's side for this fight!`);
+        if (type === 'yeti') this._activateYetiTotemColdBuff(actor);
         if (isLord) this._applyWhiteWerewolfLordAura(monster);
         return true;
     }
@@ -10160,6 +10218,7 @@ export class CombatSystem {
         for (const m of this.party) m._defending = false;
 
         this._tickPartyEffects();
+        this._applyYetiTotemColdBuff();
         this._checkFaerieQueenRevive();
         if (this.aliveParty.length === 0) {
             // If a necromancer's soul lingers in its phylactery, release it now.
@@ -10339,7 +10398,7 @@ export class CombatSystem {
             // Summoned AI auto-turn
             if (m.isSummoned) {
                 this._logTarget = 'player'; // summon acts for the player's side
-                this._addLog(`--- ${m.name}'s turn ---`);
+                this._addLog(`--- ${m.name}'s turn --- Initiative: ${slot.init}`);
                 try {
                     this._takeSummonTurn(m);
                 } catch (err) {
@@ -10370,7 +10429,7 @@ export class CombatSystem {
             this._logTarget = 'player'; // reset before player acts so all action logs go to the party window
             this.currentMemberIndex = this.party.indexOf(m);
             this.phase = 'PLAYER_TURN';
-            this._addLog(`--- Turn ${this.turnNumber}: ${m.name}'s turn ---`);
+            this._addLog(`--- Turn ${this.turnNumber}: ${m.name}'s turn --- Initiative: ${slot.init}`);
             this._notify();
             return;
         }
@@ -10499,7 +10558,8 @@ export class CombatSystem {
             this._notify();
             return;
         }
-        this._addLog(`--- ${eName}'s turn ---`);
+        const turnInit = this._initiativeOrder[this._initTurnIdx]?.init;
+        this._addLog(`--- ${eName}'s turn ---${Number.isFinite(turnInit) ? ` Initiative: ${turnInit}` : ''}`);
 
         // Charmed enemy: fights for the party this turn
         if (e.charmedRounds > 0) {
@@ -14267,7 +14327,7 @@ export class CombatSystem {
                     this._addLog(`❄️ ${eName} is immune to cold!`);
                     break;
                 }
-                const frostTick = Math.max(1, Math.floor(baseDotTick * RIDER_STUN_DOT_MULT));
+                const frostTick = this._applyYetiTotemColdDamageBonus(Math.max(1, Math.floor(baseDotTick * RIDER_STUN_DOT_MULT)));
                 pushDoT({ type: 'frost_dot', rounds: dotRounds, damage: frostTick });
                 const _iceStunLanded = !isEnemyImmuneTo('stun') && this._tryStunEnemy(enemy);
                 if (_iceStunLanded) {
@@ -14691,8 +14751,7 @@ export class CombatSystem {
                 }
             }
             if (m.classId === 'warlock' && m.health > 0) {
-                const hasHex = this.aliveHostileEnemies.some(e =>
-                    (e.activeEffects || []).some(fx => fx && fx.type === 'warlock_hex' && fx.casterId === m.id && fx.rounds > 0));
+                const hasHex = this._hasActiveWarlockHex(m);
                 if (hasHex) {
                     if (m.mana >= WARLOCK_HEX_UPKEEP_MANA) {
                         m.mana -= WARLOCK_HEX_UPKEEP_MANA;
@@ -15101,6 +15160,7 @@ export class CombatSystem {
             dmg = Math.max(1, Math.round(dmg * frenzyMult * this._getWhiteWerewolfLordDamageMult(e)));
             const attackKind = opts.attackKind || (isMagic ? 'magic' : 'melee');
             const options = contactAttacker ? { contactAttacker } : {};
+            if (opts.coldDamage) dmg = this._applyYetiTotemColdDamageBonus(dmg);
             dmg = this._applyEnemyResourceExhaustion(e, dmg);
             // Nature's Charms bolster: +1% per druid level bonus damage
             if (e.naturesCharmBolster > 0) dmg = Math.max(1, Math.round(dmg * (1 + e.naturesCharmBolster)));
@@ -15273,7 +15333,7 @@ export class CombatSystem {
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`🎵${breathIcons[bType]||'🔥'} ${eName} (charmed) exhales ${bType} breath at the enemy group!`);
                 for (const t of hostile()) {
-                    cHit(t, dmg, true);
+                    cHit(t, bType === 'cold' ? this._applyYetiTotemColdDamageBonus(dmg) : dmg, true);
                     tickDeath(t);
                 }
             } else {
@@ -15319,10 +15379,10 @@ export class CombatSystem {
                 this._spendEnemyStamina(e);
                 let dmg = Math.max(1, Math.round(randomInt(dmin + 10, dmax + 10) * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                const dealt = cHit(t, dmg);
+                const dealt = cHit(t, dmg, false, null, { coldDamage: true });
                 if (t.health > 0 && dealt > 0) {
                     cEffect(t, { type: 'ice_chill', damageBonus: -2, rounds: 2 });
-                    const iceTick = Math.max(1, Math.floor(dealt * 0.5));
+                    const iceTick = this._applyYetiTotemColdDamageBonus(Math.max(1, Math.floor(dealt * 0.5)));
                     t.health = Math.max(0, t.health - iceTick);
                     this._addLog(`🧊 ${eN(t)} is chilled! (${iceTick} cold)`);
                     tickDeath(t);
@@ -15435,9 +15495,9 @@ export class CombatSystem {
                 this._spendEnemyStamina(e);
                 let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                const dealt = cHit(t, dmg);
+                const dealt = cHit(t, dmg, false, null, { coldDamage: true });
                 if (t.health > 0 && dealt > 0) {
-                    const iceTick = Math.max(1, Math.floor(dealt * 0.33));
+                    const iceTick = this._applyYetiTotemColdDamageBonus(Math.max(1, Math.floor(dealt * 0.33)));
                     t.health = Math.max(0, t.health - iceTick);
                     cEffect(t, { type: 'ice_chill', damageBonus: -2, rounds: 2 });
                     this._addLog(`🧊 ${eN(t)} is frozen by icy fists! (${iceTick} cold)`);
@@ -15452,9 +15512,9 @@ export class CombatSystem {
                 this._spendEnemyStamina(e);
                 let dmg = Math.max(1, Math.round(randomInt(dmin + 5, dmax + 5) * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e));
-                const dealt = cHit(t, dmg);
+                const dealt = cHit(t, dmg, false, null, { coldDamage: true });
                 if (t.health > 0 && dealt > 0) {
-                    const iceTick = Math.max(1, Math.floor(dealt * 0.30));
+                    const iceTick = this._applyYetiTotemColdDamageBonus(Math.max(1, Math.floor(dealt * 0.30)));
                     cEffect(t, { type: 'ice_chill', damageBonus: -2, rounds: 2 });
                     t.health = Math.max(0, t.health - iceTick);
                     this._addLog(`❄️ ${eN(t)} is chilled by infernal frost! (${iceTick} cold)`);
@@ -15492,7 +15552,7 @@ export class CombatSystem {
                 dmg = this._applyDragonBreathLevelBonus(dmg, e);
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`🎵💀 ${eName} (charmed) exhales ${bType} breath at its former allies!`);
-                for (const t of hostile()) cHit(t, dmg, true);
+                for (const t of hostile()) cHit(t, bType === 'cold' ? this._applyYetiTotemColdDamageBonus(dmg) : dmg, true);
             } else {
                 this._addLog(`🎵💀 ${eName} (charmed) tears into former allies with undead talons!`);
                 const attacks = [{ times: 2 }, { times: 1 }];
@@ -16167,7 +16227,7 @@ export class CombatSystem {
                 let _cwwbdmg = Math.max(1, Math.round(randomInt(mdmin, mdmax) * MONSTER_DAMAGE_MULTIPLIER));
                 _cwwbdmg = Math.max(1, _cwwbdmg + this._getEnemyDamageMod(e, 'magic'));
                 this._addLog(`🎵❄️ ${eName} (charmed) exhales a freezing blizzard at its former allies!`);
-                for (const _cwwbt of hostile()) { cHit(_cwwbt, _cwwbdmg, true); tickDeath(_cwwbt); }
+                for (const _cwwbt of hostile()) { cHit(_cwwbt, _cwwbdmg, true, null, { coldDamage: true }); tickDeath(_cwwbt); }
             }
 
         } else if (typeDef.isLizardFolkAI) {
@@ -16285,6 +16345,7 @@ export class CombatSystem {
                     if (fx.type === 'burn' && typeDef.takesDoubleFire) tickDmg *= 2;
                     // Plant-tagged enemies take double fire DoT damage
                     if (fx.type === 'burn' && Array.isArray(typeDef.tags) && typeDef.tags.includes('plant')) tickDmg *= 2;
+                    if (this._isYetiTotemColdDot(fx.type)) tickDmg = this._applyYetiTotemColdDamageBonus(tickDmg);
                     e.health = Math.max(0, e.health - tickDmg);
                     this._addLog(`${DOT_TYPES[fx.type]}: ${this._eName(e)} suffers ${tickDmg} damage!`);
                     // Trap Mastery (L35): every tick triggers a random debuff effect
@@ -16319,7 +16380,7 @@ export class CombatSystem {
 
             // Verdant Surge — nature DoT + 25% action loss per round for entangled enemies (L30 druid)
             const verdantEntangle = effects.find(fx => fx && fx.type === 'entangle' && fx.verdantSurge && fx.rounds > 0);
-            if (verdantEntangle && e.health > 0) {
+            if (verdantEntangle && e.health > 0 && !(e.charmedRounds > 0)) {
                 const vTags = Array.isArray(typeDef.tags) ? typeDef.tags : [];
                 if (!vTags.includes('incorporeal')) {
                     const vDotDmg = randomInt(verdantEntangle.verdantMin, verdantEntangle.verdantMax);
@@ -17166,11 +17227,17 @@ export class CombatSystem {
     // Warlock abilities
     // ════════════════════════════════════════════════════════════════════════════
 
+    _hasActiveWarlockHex(warlock) {
+        if (!warlock) return false;
+        return this.aliveHostileEnemies.some(e =>
+            (e.activeEffects || []).some(fx => fx && fx.type === 'warlock_hex' && fx.casterId === warlock.id && fx.rounds > 0));
+    }
+
     warlockEvilEye(targetEnemy) {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'warlock') return;
         if (!targetEnemy || targetEnemy.health <= 0) return;
-        if (m.warlockEvilEyeRound === this.turnNumber) {
+        if (m.warlockEvilEyeRound === this.turnNumber && this._hasActiveWarlockHex(m)) {
             this._addLog(`\u{1F441} ${m.name} has already used Evil Eye this round.`);
             return;
         }
@@ -18079,12 +18146,13 @@ export class CombatSystem {
         const type = demon.summonType;
         const targets = this.aliveHostileEnemies;
         if (!targets.length) return;
-        const hit = (target, kind = 'melee', mult = 1, ignoreDefense = false) => {
+        const hit = (target, kind = 'melee', mult = 1, ignoreDefense = false, opts = {}) => {
             if (!target || target.health <= 0) return 0;
             const min = kind === 'magic' ? (st.magicMin || 1) : kind === 'ranged' ? (st.rangedMin || 1) : (st.meleeMin || 1);
             const max = kind === 'magic' ? (st.magicMax || min) : kind === 'ranged' ? (st.rangedMax || min) : (st.meleeMax || min);
             const awakenedMult = st.awakened ? Math.max(1, Number(st.awakenedDamageMult) || (1 + (st.warlockLevel || demon.level || 1) / 10)) : 1;
-            const raw = Math.max(1, Math.round(randomInt(min, max) * awakenedMult * mult));
+            let raw = Math.max(1, Math.round(randomInt(min, max) * awakenedMult * mult));
+            if (opts.coldDamage) raw = this._applyYetiTotemColdDamageBonus(raw);
             const options = kind === 'melee' ? { contactAttacker: demon } : { sourceMember: demon };
             if (kind === 'magic') options.isMagic = true;
             return this._damageSummonEnemy(target, raw, ignoreDefense, false, options);
@@ -18280,11 +18348,11 @@ export class CombatSystem {
                 this._addLog(`❄️ ${demon.name} rakes with freezing claws!`);
                 for (let i = 0; i < 4; i++) {
                     const t = randTarget(); if (!t) break;
-                    const d = hit(t, 'melee', 1.2);
+                    const d = hit(t, 'melee', 1.2, false, { coldDamage: true });
                     this._addLog(`  -> ${this._eName(t)} takes ${d}.`);
                     if (t.health > 0 && !this._enemyHasImmunity(t, 'cold')) {
                         t.activeEffects = t.activeEffects || [];
-                        t.activeEffects.push({ type: 'frost_dot', damage: Math.max(1, Math.floor(d * 0.3)), rounds: 2 });
+                        t.activeEffects.push({ type: 'frost_dot', damage: this._applyYetiTotemColdDamageBonus(Math.max(1, Math.floor(d * 0.3))), rounds: 2 });
                     }
                     kill(t);
                 }

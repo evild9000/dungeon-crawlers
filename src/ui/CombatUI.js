@@ -1063,8 +1063,10 @@ export class CombatUI {
         const nameTag = summon
             ? `${clsIcon} ${m.name} [${label}] L${m.level}`
             : `${clsIcon} ${spIcon} ${m.name} L${m.level}`;
+        const currentSlot = (this.combat._initiativeOrder || []).find(s => s && s.ref === m);
+        const initStr = currentSlot ? `  Initiative: ${currentSlot.init}` : '';
         this.turnInfo.textContent =
-            `${nameTag}${rowStr}${dLvlStr}  |  HP ${m.health}/${m.maxHealth}  ST ${m.stamina}/${m.maxStamina}  MP ${m.mana}/${m.maxMana}`;
+            `${nameTag}${rowStr}${dLvlStr}${initStr}  |  HP ${m.health}/${m.maxHealth}  ST ${m.stamina}/${m.maxStamina}  MP ${m.mana}/${m.maxMana}`;
         if (summon) {
             const abilityLines = (summon.abilities || []).map(a => `\u2022 ${a}`).join('\n');
             this.turnInfo.title = abilityLines
@@ -2806,7 +2808,11 @@ export class CombatUI {
         if (m.classId === 'warlock') {
             const hexPenalty = Math.max(1, Math.floor(m.level / WARLOCK_HEX_PENALTY_DIVISOR));
             const hexRounds = Math.max(1, Math.floor(m.level / WARLOCK_HEX_DURATION_DIVISOR));
-            const hexUsedThisRound = m.warlockEvilEyeRound === this.combat.turnNumber;
+            const hasActiveHex = typeof this.combat._hasActiveWarlockHex === 'function'
+                ? this.combat._hasActiveWarlockHex(m)
+                : (this.combat.aliveHostileEnemies || []).some(e =>
+                    (e.activeEffects || []).some(fx => fx && fx.type === 'warlock_hex' && fx.casterId === m.id && fx.rounds > 0));
+            const hexUsedThisRound = m.warlockEvilEyeRound === this.combat.turnNumber && hasActiveHex;
             const hasHexTarget = (this.combat.aliveHostileEnemies || []).length > 0;
             const canHex = !hexUsedThisRound && hasHexTarget;
             const hexLabel = `\u{1F441} Evil Eye Hex (free)${hexUsedThisRound ? ' [USED]' : ''}${!hasHexTarget ? ' [NO TARGET]' : ''}`;
@@ -2815,7 +2821,7 @@ export class CombatUI {
             });
             hexBtn.classList.add('combat-special-btn');
             hexBtn.title = [
-                'Warlock L1: Free action. Does not consume the turn. Usable once per round.',
+                'Warlock L1: Free action. Does not consume the turn. One active Evil Eye per warlock per round; if its target dies, it can be recast.',
                 `Applies -${hexPenalty} defense, melee, ranged, and magic damage for ${hexRounds} round(s).`,
                 `Costs ${WARLOCK_HEX_UPKEEP_MANA} MP per round to maintain while any of this warlock's hexes remain.`,
                 hexUsedThisRound ? 'Already used this round.' : '',
@@ -3541,7 +3547,8 @@ export class CombatUI {
                 });
             });
             kickBtn.classList.add('combat-special-btn');
-            const kickBonus = Math.round((MONK_KICK_TRIP_DAMAGE_BASE_BONUS + (m.level || 1) * MONK_KICK_TRIP_DAMAGE_PER_LEVEL) * 100);
+            const kickMult = (1 + MONK_KICK_TRIP_DAMAGE_BASE_BONUS + (m.level || 1) * MONK_KICK_TRIP_DAMAGE_PER_LEVEL) * 1.33;
+            const kickBonus = Math.round((kickMult - 1) * 100);
             const kickCrit = Math.round(Math.min(0.95, (m.level || 1) * MONK_KICK_TRIP_CRIT_PER_LEVEL) * 100);
             const tripChance = Math.round(Math.min(0.95, MONK_KICK_TRIP_PRONE_BASE_CHANCE + ((m.level || 1) / 10) * MONK_KICK_TRIP_PRONE_PER_10_LEVELS) * 100);
             kickBtn.title = [
