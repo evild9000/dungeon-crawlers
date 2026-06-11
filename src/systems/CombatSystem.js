@@ -4611,7 +4611,8 @@ export class CombatSystem {
         }
 
         const base = this._rollPlayerMeleeDamage(m);
-        const raw  = Math.max(1, Math.round(this._applyOutgoingDamageBonuses(m, base * ki, 'melee') * (this._hasMummyFistWraps(m) ? 1.10 : 1)));
+        const kiLevelMult = 1 + Math.pow((m.level || 1) / 6, 2) / 100;
+        const raw  = Math.max(1, Math.round(this._applyOutgoingDamageBonuses(m, base * ki, 'melee') * kiLevelMult * (this._hasMummyFistWraps(m) ? 1.10 : 1)));
 
         this._addLog(`\u{1F9D8} ${m.name} unleashes a Ki Surge! (${ki} charge${ki !== 1 ? 's' : ''} × ${base} melee = ${raw} raw)`);
 
@@ -8695,7 +8696,7 @@ export class CombatSystem {
         const level = st.photomancerLevel || m.level || 1;
         const powers = Array.isArray(st.powers) ? st.powers : [];
         const has = (id) => powers.includes(id);
-        const dmgMult = 1 + (st.damageBonusPct ?? level) / 100;
+        const dmgMult = 1 + (st.damageBonusPct ?? level) / 66;
 
         if (has('regen') && m.health > 0 && m.health < m.maxHealth) {
             const regenPct = Math.max(1, Math.floor(level / 3)) / 100;
@@ -9212,8 +9213,8 @@ export class CombatSystem {
         if (beastKind === 'eagle') {
             const summoner = this.party.find(p => p.id === m.summonerId);
             const summonerLevel = summoner?.level ?? 1;
-            const critChance = 0.20 + summonerLevel * 0.02;
-            const critMult   = 4 + summonerLevel * 0.02;
+            const critChance = 0.20 + summonerLevel * 0.01;
+            const critMult   = 3 + summonerLevel * 0.02;
             const dmgMult    = stats.wildShapeDmgMult || 1;
             let extraAttacks = Math.floor(summonerLevel / 33);
             if (stats.wildShapeExtraAttack) extraAttacks++;

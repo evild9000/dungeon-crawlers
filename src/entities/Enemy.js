@@ -32,10 +32,20 @@ function randomStat() {
     return ENEMY_STAT_MIN + Math.floor(Math.random() * (ENEMY_STAT_MAX - ENEMY_STAT_MIN + 1));
 }
 
+const ENEMY_TYPE_MIGRATIONS = {
+    void_wraith: 'void_elemental',
+};
+
+function normalizeEnemyType(type) {
+    const migrated = ENEMY_TYPE_MIGRATIONS[type] || type;
+    if (migrated === 'tinkerer' || ENEMY_TYPES[migrated]) return migrated;
+    return 'skeleton';
+}
+
 export class Enemy {
     constructor({ id, type, gridX, gridZ, seed, health, maxHealth, stamina, maxStamina, mana, maxMana, friendly, level, defense, isBoss, isMegaBoss, bossAtkBonus, name }) {
         this.id = id || generateId();
-        this.type = type;
+        this.type = normalizeEnemyType(type);
         this.seed = seed ?? Math.floor(Math.random() * 100000);
 
         // Grid position (authoritative)
