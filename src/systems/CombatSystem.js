@@ -694,8 +694,27 @@ export class CombatSystem {
         const tags = this._getEnemyTags(enemy);
         const type = String(enemy.type || '').toLowerCase();
         const pool = new Set();
+        const venomDropTypes = new Set([
+            'spider',
+            'basilisk',
+            'centipede',
+            'giant_centipede',
+            'widow',
+            'black_widow',
+            'blood_wasp',
+            'ghoul_pup',
+            'tunnel_worm',
+            'giant_scorpion',
+            'phase_spider',
+            'tentacle_horror',
+            'giant_frog',
+            'bloat_demon',
+            'quasit',
+            'wyvern',
+        ]);
 
         if (type === 'displacer_beast') pool.add('material_displacer_beast_hide');
+        if (venomDropTypes.has(type)) pool.add('material_venom');
 
         if (tags.includes('construct')) {
             pool.add('material_construct_heart');

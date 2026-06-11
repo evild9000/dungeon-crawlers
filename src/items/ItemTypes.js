@@ -383,6 +383,14 @@ export const CONSUMABLES = {
         icon: '\u{1F577}\uFE0F',
         stackable: true,
     },
+    material_venom: {
+        id: 'material_venom',
+        name: 'Venom',
+        category: ITEM_CATEGORY.CONSUMABLE,
+        description: 'Potent venom harvested from poisonous monsters. Used for advanced artificer crafting.',
+        icon: '\u{1F40D}',
+        stackable: true,
+    },
     material_ichor: {
         id: 'material_ichor',
         name: 'Ichor',
