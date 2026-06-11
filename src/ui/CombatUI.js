@@ -894,7 +894,7 @@ export class CombatUI {
     _logClass(msg, containerEl = null) {
         if ((containerEl === this.enemyLogEl || containerEl === this.playerLogEl)
             && msg.startsWith('--- ')
-            && msg.endsWith("'s turn ---")) return 'log-turn-heading';
+            && /'s turn ---(?: Initiative: \d+)?$/.test(msg)) return 'log-turn-heading';
         if (this._isCritDamageLog(msg))         return 'log-crit';
         if (msg.includes('STUNNED') ||
             msg.includes('is stunned') ||
