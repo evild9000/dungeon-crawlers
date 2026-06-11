@@ -17237,13 +17237,13 @@ export class CombatSystem {
         const m = this.currentMember;
         if (!m || m.health <= 0 || m.classId !== 'warlock') return;
         if (!targetEnemy || targetEnemy.health <= 0) return;
-        if (m.warlockEvilEyeRound === this.turnNumber && this._hasActiveWarlockHex(m)) {
+        if (m.warlockEvilEyeRound === this.turnNumber) {
             this._addLog(`\u{1F441} ${m.name} has already used Evil Eye this round.`);
             return;
         }
         const penalty = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HEX_PENALTY_DIVISOR));
         const rounds = Math.max(1, Math.floor((m.level || 1) / WARLOCK_HEX_DURATION_DIVISOR));
-        targetEnemy.activeEffects = (targetEnemy.activeEffects || []).filter(fx => !(fx && fx.type === 'warlock_hex' && fx.casterId === m.id));
+        targetEnemy.activeEffects = targetEnemy.activeEffects || [];
         targetEnemy.activeEffects.push({
             type: 'warlock_hex',
             casterId: m.id,

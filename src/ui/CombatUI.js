@@ -2808,11 +2808,7 @@ export class CombatUI {
         if (m.classId === 'warlock') {
             const hexPenalty = Math.max(1, Math.floor(m.level / WARLOCK_HEX_PENALTY_DIVISOR));
             const hexRounds = Math.max(1, Math.floor(m.level / WARLOCK_HEX_DURATION_DIVISOR));
-            const hasActiveHex = typeof this.combat._hasActiveWarlockHex === 'function'
-                ? this.combat._hasActiveWarlockHex(m)
-                : (this.combat.aliveHostileEnemies || []).some(e =>
-                    (e.activeEffects || []).some(fx => fx && fx.type === 'warlock_hex' && fx.casterId === m.id && fx.rounds > 0));
-            const hexUsedThisRound = m.warlockEvilEyeRound === this.combat.turnNumber && hasActiveHex;
+            const hexUsedThisRound = m.warlockEvilEyeRound === this.combat.turnNumber;
             const hasHexTarget = (this.combat.aliveHostileEnemies || []).length > 0;
             const canHex = !hexUsedThisRound && hasHexTarget;
             const hexLabel = `\u{1F441} Evil Eye Hex (free)${hexUsedThisRound ? ' [USED]' : ''}${!hasHexTarget ? ' [NO TARGET]' : ''}`;
@@ -2821,7 +2817,7 @@ export class CombatUI {
             });
             hexBtn.classList.add('combat-special-btn');
             hexBtn.title = [
-                'Warlock L1: Free action. Does not consume the turn. One active Evil Eye per warlock per round; if its target dies, it can be recast.',
+                'Warlock L1: Free action. Does not consume the turn. Usable once per round; active Evil Eyes are not limited.',
                 `Applies -${hexPenalty} defense, melee, ranged, and magic damage for ${hexRounds} round(s).`,
                 `Costs ${WARLOCK_HEX_UPKEEP_MANA} MP per round to maintain while any of this warlock's hexes remain.`,
                 hexUsedThisRound ? 'Already used this round.' : '',
