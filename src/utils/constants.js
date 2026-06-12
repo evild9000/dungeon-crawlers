@@ -1800,7 +1800,7 @@ export const RANGER_BEAST_COMPANION_TYPES = {
         description: 'Hulking predator. floor(level/10) melee attacks, all same foe. Claw (50%): 100% damage Bleed for floor(level/6) rds. Bite (50%): level% hold chance for 2 rounds (normal resistances).' },
     roc:         { id: 'roc',         summonType: 'bc_roc',         beastKind: 'bc_roc',
         name: 'Roc',             icon: '🦅', enemySprite: 'thunderbird', row: 'back',  attackType: 'ranged',
-        description: 'Colossal bird of prey. floor(level/10) ranged claw attacks, all same foe. Crit chance = ranger crit chance. Crit multiplier = ×(4 + level×0.02).' },
+        description: 'Colossal bird of prey. floor(level/10) ranged claw attacks, all same foe. Crit chance = ranger crit chance. Crit multiplier = ×(3 + level×0.02).' },
     sabre_tooth: { id: 'sabre_tooth', summonType: 'bc_sabre_tooth', beastKind: 'bc_sabre_tooth',
         name: 'Sabre Tooth Cat', icon: '🦁', enemySprite: 'cave_lion', row: 'front', attackType: 'melee',
         description: 'Apex ambush predator. floor(level/10) attacks, all same foe. Claw (50%): 100% damage Bleed for floor(level/6) rds. Bite (50%): floor(level/3)% instakill chance. Bosses: ×4 dmg. Immune types (undead/elemental/construct/incorporeal/plant): normal damage.' },

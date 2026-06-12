@@ -4913,12 +4913,28 @@ export class CombatSystem {
         const typeDef = ENEMY_TYPES[enemy.type] || {};
         const tags = Array.isArray(typeDef.tags) ? typeDef.tags : [];
         if (typeDef.fullMagicImmune || this._enemyHasImmunity(enemy, 'magic')) return true;
-        return tags.some(t => PHOTOMANCER_RADIANT_BURST_IMMUNE_TAGS.includes(t));
+        return tags.some(t => t !== 'undead' && PHOTOMANCER_RADIANT_BURST_IMMUNE_TAGS.includes(t));
     }
 
     _enemyHasActiveEffect(enemy, type) {
         return !!(enemy && Array.isArray(enemy.activeEffects)
             && enemy.activeEffects.some(fx => fx && fx.type === type && ((fx.rounds || 0) > 0 || fx.permanent)));
+    }
+
+    _isRadiantBurstUndeadTarget(enemy) {
+        const typeDef = ENEMY_TYPES[enemy?.type] || {};
+        const tags = Array.isArray(typeDef.tags) ? typeDef.tags : [];
+        return tags.includes('undead');
+    }
+
+    _rollRadiantBurstUndeadMultiplier() {
+        const roll = randomInt(1, 100);
+        if (roll <= 50) return { roll, mult: 2 };
+        if (roll <= 75) return { roll, mult: 3 };
+        if (roll <= 88) return { roll, mult: 4 };
+        if (roll <= 95) return { roll, mult: 5 };
+        if (roll <= 99) return { roll, mult: 6 };
+        return { roll, instantKill: true };
     }
 
     _tryRadiantBlind(enemy, photomancer) {
@@ -4961,16 +4977,30 @@ export class CombatSystem {
         }
         const targets = this.aliveHostileEnemies.filter(e => !this._isRadiantBurstImmuneEnemy(e));
         if (!targets.length) {
-            this._addLog(`${m.name}'s Radiant Burst finds no living enemy it can affect.`);
+            this._addLog(`${m.name}'s Radiant Burst finds no enemy it can affect.`);
             return;
         }
         m.mana -= PHOTOMANCER_RADIANT_BURST_MANA_COST;
-        this._addLog(`\u2600\uFE0F ${m.name} detonates a Radiant Burst over ${targets.length} living target${targets.length !== 1 ? 's' : ''}!`);
+        this._addLog(`\u2600\uFE0F ${m.name} detonates a Radiant Burst over ${targets.length} target${targets.length !== 1 ? 's' : ''}!`);
         for (const e of targets) {
             if (!e || e.health <= 0) continue;
-            const dealt = this._damageEnemy(e, this._rollPhotomancerMagicDamage(m), false, true, 0, false, { sourceMember: m });
-            this._addLog(`  \u2192 ${this._eName(e)} takes ${dealt} radiant magic damage.`);
-            if (e.health > 0) this._tryRadiantBlind(e, m);
+            const baseDmg = Math.max(1, this._rollPhotomancerMagicDamage(m) * 2);
+            if (this._isRadiantBurstUndeadTarget(e)) {
+                const searing = this._rollRadiantBurstUndeadMultiplier();
+                if (searing.instantKill) {
+                    const hp = e.health;
+                    e.health = 0;
+                    if (!e._deathHandled) { e._deathHandled = true; this._onEnemyDeath(e); }
+                    this._addLog(`  \u2192 ${this._eName(e)} is annihilated by searing light! (roll ${searing.roll}, ${hp} damage)`);
+                } else {
+                    const dealt = this._damageEnemy(e, Math.max(1, Math.round(baseDmg * searing.mult)), false, true, 0, false, { sourceMember: m });
+                    this._addLog(`  \u2192 ${this._eName(e)} takes ${dealt} searing light damage! (undead roll ${searing.roll}: x${searing.mult})`);
+                }
+            } else {
+                const dealt = this._damageEnemy(e, baseDmg, false, true, 0, false, { sourceMember: m });
+                this._addLog(`  \u2192 ${this._eName(e)} takes ${dealt} radiant magic damage.`);
+                if (e.health > 0) this._tryRadiantBlind(e, m);
+            }
             if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
         }
         this._advancePlayerTurn();
@@ -9424,7 +9454,7 @@ export class CombatSystem {
             const rl = ranger ? (ranger.level || 1) : (stats.rangerLevel || 1);
             const numAttacks = Math.max(1, Math.floor(rl / 10));
             const critChance = RANGED_CRIT_CHANCE + (ranger ? ranger.getRangedCritBonus() : 0);
-            const critMult = 4 + rl * 0.02;
+            const critMult = 3 + rl * 0.02;
             const t = targets[Math.floor(Math.random() * targets.length)];
             for (let i = 0; i < numAttacks; i++) {
                 if (t.health <= 0) break;
@@ -13401,6 +13431,8 @@ export class CombatSystem {
             if (innateDef > 0)     details.push(`${innateDef} def`);
             const detailStr = details.length ? ` (${details.join(', ')})` : '';
             this._addLog(`${eName} attacks ${target.name} for ${dmg} damage!${detailStr}`);
+        } else if (attackKind === 'ranged') {
+            this._addLog(`${eName} shoots ${target.name} for ${dmg} damage!`);
         } else if (attackKind === 'magic') {
             if (opts.dragonBreath) {
                 const breathNames = { fire: 'fire breath', acid: 'acid breath', lightning: 'lightning breath', cold: 'frost breath', poison: 'poison breath' };
