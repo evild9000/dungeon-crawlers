@@ -1024,10 +1024,11 @@ export class InventoryUI {
         }
         if (member.classId === 'barbarian' && member.level >= BARBARIAN_WEREBEAR_UNLOCK_LEVEL) {
             const hasFurLoincloth = !!(member.equipment && Object.values(member.equipment).includes('fur_loincloth') && (member.level || 1) >= 35);
+            const hasClawsCavebear = !!(member.equipment && Object.values(member.equipment).includes('claws_cavebear') && (member.level || 1) >= 35);
             const hpPct = Math.round((BARBARIAN_WEREBEAR_HP_BONUS_FRAC + (hasFurLoincloth ? 0.10 : 0)) * 100);
             const rageRegenPct = 5 + (hasFurLoincloth ? 2 : 0);
             perk.push(`Werebear: ${BARBARIAN_WEREBEAR_STAMINA_COST} ST + ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST/rd`);
-            perkDetails.push(`Barbarian L${BARBARIAN_WEREBEAR_UNLOCK_LEVEL} Werebear:\n  Once per combat. +${hpPct}% max/current HP, ${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% max HP regen per round, weapon riders suppressed while active.\n  Costs ${BARBARIAN_WEREBEAR_STAMINA_COST} ST to activate and ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST each round to sustain.${hasFurLoincloth ? `\n  Fur Loincloth also raises Rage regen to ${rageRegenPct}%, adds +1 rage strike, and raises Blood Frenzy cap by 15%.` : ''}`);
+            perkDetails.push(`Barbarian L${BARBARIAN_WEREBEAR_UNLOCK_LEVEL} Werebear:\n  Once per combat. +${hpPct}% max/current HP, ${Math.round(BARBARIAN_WEREBEAR_REGEN * 100)}% max HP regen per round, weapon riders suppressed while active.\n  Costs ${BARBARIAN_WEREBEAR_STAMINA_COST} ST to activate and ${BARBARIAN_WEREBEAR_STAMINA_PER_ROUND} ST each round to sustain.${hasFurLoincloth ? `\n  Fur Loincloth also raises Rage regen to ${rageRegenPct}%, adds +1 rage strike, and raises Blood Frenzy cap by 15%.` : ''}${hasClawsCavebear ? `\n  Claws of the Cavebear add +10% damage, +1 rage strike, and +15% Blood Frenzy cap while in Werebear form.` : ''}`);
         }
         if (member.classId === 'necromancer' && member.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
             perk.push(`Demi-Lich: ${NECRO_DEMI_LICH_MANA_COST} MP`);

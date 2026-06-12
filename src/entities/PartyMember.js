@@ -873,7 +873,8 @@ export class PartyMember {
         let slot;
         if (def.category === ITEM_CATEGORY.WEAPON) {
             // Dual-wield: place in offhand slot when explicitly requested.
-            slot = (slotHint === 'offhand' || def.specialOffhandSlot) ? 'offhand' : 'weapon';
+            const defaultsToOffhand = def.specialOffhandSlot && !def.allowMainHand;
+            slot = (slotHint === 'offhand' || defaultsToOffhand) ? 'offhand' : 'weapon';
         } else if (def.category === ITEM_CATEGORY.ARMOR)    slot = 'armor';
         else if (def.category === ITEM_CATEGORY.SHIELD)   slot = 'shield';
         else if (def.category === ITEM_CATEGORY.TRINKET) {

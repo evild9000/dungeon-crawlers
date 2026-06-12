@@ -843,6 +843,25 @@ export class CombatSystem {
             && this._hasEquipped(member, 'fur_loincloth');
     }
 
+    _hasClawsCavebear(member) {
+        return member && member.classId === 'barbarian'
+            && (member.level || 1) >= 35
+            && this._hasEquipped(member, 'claws_cavebear');
+    }
+
+    _getBarbarianRageStrikeCount(member) {
+        if (!member || member.classId !== 'barbarian' || !member.isRaging) return 0;
+        let count = Math.floor((member.level || 1) / 4);
+        if (this._hasFurLoincloth(member)) count += 1;
+        if (member.werebearActive && this._hasClawsCavebear(member)) count += 1;
+        return count;
+    }
+
+    _applyClawsCavebearWerebearDamage(member, damage) {
+        if (!member || !member.werebearActive || !this._hasClawsCavebear(member)) return damage;
+        return Math.max(1, Math.round((Number(damage) || 0) * 1.10));
+    }
+
     _hasAssassinsBlade(member) {
         return member && member.classId === 'rogue'
             && (member.level || 1) >= 35
@@ -934,6 +953,7 @@ export class CombatSystem {
         if (type === 'dark_treant') addIndependentAdvancedDrop('material_dark_treant_wood');
         if (type === 'mummy') addIndependentAdvancedDrop('material_mummy_wraps');
         if (type === 'evil_berserker') addIndependentAdvancedDrop('material_evil_berserker_furs');
+        if (type === 'cave_bear') addIndependentAdvancedDrop('material_cavebear_claws');
         if (type === 'assassin_lord') addIndependentAdvancedDrop('material_assassin_lord_blade');
         if (type === 'beholder') addIndependentAdvancedDrop('material_beholder_eye_lens');
         if (tags.includes('spellcaster')) addIndependentAdvancedDrop('material_spellcaster_focus');
@@ -1654,6 +1674,7 @@ export class CombatSystem {
             cap += (barbarian.level || 1) * BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL;
         }
         if (this._hasFurLoincloth(barbarian)) cap += 0.15;
+        if (barbarian.werebearActive && this._hasClawsCavebear(barbarian)) cap += 0.15;
         return Math.min(raw, cap);
     }
 
@@ -2294,6 +2315,7 @@ export class CombatSystem {
         if (m.classId === 'barbarian') {
             _bfPct = this._getBloodFrenzyBonus(m, targetEnemy);
             if (_bfPct > 0) base = Math.max(1, Math.round(base * (1 + _bfPct)));
+            base = this._applyClawsCavebearWerebearDamage(m, base);
         }
 
         const dealt = this._damageEnemy(targetEnemy, base, false, false, 0, false, { contactAttacker: m });
@@ -2398,6 +2420,7 @@ export class CombatSystem {
             if (m.classId === 'barbarian') {
                 _swingBfPct = this._getBloodFrenzyBonus(m, curTarget);
                 if (_swingBfPct > 0) sdmg = Math.max(1, Math.round(sdmg * (1 + _swingBfPct)));
+                sdmg = this._applyClawsCavebearWerebearDamage(m, sdmg);
             }
             const swingName = this._eName(curTarget);
             const sDealt = this._damageEnemy(curTarget, sdmg, false, false, 0, false, { contactAttacker: m });
@@ -2428,7 +2451,7 @@ export class CombatSystem {
 
         // Barbarian rage extra attacks: 1 per 4 levels, each costs BARBARIAN_RAGE_STAMINA_COST ST
         if (m.classId === 'barbarian' && m.isRaging && targetEnemy && targetEnemy.health > 0) {
-            const rageExtraCount = Math.floor((m.level || 1) / 4) + (this._hasFurLoincloth(m) ? 1 : 0);
+            const rageExtraCount = this._getBarbarianRageStrikeCount(m);
             for (let ra = 0; ra < rageExtraCount; ra++) {
                 if (targetEnemy.health <= 0) break;
                 const hasStamina = m.stamina >= BARBARIAN_RAGE_STAMINA_COST;
@@ -2445,6 +2468,7 @@ export class CombatSystem {
                 rageDmg = this._applyOutgoingDamageBonuses(m, rageDmg, 'melee');
                 const _rageBfPct = this._getBloodFrenzyBonus(m, targetEnemy);
                 if (_rageBfPct > 0) rageDmg = Math.max(1, Math.round(rageDmg * (1 + _rageBfPct)));
+                rageDmg = this._applyClawsCavebearWerebearDamage(m, rageDmg);
                 const rageDealt = this._damageEnemy(targetEnemy, rageDmg, false, false, 0, false, { contactAttacker: m });
                 const rageSfx = !hasStamina ? ' (exhausted!)' : '';
                 const _rageBfSuffix = _rageBfPct > 0 ? ` [🩸 Blood Frenzy +${Math.round(_rageBfPct * 100)}%]` : '';
@@ -2474,6 +2498,7 @@ export class CombatSystem {
             raBase = this._applyOutgoingDamageBonuses(m, raBase, 'melee');
             const raBfPct = this._getBloodFrenzyBonus(m, targetEnemy);
             if (raBfPct > 0) raBase = Math.max(1, Math.round(raBase * (1 + raBfPct)));
+            if (m.classId === 'barbarian') raBase = this._applyClawsCavebearWerebearDamage(m, raBase);
             const raDealt = this._damageEnemy(targetEnemy, raBase, false, false, 0, false, { contactAttacker: m });
             const raSuffix = raExhausted ? ' (exhausted!)' : '';
             let raLog = `${m.name} strikes ${this._eName(targetEnemy)} for ${raDealt}!${raSuffix}`;
@@ -2485,7 +2510,7 @@ export class CombatSystem {
                 this._addLog(`${this._eName(targetEnemy)} is defeated!`);
             } else if (m.isRaging) {
                 // Rage extra attacks for the second pass
-                const raRageCount = Math.floor((m.level || 1) / 4);
+                const raRageCount = this._getBarbarianRageStrikeCount(m);
                 for (let rr = 0; rr < raRageCount; rr++) {
                     if (targetEnemy.health <= 0) break;
                     const rrSta = m.stamina >= BARBARIAN_RAGE_STAMINA_COST;
@@ -2495,6 +2520,7 @@ export class CombatSystem {
                     rrDmg = this._applyOutgoingDamageBonuses(m, rrDmg, 'melee');
                     const rrBfPct = this._getBloodFrenzyBonus(m, targetEnemy);
                     if (rrBfPct > 0) rrDmg = Math.max(1, Math.round(rrDmg * (1 + rrBfPct)));
+                    rrDmg = this._applyClawsCavebearWerebearDamage(m, rrDmg);
                     const rrDealt = this._damageEnemy(targetEnemy, rrDmg, false, false, 0, false, { contactAttacker: m });
                     this._addLog(`🔴 ${m.name} rage-strikes ${this._eName(targetEnemy)} for ${rrDealt}!${!rrSta ? ' (exhausted!)' : ''}`);
                     if (!suppressWeaponRiders) this._applyWeaponRider(m, targetEnemy, rrDealt);
@@ -2513,6 +2539,7 @@ export class CombatSystem {
                 let _qsDmg = this._rollPlayerMeleeDamage(m);
                 if (_qsExh) _qsDmg = Math.max(1, Math.floor(_qsDmg / 2));
                 _qsDmg = this._applyOutgoingDamageBonuses(m, _qsDmg, 'melee');
+                if (m.classId === 'barbarian') _qsDmg = this._applyClawsCavebearWerebearDamage(m, _qsDmg);
                 const _qsDealt = this._damageEnemy(_qsTarget, _qsDmg, false, false, 0, false, { contactAttacker: m });
                 this._addLog(`⚡ ${m.name}'s Quickstep haste — bonus strike on ${this._eName(_qsTarget)} for ${_qsDealt}!${_qsExh ? ' (exhausted!)' : ''}`);
                 if (!suppressWeaponRiders) {
@@ -3154,7 +3181,7 @@ export class CombatSystem {
         }
         m.isRaging = true;
         m.usedRage = true;
-        const extraAttacks = Math.floor((m.level || 1) / 4) + (this._hasFurLoincloth(m) ? 1 : 0);
+        const extraAttacks = this._getBarbarianRageStrikeCount(m);
         const regenPct = BARBARIAN_RAGE_HP_REGEN + (this._hasFurLoincloth(m) ? 0.02 : 0);
         this._addLog(`\u{1F534} ${m.name} flies into a RAGE! (half damage, stun immune, +${m.level} melee dmg, ${extraAttacks} bonus attack(s)/round, ${Math.round(regenPct * 100)}% HP regen/round)`);
         // Rage is a free action — the UI will immediately prompt the player to
@@ -3329,6 +3356,7 @@ export class CombatSystem {
         dmg = this._applyOutgoingDamageBonuses(m, dmg, 'melee');
         const bfPct = this._getBloodFrenzyBonus(m, candidates[0]);
         if (bfPct > 0) dmg = Math.max(1, Math.round(dmg * (1 + bfPct)));
+        dmg = this._applyClawsCavebearWerebearDamage(m, dmg);
 
         for (const enemy of candidates) {
             if (enemy.health <= 0) continue;

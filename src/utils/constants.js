@@ -1310,6 +1310,12 @@ export const MAGIC_ITEM_RECIPES = [
         cost: { gold: 150000, material_giant_heart: 10 },
     },
     {
+        id: 'claws_cavebear',
+        kind: 'equipment',
+        quantity: 1,
+        cost: { gold: 150000, material_cavebear_claws: 10 },
+    },
+    {
         id: 'manticore_ballista',
         kind: 'equipment',
         quantity: 1,
