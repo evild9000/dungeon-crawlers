@@ -593,6 +593,14 @@ export class CombatUI {
                         icon: '👻', label: 'Enraged', bg: 'rgba(80,0,120,0.9)',
                         tip: (fx) => 'Revenant Fury: +' + (fx.damageBonus||0) + ' damage (risen from death)'
                     },
+                    white_werewolf_lord_aura: {
+                        icon: '🐺', label: 'Lord', bg: 'rgba(95,105,125,0.95)',
+                        tip: (fx) => {
+                            const dmgPct = Math.round(((fx.damageMult || 1) - 1) * 100);
+                            const regenPct = Math.round((fx.regenPct || 0.15) * 100);
+                            return 'White Werewolf Lord: +' + (fx.maxHealthBonus || 0) + ' max HP, +' + dmgPct + '% damage, +' + (fx.defenseBonus || 0) + ' defense, and ' + regenPct + '% max HP regen/round.';
+                        }
+                    },
                     hag_curse: {
                         icon: '🧙', label: 'Hexed', bg: 'rgba(80,0,80,0.9)',
                         tip: (fx) => 'Hag\'s Curse: ' + (fx.damageBonus||0) + ' all damage, ' + (fx.defenseBonus||0) + ' def — ' + fx.rounds + ' rds left'

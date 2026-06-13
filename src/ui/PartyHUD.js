@@ -1290,6 +1290,13 @@ export class PartyHUD {
                 mkPB('👁️', 'Rod', 'rgba(35,95,145,0.95)',
                     'Hag Eye Rod: this elemental gained +15% health, +15% damage, and +5 defense when summoned.');
             }
+            const wolfLordAura = pefx.find(x => x && x.type === 'white_werewolf_lord_aura');
+            if (wolfLordAura) {
+                const dmgPct = Math.round(((wolfLordAura.damageMult || 1) - 1) * 100);
+                const regenPct = Math.round((wolfLordAura.regenPct || 0.15) * 100);
+                mkPB('🐺', 'Lord', 'rgba(95,105,125,0.95)',
+                    `White Werewolf Lord: +${wolfLordAura.maxHealthBonus || 0} max HP, +${dmgPct}% damage, +${wolfLordAura.defenseBonus || 0} defense, and ${regenPct}% max HP regen/round.`);
+            }
             // Stunned
             if (member.stunned)
                 mkPB('⚡', 'Stunned', 'rgba(220,200,0,0.9)', 'Stunned: cannot act this turn');
