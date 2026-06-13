@@ -1059,7 +1059,14 @@ export class CombatUI {
         }
 
         const m = this.combat.currentMember;
-        if (!m) return;
+        if (!m || m.isSummoned) {
+            this.turnInfo.textContent = 'Resolving summoned ally turn...';
+            if (typeof this.combat.recoverInvalidPlayerTurn === 'function') {
+                setTimeout(() => this.combat.recoverInvalidPlayerTurn(), 0);
+            }
+            this._addModeToggleBtn();
+            return;
+        }
 
         const summon  = getSummonPreset(m);
         const clsIcon = summon ? summon.icon           : (m.classDef.icon || '');

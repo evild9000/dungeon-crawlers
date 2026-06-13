@@ -366,6 +366,7 @@ export class CombatSystem {
         this.party = [];
         this.enemies = [];
         this.currentMemberIndex = 0;
+        this._currentPlayerMember = null;
         this.phase = 'IDLE';
         this.log = [];
         this.playerLog  = [];   // messages from player-turn actions
@@ -434,6 +435,7 @@ export class CombatSystem {
         this.enemies = enemies.filter(e => e.health > 0);
         if (inventory) this.inventory = inventory;
         this.currentMemberIndex = 0;
+        this._currentPlayerMember = null;
         this.log = [];
         this.loot = null;
         this._mageShieldCasterId = null;
@@ -497,7 +499,17 @@ export class CombatSystem {
     // Queries
     // ────────────────────────────────────────────
 
-    get currentMember() { return this.party[this.currentMemberIndex] ?? null; }
+    get currentMember() {
+        if (this.phase === 'PLAYER_TURN'
+            && this._currentPlayerMember
+            && this._currentPlayerMember.health > 0
+            && !this._currentPlayerMember.isSummoned
+            && this.party.includes(this._currentPlayerMember)) {
+            return this._currentPlayerMember;
+        }
+        if (this.phase === 'PLAYER_TURN') return null;
+        return this.party[this.currentMemberIndex] ?? null;
+    }
     get charmedAllies() {
         return this.enemies
             .filter(e => e.health > 0 && e.charmedRounds > 0)
@@ -8969,10 +8981,7 @@ export class CombatSystem {
                 const livingTargets = this.aliveHostileEnemies;
                 if (!livingTargets.length) break;
                 const t = livingTargets[Math.floor(Math.random() * livingTargets.length)];
-                const exhausted = m.stamina < MELEE_STAMINA_COST;
-                m.stamina = Math.max(0, m.stamina - MELEE_STAMINA_COST);
                 let dmg = Math.max(1, Math.floor(this._rollPlayerMeleeDamage(warrior) * WARRIOR_SQUIRE_MELEE_FRACTION));
-                if (exhausted) dmg = Math.max(1, Math.floor(dmg / 2));
                 const formMult = this._getFormationMultiplier(m);
                 let sqFormCrit = false;
                 if (formMult > 1) {
@@ -8982,7 +8991,7 @@ export class CombatSystem {
                     sqFormCrit = critRes.crit;
                 }
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
-                let sqLog = `⚔️ ${m.name} strikes ${this._eName(t)} for ${dealt}!${exhausted ? ' (exhausted!)' : ''}`;
+                let sqLog = `⚔️ ${m.name} strikes ${this._eName(t)} for ${dealt}!`;
                 if (sqFormCrit) sqLog += ` 💥 FORMATION CRIT!`;
                 this._addLog(sqLog);
                 if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
@@ -10419,6 +10428,7 @@ export class CombatSystem {
             }
 
             if (slot.kind === 'enemy') {
+                this._currentPlayerMember = null;
                 // Boss monsters act multiple times per round:
                 //   Super Boss → 4 actions, Mega Boss → 3, Boss → 2, others → 1.
                 const actionCount = ref.isSuperBoss ? SUPER_BOSS_ACTIONS_PER_TURN
@@ -10516,6 +10526,7 @@ export class CombatSystem {
 
             // Summoned AI auto-turn
             if (m.isSummoned) {
+                this._currentPlayerMember = null;
                 this._logTarget = 'player'; // summon acts for the player's side
                 this._addLog(`--- ${m.name}'s turn --- Initiative: ${slot.init}`);
                 try {
@@ -10547,6 +10558,7 @@ export class CombatSystem {
             // Human-controlled: set currentMemberIndex and wait for player input.
             this._logTarget = 'player'; // reset before player acts so all action logs go to the party window
             this.currentMemberIndex = this.party.indexOf(m);
+            this._currentPlayerMember = m;
             this.phase = 'PLAYER_TURN';
             this._addLog(`--- Turn ${this.turnNumber}: ${m.name}'s turn --- Initiative: ${slot.init}`);
             this._notify();
@@ -10597,8 +10609,25 @@ export class CombatSystem {
             this._notify();
             return;
         }
+        this._currentPlayerMember = null;
         this._initTurnIdx++;
         this._advanceThroughInitiative();
+    }
+
+    recoverInvalidPlayerTurn() {
+        if (this.phase !== 'PLAYER_TURN') return false;
+        const slot = this._initiativeOrder[this._initTurnIdx];
+        const ref = slot?.ref;
+        if (slot?.kind === 'party' && ref && ref.health > 0 && !ref.isSummoned) {
+            this.currentMemberIndex = this.party.indexOf(ref);
+            this._currentPlayerMember = ref;
+            this._notify();
+            return true;
+        }
+        this._currentPlayerMember = null;
+        this.phase = 'IDLE';
+        this._advanceThroughInitiative();
+        return true;
     }
 
     /** Resume after a manual-mode pause (phase === 'ENEMY_TURN'). */
