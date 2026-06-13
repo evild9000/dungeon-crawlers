@@ -101,6 +101,7 @@ export const UNDEAD_TIERS = [
         abilities: [
             'Tier 7: +1038% HP, +12 dmg, +6 defense.',
             'Life Drain: heals the vampire for every point of damage dealt.',
+            'Blood Hunt: prioritizes bleeding foes; each bleed DoT stack adds +10% damage, and bleeding prey doubles Life Drain healing.',
             'Minion Summoning: 33% chance (+1% per 3 necromancer levels) to summon a Wolf or Vampire Bat (50/50) — skips own attack that round.',
             'Gaseous Form: when reduced to 0 HP, becomes immune to damage, cannot attack, regenerates 10% max HP/turn. Exits gaseous form at 30%+ HP.',
             ...UNDEAD_COMMON_ABILITIES,

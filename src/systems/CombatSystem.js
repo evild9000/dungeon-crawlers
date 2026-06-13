@@ -30,7 +30,7 @@ import {
     BARBARIAN_WEREBEAR_STAMINA_PER_ROUND, BARBARIAN_WEREBEAR_HP_BONUS_FRAC,
     BARBARIAN_WEREBEAR_REGEN, BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR,
     BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL, BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC,
-    BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR, BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL,
+    BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR,
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
     RANGER_SUMMON_MANA_COST,
@@ -874,6 +874,12 @@ export class CombatSystem {
         return Math.max(1, Math.round((Number(damage) || 0) * 1.10));
     }
 
+    _getClawsCavebearCount(member) {
+        return member && member.classId === 'barbarian' && (member.level || 1) >= 35
+            ? this._getEquippedItemCount(member, 'claws_cavebear')
+            : 0;
+    }
+
     _hasAssassinsBlade(member) {
         return member && member.classId === 'rogue'
             && (member.level || 1) >= 35
@@ -1677,17 +1683,12 @@ export class CombatSystem {
     // Returns extra damage fraction from Blood Frenzy (barbarian L30, raging, bleeds on target).
     _getBloodFrenzyBonus(barbarian, target) {
         if (!barbarian.isRaging || barbarian.level < BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL) return 0;
-        const bleeds = (target.activeEffects || []).filter(fx =>
-            fx && (fx.type === 'bleed' || fx.type === 'ranger_totem_bleed')
-        );
-        const raw = bleeds.length * BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED;
-        let cap = barbarian.level * 0.03;
-        if (barbarian.werebearActive) {
-            cap += (barbarian.level || 1) * BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL;
-        }
-        if (this._hasFurLoincloth(barbarian)) cap += 0.15;
-        if (barbarian.werebearActive && this._hasClawsCavebear(barbarian)) cap += 0.15;
-        return Math.min(raw, cap);
+        const bleedStacks = this._getBleedDotStackCount(target);
+        let perStack = BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED;
+        if (barbarian.werebearActive) perStack += 0.02;
+        if (this._hasFurLoincloth(barbarian)) perStack += 0.02;
+        if (barbarian.werebearActive) perStack += this._getClawsCavebearCount(barbarian) * 0.02;
+        return bleedStacks * perStack;
     }
 
     _getBleedDotStackCount(target) {
@@ -1696,6 +1697,22 @@ export class CombatSystem {
         return target.activeEffects.filter(fx =>
             fx && bleedTypes.has(fx.type) && ((fx.rounds || 0) > 0 || fx.permanent)
         ).length;
+    }
+
+    _pickBleedingPriorityTarget(targets) {
+        const living = (targets || []).filter(t => t && t.health > 0);
+        if (!living.length) return { target: null, bleedStacks: 0 };
+        const bleeding = living
+            .map(target => ({ target, bleedStacks: this._getBleedDotStackCount(target) }))
+            .filter(x => x.bleedStacks > 0)
+            .sort((a, b) => b.bleedStacks - a.bleedStacks);
+        if (bleeding.length) {
+            const topStacks = bleeding[0].bleedStacks;
+            const choices = bleeding.filter(x => x.bleedStacks === topStacks);
+            return choices[Math.floor(Math.random() * choices.length)];
+        }
+        const target = living[Math.floor(Math.random() * living.length)];
+        return { target, bleedStacks: 0 };
     }
 
     _getBarbarianEncourageMultiplier(attacker) {
@@ -10180,13 +10197,19 @@ export class CombatSystem {
         const isIncorporeal = m.summonType === 'spectre'
             || m.summonType === 'ghost'
             || (m.summonStats && m.summonStats.incorporeal);
-        const t = targets[Math.floor(Math.random() * targets.length)];
-        const dmg = randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8);
+        const vampirePick = m.summonType === 'vampire' ? this._pickBleedingPriorityTarget(targets) : null;
+        const t = vampirePick ? vampirePick.target : targets[Math.floor(Math.random() * targets.length)];
+        const vampireBleedStacks = vampirePick ? vampirePick.bleedStacks : 0;
+        const vampireBleedMult = 1 + vampireBleedStacks * 0.10;
+        const dmg = Math.max(1, Math.round(randomInt(stats.meleeMin ?? 2, stats.meleeMax ?? 8) * vampireBleedMult));
         const dealt = isIncorporeal
             ? this._damageSummonEnemy(t, dmg, true, false, { contactAttacker: m })   // true = ignore armor/defense
             : this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+        const vampireBleedText = vampireBleedStacks > 0 ? ` (${vampireBleedStacks} bleed stack${vampireBleedStacks === 1 ? '' : 's'}, +${vampireBleedStacks * 10}% damage)` : '';
         if (isIncorporeal) {
             this._addLog(`\u{1F47B} ${m.name} phases through ${this._eName(t)}'s defences for ${dealt}!`);
+        } else if (m.summonType === 'vampire') {
+            this._addLog(`${m.name} strikes ${this._eName(t)} for ${dealt}!${vampireBleedText}`);
         } else {
             this._addLog(`${m.name} strikes ${this._eName(t)} for ${dealt}!`);
         }
@@ -10227,10 +10250,14 @@ export class CombatSystem {
 
         // ── Vampire: life drain — heal self for damage dealt (even on kill) ────
         if (dealt > 0 && m.summonType === 'vampire') {
+            const drainAmount = vampireBleedStacks > 0 ? dealt * 2 : dealt;
             const before = m.health;
-            m.health = Math.min(m.maxHealth, m.health + dealt);
+            m.health = Math.min(m.maxHealth, m.health + drainAmount);
             const healed = m.health - before;
-            if (healed > 0) this._addLog(`\u{1F9DB} ${m.name} drains ${healed} HP from ${this._eName(t)}!`);
+            if (healed > 0) {
+                const drainText = vampireBleedStacks > 0 ? ' (doubled by bleeding prey)' : '';
+                this._addLog(`\u{1F9DB} ${m.name} drains ${healed} HP from ${this._eName(t)}!${drainText}`);
+            }
         }
 
         if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
@@ -13668,7 +13695,7 @@ export class CombatSystem {
             && e && e.health > 0) {
             const frac = target.summonStats.reflectFraction || 0.5;
             const reflect = Math.max(1, Math.floor(dmg * frac));
-            const reflected = this._damageEnemy(e, reflect);
+            const reflected = this._damageEnemy(e, reflect, false, false, 0, false, { isReflection: true, suppressRetaliation: true, directContact: false, sourceMember: target });
             this._addLog(`\u{1F9F1} ${target.name}'s hardened shell reflects ${reflected} damage back at ${eName}!`);
             if (e.health <= 0) this._addLog(`${eName} is defeated by their own blow!`);
         }
@@ -13680,7 +13707,7 @@ export class CombatSystem {
             && e && e.health > 0) {
             const level = target.summonStats?.photomancerLevel || target.level || 1;
             const reflect = Math.max(1, Math.floor(dmg * (level * 2 / 100)));
-            const reflected = this._damageEnemy(e, reflect, true, false, 0, false, { sourceMember: target });
+            const reflected = this._damageEnemy(e, reflect, true, false, 0, false, { isReflection: true, suppressRetaliation: true, directContact: false, sourceMember: target });
             this._addLog(`🌑 ${target.name}'s shadow thorns retaliate for ${reflected} damage against ${eName}!`);
             if (e.health <= 0) this._addLog(`${eName} is shredded by the backlash!`);
         }
@@ -14137,6 +14164,7 @@ export class CombatSystem {
         if (this._isCharmedAllyEnemy(enemy) && !options.allowCharmedAllyDamage) {
             return 0;
         }
+        const suppressRetaliation = !!(options && (options.suppressRetaliation || options.isReflection));
 
         // Invisible Stalker: 60% miss chance on all incoming attacks
         {
@@ -14290,7 +14318,7 @@ export class CombatSystem {
         // Mandrake Root: retributive sonic scream AoE whenever it takes damage.
         // This is a fresh monster magic attack from the Mandrake's own stats,
         // not a reflection of the incoming hit.
-        if (final > 0 && ENEMY_TYPES[enemy?.type]?.mandrakeScream && this.aliveParty.length > 0) {
+        if (!suppressRetaliation && final > 0 && ENEMY_TYPES[enemy?.type]?.mandrakeScream && this.aliveParty.length > 0) {
             const _sLvl = Math.max(1, enemy?.level || this.dungeonLevel || 1);
             const _sLvlBoost = Math.max(0, _sLvl - 1);
             const _sLvlThreeBonus = Math.max(0, _sLvl - 3);
@@ -15297,6 +15325,7 @@ export class CombatSystem {
         const typeDef = ENEMY_TYPES[e.type] || {};
         e._enemyAttackExhausted = false;
         const eTags = this._getEnemyTags(e);
+        const isCharmedVampire = String(e.type || '').includes('vampire') && !typeDef.isVampireBatAI;
         const vkController = this._getVKById(e.charmerId);
         const frenzyEligible = !!(vkController && vkController.health > 0 && (vkController.level || 1) >= VK_L35_UNLOCK_LEVEL
             && (eTags.includes('vermin') || eTags.includes('slime')));
@@ -15308,6 +15337,8 @@ export class CombatSystem {
         const cHit = (target, dmg, isMagic = false, contactAttacker = null, opts = {}) => {
             if (!target || target.health <= 0) return 0;
             dmg = Math.max(1, Math.round(dmg * frenzyMult * this._getWhiteWerewolfLordDamageMult(e)));
+            const vampireBleedStacks = (opts.vampireBleedPredator || isCharmedVampire) ? this._getBleedDotStackCount(target) : 0;
+            if (vampireBleedStacks > 0) dmg = Math.max(1, Math.round(dmg * (1 + vampireBleedStacks * 0.10)));
             const attackKind = opts.attackKind || (isMagic ? 'magic' : 'melee');
             const options = contactAttacker ? { contactAttacker } : {};
             if (opts.coldDamage) dmg = this._applyYetiTotemColdDamageBonus(dmg);
@@ -15385,14 +15416,18 @@ export class CombatSystem {
             if (typeDef.lifeDrain && e.health > 0) {
                 const stolenBase = Math.max(1, Math.floor(dealt * WRAITH_DRAIN_FRACTION));
                 const rotMult = this._getMummyRotHealMultiplier(e);
-                const stolen = Math.max(0, Math.floor(stolenBase * rotMult));
+                const drainMult = vampireBleedStacks > 0 ? 2 : 1;
+                const stolen = Math.max(0, Math.floor(stolenBase * drainMult * rotMult));
                 if (stolen <= 0) {
                     this._addLog(`🟤 ${eName}'s life drain is nullified by Mummy Rot!`);
                 } else {
                     const before = e.health;
                     e.health = Math.min(e.maxHealth, e.health + stolen);
                     const gained = e.health - before;
-                    if (gained > 0) this._addLog(`💀 ${eName} drains life from ${eN(target)}, recovering ${gained} HP!`);
+                    if (gained > 0) {
+                        const drainText = vampireBleedStacks > 0 ? ` (bleeding prey: ${vampireBleedStacks} stack${vampireBleedStacks === 1 ? '' : 's'}, doubled drain)` : '';
+                        this._addLog(`💀 ${eName} drains life from ${eN(target)}, recovering ${gained} HP!${drainText}`);
+                    }
                 }
             }
 
@@ -15420,7 +15455,7 @@ export class CombatSystem {
                 let dmg = Math.max(1, Math.round(randomInt(dmin, dmax) * MONSTER_DAMAGE_MULTIPLIER));
                 dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, attackKind));
                 this._addLog(`🎵⚔️ ${eName} (charmed) presses the attack with a bonus ${attackKind} strike at ${eN(t)}!`);
-                cHit(t, dmg, false, e, { attackKind, isFollowup: true });
+                cHit(t, dmg, false, e, { attackKind, isFollowup: true, vampireBleedPredator: isCharmedVampire });
             }
         };
         const pick = () => {
@@ -15428,6 +15463,7 @@ export class CombatSystem {
             if (!h.length) return null;
             const marked = frenzyEligible ? this._getVKHiveMarkTarget(vkController.id) : null;
             if (marked && marked.health > 0) return marked;
+            if (isCharmedVampire) return this._pickBleedingPriorityTarget(h).target;
             return h[Math.floor(Math.random() * h.length)];
         };
         const eN = t => this._eName(t);
@@ -16231,9 +16267,10 @@ export class CombatSystem {
                 cHit(t, dmg);
                 const dealt = Math.max(0, prevHP - t.health);
                 if (dealt > 0 && typeDef.lifeDrain) {
-                    const lifeSteal = Math.floor(dealt * typeDef.lifeDrain);
+                    const bleedStacks = this._getBleedDotStackCount(t);
+                    const lifeSteal = Math.floor(dealt * typeDef.lifeDrain * (bleedStacks > 0 ? 2 : 1));
                     e.health = Math.min(e.maxHealth, e.health + lifeSteal);
-                    if (lifeSteal > 0) this._addLog(`🧛 ${eName} drains ${lifeSteal} HP!`);
+                    if (lifeSteal > 0) this._addLog(`🧛 ${eName} drains ${lifeSteal} HP!${bleedStacks > 0 ? ' (doubled by bleeding prey)' : ''}`);
                 }
             }
 

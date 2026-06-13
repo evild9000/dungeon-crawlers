@@ -1552,7 +1552,7 @@ export class CombatUI {
                 `+${m.level} to melee damage rolls while raging.`,
                 `${rageExtraAttacks} extra melee strike(s) per attack (each costs ${BARBARIAN_RAGE_STAMINA_COST} ST).`,
                 m.level >= BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL
-                    ? `L${BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL} Blood Frenzy: +${Math.round(BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED * 100)}% melee damage per bleed DoT on target while raging (cap: level×3%).`
+                    ? `L${BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL} Blood Frenzy: uncapped +${Math.round(BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED * 100)}% melee damage per bleed DoT stack on target while raging. Werebear, Fur Loincloth, and each Cavebear Claw in Werebear form each add +2% per stack.`
                     : null,
                 m.level >= BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL
                     ? `L${BARBARIAN_ODINS_RAVENS_UNLOCK_LEVEL} Odin's Ravens: on death, chance to summon a Valkyrie and revive you once per combat.`

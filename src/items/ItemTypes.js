@@ -848,7 +848,7 @@ export const WEAPONS = {
         specialOffhandSlot: true,
         allowMainHand: true,
         sellValue: 75000,
-        description: '+7 melee. Barbarian 35+: main hand or off hand. In Werebear form: +10% damage, +1 rage strike, and +15% Blood Frenzy cap.',
+        description: '+7 melee. Barbarian 35+: main hand or off hand. In Werebear form: +10% damage, +1 rage strike, and +2% Blood Frenzy damage per bleed stack per claw.',
         icon: '\u{1F43B}',
     },
     lens_photomancy: {
@@ -907,7 +907,7 @@ export const ARMOR = {
         requiredClass: 'barbarian',
         requiredLevel: 35,
         sellValue: 75000,
-        description: '+7 defense. Barbarian 35+: Rage regen +2%, +1 rage strike, Werebear max health +10%, and Blood Frenzy cap +15%.',
+        description: '+7 defense. Barbarian 35+: Rage regen +2%, +1 rage strike, Werebear max health +10%, and +2% Blood Frenzy damage per bleed stack.',
         icon: '\u{1F9E5}',
     },
 };

@@ -1676,7 +1676,7 @@ export const BARD_SOULFUL_MELODY_STACK_DUR_BONUS = 1;   // +1 round per addition
 
 // ── Barbarian L30: Blood Frenzy (passive) ───────────────────────────────────
 export const BARBARIAN_BLOOD_FRENZY_UNLOCK_LEVEL    = 30;
-export const BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED = 0.05; // +5% per bleed DoT on target; cap = level×3%
+export const BARBARIAN_BLOOD_FRENZY_DAMAGE_PER_BLEED = 0.05; // +5% per bleed DoT on target; uncapped
 
 // ── Barbarian L30: Heroic Deeds ──────────────────────────────────────────────
 export const BARBARIAN_HEROIC_DEEDS_UNLOCK_LEVEL = 30;
@@ -1706,7 +1706,6 @@ export const BARBARIAN_WEREBEAR_DEF_PER_LEVEL_DIVISOR = 3; // +floor(level/3) de
 export const BARBARIAN_WEREBEAR_BLEED_CHANCE_PER_LEVEL = 0.01; // level%
 export const BARBARIAN_WEREBEAR_BLEED_DAMAGE_FRAC = 0.50;       // 50% of dealt damage per round
 export const BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR = 7;     // floor(level/7) rounds
-export const BARBARIAN_WEREBEAR_BLOOD_FRENZY_CAP_BONUS_PER_LEVEL = 0.005; // +(level/2)% cap
 
 // ── Ranger L20: Explosive Arrow ───────────────────────────────────────────
 // Hits ALL alive enemies at half post-defense damage.
