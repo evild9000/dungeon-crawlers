@@ -238,9 +238,9 @@ export const BEAST_TYPES = {
         attackType: 'ranged',
         speciesLabel: 'Vampire Bat',
         kind: 'beast',
-        description: 'Undead ranged striker from a vampire. Lower HP, life drain heals. No crit. Summoned to back row. +5 HP per vampire summoner level.',
+        description: 'Undead ranged striker from a vampire. Prioritizes bleeding foes and deals +2% damage per bleed DoT stack. Lower HP, life drain heals. No crit. Summoned to back row. +5 HP per vampire summoner level.',
         abilities: [
-            'Single-target ranged attack.',
+            'Single-target ranged attack. Prioritizes bleeding foes and deals +2% damage per bleed DoT stack.',
             'Lower HP, higher damage. +5 HP per vampire summoner level.',
             'Life Drain: heals the vampire bat for every point of damage dealt.',
             'No crit ability.',
@@ -510,7 +510,7 @@ export const VERMIN_PRESETS = {
         enemySprite: 'vampire_bat',
         portraitClass: 'summoned', portraitSpecies: 'human',
         speciesLabel: 'Vampire Bat', kind: 'vermin',
-        abilities: ['Front-row melee. Blood drain: heals for damage dealt. Applies bleed on hit.', 'Can be healed by potions and Cleric heal.'],
+        abilities: ['Front-row melee. Blood drain: heals for damage dealt. Applies bleed on hit. Prioritizes bleeding foes and deals +2% damage per bleed DoT stack.', 'Can be healed by potions and Cleric heal.'],
     },
     tunnel_worm: {
         id: 'tunnel_worm', name: 'Tunnel Worm', icon: '\u{1F40D}',

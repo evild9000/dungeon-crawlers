@@ -1678,6 +1678,14 @@ export class CombatSystem {
         return Math.min(raw, cap);
     }
 
+    _getBleedDotStackCount(target) {
+        if (!target || !Array.isArray(target.activeEffects)) return 0;
+        const bleedTypes = new Set(['bleed', 'ranger_totem_bleed', 'fracture', 'shadow_bleed_dot']);
+        return target.activeEffects.filter(fx =>
+            fx && bleedTypes.has(fx.type) && ((fx.rounds || 0) > 0 || fx.permanent)
+        ).length;
+    }
+
     _getBarbarianEncourageMultiplier(attacker) {
         if (!attacker || attacker.health <= 0) return 1;
         if (this._isUndeadOrGolemMember(attacker)) return 1;
@@ -9297,10 +9305,24 @@ export class CombatSystem {
         }
 
         if (beastKind === 'vampire_bat') {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 6);
+            const bleedingTargets = targets
+                .map(t => ({ target: t, bleedStacks: this._getBleedDotStackCount(t) }))
+                .filter(x => x.bleedStacks > 0);
+            const targetPool = bleedingTargets.length
+                ? bleedingTargets.sort((a, b) => b.bleedStacks - a.bleedStacks)
+                : targets.map(t => ({ target: t, bleedStacks: 0 }));
+            const topBleedStacks = targetPool[0]?.bleedStacks || 0;
+            const choices = topBleedStacks > 0
+                ? targetPool.filter(x => x.bleedStacks === topBleedStacks)
+                : targetPool;
+            const picked = choices[Math.floor(Math.random() * choices.length)];
+            const t = picked.target;
+            const bleedStacks = picked.bleedStacks || 0;
+            const bleedDamageMult = 1 + bleedStacks * 0.02;
+            const dmg = Math.max(1, Math.round(randomInt(stats.rangedMin ?? 2, stats.rangedMax ?? 6) * bleedDamageMult));
             const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
-            this._addLog(`\u{1F987} ${m.name} strikes ${this._eName(t)} for ${dealt}!`);
+            const bleedText = bleedStacks > 0 ? ` (${bleedStacks} bleed stack${bleedStacks === 1 ? '' : 's'}, +${bleedStacks * 2}% damage)` : '';
+            this._addLog(`\u{1F987} ${m.name} strikes ${this._eName(t)} for ${dealt}!${bleedText}`);
             // Vampire bat life drain: heals for damage dealt
             if (dealt > 0) {
                 if (this._enemyHasImmunity(t, 'bleed')) {
@@ -9748,14 +9770,29 @@ export class CombatSystem {
                 if (marked && marked.health > 0) return marked;
                 return targets[Math.floor(Math.random() * targets.length)];
             };
+            const pickVampireBatTarget = () => {
+                const marked = keeper ? this._getVKHiveMarkTarget(keeper.id) : null;
+                if (marked && marked.health > 0) return { target: marked, bleedStacks: this._getBleedDotStackCount(marked) };
+                const bleedingTargets = targets
+                    .map(target => ({ target, bleedStacks: this._getBleedDotStackCount(target) }))
+                    .filter(x => x.bleedStacks > 0)
+                    .sort((a, b) => b.bleedStacks - a.bleedStacks);
+                if (bleedingTargets.length) {
+                    const topStacks = bleedingTargets[0].bleedStacks;
+                    const choices = bleedingTargets.filter(x => x.bleedStacks === topStacks);
+                    return choices[Math.floor(Math.random() * choices.length)];
+                }
+                const target = targets[Math.floor(Math.random() * targets.length)];
+                return { target, bleedStacks: 0 };
+            };
 
             if (frenzyEligible && frenzyActions > 1) {
                 this._addLog(`🕷️ Frenzy! ${m.name} surges to ${frenzyActions} actions this turn at ×${frenzyMult.toFixed(2)} damage.`);
             }
 
-            const _vHit = (tgt, ignoreArmor = false) => {
+            const _vHit = (tgt, ignoreArmor = false, extraMult = 1) => {
                 let dmg = randomInt(stats.meleeMin || 1, stats.meleeMax || 3);
-                dmg = Math.max(1, Math.round(dmg * frenzyMult));
+                dmg = Math.max(1, Math.round(dmg * frenzyMult * extraMult));
                 return this._damageSummonEnemy(tgt, dmg, ignoreArmor, false, { contactAttacker: m });
             };
             const _vPoison = (tgt, dealt, mult = 1) => {
@@ -9899,8 +9936,12 @@ export class CombatSystem {
                     break;
                 }
                 case 'vampire_bat': {
-                    const d = _vHit(t);
-                    this._addLog(`\u{1F987} ${m.name} bites ${this._eName(t)} for ${d}!`);
+                    const picked = pickVampireBatTarget();
+                    t = picked.target;
+                    const bleedStacks = picked.bleedStacks || 0;
+                    const d = _vHit(t, false, 1 + bleedStacks * 0.02);
+                    const bleedText = bleedStacks > 0 ? ` (${bleedStacks} bleed stack${bleedStacks === 1 ? '' : 's'}, +${bleedStacks * 2}% damage)` : '';
+                    this._addLog(`\u{1F987} ${m.name} bites ${this._eName(t)} for ${d}!${bleedText}`);
                     _vDrain(t, d);
                     if (t.health > 0 && Math.random() < 0.30) _vBleed(t, d);
                     _vKill(t); break;
