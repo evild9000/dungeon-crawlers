@@ -2403,6 +2403,7 @@ export class CombatSystem {
             let wwHits = 0;
             for (const other of this.aliveEnemies) {
                 if (other === targetEnemy) continue;
+                if (this._isCharmedAllyEnemy(other)) continue;
                 if (wwHits >= wwCap) break;
                 if (Math.random() < ww) {
                     wwHits++;
