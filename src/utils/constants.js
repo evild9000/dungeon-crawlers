@@ -817,7 +817,7 @@ export const MONK_AVATAR_DOT_DURATION_DIVISOR = 8;
 
 // ── Necromancer L25 — Demi-Lich ────────────────────────────────────────────
 export const NECRO_DEMI_LICH_UNLOCK_LEVEL = 25;
-export const NECRO_DEMI_LICH_MANA_COST = 20;
+export const NECRO_DEMI_LICH_MANA_COST = 10;
 export const NECRO_DEMI_LICH_DEFENSE_BASE = 10;
 export const NECRO_DEMI_LICH_DEFENSE_PER_LEVEL = 2;
 export const NECRO_DEMI_LICH_TARGET_DIVISOR = 5;
