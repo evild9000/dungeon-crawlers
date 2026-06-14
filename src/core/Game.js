@@ -3042,8 +3042,9 @@ export class Game {
         const dl = this.gameState.dungeonLevel || 1;
         const theme = statue.theme || 'undead';
 
-        // Spawn initial wave: 1 enemy per living recruited (non-summoned) party member
+        // Spawn initial wave: 2 enemies per living recruited (non-summoned) party member.
         const livingCount = Math.max(1, this.gameState.party.filter(m => !m.isSummoned && m.health > 0).length);
+        const targetCount = livingCount * 2;
 
         const themePool = Object.keys(ENEMY_TYPES).filter(key => {
             const def = ENEMY_TYPES[key];
@@ -3053,7 +3054,7 @@ export class Game {
         const pool = themePool.length > 0 ? themePool : Object.keys(ENEMY_TYPES).filter(k => dl >= (ENEMY_TYPES[k].minLevel || 1));
 
         const initialEnemies = [];
-        for (let i = 0; i < livingCount; i++) {
+        for (let i = 0; i < targetCount; i++) {
             const type = pool[Math.floor(Math.random() * pool.length)];
             const e = new Enemy({ type, gridX: statue.x, gridZ: statue.z, level: dl });
             const def = ENEMY_TYPES[type] || {};

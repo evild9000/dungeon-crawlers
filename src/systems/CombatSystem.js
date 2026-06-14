@@ -17222,11 +17222,14 @@ export class CombatSystem {
         const result = [];
         if (isSuperBossWave) {
             result.push(this._createStatueSuperBoss(theme));
-            const megaType = pool[Math.floor(Math.random() * pool.length)];
-            result.push(this._createStatueBossTierEnemy(megaType, 'mega', 0, 1));
-            for (let b = 0; b < 3; b++) {
+            if (result.length < targetCount) {
+                const megaType = pool[Math.floor(Math.random() * pool.length)];
+                result.push(this._createStatueBossTierEnemy(megaType, 'mega', 0, 1));
+            }
+            const bossSlots = Math.max(0, Math.min(3, targetCount - result.length));
+            for (let b = 0; b < bossSlots; b++) {
                 const bossType = pool[Math.floor(Math.random() * pool.length)];
-                result.push(this._createStatueBossTierEnemy(bossType, 'boss', b, 3));
+                result.push(this._createStatueBossTierEnemy(bossType, 'boss', b, bossSlots));
             }
         }
         for (let i = result.length; i < targetCount; i++) {
