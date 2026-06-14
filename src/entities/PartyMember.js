@@ -294,8 +294,8 @@ export class PartyMember {
 
         // Per-trinket-slot enchant levels (Artificer L20+ trinket upgrade crafting).
         // Each key is a trinket slot ('cloak','neck','ring1','ring2','belt').
-        // Value = { level: 1..7 } — adds +level to the equipped trinket's bonusValue
-        // (and bonusValue2 if the trinket has a dual aspect).
+        // Value = { level: 1..7 } — raises the equipped trinket toward a +7
+        // effective cap, instead of adding +7 above its base bonus.
         const DEFAULT_TRINKET_ENCHANTS = { cloak: null, neck: null, ring1: null, ring2: null, belt: null };
         this.trinketEnchants = trinketEnchants
             ? { ...DEFAULT_TRINKET_ENCHANTS, ...trinketEnchants }
@@ -322,6 +322,13 @@ export class PartyMember {
     // Damage / defense / XP helpers
     // ──────────────────────────────────────────
 
+    _getEffectiveTrinketBonusValue(baseValue, enchantLevel = 0) {
+        const base = Math.max(0, Number(baseValue) || 0);
+        const ench = Math.max(0, Number(enchantLevel) || 0);
+        if (base >= 7) return base;
+        return Math.min(7, base + ench);
+    }
+
     /**
      * Sum trinket bonuses of a given bonusType ('defense' | 'melee' | 'ranged' | 'magic')
      * across all five trinket slots.
@@ -335,15 +342,15 @@ export class PartyMember {
             if (!id) continue;
             const def = TRINKETS[id] || getItemDef(id);
             if (!def) continue;
-            // Enchant bonus: trinketEnchants[slot].level adds to both aspects.
+            // Enchant bonus raises normal trinket aspects toward +7 total.
             const enchLvl = (this.trinketEnchants && this.trinketEnchants[s] && this.trinketEnchants[s].level) || 0;
             if (def.bonusTypes && typeof def.bonusTypes[bonusType] === 'number') {
-                total += (def.bonusTypes[bonusType] || 0) + (enchLvl > 0 ? enchLvl : 0);
+                total += this._getEffectiveTrinketBonusValue(def.bonusTypes[bonusType] || 0, enchLvl);
                 continue;
             }
-            if (def.bonusType  === bonusType) total += (def.bonusValue  || 0) + (enchLvl > 0 ? enchLvl : 0);
+            if (def.bonusType  === bonusType) total += this._getEffectiveTrinketBonusValue(def.bonusValue || 0, enchLvl);
             // Dual-aspect trinkets carry a second bonus (DL10+ drops).
-            if (def.bonusType2 === bonusType) total += (def.bonusValue2 || 0) + (enchLvl > 0 ? enchLvl : 0);
+            if (def.bonusType2 === bonusType) total += this._getEffectiveTrinketBonusValue(def.bonusValue2 || 0, enchLvl);
         }
         return total;
     }
@@ -357,7 +364,7 @@ export class PartyMember {
         const baseBonusValue = def.bonusValue
             || def.bonusValue2
             || Math.max(0, ...Object.values(def.bonusTypes || {}).filter(v => typeof v === 'number'));
-        return Math.max(0, baseBonusValue + enchLvl);
+        return Math.min(7, this._getEffectiveTrinketBonusValue(baseBonusValue, enchLvl));
     }
 
     getTrinketPoolAugmentPct() {

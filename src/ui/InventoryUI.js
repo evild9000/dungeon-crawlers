@@ -1395,7 +1395,10 @@ export class InventoryUI {
             const trinketEnchant = member.trinketEnchants && member.trinketEnchants[slot];
             const displayColor = getItemDisplayColor(itemId, trinketEnchant);
             if (displayColor) nameEl.style.color = displayColor;
-            if (def) nameEl.title = this._getItemTooltip(def, effectiveEnchant);
+            if (def) nameEl.title = this._getItemTooltip(
+                def,
+                def.category === ITEM_CATEGORY.TRINKET ? trinketEnchant : effectiveEnchant,
+            );
             row.appendChild(nameEl);
 
             const unequipBtn = document.createElement('button');
@@ -1476,18 +1479,25 @@ export class InventoryUI {
         } else if (def.category === ITEM_CATEGORY.TRINKET) {
             const kind  = def.trinketKind ? def.trinketKind.charAt(0).toUpperCase() + def.trinketKind.slice(1) : '';
             const bonus = def.bonusType   ? def.bonusType.charAt(0).toUpperCase()   + def.bonusType.slice(1)   : '';
+            const enchLvl = (enchant && enchant.level) || 0;
+            const effectiveBonus = (value) => {
+                const base = Math.max(0, Number(value) || 0);
+                if (base >= 7) return base;
+                return Math.min(7, base + enchLvl);
+            };
             if (kind)  lines.push(`${kind} trinket (tier ${def.tier || 1})` + (def.dualAspect ? ' — Dual Aspect' : ''));
             if (def.bonusTypes && typeof def.bonusTypes === 'object') {
                 for (const [type, value] of Object.entries(def.bonusTypes)) {
                     if (typeof value !== 'number' || value === 0) continue;
-                    lines.push(`+${value} ${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                    lines.push(`+${effectiveBonus(value)} ${type.charAt(0).toUpperCase() + type.slice(1)}`);
                 }
             }
-            if (bonus) lines.push(`+${def.bonusValue || 0} ${bonus}`);
+            if (bonus) lines.push(`+${effectiveBonus(def.bonusValue || 0)} ${bonus}`);
             if (def.bonusType2) {
                 const bonus2 = def.bonusType2.charAt(0).toUpperCase() + def.bonusType2.slice(1);
-                lines.push(`+${def.bonusValue2 || 0} ${bonus2}`);
+                lines.push(`+${effectiveBonus(def.bonusValue2 || 0)} ${bonus2}`);
             }
+            if (enchLvl > 0) lines.push(`Trinket upgrade: raised toward +7 cap (stored +${enchLvl}).`);
             if (enchant && enchant.roundRegenAugment) {
                 lines.push('Ring of Regeneration: restores 10% max HP each combat round.');
             }
