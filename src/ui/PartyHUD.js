@@ -1290,6 +1290,18 @@ export class PartyHUD {
                 mkPB('👁️', 'Rod', 'rgba(35,95,145,0.95)',
                     'Hag Eye Rod: this elemental gained +15% health, +15% damage, and +5 defense when summoned.');
             }
+            const worldTreeFx = pefx.find(x => x && x.type === 'world_tree_staff') || (member.summonStats?.worldTreeStaffBuff ? {
+                damageMult: member.summonStats.itemDamageMult || 1.75,
+                extraAttacks: member.summonStats.worldTreeExtraAttacks || 1,
+                maxHealthMult: 1.25,
+                defenseBonus: Math.max(0, (member.summonStats.defense || 0) - (member.summonStats.baseDefense || member.summonStats.defense || 0)),
+            } : null);
+            if (worldTreeFx) {
+                const dmgPct = Math.round(((worldTreeFx.damageMult || 1.75) - 1) * 100);
+                const hpPct = Math.round(((worldTreeFx.maxHealthMult || 1.25) - 1) * 100);
+                mkPB('🌳', 'World Tree', 'rgba(25,120,65,0.95)',
+                    `Staff of the World Tree: +${dmgPct}% damage, +${hpPct}% max HP, +${worldTreeFx.defenseBonus || 0} defense, and +${worldTreeFx.extraAttacks || 1} attack.`);
+            }
             const wolfLordAura = pefx.find(x => x && x.type === 'white_werewolf_lord_aura');
             if (wolfLordAura) {
                 const dmgPct = Math.round(((wolfLordAura.damageMult || 1) - 1) * 100);

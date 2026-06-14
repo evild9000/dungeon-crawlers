@@ -707,7 +707,7 @@ export const MAGE_SHIELD_BONUS_EVERY  = 5;   // +1 def and +1 round per this man
 export const MAGE_SHIELD_MIN_LEVEL    = 3;   // mage must be at least this level
 
 export const NECRO_SUMMON_MANA_COST = 7;
-export const NECRO_UNDEAD_MANA_UPKEEP  = 1;   // mana drained per undead summon per round
+export const NECRO_UNDEAD_MANA_UPKEEP  = 2;   // mana drained per undead summon per round
 export const NECRO_DARK_HARVEST_HP_FRAC   = 0.10; // fraction of maxHealth lost
 export const NECRO_DARK_HARVEST_ST_FRAC   = 0.10; // fraction of maxStamina lost
 export const NECRO_DARK_HARVEST_MANA_FRAC = 0.10; // fraction of maxMana gained
@@ -1639,7 +1639,7 @@ export const BARD_CHARM_DURATION_DIVISOR = 5;       // floor(bardLevel/5) rounds
 export const BARD_CHARM_IMMUNE_TAGS      = ['undead', 'elemental', 'construct', 'plant'];
 export const BARD_RALLYING_MELODY_UNLOCK_LEVEL = 25;
 export const BARD_RALLYING_MELODY_MANA_COST = 40;
-export const BARD_RALLYING_MELODY_RESTORE_FRACTION = 0.10;
+export const BARD_RALLYING_MELODY_RESTORE_FRACTION = 0.05;
 
 // ── Bard L30: Thunderous Drums (toggle) ─────────────────────────────────────
 export const BARD_THUNDEROUS_DRUMS_UNLOCK_LEVEL  = 30;
@@ -1709,13 +1709,13 @@ export const BARBARIAN_WEREBEAR_BLEED_DURATION_DIVISOR = 7;     // floor(level/7
 
 // ── Ranger L20: Explosive Arrow ───────────────────────────────────────────
 // Hits ALL alive enemies at half post-defense damage.
-// Half normal crit chance and half normal instakill chance vs favored enemies.
+// Half normal crit chance and one-third normal instakill chance vs favored enemies.
 // Costs RANGED_STAMINA_COST * RANGER_EXPLOSIVE_ARROW_STAMINA_MULT stamina.
 export const RANGER_EXPLOSIVE_ARROW_UNLOCK_LEVEL  = 20;
 export const RANGER_EXPLOSIVE_ARROW_STAMINA_MULT  = 3;    // 3× normal ranged stamina = 6 ST
 export const RANGER_EXPLOSIVE_ARROW_DAMAGE_MULT   = 0.667; // ~⅔ post-defense damage per target
 export const RANGER_EXPLOSIVE_ARROW_CRIT_MULT     = 0.667; // ~⅔ normal crit chance (≈66%)
-export const RANGER_EXPLOSIVE_ARROW_INSTAKILL_MULT = 0.5; // half normal instakill chance
+export const RANGER_EXPLOSIVE_ARROW_INSTAKILL_MULT = 1 / 3; // one-third normal instakill chance
 
 // ── Ranger L20+: Extra Favored Enemy slots ────────────────────────────────
 // At L20 rangers gain 1 extra favored enemy slot; +1 more every 5 levels.
@@ -1759,8 +1759,9 @@ export const MAGE_FAMILIAR_DEFENSE_PER_LEVEL = 1;
 
 // Druid L25: Shambling Mound summon
 export const DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL = 25;
-export const DRUID_SHAMBLING_MOUND_MANA_COST    = 100;
+export const DRUID_SHAMBLING_MOUND_MANA_COST    = 50;
 export const DRUID_SHAMBLING_MOUND_CAP_DIVISOR  = 2;
+export const DRUID_SUMMON_UPKEEP_MANA            = 2;
 
 // Rogue L25: field trap tools + anti-magic evasion
 export const ROGUE_TRAP_UNLOCK_LEVEL        = 25;
@@ -1794,8 +1795,9 @@ export const RANGER_BEAST_MASTERY_REVIVE_COST_PER_LV  = 100;
 export const RANGER_RICOCHET_CHANCES    = [0.75, 0.65, 0.55, 0.45, 0.35, 0.25, 0.15, 0.05];
 export const RANGER_RICOCHET_DAMAGE_MULT              = 0.50;
 export const RANGER_RICOCHET_MP_COST                  = 1;
-export const RANGER_RICOCHET_INSTAKILL_MULT           = 0.50;
+export const RANGER_RICOCHET_INSTAKILL_MULT           = 1 / 3;
 export const RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL       = 0.02;
+export const RANGER_SUMMON_UPKEEP_MANA                = 2;
 export const RANGER_BEAST_COMPANION_TYPES = {
     dire_wolf:   { id: 'dire_wolf',   summonType: 'bc_dire_wolf',   beastKind: 'bc_dire_wolf',
         name: 'Dire Wolf',       icon: '🐺', enemySprite: 'winter_wolf', row: 'front', attackType: 'melee',
@@ -1864,7 +1866,7 @@ export const RANGER_HUNTERS_MARK_UPKEEP_STAMINA  = 3;
 export const RANGER_BEASTLORD_UNLOCK_LEVEL       = 30;
 export const RANGER_BEASTLORD_MANA_PER_ROUND     = 5;    // base upkeep for beastlord toggle
 export const RANGER_BEASTLORD_SUMMON_BASE        = 10;   // base % added to level/2 for summon chance
-export const RANGER_BEASTLORD_UPKEEP_PER_SUMMON  = 1;   // extra 1 MP/round per beastlord-summoned beast
+export const RANGER_BEASTLORD_UPKEEP_PER_SUMMON  = 2;   // extra 2 MP/round per beastlord-summoned beast
 
 // ── Druid L30 — Wild Shape ────────────────────────────────────────────────────
 export const DRUID_WILD_SHAPE_UNLOCK_LEVEL          = 30;
@@ -1942,6 +1944,7 @@ export const MAGE_ARCANE_OVERLOAD_BURST_STEP     = 0.10;  // drops per successiv
 export const MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL    = 30;
 export const MAGE_ELEMENTAL_RIFT_MANA_INITIAL    = 100;
 export const MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND  = 10;
+export const MAGE_ELEMENTAL_RIFT_ELEMENTAL_MANA_UPKEEP = 2;
 export const MAGE_ELEMENTAL_RIFT_SUMMON_BASE     = 20;    // base% + mageLevel; cap 100
 
 // ── Mage L35 — Mana Shield & Death Burst ──────────────────────────────────────
@@ -1954,7 +1957,7 @@ export const MAGE_DEATH_BURST_DAMAGE_PER_LEVEL   = 0.02;
 // Mysterious statues spawn at DL30+. Activating one starts a 15-wave gauntlet
 // themed around a random monster tag. Waves clear → next wave spawns;
 // the battle never ends before wave 15.  Wave 5 = boss, 10 = mega boss,
-// 15 = named super mega boss (4 actions, ×20 HP, purple HUD border).
+// 15 = named super mega boss (8 actions, ×50 HP, purple HUD border).
 export const STATUE_MIN_DUNGEON_LEVEL              = 30;
 export const STATUE_SPAWN_CHANCE_NORMAL            = 0.125;  // production value; restore after testing
 export const STATUE_SPAWN_CHANCE                   = STATUE_SPAWN_CHANCE_NORMAL;
@@ -1966,12 +1969,13 @@ export const STATUE_EVENT_ROUND_MEGA_BOSS          = 10;
 export const STATUE_EVENT_ROUND_SUPER_BOSS         = 15;
 
 // Super boss stat multipliers (stacked on mega boss base)
-export const SUPER_BOSS_HP_MULT                    = 20;    // ×20 base enemy HP
-export const SUPER_BOSS_DEFENSE_PER_DL             = 2.5;   // +DL×2.5 defense
-export const SUPER_BOSS_MELEE_PER_DL               = 4.5;   // +DL×4.5 melee/ranged
-export const SUPER_BOSS_MAGIC_PER_DL               = 3.5;   // +DL×3.5 magic
-export const SUPER_BOSS_ACTIONS_PER_TURN           = 4;
+export const SUPER_BOSS_HP_MULT                    = 50;    // ×50 base enemy HP
+export const SUPER_BOSS_DEFENSE_PER_DL             = 3;     // +DL×3 defense
+export const SUPER_BOSS_MELEE_PER_DL               = 5;     // +DL×5 melee/ranged
+export const SUPER_BOSS_MAGIC_PER_DL               = 4;     // +DL×4 magic
+export const SUPER_BOSS_ACTIONS_PER_TURN           = 8;
 export const SUPER_BOSS_SUMMON_COUNT               = 2;     // summons 2 at once
+export const STATUE_EVENT_DAMAGE_PER_ROUND         = 0.01;  // +1% enemy damage per event round
 
 // Super boss aura/mechanic overrides
 export const STATUE_BOSS_AURA_MULT                 = 0.66;  // +66% aura from alive super boss
@@ -2170,6 +2174,7 @@ export const VK_ACID_DEF_DEBUFF       = -1;     // acid variant: -1 defense debu
 // L3: Summon Vermin
 export const VK_SUMMON_VERMIN_MANA_COST  = 5;   // MP cost to summon a vermin
 export const VK_SUMMON_VERMIN_UNLOCK_LEVEL = 3; // unlock level
+export const VK_SUMMON_UPKEEP_MANA       = 2;   // MP per summoned vermin/slime per round
 export const VK_VERMIN_HP_MULT           = 1.0; // summon HP = keeper maxHealth × this
 export const VK_VERMIN_MELEE_PER_LEVEL   = 2;   // melee skill = keeper level × this
 export const VK_VERMIN_DEFENSE_PER_LEVEL = 1.5; // defense = keeper level × this
@@ -2208,6 +2213,7 @@ export const VK_INSECT_PLAGUE_LEVEL_DMG_BONUS = 0.02; // +2% damage per VK level
 // L30: Summon Swarm
 export const VK_SWARM_UNLOCK_LEVEL        = 30;
 export const VK_SWARM_SUMMON_MANA_COST    = 75;  // initial summon MP cost
+export const VK_SWARM_UPKEEP_MANA         = 5;   // MP per active swarm per round
 export const VK_SWARM_MAX_UPGRADE_DIVISOR = 5;   // max growth upgrades = floor(keeper level / 5)
 export const VK_SWARM_HP_MULT             = 1.0; // swarm HP = keeper health × this
 export const VK_SWARM_DEFENSE_PER_LEVEL   = 2;   // swarm defense = keeper level × 2
@@ -2257,6 +2263,8 @@ export const WARLOCK_CHARM_MANA_COST       = 50;
 export const WARLOCK_CAULDRON_UNLOCK_LEVEL = 3;
 export const WARLOCK_CAULDRON_HP_COST      = 5;
 export const WARLOCK_DEMON_UPKEEP_HP       = 3;
+export const WARLOCK_AWAKENED_UPKEEP_HP    = 5;
+export const WARLOCK_AWAKENED_UPKEEP_MANA  = 10;
 export const WARLOCK_ABYSS_FORM_UNLOCK_LEVEL = 30;
 export const WARLOCK_ABYSS_MAGIC_RESIST    = 0.50;
 export const WARLOCK_ABYSS_COLD_ACID_RESIST = 0.50;
@@ -2281,7 +2289,8 @@ export const PHOTOMANCER_BLUR_MANA_COST = 30;
 export const PHOTOMANCER_BLUR_MISS_CHANCE = 0.20;
 export const PHOTOMANCER_INVISIBILITY_MANA_COST = 10;
 export const PHOTOMANCER_ILLUSION_UNLOCK_LEVEL = 10;
-export const PHOTOMANCER_ILLUSION_MANA_COST = 25;
+export const PHOTOMANCER_ILLUSION_MANA_COST = 10;
+export const PHOTOMANCER_ILLUSION_UPKEEP_MANA = 2;
 export const PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL = 20;
 export const PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL = 25;
 export const PHOTOMANCER_DISINTEGRATE_MANA_COST = 20;

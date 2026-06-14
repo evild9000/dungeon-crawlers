@@ -104,13 +104,13 @@ import {
     ROGUE_EXTRA_LOOT_UNLOCK_LEVEL, ROGUE_EXTRA_LOOT_GOLD_PCT,
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
-    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
+    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_ELEMENTAL_MANA_UPKEEP, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
     MAGE_L35_UNLOCK_LEVEL, MAGE_MANA_SHIELD_MANA_COST,
     MAGE_DEATH_BURST_DAMAGE_BASE_MULT, MAGE_DEATH_BURST_DAMAGE_PER_LEVEL,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
     NECRO_LICH_REVIVE_ROUNDS,
     DRUID_COMMUNE_UNLOCK_LEVEL, DRUID_COMMUNE_FAE_TOKENS_NEEDED,
-    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST, DRUID_SHAMBLING_MOUND_CAP_DIVISOR,
+    DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST, DRUID_SHAMBLING_MOUND_CAP_DIVISOR, DRUID_SUMMON_UPKEEP_MANA,
     DRUID_WILD_SHAPE_UNLOCK_LEVEL, DRUID_WILD_SHAPE_MANA_INITIAL, DRUID_WILD_SHAPE_MANA_PER_ROUND,
     DRUID_WILD_BEAR_ATTACKS_DIVISOR, DRUID_WILD_BEAR_STUN_BASE, DRUID_WILD_BEAR_STUN_PER_LEVEL, DRUID_WILD_BEAR_DEFENSE_DIVISOR,
     DRUID_WILD_WOLF_ATTACKS_DIVISOR, DRUID_WILD_WOLF_BLEED_BASE, DRUID_WILD_WOLF_BLEED_PER_LEVEL, DRUID_WILD_WOLF_BLEED_DURATION_DIVISOR, DRUID_WILD_WOLF_DEFENSE_DIVISOR,
@@ -133,7 +133,7 @@ import {
     ARTIFICER_DECONSTRUCT_UNLOCK_LEVEL, ARTIFICER_DECONSTRUCT_BONUS_MULT,
     ARTIFICER_DUAL_DRONE_UNLOCK_LEVEL,
     ARTIFICER_SABOTAGE_UNLOCK_LEVEL, ARTIFICER_SABOTAGE_CHANCE_DIVISOR,
-    RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
+    RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND, RANGER_SUMMON_UPKEEP_MANA,
     RANGER_CRIT_DAMAGE_BONUS_PER_LEVEL,
     RANGER_TOTEM_DURATION_DIVISOR, RANGER_BEAR_TOTEM_DEFENSE_DIVISOR,
     RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL, RANGER_EAGLE_TOTEM_DEFLECT_PER_LEVEL,
@@ -155,11 +155,11 @@ import {
     RANGER_BEASTLORD_SUMMON_BASE, RANGER_BEASTLORD_UPKEEP_PER_SUMMON,
     VK_ATTACK_MANA_COST_BASE, VK_ATTACK_EXTRA_PER_5LV,
     VK_POISON_DAMAGE_BONUS,
-    VK_SUMMON_VERMIN_MANA_COST, VK_SUMMON_VERMIN_UNLOCK_LEVEL,
+    VK_SUMMON_VERMIN_MANA_COST, VK_SUMMON_VERMIN_UNLOCK_LEVEL, VK_SUMMON_UPKEEP_MANA,
     VK_SUMMON_SLIME_MANA_COST, VK_SUMMON_SLIME_UNLOCK_LEVEL,
     VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
-    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST,
+    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_UPKEEP_MANA,
     VK_SWARM_MAX_UPGRADE_DIVISOR,
     VK_SWARM_PROTECT_MANA_COST,
     VK_L35_UNLOCK_LEVEL, VK_FRENZY_DAMAGE_BASE_MULT, VK_FRENZY_DAMAGE_PER_LEVEL,
@@ -167,7 +167,7 @@ import {
     WARLOCK_HEX_UPKEEP_MANA, WARLOCK_HEX_PENALTY_DIVISOR, WARLOCK_HEX_DURATION_DIVISOR,
     WARLOCK_CURSE_UNLOCK_LEVEL, WARLOCK_CURSE_MANA_COST,
     WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
-    WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP,
+    WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP, WARLOCK_AWAKENED_UPKEEP_HP, WARLOCK_AWAKENED_UPKEEP_MANA,
     WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
     WARLOCK_L35_UNLOCK_LEVEL,
     WARLOCK_HOOKED_TENTACLE_CRIT_PER_LEVEL,
@@ -180,7 +180,7 @@ import {
     PHOTOMANCER_COLOR_SPRAY_MANA_COST, PHOTOMANCER_MIRROR_IMAGE_UNLOCK_LEVEL,
     PHOTOMANCER_MIRROR_IMAGE_MANA_COST, PHOTOMANCER_BLUR_UNLOCK_LEVEL,
     PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_INVISIBILITY_MANA_COST,
-    PHOTOMANCER_ILLUSION_UNLOCK_LEVEL, PHOTOMANCER_ILLUSION_MANA_COST,
+    PHOTOMANCER_ILLUSION_UNLOCK_LEVEL, PHOTOMANCER_ILLUSION_MANA_COST, PHOTOMANCER_ILLUSION_UPKEEP_MANA,
     PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL,
     PHOTOMANCER_DISINTEGRATE_MANA_COST, PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS,
     PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL, PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY,
@@ -599,6 +599,14 @@ export class CombatUI {
                             const dmgPct = Math.round(((fx.damageMult || 1) - 1) * 100);
                             const regenPct = Math.round((fx.regenPct || 0.15) * 100);
                             return 'White Werewolf Lord: +' + (fx.maxHealthBonus || 0) + ' max HP, +' + dmgPct + '% damage, +' + (fx.defenseBonus || 0) + ' defense, and ' + regenPct + '% max HP regen/round.';
+                        }
+                    },
+                    world_tree_staff: {
+                        icon: '🌳', label: 'World Tree', bg: 'rgba(25,120,65,0.95)',
+                        tip: (fx) => {
+                            const dmgPct = Math.round(((fx.damageMult || 1.75) - 1) * 100);
+                            const hpPct = Math.round(((fx.maxHealthMult || 1.25) - 1) * 100);
+                            return 'Staff of the World Tree: +' + dmgPct + '% damage, +' + hpPct + '% max HP, +' + (fx.defenseBonus || 0) + ' defense, and +' + (fx.extraAttacks || 1) + ' attack.';
                         }
                     },
                     hag_curse: {
@@ -1380,7 +1388,8 @@ export class CombatUI {
                 if (riftOpen) riftBtn.style.boxShadow = '0 0 8px #44ccff, 0 0 18px #2288ff66';
                 riftBtn.title = [
                     `Mage L${MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL}: Elemental Rift (free action, once per combat).`,
-                    `Costs ${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP to open; ${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP/round upkeep.`,
+                    `Costs ${MAGE_ELEMENTAL_RIFT_MANA_INITIAL} MP to open; ${MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND} MP/round base upkeep.`,
+                    `Each rift elemental costs ${MAGE_ELEMENTAL_RIFT_ELEMENTAL_MANA_UPKEEP} MP/round to maintain; elementals randomly fade until the mage can pay.`,
                     `Each round the rift is open: ${summonPct}% chance to summon a random elemental (fire/water/earth/air).`,
                     'Elementals are immune to charm/enslavement and their respective element DoTs.',
                     'Fire Elemental: AoE magic + burn DoT + stun chance.',
@@ -1910,15 +1919,18 @@ export class CombatUI {
         }
 
         if (m.classId === 'necromancer') {
-            // Can afford at least skeleton (tier 0 = 7 MP)
-            const can = m.mana >= NECRO_SUMMON_MANA_COST;
-            const label = `\u{1F480} Summon Undead (${NECRO_SUMMON_MANA_COST}–${NECRO_SUMMON_MANA_COST + 7} MP)`;
+            // Can afford at least skeleton (tier 0 = ceil(7 / 2) MP)
+            const minNecroCost = Math.ceil(NECRO_SUMMON_MANA_COST / 2);
+            const maxNecroCost = Math.ceil((NECRO_SUMMON_MANA_COST + 7) / 2);
+            const can = m.mana >= minNecroCost;
+            const label = `\u{1F480} Summon Undead (${minNecroCost}–${maxNecroCost} MP)`;
             const btn = this._addBtn(label, can, () => this._showUndeadPicker(m));
             btn.classList.add('combat-special-btn');
             const tiers = this.combat.getAvailableNecroTiers(m.level);
             btn.title = [
                 'Necromancer special: Summon Undead.',
-                `Mana cost by tier: Skeleton 7, Zombie 8, Ghoul 9, Spectre 10, Mummy 11, Ghost 12, Vampire 13, Death Knight 14. Horde = ×2.`,
+                `Mana cost by tier: Skeleton ${Math.ceil(7 / 2)}, Zombie ${Math.ceil(8 / 2)}, Ghoul ${Math.ceil(9 / 2)}, Spectre ${Math.ceil(10 / 2)}, Mummy ${Math.ceil(11 / 2)}, Ghost ${Math.ceil(12 / 2)}, Vampire ${Math.ceil(13 / 2)}, Death Knight ${Math.ceil(14 / 2)}. Horde = ×2.`,
+                'Each undead costs 2 MP/round to maintain. Vampire-summoned bats or wolves also cost the necromancer 2 MP/round each.',
                 `Unlocked tiers at level ${m.level}: ${tiers.map(t => t.name).join(', ')}.`,
                 'Undead cannot be healed by clerics — use life-drain instead (also heals your undead).',
                 'Higher tiers = +50% HP, +2 damage, +1 defense per step (plus +1 melee & +1 defense per necromancer level).',
@@ -2086,6 +2098,9 @@ export class CombatUI {
             btn.title = [
                 `${m.classDef.name} special: Summon Woodland Beast.`,
                 `Costs ${summonCost} mana.`,
+                m.classId === 'ranger'
+                    ? `Ranger woodland beasts cost ${RANGER_SUMMON_UPKEEP_MANA} MP/round each to maintain, including every wolf in a pack.`
+                    : `Druid beasts cost ${DRUID_SUMMON_UPKEEP_MANA} MP/round each to maintain.`,
                 'Wolf: melee + Bleed (100% hit damage/round × 3 rounds), +7 HP/level, +1 defense/level.',
                 '  ▶ L10+: Wolf Pack — summons an extra wolf with each cast.',
                 'Bear: high HP melee tank, +2 defense/level, stun chance = ranger crit.',
@@ -2169,7 +2184,7 @@ export class CombatUI {
                 `Ranger L${RANGER_BEASTLORD_UNLOCK_LEVEL}: Beastlord (free action toggle — does not use your turn).`,
                 `Base cost: ${RANGER_BEASTLORD_MANA_PER_ROUND} MP per round.`,
                 `While active, each round: ${blSummonPct}% chance to auto-summon a random beast (wolf/bear/eagle/pixie).`,
-                'Auto-summoned beasts cost 1 MP/round each as additional upkeep.',
+                `Auto-summoned beasts cost ${RANGER_BEASTLORD_UPKEEP_PER_SUMMON} MP/round each as additional upkeep.`,
                 'Summons follow all normal rules: wolf packs, upgrades (Giant Bear/Golden Eagle/Pixie Princess).',
                 blActive ? `Active — ${blBeastCount} Beastlord beast(s) alive. Total upkeep: ${blTotalUpkeep} MP/round.` : 'Not active.',
                 !blCanActivate && !blActive ? 'Not enough mana.' : '',
@@ -2400,6 +2415,7 @@ export class CombatUI {
             moundBtn.title = [
                 `Druid L${DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL}: Summon Shambling Mound.`,
                 `Costs ${DRUID_SHAMBLING_MOUND_MANA_COST} mana.`,
+                `Costs ${DRUID_SUMMON_UPKEEP_MANA} MP/round to maintain. Mini Shamblers also cost ${DRUID_SUMMON_UPKEEP_MANA} MP/round.`,
                 'Front-row plant guardian. HP = 4× druid max HP. Defense = 20 + druid level.',
                 'Slam damage = base melee + 2× druid level with a 45% stun chance.',
                 'Regenerates 20% max HP at the start of its turn. If full after regen, the original mound spawns a Mini Shambler (not on the summon round).',
@@ -2475,7 +2491,9 @@ export class CombatUI {
                                      'Pixies in party: +75% dmg, +def, extra burst.'],
                             treant: [`Treant Form: HP doubles, front row, ${Math.max(1,Math.floor(lvl/DRUID_WILD_TREANT_ATTACKS_DIVISOR))} magic-melee hits on random front enemies.`,
                                      `Hold chance: ${Math.round((DRUID_WILD_TREANT_HOLD_BASE + lvl*DRUID_WILD_TREANT_HOLD_PER_LEVEL)*100)}%. +${defBonus} defense.`,
-                                     'Treants in party: +50% dmg, +def, extra attack.'],
+                                     Object.values(m.equipment || {}).includes('staff_world_tree')
+                                        ? 'Staff of the World Tree: becomes an aspect of the World Tree with triple health, x2 Treant attack damage, and +3 attacks.'
+                                        : 'Treants in party: +50% dmg, +def, extra attack.'],
                         };
                         formBtn.title = [
                             `Druid L${DRUID_WILD_SHAPE_UNLOCK_LEVEL}: Wild Shape — ${f.name} (free action).`,
@@ -2540,6 +2558,7 @@ export class CombatUI {
                     `${DRUID_NATURES_CHARM_RESIST_CAP} resists from the same target = immune for this combat.`,
                     `Upkeep: ${DRUID_NATURES_CHARM_UPKEEP_PER_ROUND} MP/round per charmed minion. Mana exhaustion releases all and ends toggle.`,
                     `Bolster: charmed minions deal +${m.level}% bonus damage (level \xd7 1%).`,
+                    Object.values(m.equipment || {}).includes('staff_world_tree') ? 'Staff of the World Tree: charmed plants also gain +75% damage, +25% max HP, +level/5 defense, and +1 attack.' : '',
                     ncActive ? `Currently active — ${ncCharmed} minion${ncCharmed !== 1 ? 's' : ''} charmed. Click to deactivate and release.` : '',
                     !ncActive && !ncAfford ? `Not enough mana (need ${DRUID_NATURES_CHARM_MANA_COST} MP).` : '',
                 ].filter(Boolean).join('\n');
@@ -2620,6 +2639,7 @@ export class CombatUI {
                 btn.title = [
                     `Vermin Keeper L${VK_SUMMON_VERMIN_UNLOCK_LEVEL}: Summon Vermin.`,
                     `Costs ${VK_SUMMON_VERMIN_MANA_COST} MP. Randomly summons one of 14 vermin types.`,
+                    `Costs ${VK_SUMMON_UPKEEP_MANA} MP/round per vermin or slime minion to maintain.`,
                     'HP = keeper max HP. Melee = level × 2. Defense = level × 1.5.',
                     'Cascade: 40% chance to summon additional vermin (-5% each, +1% per level).',
                     ...(m.level >= VK_L35_UNLOCK_LEVEL ? [
@@ -2643,6 +2663,7 @@ export class CombatUI {
                 btn.title = [
                     `Vermin Keeper L${VK_SUMMON_SLIME_UNLOCK_LEVEL}: Summon Slime.`,
                     `Costs ${VK_SUMMON_SLIME_MANA_COST} MP. Randomly summons a slime, acid slime, or gelatinous cube.`,
+                    `Costs ${VK_SUMMON_UPKEEP_MANA} MP/round per vermin or slime minion to maintain.`,
                     'HP = keeper max HP. Melee = level × 2. Defense = level × 1.5.',
                     'Cascade: 40% chance to summon additional slimes (-5% each, +1% per level).',
                     ...(m.level >= VK_L35_UNLOCK_LEVEL ? [
@@ -2728,6 +2749,7 @@ export class CombatUI {
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Vermin Swarm.`,
                         `Costs ${cost} MP to summon. Acts immediately. Cannot have both swarm types at once.`,
+                        `Costs ${VK_SWARM_UPKEEP_MANA} MP/round to maintain.`,
                         hasVSwarm ? `Swarm is ACTIVE — it grows automatically after its own attack turn (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Vermin Swarm: 10% melee resist, ×1.5 magic, ×2 fire damage. Immune to poison/psychic/charms/holds/death-roll holds/stuns.',
@@ -2754,6 +2776,7 @@ export class CombatUI {
                     btn.title = [
                         `Vermin Keeper L${VK_SWARM_UNLOCK_LEVEL}: Summon Acid Swarm.`,
                         `Costs ${cost} MP to summon. Acts immediately. Cannot have both swarm types at once.`,
+                        `Costs ${VK_SWARM_UPKEEP_MANA} MP/round to maintain.`,
                         hasASwarm ? `Swarm is ACTIVE — it grows automatically after its own attack turn (${upgrades}/${maxSwarmUpgrades} upgrades).` : '',
                         `Max upgrades = keeper level / ${VK_SWARM_MAX_UPGRADE_DIVISOR}.`,
                         'Acid Swarm: 10% melee resist, ×1.5 magic, ×3 lightning damage. Immune to acid/psychic/charms/holds/death-roll holds/stuns.',
@@ -2869,10 +2892,14 @@ export class CombatUI {
 
                 const boundDemons = (this.combat.party || [])
                     .filter(p => p.health > 0 && p.isSummoned && p.summonerId === m.id && (WARLOCK_DEMON_PRESETS[p.summonType] || WARLOCK_AWAKENED_PRESETS[p.summonType]));
-                const upkeep = boundDemons.length * WARLOCK_DEMON_UPKEEP_HP;
+                const awakenedCount = boundDemons.filter(p => WARLOCK_AWAKENED_PRESETS[p.summonType]).length;
+                const regularCount = boundDemons.length - awakenedCount;
+                const upkeep = regularCount * WARLOCK_DEMON_UPKEEP_HP;
+                const awakenedHpUpkeep = awakenedCount * WARLOCK_AWAKENED_UPKEEP_HP;
+                const awakenedMpUpkeep = awakenedCount * WARLOCK_AWAKENED_UPKEEP_MANA;
                 const canCauldron = m.warlockCauldronOpen || m.health > WARLOCK_CAULDRON_HP_COST;
                 const cauldronLabel = m.warlockCauldronOpen
-                    ? `\u{1F372} Cauldron: ON (${upkeep} HP/round)`
+                    ? `\u{1F372} Cauldron: ON (${upkeep + awakenedHpUpkeep} HP/${awakenedMpUpkeep} MP rd)`
                     : `\u{1F372} Tend Cauldron (-${WARLOCK_CAULDRON_HP_COST} HP)`;
                 const cauldronBtn = this._addBtn(cauldronLabel, canCauldron, () => this.combat.warlockToggleCauldron(m.warlockSelectedDemon));
                 cauldronBtn.classList.add('combat-special-btn');
@@ -2881,7 +2908,8 @@ export class CombatUI {
                     `Warlock L${WARLOCK_CAULDRON_UNLOCK_LEVEL}: Free action toggle.`,
                     `Opening costs ${WARLOCK_CAULDRON_HP_COST} HP. While open, summons one selected demon every round at 100% chance.`,
                     'Demon HP is based on the warlock\'s max HP, not current HP; Tentacled Horror form doubles current and future bound demon HP.',
-                    `Each bound demon costs ${WARLOCK_DEMON_UPKEEP_HP} HP per round to maintain. Current upkeep: ${upkeep} HP/round.`,
+                    `Each bound demon costs ${WARLOCK_DEMON_UPKEEP_HP} HP per round to maintain. Awakened Lords cost ${WARLOCK_AWAKENED_UPKEEP_HP} HP + ${WARLOCK_AWAKENED_UPKEEP_MANA} MP per round each.`,
+                    `Current upkeep: ${regularCount} regular demon(s) = ${upkeep} HP/round; ${awakenedCount} Awakened Lord(s) = ${awakenedHpUpkeep} HP + ${awakenedMpUpkeep} MP/round.`,
                     `Awaken synergy (L${WARLOCK_L35_UNLOCK_LEVEL}): when Awaken is ON, every ${WARLOCK_AWAKEN_TRIGGER_SUMMONS} successful cauldron summons can be consumed to manifest one Awakened Lord.`,
                     'If the warlock falls, all demons bound to that cauldron vanish.',
                     !canCauldron ? `Need more than ${WARLOCK_CAULDRON_HP_COST} HP to open the cauldron.` : '',
@@ -3050,7 +3078,7 @@ export class CombatUI {
                 const atk = Math.max(1, Math.floor(m.level / 5));
                 const iwBtn = this._addBtn(`\u{1FA9E} Illusion Warriors x${count} (-${PHOTOMANCER_ILLUSION_MANA_COST} MP)`, m.mana >= PHOTOMANCER_ILLUSION_MANA_COST, () => this.combat.photomancerCreateIllusionaryWarriors());
                 iwBtn.classList.add('combat-special-btn');
-                iwBtn.title = `Creates ${count} front-row illusionary warrior(s). Each attacks ${atk} time(s)/round, is immune to all damage/effects, cannot receive healing/regen/cleansing/living buffs, and can be disbelieved.`;
+                iwBtn.title = `Creates ${count} front-row illusionary warrior(s). Each costs ${PHOTOMANCER_ILLUSION_UPKEEP_MANA} MP/round to maintain, attacks ${atk} time(s)/round, is immune to all damage/effects, cannot receive healing/regen/cleansing/living buffs, and can be disbelieved.`;
             }
 
             if (m.level >= PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL) {
@@ -3756,7 +3784,7 @@ export class CombatUI {
         tiers.forEach((tier, idx) => {
             const btn = document.createElement('button');
             btn.className = 'combat-action-btn combat-special-btn';
-            const tierMpCost = NECRO_SUMMON_MANA_COST + idx;
+            const tierMpCost = Math.ceil((NECRO_SUMMON_MANA_COST + idx) / 2);
             btn.textContent = `${tier.icon} ${tier.name} (${tierMpCost} MP)`;
             btn.title = [`${tier.name} (${tierMpCost} MP).`, ...(tier.abilities || [])].join('\n');
             btn.addEventListener('click', () => this.combat.summonUndead(idx));

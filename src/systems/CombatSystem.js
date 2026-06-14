@@ -34,6 +34,7 @@ import {
     MONK_MELEE_MANA_COST, MONK_WHIRLWIND_CHANCE,
     MONK_DODGE_CHANCE, MONK_DODGE_STAMINA_COST, MONK_DODGE_MANA_COST,
     RANGER_SUMMON_MANA_COST,
+    RANGER_SUMMON_UPKEEP_MANA,
     BARD_SONG_MANA_COST, BARD_SONG_BASE_BONUS,
     BARD_DISRUPT_MANA_COST,
     DRUID_ENTANGLE_MANA_COST, DRUID_ENTANGLE_BASE_DEBUFF, DRUID_ENTANGLE_CHANCE,
@@ -77,7 +78,8 @@ import {
     MAGE_MIRROR_IMAGE_UNLOCK_LEVEL, MAGE_MIRROR_IMAGE_MANA_COST, MAGE_MIRROR_IMAGE_COUNT_DIVISOR,
     MAGE_AOE_CRIT_CHANCE_PER_2LV, MAGE_AOE_CRIT_DAMAGE_BASE, MAGE_AOE_CRIT_DAMAGE_PER_LV,
     MAGE_ARCANE_OVERLOAD_UNLOCK_LEVEL, MAGE_ARCANE_OVERLOAD_BURST_BASE, MAGE_ARCANE_OVERLOAD_BURST_STEP,
-    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
+    MAGE_ELEMENTAL_RIFT_UNLOCK_LEVEL, MAGE_ELEMENTAL_RIFT_MANA_INITIAL, MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND,
+    MAGE_ELEMENTAL_RIFT_ELEMENTAL_MANA_UPKEEP, MAGE_ELEMENTAL_RIFT_SUMMON_BASE,
     MAGE_L35_UNLOCK_LEVEL, MAGE_MANA_SHIELD_MANA_COST,
     MAGE_DEATH_BURST_DAMAGE_BASE_MULT, MAGE_DEATH_BURST_DAMAGE_PER_LEVEL,
     NECRO_LICH_FORM_UNLOCK_LEVEL, NECRO_LICH_FORM_MANA_PER_ROUND,
@@ -134,6 +136,7 @@ import {
     ROGUE_BACKSTAB_BLEED_UNLOCK_LEVEL, ROGUE_BACKSTAB_BLEED_FRAC,
     ROGUE_BACKSTAB_BLEED_DURATION_DIVISOR,
     DRUID_SHAMBLING_MOUND_UNLOCK_LEVEL, DRUID_SHAMBLING_MOUND_MANA_COST, DRUID_SHAMBLING_MOUND_CAP_DIVISOR,
+    DRUID_SUMMON_UPKEEP_MANA,
     ROGUE_TRAP_UNLOCK_LEVEL, ROGUE_TRAP_DOT_FRACTION, ROGUE_TRAP_DOT_ROUNDS,
     ROGUE_EVASION_STAMINA_COST,
     ROGUE_TWIN_FANGS_UNLOCK_LEVEL, ROGUE_TWIN_FANGS_OFFHAND_MULT, ROGUE_TWIN_FANGS_INSTAKILL_MULT,
@@ -234,13 +237,13 @@ import {
     STATUE_EVENT_ROUND_BOSS, STATUE_EVENT_ROUND_MEGA_BOSS, STATUE_EVENT_ROUND_SUPER_BOSS,
     SUPER_BOSS_HP_MULT, SUPER_BOSS_DEFENSE_PER_DL, SUPER_BOSS_MELEE_PER_DL, SUPER_BOSS_MAGIC_PER_DL,
     SUPER_BOSS_ACTIONS_PER_TURN, SUPER_BOSS_SUMMON_COUNT,
-    STATUE_BOSS_AURA_MULT, PALADIN_DIVINE_JUDGMENT_SUPERBOSS_DIVISOR,
+    STATUE_BOSS_AURA_MULT, STATUE_EVENT_DAMAGE_PER_ROUND, PALADIN_DIVINE_JUDGMENT_SUPERBOSS_DIVISOR,
     SUPER_BOSS_MUMMY_ROT_MULT, STATUE_GOLD_MULT, STATUE_XP_MULT,
     SUPERBOSS_NAMES, LEGENDARY_ITEM_IDS,
     VK_ATTACK_MANA_COST_BASE, VK_ATTACK_EXTRA_PER_5LV,
     VK_DOT_DAMAGE_FRAC, VK_DOT_ROUNDS_PER_ATTACK,
     VK_POISON_DAMAGE_BONUS, VK_ACID_DEF_DEBUFF,
-    VK_SUMMON_VERMIN_MANA_COST, VK_SUMMON_VERMIN_UNLOCK_LEVEL,
+    VK_SUMMON_VERMIN_MANA_COST, VK_SUMMON_VERMIN_UNLOCK_LEVEL, VK_SUMMON_UPKEEP_MANA,
     VK_VERMIN_TYPES,
     VK_SUMMON_SLIME_MANA_COST, VK_SUMMON_SLIME_UNLOCK_LEVEL,
     VK_SLIME_TYPES,
@@ -248,7 +251,7 @@ import {
     VK_CHARM_VERMIN_UNLOCK_LEVEL, VK_CHARM_VERMIN_MANA_COST, VK_CHARM_VERMIN_TAGS,
     VK_INSECT_PLAGUE_UNLOCK_LEVEL, VK_INSECT_PLAGUE_MANA_COST,
     VK_INSECT_PLAGUE_DOT_FRAC,
-    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST,
+    VK_SWARM_UNLOCK_LEVEL, VK_SWARM_SUMMON_MANA_COST, VK_SWARM_UPKEEP_MANA,
     VK_SWARM_MAX_UPGRADE_DIVISOR,
     VK_SWARM_DEFENSE_PER_LEVEL,
     VK_VSWARM_MELEE_RESIST, VK_VSWARM_MAGIC_WEAKNESS, VK_VSWARM_FIRE_WEAKNESS,
@@ -268,6 +271,7 @@ import {
     WARLOCK_CURSE_MAX_ROUNDS, WARLOCK_CURSE_SHRUG_CHANCE,
     WARLOCK_CHARM_UNLOCK_LEVEL, WARLOCK_CHARM_MANA_COST,
     WARLOCK_CAULDRON_UNLOCK_LEVEL, WARLOCK_CAULDRON_HP_COST, WARLOCK_DEMON_UPKEEP_HP,
+    WARLOCK_AWAKENED_UPKEEP_HP, WARLOCK_AWAKENED_UPKEEP_MANA,
     WARLOCK_ABYSS_FORM_UNLOCK_LEVEL, WARLOCK_ABYSS_MAGIC_RESIST, WARLOCK_ABYSS_COLD_ACID_RESIST,
     WARLOCK_DEMON_PROTECTION_CAP, WARLOCK_ELDRITCH_SIGN_TARGET_DIVISOR,
     WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE,
@@ -283,7 +287,7 @@ import {
     PHOTOMANCER_MIRROR_IMAGE_MANA_COST, PHOTOMANCER_BLUR_UNLOCK_LEVEL,
     PHOTOMANCER_BLUR_MANA_COST, PHOTOMANCER_BLUR_MISS_CHANCE,
     PHOTOMANCER_INVISIBILITY_MANA_COST, PHOTOMANCER_ILLUSION_UNLOCK_LEVEL,
-    PHOTOMANCER_ILLUSION_MANA_COST, PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL,
+    PHOTOMANCER_ILLUSION_MANA_COST, PHOTOMANCER_ILLUSION_UPKEEP_MANA, PHOTOMANCER_IMPROVED_INVIS_UNLOCK_LEVEL,
     PHOTOMANCER_DISINTEGRATE_UNLOCK_LEVEL, PHOTOMANCER_DISINTEGRATE_MANA_COST,
     PHOTOMANCER_DISINTEGRATE_BASE_DAMAGE_BONUS, PHOTOMANCER_DISINTEGRATE_DAMAGE_PER_LEVEL,
     PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_EVERY, PHOTOMANCER_DISINTEGRATE_EXTRA_BEAM_START_LEVEL,
@@ -1182,6 +1186,89 @@ export class CombatSystem {
             && p.summonerId === warlock.id
             && this._isWarlockBoundSummon(p)
             && (includeDead || p.health > 0));
+    }
+
+    _shuffleForUpkeep(units) {
+        const out = (units || []).filter(u => u && u.health > 0);
+        for (let i = out.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [out[i], out[j]] = [out[j], out[i]];
+        }
+        return out;
+    }
+
+    _dismissSummonForUpkeep(owner, summon, label) {
+        if (!summon || summon.health <= 0) return;
+        summon.health = 0;
+        this._addLog(`⚠️ ${summon.name} fades — ${owner.name} cannot maintain ${label}.`);
+    }
+
+    _payManaSummonUpkeep(owner, units, perUnit, label) {
+        if (!owner || owner.health <= 0 || perUnit <= 0) return [];
+        const kept = this._shuffleForUpkeep(units);
+        while (kept.length > 0 && (owner.mana || 0) < kept.length * perUnit) {
+            const removed = kept.pop();
+            this._dismissSummonForUpkeep(owner, removed, label);
+        }
+        const cost = kept.length * perUnit;
+        if (cost > 0) {
+            owner.mana = Math.max(0, (owner.mana || 0) - cost);
+            this._addLog(`🔹 ${owner.name} maintains ${kept.length} ${label}${kept.length === 1 ? '' : 's'} (-${cost} MP).`);
+        }
+        return kept;
+    }
+
+    _payHealthSummonUpkeep(owner, units, perUnit, label) {
+        if (!owner || owner.health <= 0 || perUnit <= 0) return [];
+        const kept = this._shuffleForUpkeep(units);
+        const canPay = () => Math.max(0, (owner.health || 0) - 1) >= kept.length * perUnit;
+        while (kept.length > 0 && !canPay()) {
+            const removed = kept.pop();
+            this._dismissSummonForUpkeep(owner, removed, label);
+        }
+        const cost = kept.length * perUnit;
+        if (cost > 0) {
+            owner.health = Math.max(1, (owner.health || 0) - cost);
+            this._addLog(`🩸 ${owner.name} maintains ${kept.length} ${label}${kept.length === 1 ? '' : 's'} (-${cost} HP).`);
+        }
+        return kept;
+    }
+
+    _payAwakenedUpkeep(owner, units) {
+        if (!owner || owner.health <= 0) return [];
+        const kept = this._shuffleForUpkeep(units);
+        const canPay = () => {
+            const hpCost = kept.length * WARLOCK_AWAKENED_UPKEEP_HP;
+            const mpCost = kept.length * WARLOCK_AWAKENED_UPKEEP_MANA;
+            return Math.max(0, (owner.health || 0) - 1) >= hpCost && (owner.mana || 0) >= mpCost;
+        };
+        while (kept.length > 0 && !canPay()) {
+            const removed = kept.pop();
+            this._dismissSummonForUpkeep(owner, removed, 'awakened lord');
+        }
+        const hpCost = kept.length * WARLOCK_AWAKENED_UPKEEP_HP;
+        const mpCost = kept.length * WARLOCK_AWAKENED_UPKEEP_MANA;
+        if (kept.length > 0) {
+            owner.health = Math.max(1, (owner.health || 0) - hpCost);
+            owner.mana = Math.max(0, (owner.mana || 0) - mpCost);
+            this._addLog(`🕳️ ${owner.name} maintains ${kept.length} awakened lord${kept.length === 1 ? '' : 's'} (-${hpCost} HP, -${mpCost} MP).`);
+        }
+        return kept;
+    }
+
+    _clearWorldTreeCharmBuff(enemy) {
+        if (!enemy || !enemy.worldTreeStaffBuff) return;
+        const hpBonus = enemy.worldTreeStaffMaxHealthBonus || 0;
+        const defBonus = enemy.worldTreeStaffDefenseBonus || 0;
+        if (hpBonus > 0) {
+            enemy.maxHealth = Math.max(1, (enemy.maxHealth || 1) - hpBonus);
+            enemy.health = Math.min(enemy.health || 1, enemy.maxHealth);
+        }
+        if (defBonus > 0) enemy.defense = Math.max(0, (enemy.defense || 0) - defBonus);
+        enemy.worldTreeStaffBuff = false;
+        enemy.worldTreeStaffMaxHealthBonus = 0;
+        enemy.worldTreeStaffDefenseBonus = 0;
+        enemy.activeEffects = (enemy.activeEffects || []).filter(fx => !(fx && fx.type === 'world_tree_staff'));
     }
 
     _getActiveAwakenedIds() {
@@ -2234,11 +2321,24 @@ export class CombatSystem {
                 meleeMin,
                 meleeMax,
                 itemDamageMult: sourceMound.summonStats?.itemDamageMult || 1,
+                worldTreeStaffBuff: !!sourceMound.summonStats?.worldTreeStaffBuff,
+                worldTreeExtraAttacks: sourceMound.summonStats?.worldTreeExtraAttacks || 0,
                 shamblingGrowthStage: 0,
                 canSpawnMini: false,
                 summonedRound: this.turnNumber,
             },
         });
+        if (mini.summonStats.worldTreeStaffBuff) {
+            mini.activeEffects = mini.activeEffects || [];
+            mini.activeEffects.push({
+                type: 'world_tree_staff',
+                damageMult: 1.75,
+                extraAttacks: mini.summonStats.worldTreeExtraAttacks || 1,
+                maxHealthMult: 1.25,
+                defenseBonus: Math.floor((druid.level || 1) / 5),
+                permanent: true,
+            });
+        }
         mini.health = mini.maxHealth;
         this.party.push(mini);
         this._registerNewSummon(mini);
@@ -2683,7 +2783,7 @@ export class CombatSystem {
             const xtTags = (xtDef && xtDef.tags) ? xtDef.tags : [];
             const xtFavored = favoredTags.length > 0 && favoredTags.some(tag => xtTags.includes(tag));
             if (xtFavored) {
-                const xtInstakill = m.getFavoredEnemyInstakillChance();
+                const xtInstakill = m.getFavoredEnemyInstakillChance() * 0.5;
                 if (xtInstakill > 0 && Math.random() < xtInstakill) {
                     if (curT.isBoss || curT.isMegaBoss) {
                         // Boss/mega-boss immune to instakill — x4 pre-defense damage
@@ -5506,7 +5606,7 @@ export class CombatSystem {
     /**
      * Ranger L20 Explosive Arrow. Costs 3× normal ranged stamina.
      * Fires a single explosive arrow that hits ALL alive hostile enemies
-     * at half post-defense damage, half normal crit chance, and half normal
+     * at half post-defense damage, reduced crit chance, and one-third normal
      * instakill chance vs favored enemies.
      */
     rangerExplosiveArrow() {
@@ -5833,8 +5933,8 @@ export class CombatSystem {
         const unlocked = getNecromancerUnlocked(m.level);
         const idx = Math.max(0, Math.min(tierIndex | 0, unlocked.length - 1));
         const effectiveTierIndex = Math.max(0, Math.min(idx, UNDEAD_TIERS.length - 1));
-        // Tier cost: skeleton=7, zombie=8, ghoul=9, spectre=10 ... +1 per tier
-        const tierCost = NECRO_SUMMON_MANA_COST + effectiveTierIndex;
+        // Tier cost is half the old 7-14 MP ladder, rounded up.
+        const tierCost = Math.ceil((NECRO_SUMMON_MANA_COST + effectiveTierIndex) / 2);
 
         if (m.mana < tierCost) {
             this._addLog(`${m.name} needs ${tierCost} MP to summon this undead (has ${m.mana}).`);
@@ -6049,7 +6149,7 @@ export class CombatSystem {
     /**
      * Ranger L30 Beastlord Toggle — free action (does not consume turn).
      * When active: each round auto-rolls (level/2+10)% chance to summon a random beast.
-     * Costs 5 MP/round base + 1 MP/round per beastlord-summoned beast alive.
+     * Costs 5 MP/round base + 2 MP/round per beastlord-summoned beast alive.
      */
     rangerToggleBeastlord() {
         const m = this.currentMember;
@@ -6298,7 +6398,9 @@ export class CombatSystem {
             stats.defense = Math.max(0, Math.floor((stats.defense || 0) + Math.floor((m.level || 1) / 5)));
             stats.baseDefense = stats.defense;
             stats.baseMaxHealth = stats.maxHealth;
-            stats.itemDamageMult = 1.25;
+            stats.itemDamageMult = 1.75;
+            stats.worldTreeStaffBuff = true;
+            stats.worldTreeExtraAttacks = 1;
         }
         m.mana -= cost;
 
@@ -6376,11 +6478,24 @@ export class CombatSystem {
                     beastKind: beastId,
                     stunResistChance: stats.stunResistChance ?? 0,
                     itemDamageMult: stats.itemDamageMult || 1,
+                    worldTreeStaffBuff: !!stats.worldTreeStaffBuff,
+                    worldTreeExtraAttacks: stats.worldTreeExtraAttacks || 0,
                     ...(beastId === 'shambling_mound' ? { summonedRound: this.turnNumber } : {}),
                     // Upgrade bonus stored here for use at combat time.
                     ...(upgradeName ? { upgradeName, upgradeBonus } : {}),
                 },
             });
+            if (stats.worldTreeStaffBuff) {
+                beast.activeEffects = beast.activeEffects || [];
+                beast.activeEffects.push({
+                    type: 'world_tree_staff',
+                    damageMult: 1.75,
+                    extraAttacks: stats.worldTreeExtraAttacks || 1,
+                    maxHealthMult: 1.25,
+                    defenseBonus: Math.floor((m.level || 1) / 5),
+                    permanent: true,
+                });
+            }
             this.party.push(beast);
             this._registerNewSummon(beast);
             return beast;
@@ -7845,6 +7960,10 @@ export class CombatSystem {
         }
         m.mana -= DRUID_WILD_SHAPE_MANA_INITIAL;
         m.wildShapeForm = form;
+        const worldTreeTreant = form === 'treant' && this._hasEquipped(m, 'staff_world_tree');
+        m.worldTreeAspectActive = !!worldTreeTreant;
+        m.worldTreeAspectDamageMult = worldTreeTreant ? 2 : 1;
+        m.worldTreeAspectExtraAttacks = worldTreeTreant ? 3 : 0;
         this._emitTelemetry('abilityUsed', { member: m, abilityId: `druid_wildshape_${form}` });
 
         // Row management: save original row, then move to the appropriate row for this form.
@@ -7856,7 +7975,6 @@ export class CombatSystem {
 
         // HP doubling for bear and treant; World Tree treant form triples total health.
         if (form === 'bear' || form === 'treant') {
-            const worldTreeTreant = form === 'treant' && this._hasEquipped(m, 'staff_world_tree');
             m.wildShapeHpBonus = m.maxHealth * (worldTreeTreant ? 2 : 1);
             m.maxHealth += m.wildShapeHpBonus;
             m.health   += m.wildShapeHpBonus;
@@ -7877,7 +7995,11 @@ export class CombatSystem {
 
         const formIcons = { bear: '\u{1F43B}', wolf: '\u{1F43A}', eagle: '\u{1F985}', pixie: '\u{1F9DA}', treant: '\u{1F333}' };
         const formNames = { bear: 'Bear Form', wolf: 'Wolf Form', eagle: 'Storm Eagle Form', pixie: 'Pixie Form', treant: 'Treant Form' };
-        this._addLog(`\u{1F43E} ${m.name} transforms into ${formIcons[form]} ${formNames[form]}! (-${DRUID_WILD_SHAPE_MANA_INITIAL} MP; ${DRUID_WILD_SHAPE_MANA_PER_ROUND} MP/round)`);
+        if (worldTreeTreant) {
+            this._addLog(`\u{1F333} ${m.name} transforms into an aspect of the World Tree! (-${DRUID_WILD_SHAPE_MANA_INITIAL} MP; ${DRUID_WILD_SHAPE_MANA_PER_ROUND} MP/round)`);
+        } else {
+            this._addLog(`\u{1F43E} ${m.name} transforms into ${formIcons[form]} ${formNames[form]}! (-${DRUID_WILD_SHAPE_MANA_INITIAL} MP; ${DRUID_WILD_SHAPE_MANA_PER_ROUND} MP/round)`);
+        }
         this._notify();
     }
 
@@ -7913,6 +8035,7 @@ export class CombatSystem {
                     e.charmedRounds = 0;
                     e.charmerId = null;
                     e.naturesCharmed = false;
+                    this._clearWorldTreeCharmBuff(e);
                     this._addLog(`\u{1F33F} ${this._eName(e)} returns to the enemy ranks.`);
                 }
             }
@@ -8010,6 +8133,9 @@ export class CombatSystem {
         m.wildShapeHpBonus  = 0;
         m.wildShapeDefBonus = 0;
         m.wildShapeOrigRow  = null;
+        m.worldTreeAspectActive = false;
+        m.worldTreeAspectDamageMult = 1;
+        m.worldTreeAspectExtraAttacks = 0;
         this._addLog(`\u{1F43E} ${m.name} returns to their natural form.`);
     }
 
@@ -8164,13 +8290,15 @@ export class CombatSystem {
             return;
         }
         const lvl   = m.level;
-        const hits  = Math.max(1, Math.floor(lvl / DRUID_WILD_TREANT_ATTACKS_DIVISOR));
+        const aspectExtra = m.worldTreeAspectActive ? (m.worldTreeAspectExtraAttacks || 0) : 0;
+        const aspectMult = m.worldTreeAspectActive ? (m.worldTreeAspectDamageMult || 2) : 1;
+        const hits  = Math.max(1, Math.floor(lvl / DRUID_WILD_TREANT_ATTACKS_DIVISOR)) + aspectExtra;
         const holdC = DRUID_WILD_TREANT_HOLD_BASE + lvl * DRUID_WILD_TREANT_HOLD_PER_LEVEL;
-        this._addLog(`\u{1F333} ${m.name} looms in Treant Form!`);
+        this._addLog(`\u{1F333} ${m.name} looms in ${m.worldTreeAspectActive ? 'World Tree Aspect' : 'Treant Form'}!`);
         for (let i = 0; i < hits; i++) {
             if (targetEnemy.health <= 0) break;
             const target = targetEnemy;
-            const dmg    = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 2.0));
+            const dmg    = Math.max(1, Math.round(this._rollDruidWildShapeDmg(m) * 2.0 * aspectMult));
             const out    = this._applyOutgoingDamageBonuses(m, dmg, 'magic');
             const dealt  = this._damageEnemy(target, out, false, false, 0, false, { contactAttacker: m });
             this._addLog(`\u{1F333} ${m.name} slams ${this._eName(target)} with ancient branches for ${dealt}!`);
@@ -9285,9 +9413,10 @@ export class CombatSystem {
             baseDmg          = Math.max(1, Math.round(baseDmg * dmgMult));
             const isPrincess = stats.upgradeName === 'pixie_princess';
             const wsTag      = dmgMult > 1 ? ' \u2728' : '';
-            this._addLog(`\u{1F9DA}${isPrincess ? ' Pixie Princess' : ''} ${m.name} whirls a storm of faerie dust for ${baseDmg}!${wsTag}`);
+            this._addLog(`\u{1F9DA}${isPrincess ? ' Pixie Princess' : ''} ${m.name} whirls a storm of faerie dust!${wsTag}`);
             for (const e of this.aliveHostileEnemies.slice()) {
-                this._damageSummonEnemy(e, baseDmg);
+                const dealt = this._damageSummonEnemy(e, baseDmg);
+                this._addLog(`  \u21AA ${this._eName(e)} is hit by faerie dust for ${dealt}!`);
                 if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
             }
             // Wild Shape extra attack
@@ -9296,7 +9425,8 @@ export class CombatSystem {
                 const bonusDmg = Math.max(1, Math.round(bonus * dmgMult));
                 this._addLog(`\u{1F9DA}\u{1F43E} ${m.name} shimmers \u2014 bonus pixie burst!`);
                 for (const e of this.aliveHostileEnemies) {
-                    this._damageSummonEnemy(e, bonusDmg);
+                    const dealt = this._damageSummonEnemy(e, bonusDmg);
+                    this._addLog(`  \u21AA ${this._eName(e)} is hit by faerie dust for ${dealt}!`);
                     if (e.health <= 0) this._addLog(`${this._eName(e)} is defeated!`);
                 }
             }
@@ -9371,6 +9501,7 @@ export class CombatSystem {
             const dmgMult    = stats.wildShapeDmgMult || 1;
             let extraAttacks = Math.floor(summonerLevel / 33);
             if (stats.wildShapeExtraAttack) extraAttacks++;
+            extraAttacks += stats.worldTreeExtraAttacks || 0;
             const isElder = stats.upgradeName === 'elder_treant';
             const holdChance = TREANT_HOLD_CHANCE + (stats.upgradeBonus || 0);
             const _treantSlam = () => {
@@ -9396,16 +9527,23 @@ export class CombatSystem {
         }
 
         if (beastKind === 'shambling_mound') {
-            const t = targets[Math.floor(Math.random() * targets.length)];
-            const dmg = randomInt(stats.meleeMin ?? MELEE_DAMAGE_MIN, stats.meleeMax ?? MELEE_DAMAGE_MAX);
-            const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
-            this._addLog(`🪴 ${m.name} slams ${this._eName(t)} for ${dealt} damage!`);
-            if (t.health > 0 && Math.random() < (stats.stunChance ?? 0.45)) {
-                if (this._tryStunEnemy(t)) {
-                    this._addLog(`  ⚡ ${this._eName(t)} is stunned by the crushing vines!`);
+            const extraAttacks = stats.worldTreeExtraAttacks || 0;
+            const _moundSlam = () => {
+                const alive = this.aliveHostileEnemies;
+                if (alive.length === 0) return;
+                const t = alive[Math.floor(Math.random() * alive.length)];
+                const dmg = randomInt(stats.meleeMin ?? MELEE_DAMAGE_MIN, stats.meleeMax ?? MELEE_DAMAGE_MAX);
+                const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
+                this._addLog(`🪴 ${m.name} slams ${this._eName(t)} for ${dealt} damage!`);
+                if (t.health > 0 && Math.random() < (stats.stunChance ?? 0.45)) {
+                    if (this._tryStunEnemy(t)) {
+                        this._addLog(`  ⚡ ${this._eName(t)} is stunned by the crushing vines!`);
+                    }
                 }
-            }
-            if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+                if (t.health <= 0) this._addLog(`${this._eName(t)} is defeated!`);
+            };
+            _moundSlam();
+            for (let i = 0; i < extraAttacks; i++) _moundSlam();
             return;
         }
 
@@ -12988,6 +13126,10 @@ export class CombatSystem {
         const eName = this._eName(e);
         const typeDef = ENEMY_TYPES[e.type] || {};
         rawDmg = this._applyEnemyResourceExhaustion(e, rawDmg);
+        if (this.isStatueEvent && e && !opts.ignoreStatueRoundDamageBonus) {
+            const roundBonus = Math.max(0, this.turnNumber || 0) * STATUE_EVENT_DAMAGE_PER_ROUND;
+            if (roundBonus > 0) rawDmg = Math.max(1, Math.round(rawDmg * (1 + roundBonus)));
+        }
         const tauntResult = opts.covenantTransfer ? null : this._applyWarriorTauntTargeting(target, rawDmg, attackKind, opts);
         if (tauntResult) {
             target = tauntResult.target;
@@ -14888,10 +15030,10 @@ export class CombatSystem {
             // Beastlord: base mana upkeep and per-summon upkeep
             if (m.classId === 'ranger' && m.beastlordActive && m.health > 0) {
                 const _beastlordBeasts = this.party.filter(p => p.isSummoned && p.summonerId === m.id && p.summonStats && p.summonStats.beastlordSummoned && p.health > 0);
-                const _beastlordTotal = RANGER_BEASTLORD_MANA_PER_ROUND + _beastlordBeasts.length * RANGER_BEASTLORD_UPKEEP_PER_SUMMON;
-                if (m.mana >= _beastlordTotal) {
-                    m.mana -= _beastlordTotal;
-                    this._addLog(`🦎 ${m.name}'s Beastlord burns ${_beastlordTotal} MP (-${RANGER_BEASTLORD_MANA_PER_ROUND} base, -${_beastlordBeasts.length * RANGER_BEASTLORD_UPKEEP_PER_SUMMON} upkeep).`);
+                if (m.mana >= RANGER_BEASTLORD_MANA_PER_ROUND) {
+                    m.mana -= RANGER_BEASTLORD_MANA_PER_ROUND;
+                    this._addLog(`🦎 ${m.name}'s Beastlord burns ${RANGER_BEASTLORD_MANA_PER_ROUND} MP base upkeep.`);
+                    this._payManaSummonUpkeep(m, _beastlordBeasts, RANGER_BEASTLORD_UPKEEP_PER_SUMMON, 'Beastlord beast');
                     // Auto-summon roll
                     const _summonChance = (Math.floor(m.level / 2) + RANGER_BEASTLORD_SUMMON_BASE) / 100;
                     if (Math.random() < _summonChance) {
@@ -14903,6 +15045,14 @@ export class CombatSystem {
                     this._addLog(`🦎 ${m.name}'s Beastlord fades — no mana left!`);
                 }
             }
+            if (m.classId === 'ranger' && m.health > 0) {
+                const rangerBeasts = this.party.filter(p =>
+                    p && p.isSummoned && p.summonerId === m.id && p.health > 0
+                    && BEAST_TYPES[p.summonType]
+                    && !p.summonStats?.beastlordSummoned
+                    && !p.summonStats?.isBeastCompanion);
+                this._payManaSummonUpkeep(m, rangerBeasts, RANGER_SUMMON_UPKEEP_MANA, 'woodland beast');
+            }
             if (m.classId === 'ranger' && m.rangerTotem && m.health > 0) {
                 if (m.mana >= RANGER_TOTEM_MANA_PER_ROUND) {
                     m.mana -= RANGER_TOTEM_MANA_PER_ROUND;
@@ -14913,7 +15063,7 @@ export class CombatSystem {
                     m.rangerTotem = null;
                 }
             }
-            // Elemental Rift (Mage L30): 10 MP/round upkeep; close rift if out of mana; roll elemental summon
+            // Elemental Rift (Mage L30): 10 MP/round base upkeep; elementals also cost upkeep below.
             if (m.classId === 'mage' && m.elementalRiftOpen && m.health > 0) {
                 if (m.mana >= MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND) {
                     m.mana -= MAGE_ELEMENTAL_RIFT_MANA_PER_ROUND;
@@ -14929,6 +15079,12 @@ export class CombatSystem {
                     this._addLog(`\u{1F300} ${m.name}'s Elemental Rift collapses — no mana left!`);
                 }
             }
+            if (m.classId === 'mage' && m.health > 0) {
+                const riftElementals = this.party.filter(p =>
+                    p && p.isSummoned && p.summonerId === m.id && p.health > 0
+                    && ['rift_fire', 'rift_water', 'rift_earth', 'rift_air', 'rift_void'].includes(p.summonType));
+                this._payManaSummonUpkeep(m, riftElementals, MAGE_ELEMENTAL_RIFT_ELEMENTAL_MANA_UPKEEP, 'rift elemental');
+            }
             if (m.classId === 'warlock' && m.health > 0) {
                 const hasHex = this._hasActiveWarlockHex(m);
                 if (hasHex) {
@@ -14943,20 +15099,14 @@ export class CombatSystem {
                     }
                 }
                 if (m.warlockCauldronOpen) {
-                    const demons = this._getWarlockBoundDemons(m);
-                    const upkeep = demons.length * WARLOCK_DEMON_UPKEEP_HP;
-                    if (upkeep > 0) {
-                        m.health = Math.max(0, m.health - upkeep);
-                        this._addLog(`\u{1F608} ${m.name}'s bound demons drink ${upkeep} HP in upkeep.`);
-                    }
-                    if (m.health <= 0) {
-                        this._addLog(`${m.name} is consumed by the cauldron's bargain!`);
-                        m.warlockCauldronOpen = false;
-                        this._removeWarlockSummons(m);
-                    } else {
+                    const demons = this._getWarlockBoundDemons(m).filter(d => !WARLOCK_AWAKENED_PRESETS[d.summonType]);
+                    this._payHealthSummonUpkeep(m, demons, WARLOCK_DEMON_UPKEEP_HP, 'bound demon');
+                    if (m.health > 0) {
                         this._warlockSummonDemon(m, m.warlockSelectedDemon);
                     }
                 }
+                const awakened = this._getWarlockBoundDemons(m).filter(d => WARLOCK_AWAKENED_PRESETS[d.summonType]);
+                this._payAwakenedUpkeep(m, awakened);
                 if (m.abyssFormActive && !m.eldritchSignReady && Math.random() < WARLOCK_ELDRITCH_SIGN_RECHARGE_CHANCE) {
                     m.eldritchSignReady = true;
                     this._addLog(`\u{1F9FF} The Eldritch Sign reforms before ${m.name}.`);
@@ -14973,6 +15123,13 @@ export class CombatSystem {
                     this._exitWildShape(m);
                 }
             }
+            if (m.classId === 'druid' && m.health > 0) {
+                const druidSummons = this.party.filter(p =>
+                    p && p.isSummoned && p.summonerId === m.id && p.health > 0
+                    && (BEAST_TYPES[p.summonType] || p.summonType === 'shambling_mound')
+                    && p.summonType !== 'faerie_queen');
+                this._payManaSummonUpkeep(m, druidSummons, DRUID_SUMMON_UPKEEP_MANA, 'druid minion');
+            }
             // Druid L35 Nature's Charms: per-charmed-minion upkeep + per-round charm attempts
             if (m.classId === 'druid' && m.naturesCharmActive && m.health > 0) {
                 const _ncCharmed = this.enemies.filter(e => e.naturesCharmed && e.charmedRounds > 0 && e.charmerId === m.id);
@@ -14988,6 +15145,7 @@ export class CombatSystem {
                             _nce.charmedRounds = 0;
                             _nce.charmerId     = null;
                             _nce.naturesCharmed = false;
+                            this._clearWorldTreeCharmBuff(_nce);
                             this._addLog(`\u{1F33F} ${this._eName(_nce)} breaks free — ${m.name}'s mana is exhausted!`);
                         }
                         this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms fades — no mana left!`);
@@ -15010,6 +15168,26 @@ export class CombatSystem {
                             _nce.charmerId            = m.id;
                             _nce.naturesCharmed       = true;
                             _nce.naturesCharmBolster  = m.level * DRUID_NATURES_CHARM_BOLSTER_PER_LEVEL;
+                            if (_ncTags.includes('plant') && this._hasEquipped(m, 'staff_world_tree')) {
+                                const hpGain = Math.max(1, Math.floor((_nce.maxHealth || _nce.health || 1) * 0.25));
+                                const defBonus = Math.floor((m.level || 1) / 5);
+                                _nce.maxHealth = Math.max(1, (_nce.maxHealth || _nce.health || 1) + hpGain);
+                                _nce.health = Math.min(_nce.maxHealth, (_nce.health || 1) + hpGain);
+                                _nce.defense = Math.max(0, (_nce.defense || 0) + defBonus);
+                                _nce.worldTreeStaffBuff = true;
+                                _nce.worldTreeStaffMaxHealthBonus = hpGain;
+                                _nce.worldTreeStaffDefenseBonus = defBonus;
+                                _nce.activeEffects = (_nce.activeEffects || []).filter(fx => !(fx && fx.type === 'world_tree_staff'));
+                                _nce.activeEffects.push({
+                                    type: 'world_tree_staff',
+                                    damageMult: 1.75,
+                                    extraAttacks: 1,
+                                    maxHealthMult: 1.25,
+                                    maxHealthBonus: hpGain,
+                                    defenseBonus: defBonus,
+                                    permanent: true,
+                                });
+                            }
                             _ncCharmedThisRound = true;
                             this._addLog(`\u{1F33F} ${m.name}'s Nature's Charms wins over ${this._eName(_nce)}! (${_ncDuration} rds, +${Math.round(_nce.naturesCharmBolster * 100)}% dmg)`);
                         } else {
@@ -15179,7 +15357,7 @@ export class CombatSystem {
                     }
                 }
             }
-            // Necromancer undead upkeep: 1 MP per living undead per round
+            // Necromancer undead upkeep: 2 MP per living undead/vampire beast per round; random minions fade until payable.
             if (m.classId === 'necromancer' && m.health > 0) {
                 const myUndead = this.party.filter(p =>
                     p.isSummoned && p.summonerId === m.id &&
@@ -15190,19 +15368,23 @@ export class CombatSystem {
                     p.isSummoned && p.summonStats && p.summonStats.vampireBeast &&
                     p.summonStats.vampireNecromancer === m.id && p.health > 0,
                 );
-                const totalUndead = myUndead.length;
-                const totalBeasts = myVampireBeasts.length;
-                const totalUpkeep = (totalUndead + totalBeasts) * NECRO_UNDEAD_MANA_UPKEEP;
-
-                if (totalUpkeep > 0) {
-                    m.mana = Math.max(0, m.mana - totalUpkeep);
-                    let msg = `💀 ${m.name}'s`;
-                    if (totalUndead > 0) msg += ` ${totalUndead} undead`;
-                    if (totalUndead > 0 && totalBeasts > 0) msg += ' and';
-                    if (totalBeasts > 0) msg += ` ${totalBeasts} minions`;
-                    msg += ` drain ${totalUpkeep} MP/round.`;
-                    this._addLog(msg);
-                }
+                this._payManaSummonUpkeep(m, myUndead.concat(myVampireBeasts), NECRO_UNDEAD_MANA_UPKEEP, 'necromantic minion');
+            }
+            if (m.classId === 'photomancer' && m.health > 0) {
+                const illusions = this.party.filter(p =>
+                    p && p.isSummoned && p.summonerId === m.id && p.health > 0
+                    && p.summonType === 'illusionary_warrior');
+                this._payManaSummonUpkeep(m, illusions, PHOTOMANCER_ILLUSION_UPKEEP_MANA, 'illusionary warrior');
+            }
+            if (m.classId === 'verminkeeper' && m.health > 0) {
+                const minions = this.party.filter(p =>
+                    p && p.isSummoned && p.summonerId === m.id && p.health > 0
+                    && (VERMIN_PRESETS[p.summonType] || SLIME_PRESETS[p.summonType]));
+                this._payManaSummonUpkeep(m, minions, VK_SUMMON_UPKEEP_MANA, 'vermin/slime minion');
+                const swarms = this.party.filter(p =>
+                    p && p.isSummoned && p.summonerId === m.id && p.health > 0
+                    && (p.summonType === 'vermin_swarm' || p.summonType === 'acid_swarm'));
+                this._payManaSummonUpkeep(m, swarms, VK_SWARM_UPKEEP_MANA, 'swarm');
             }
             // Combat Regen HoT (Cleric Mass Regen — L20)
             for (const e of effects) {
@@ -15338,6 +15520,7 @@ export class CombatSystem {
         const cHit = (target, dmg, isMagic = false, contactAttacker = null, opts = {}) => {
             if (!target || target.health <= 0) return 0;
             dmg = Math.max(1, Math.round(dmg * frenzyMult * this._getWhiteWerewolfLordDamageMult(e)));
+            if (e.worldTreeStaffBuff) dmg = Math.max(1, Math.round(dmg * 1.75));
             const vampireBleedStacks = (opts.vampireBleedPredator || isCharmedVampire) ? this._getBleedDotStackCount(target) : 0;
             if (vampireBleedStacks > 0) dmg = Math.max(1, Math.round(dmg * (1 + vampireBleedStacks * 0.10)));
             const attackKind = opts.attackKind || (isMagic ? 'magic' : 'melee');
@@ -15349,7 +15532,7 @@ export class CombatSystem {
             const ignoreDefense = !!opts.phaseStrike || (!isMagic && !!typeDef.phaseStrike);
             const dealt = this._damageEnemy(target, dmg, ignoreDefense, isMagic, 0, attackKind === 'ranged', options);
             this._addLog(`  \u2192 ${eN(target)} takes ${dealt}${isMagic ? ' magic' : ''} damage.`);
-            cRiders(target, dealt, attackKind, opts);
+            cRiders(target, dealt, attackKind, { ...opts, vampireBleedStacks });
             return dealt;
         };
         const cEffect = (target, effect) => {
@@ -15370,6 +15553,7 @@ export class CombatSystem {
             if (!target || target.health <= 0 || dealt <= 0) return;
             const melee = attackKind === 'melee';
             const aoeMagic = attackKind === 'magic' && (opts.aoe || typeDef.aoeMagic || typeDef.aoeFire || typeDef.aoeDrowning);
+            const vampireBleedStacks = opts.vampireBleedStacks || 0;
 
             if (melee && typeDef.poisonChance && !this._enemyHasImmunity(target, 'poison') && Math.random() < typeDef.poisonChance) {
                 const perTick = Math.max(1, Math.floor(dealt * POISON_DAMAGE_FRACTION));
@@ -15437,6 +15621,20 @@ export class CombatSystem {
             if (!opts.isFollowup && !opts.aoe && (attackKind === 'melee' || attackKind === 'ranged')) {
                 cFollowups(attackKind);
             }
+            if (!opts.isFollowup && !opts.aoe && e.worldTreeStaffBuff && (attackKind === 'melee' || attackKind === 'ranged' || attackKind === 'magic')) {
+                cWorldTreeFollowup(attackKind, isMagic);
+            }
+        };
+        const cWorldTreeFollowup = (attackKind, isMagicAttack = false) => {
+            if (e.health <= 0 || hostile().length === 0) return;
+            const t = pick();
+            if (!t) return;
+            const lo = isMagicAttack ? mdmin : dmin;
+            const hi = isMagicAttack ? mdmax : dmax;
+            let dmg = Math.max(1, Math.round(randomInt(lo, hi) * MONSTER_DAMAGE_MULTIPLIER));
+            dmg = Math.max(1, dmg + this._getEnemyDamageMod(e, attackKind));
+            this._addLog(`\u{1F333} ${eName} lashes out again with World Tree power at ${eN(t)}!`);
+            cHit(t, dmg, isMagicAttack, e, { attackKind, isFollowup: true, vampireBleedPredator: isCharmedVampire });
         };
         const cFollowups = (attackKind) => {
             const dlvl = this.dungeonLevel;
@@ -16627,6 +16825,11 @@ export class CombatSystem {
                 if (e.charmedRounds <= 0) {
                     e.charmedRounds = 0;
                     e.charmerId = null;
+                    e.naturesCharmed = false;
+                    this._clearWorldTreeCharmBuff(e);
+                    for (let i = effects.length - 1; i >= 0; i--) {
+                        if (effects[i] && effects[i].type === 'world_tree_staff') effects.splice(i, 1);
+                    }
                     this._addLog(`🎵 ${this._eName(e)}'s charm has worn off — it returns to the enemy ranks!`);
                 }
             }
@@ -16668,6 +16871,8 @@ export class CombatSystem {
             if (e.charmedRounds > 0) {
                 e.charmedRounds = 0;
                 e.charmerId = null;
+                e.naturesCharmed = false;
+                this._clearWorldTreeCharmBuff(e);
             }
         }
         this._addLog('--- Victory! All enemies defeated! ---');
@@ -17003,8 +17208,9 @@ export class CombatSystem {
         const isMegaBossWave = (wave === STATUE_EVENT_ROUND_MEGA_BOSS);
         const isBossWave     = (wave === STATUE_EVENT_ROUND_BOSS);
 
-        // Count living recruited (non-summoned) party members
+        // Count living recruited (non-summoned) party members; statue waves spawn twice this many total enemies.
         const livingCount = Math.max(1, this.party.filter(m => !m.isSummoned && m.health > 0).length);
+        const targetCount = livingCount * 2;
 
         // Pick eligible enemy types for this theme
         const eligible = Object.entries(ENEMY_TYPES).filter(([, def]) =>
@@ -17023,7 +17229,7 @@ export class CombatSystem {
                 result.push(this._createStatueBossTierEnemy(bossType, 'boss', b, 3));
             }
         }
-        for (let i = 0; i < livingCount; i++) {
+        for (let i = result.length; i < targetCount; i++) {
             const type = pool[Math.floor(Math.random() * pool.length)];
             const e = new Enemy({ type, gridX: 0, gridZ: 0, level: dl });
             if (isMegaBossWave && i === 0) result.push(this._createStatueBossTierEnemy(type, 'mega'));

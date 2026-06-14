@@ -773,7 +773,7 @@ export const WEAPONS = {
         requiredClass: 'druid',
         requiredLevel: 35,
         sellValue: 75000,
-        description: '+7 magic. Druid 35+: empowers Verdant Surge, plant summons, and Treant Wild Shape into World Tree form.',
+        description: '+7 magic. Druid 35+: empowers Verdant Surge; treants, shambling mounds, and charmed plants gain +75% damage, +25% health, +level/5 defense, and +1 attack. Treant Wild Shape becomes an aspect of the World Tree with triple health, x2 Treant attack damage, and +3 attacks.',
         icon: '\u{1F333}',
     },
     hag_eye_rod: {
