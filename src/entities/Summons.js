@@ -346,7 +346,7 @@ export const CORPSE_HORROR_PRESET = {
     kind:         'undead',
     abilities: [
         'Front-row melee. Absorbs fallen enemies to grow stronger.',
-        'Each absorbed corpse adds HP, melee skill, and defense without limit.',
+        'Each absorbed corpse adds HP; melee skill caps at necromancer level × 10 and defense caps at level × 5.',
         'Attack count is capped at necromancer level.',
         'Cannot be healed by potions or Cleric heal.',
         'Restored only by its summoner\'s Necromancer life-drain.',
@@ -431,7 +431,7 @@ export const DEMI_LICH_PRESET = {
     kind:          'undead',
     abilities: [
         'Back row undead spellcaster. Requires the necromancer to be in Lich Form.',
-        'Magic/AoE attack ignores enemy defense and strikes floor(necromancer level / 5) targets.',
+        'Magic/AoE attack ignores enemy defense, strikes floor(necromancer level / 5) targets, and adds floor((level/3)^2 × 2) damage before magic bonuses.',
         'Takes half damage from magic and AoE attacks.',
         'Immune to stun, web, holds, and poison.',
         'Fear: same as Ghost, attempting to terrify up to necromancer level enemies after acting.',

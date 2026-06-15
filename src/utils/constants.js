@@ -823,6 +823,9 @@ export const NECRO_DEMI_LICH_DEFENSE_PER_LEVEL = 2;
 export const NECRO_DEMI_LICH_TARGET_DIVISOR = 5;
 export const NECRO_DEMI_LICH_DAMAGE_PER_LEVEL = 2;
 export const NECRO_DEMI_LICH_MAGIC_RESIST = 0.50;
+export const SUMMON_CAP_BASE = 10;
+export const SUMMON_CAP_PER_LEVEL = 2;
+export const NECRO_VAMPIRE_SUBSUMMON_CAP = 10;
 
 // Summons
 export const RANGER_SUMMON_MANA_COST = 7;
@@ -1557,6 +1560,8 @@ export const NECRO_CORPSE_HORROR_DEF_DIVISOR       = 2;
 export const NECRO_CORPSE_HORROR_SKILL_PER_CORPSE  = 5;
 export const NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE = 2;
 export const NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS  = 0;
+export const NECRO_CORPSE_HORROR_SKILL_CAP_PER_LEVEL = 10;
+export const NECRO_CORPSE_HORROR_DEF_CAP_PER_LEVEL   = 5;
 
 // ── Necromancer L30 — Plague Bringer ─────────────────────────────────────────
 export const NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL     = 30;

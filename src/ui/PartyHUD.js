@@ -1077,7 +1077,7 @@ export class PartyHUD {
             const atkCount = (member.summonStats && member.summonStats.attackCount) || 2;
             horrorBadge.textContent = '🧟' + atkCount;
             const attackCap = member.summonStats && member.summonStats.attackCap;
-            horrorBadge.title = `Corpse Horror: stitched from fallen foes. ${atkCount}${attackCap ? `/${attackCap}` : ''} melee attacks/round. HP, defense, and melee skill keep growing with each new kill.`;
+            horrorBadge.title = `Corpse Horror: stitched from fallen foes. ${atkCount}${attackCap ? `/${attackCap}` : ''} melee attacks/round. HP keeps growing; melee skill caps at level x10 and defense at level x5.`;
         } else if (portraitWrap) {
             const existing = portraitWrap.querySelector('.party-corpse-horror-badge');
             if (existing) existing.remove();
@@ -1226,7 +1226,7 @@ export class PartyHUD {
                     ? `\nGolem attachments: ${ss.attachments.limbs || 0} limb(s), ${ss.attachments.shield ? 'shield' : 'no shield'}, ${ss.attachments.trinkets || 0} trinket(s).`
                     : '') +
                 (member.summonType === 'corpse_horror'
-                    ? `\nCorpse Horror growth: ${ss.corpseCount || 1} corpses, ${ss.attackCount || 1}${ss.attackCap ? `/${ss.attackCap}` : ''} attacks/round, melee skill ${ss.meleeSkill || 0}. HP, defense, and skill continue growing after attacks cap.`
+                    ? `\nCorpse Horror growth: ${ss.corpseCount || 1} corpses, ${ss.attackCount || 1}${ss.attackCap ? `/${ss.attackCap}` : ''} attacks/round, melee skill ${ss.meleeSkill || 0}. HP keeps growing; melee skill caps at level x10 and defense at level x5.`
                     : '') +
                 swarmTitle +
                 (regen ? `\nRegen: ${Math.round(regen * 100)}% HP/round` : '');

@@ -12,7 +12,8 @@
  *   - Equipped gear (weapon/armor/shield) with equip/unequip controls
  *   - Backpack items (equip/use/move-to-group)
  *
- * Summoned creatures are skipped here — they have no inventory UI.
+ * Summoned creatures can be opened from the party HUD to inspect stats and
+ * dismiss eligible temporary minions, but they do not use equipment/backpack UI.
  */
 
 import { getItemDef, getItemDisplayColor, ITEM_CATEGORY, WEAPON_SUBTYPE } from '../items/ItemTypes.js';
@@ -147,10 +148,12 @@ export class InventoryUI {
     /**
      * @param {() => import('../core/GameState.js').GameState} getState
      * @param {() => void} onChanged — called after any inventory mutation
+     * @param {{onUnsummon?: (memberId: string) => boolean}} [options]
      */
-    constructor(getState, onChanged) {
+    constructor(getState, onChanged, options = {}) {
         this._getState = getState;
         this._onChanged = onChanged;
+        this._options = options;
         this._portraitCache = new Map();
 
         // Group inventory overlay
@@ -495,6 +498,49 @@ export class InventoryUI {
         return this.personalOverlay.style.display === 'flex';
     }
 
+    _canManuallyUnsummon(member) {
+        if (!member || !member.isSummoned) return false;
+        if (member.isPersistent) return false;
+        if (member.summonType === 'corpse_horror') return false;
+        if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return false;
+        if (member.summonType === 'vermin_swarm' || member.summonType === 'acid_swarm') return false;
+        if (member.summonStats?.isBeastCompanion) return false;
+        return true;
+    }
+
+    _buildSummonManagement(member) {
+        if (!this._canManuallyUnsummon(member)) return null;
+        const section = document.createElement('div');
+        section.className = 'pinv-section';
+        section.innerHTML = '<div class="pinv-section-title">Summon</div>';
+
+        const row = document.createElement('div');
+        row.className = 'pinv-item-row';
+
+        const info = document.createElement('span');
+        info.className = 'pinv-item-info';
+        info.textContent = 'Dismiss this temporary minion from the roster.';
+        row.appendChild(info);
+
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'pinv-item-actions';
+
+        const btn = document.createElement('button');
+        btn.className = 'pinv-action-btn pinv-use-btn';
+        btn.textContent = 'Unsummon';
+        btn.addEventListener('click', () => {
+            const ok = typeof this._options.onUnsummon === 'function'
+                ? this._options.onUnsummon(member.id)
+                : false;
+            if (ok) this.hidePersonal();
+        });
+        btnGroup.appendChild(btn);
+
+        row.appendChild(btnGroup);
+        section.appendChild(row);
+        return section;
+    }
+
     _renderPersonal() {
         const state = this._getState();
         if (!state) return;
@@ -526,11 +572,11 @@ export class InventoryUI {
         const stateNow = this._getState();
         const eligibleMembers = stateNow ? stateNow.party.filter(m => !m.isSummoned) : [];
         const memberIdx = eligibleMembers.findIndex(m => m.id === this._activeMemberId);
-        const navHint = eligibleMembers.length > 1
+        const navHint = memberIdx !== -1 && eligibleMembers.length > 1
             ? ` (${memberIdx + 1}/${eligibleMembers.length}  ← →)`
             : '';
         nameEl.textContent = `${member.name}  L${member.level}${navHint}`;
-        nameEl.title = eligibleMembers.length > 1 ? 'Use ← → arrow keys to cycle between party members' : '';
+        nameEl.title = memberIdx !== -1 && eligibleMembers.length > 1 ? 'Use ← → arrow keys to cycle between party members' : '';
         idBlock.appendChild(nameEl);
 
         const cls = member.classDef;
@@ -562,6 +608,12 @@ export class InventoryUI {
 
         // Combat Row toggle
         this.personalContent.appendChild(this._buildRowToggle(member));
+
+        if (member.isSummoned) {
+            const summonSection = this._buildSummonManagement(member);
+            if (summonSection) this.personalContent.appendChild(summonSection);
+            return;
+        }
 
         // Ranger favored enemy picker
         if (member.classId === 'ranger' && !member.isSummoned) {
@@ -1032,7 +1084,7 @@ export class InventoryUI {
         }
         if (member.classId === 'necromancer' && member.level >= NECRO_DEMI_LICH_UNLOCK_LEVEL) {
             perk.push(`Demi-Lich: ${NECRO_DEMI_LICH_MANA_COST} MP`);
-            perkDetails.push(`Necromancer L25 Demi-Lich:\n  Requires Lich Form. Costs ${NECRO_DEMI_LICH_MANA_COST} MP.\n  Summons a back-row undead caster with defense 10 + level × 2, HP equal to current necromancer HP, defense-ignoring AoE magic, Ghost Fear, half magic/AoE damage, and immunity to stun/web/holds/poison.`);
+            perkDetails.push(`Necromancer L25 Demi-Lich:\n  Requires Lich Form. Costs ${NECRO_DEMI_LICH_MANA_COST} MP.\n  Summons a back-row undead caster with defense 10 + level × 2, HP equal to current necromancer HP, defense-ignoring AoE magic (1-8 + magic bonuses + floor((level/3)^2 × 2)), Ghost Fear, half magic/AoE damage, and immunity to stun/web/holds/poison.`);
         }
         if (member.classId === 'necromancer' && member.level >= NECRO_L35_UNLOCK_LEVEL) {
             const controlChancePct = Math.round(Math.min(95, (0.50 + 0.005 * (member.level || 1)) * 100));

@@ -113,6 +113,7 @@ export class Game {
         this.inventoryUI = new InventoryUI(
             () => this.gameState,
             () => this._onInventoryChanged(),
+            { onUnsummon: (memberId) => this._onUnsummon(memberId) },
         );
 
         // --- Shop UI ---
@@ -3042,9 +3043,9 @@ export class Game {
         const dl = this.gameState.dungeonLevel || 1;
         const theme = statue.theme || 'undead';
 
-        // Spawn initial wave: 2 enemies per living recruited (non-summoned) party member.
+        // Spawn initial wave: living recruited party size + 5 enemies.
         const livingCount = Math.max(1, this.gameState.party.filter(m => !m.isSummoned && m.health > 0).length);
-        const targetCount = livingCount * 2;
+        const targetCount = livingCount + 5;
 
         const themePool = Object.keys(ENEMY_TYPES).filter(key => {
             const def = ENEMY_TYPES[key];
@@ -3516,6 +3517,36 @@ export class Game {
         if (document.pointerLockElement) document.exitPointerLock();
         this.pauseOverlay.style.display = 'none';
         this.inventoryUI.showPersonal(memberId);
+    }
+
+    _canManuallyUnsummon(member) {
+        if (!member || !member.isSummoned) return false;
+        if (member.isPersistent) return false;
+        if (member.summonType === 'corpse_horror') return false;
+        if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return false;
+        if (member.summonType === 'vermin_swarm' || member.summonType === 'acid_swarm') return false;
+        if (member.summonStats?.isBeastCompanion) return false;
+        return true;
+    }
+
+    _onUnsummon(memberId) {
+        if (!this.gameState || !Array.isArray(this.gameState.party)) return false;
+        const member = this.gameState.party.find(m => m && m.id === memberId);
+        if (!this._canManuallyUnsummon(member)) return false;
+
+        let removed = false;
+        if (this.combatSystem && typeof this.combatSystem.dismissSummon === 'function') {
+            removed = this.combatSystem.dismissSummon(memberId);
+        }
+        if (!removed) {
+            const before = this.gameState.party.length;
+            this.gameState.party = this.gameState.party.filter(m => !m || m.id !== memberId);
+            removed = this.gameState.party.length !== before;
+        }
+        if (!removed) return false;
+        this._onInventoryChanged();
+        this._saveNow();
+        return true;
     }
 
     _onInventoryChanged() {

@@ -151,7 +151,8 @@ import {
     NECRO_DEMI_LICH_UNLOCK_LEVEL, NECRO_DEMI_LICH_MANA_COST,
     NECRO_DEMI_LICH_DEFENSE_BASE, NECRO_DEMI_LICH_DEFENSE_PER_LEVEL,
     NECRO_DEMI_LICH_TARGET_DIVISOR, NECRO_DEMI_LICH_DAMAGE_PER_LEVEL,
-    NECRO_DEMI_LICH_MAGIC_RESIST,
+    NECRO_DEMI_LICH_MAGIC_RESIST, SUMMON_CAP_BASE, SUMMON_CAP_PER_LEVEL,
+    NECRO_VAMPIRE_SUBSUMMON_CAP,
     RANGER_TOTEM_UNLOCK_LEVEL, RANGER_TOTEM_MANA_PER_ROUND,
     RANGER_TOTEM_DURATION_DIVISOR, RANGER_WOLF_TOTEM_BLEED_FRACTION,
     RANGER_BEAR_TOTEM_STUN_CHANCE, RANGER_EAGLE_TOTEM_DAMAGE_PER_LEVEL,
@@ -209,6 +210,7 @@ import {
     NECRO_DARK_APOTHEOSIS_UNLOCK_LEVEL, NECRO_CORPSE_HORROR_HP_FRACTION,
     NECRO_CORPSE_HORROR_DEF_DIVISOR, NECRO_CORPSE_HORROR_SKILL_PER_CORPSE,
     NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE, NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS,
+    NECRO_CORPSE_HORROR_SKILL_CAP_PER_LEVEL, NECRO_CORPSE_HORROR_DEF_CAP_PER_LEVEL,
     NECRO_PLAGUE_BRINGER_UNLOCK_LEVEL, NECRO_PLAGUE_BRINGER_MANA_COST,
     NECRO_L35_UNLOCK_LEVEL, NECRO_CONTROL_DEAD_MANA_COST,
     NECRO_SIPHON_POWER_MANA_COST, NECRO_SIPHON_POWER_MIN_DIVISOR, NECRO_SIPHON_POWER_MAX_MULT,
@@ -1072,9 +1074,8 @@ export class CombatSystem {
             },
         });
         golem.health = golem.maxHealth;
-        this.party.push(golem);
         this._syncMismatchedGolemStats(golem);
-        this._registerNewSummon(golem);
+        this._addSummonToParty(golem);
         this._addLog(`🔧 ${artificer.name} assembles a Mismatched Golem from salvaged parts.`);
         return golem;
     }
@@ -1340,8 +1341,7 @@ export class CombatSystem {
             row: 'back',
             summonStats: awakenStats,
         });
-        this.party.push(awakened);
-        this._registerNewSummon(awakened);
+        if (!this._addSummonToParty(awakened)) return false;
 
         if (this._initiativeOrder.length > 0 && !this._initiativeOrder.some(slot => slot.ref === awakened)) {
             const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
@@ -2340,8 +2340,7 @@ export class CombatSystem {
             });
         }
         mini.health = mini.maxHealth;
-        this.party.push(mini);
-        this._registerNewSummon(mini);
+        if (!this._addSummonToParty(mini)) return null;
         this._addLog(`🌿 ${sourceMound.name} buds off a Mini Shambler!`);
         return mini;
     }
@@ -3434,8 +3433,7 @@ export class CombatSystem {
             },
         });
         valkyrie.health = valkyrie.maxHealth;
-        this.party.push(valkyrie);
-        this._registerNewSummon(valkyrie);
+        if (!this._addSummonToParty(valkyrie)) return;
 
         const reviveHp = Math.max(1, Math.ceil((member.maxHealth || 1) * BARBARIAN_ODINS_RAVENS_REVIVE_FRAC));
         member.health = reviveHp;
@@ -5004,8 +5002,7 @@ export class CombatSystem {
                 },
             });
             iw.health = iw.maxHealth;
-            this.party.push(iw);
-            this._registerNewSummon(iw);
+            if (!this._addSummonToParty(iw)) return;
         }
         this._addLog(`\u{1FA9E} ${m.name} creates ${count} Illusionary Warrior${count !== 1 ? 's' : ''}!`);
         this._advancePlayerTurn();
@@ -5316,8 +5313,7 @@ export class CombatSystem {
         });
         lep.health = lep.maxHealth;
         lep.leprechaunGlamourChecks = 0;
-        this.party.push(lep);
-        this._registerNewSummon(lep);
+        if (!this._addSummonToParty(lep)) return;
         this._addLog(`\u{1F340} Violet light summons ${lep.name} to the back row!`);
     }
 
@@ -5513,8 +5509,7 @@ export class CombatSystem {
                 magicBonus:  magicBonus,
             },
         });
-        this.party.push(fq);
-        this._registerNewSummon(fq);
+        if (!this._addSummonToParty(fq)) return;
         this._addLog(`🌟 The Faerie Queen answers the call!`);
     }
 
@@ -5913,8 +5908,7 @@ export class CombatSystem {
         });
         elem.health = cfg.hp;
         const hagBuff = this._applyHagEyeRodElementalBuff(mage, elem);
-        this.party.push(elem);
-        this._registerNewSummon(elem);
+        if (!this._addSummonToParty(elem)) return;
         this._addLog(`\u{1F300}${cfg.icon} A ${cfg.name} surges through the rift!${hagBuff ? ' Hag Eye Rod empowers it (+15% HP/damage, +5 def).' : ''}`);
     }
 
@@ -5976,8 +5970,7 @@ export class CombatSystem {
                     itemDamageMult: this._hasEquipped(m, 'staff_of_necromancy') ? 1.25 : 1,
                 },
             });
-            this.party.push(u);
-            this._registerNewSummon(u);
+            if (!this._addSummonToParty(u)) return;
             spawnedThisAction.push(u);
             return u;
         };
@@ -6058,6 +6051,7 @@ export class CombatSystem {
 
         m.mana -= NECRO_DEMI_LICH_MANA_COST;
         const magicBonus = m.getWeaponBonus('magic') + m.getClassDamageBonus('magic');
+        const demiLichLevelDamage = Math.floor((m.level / 3) * (m.level / 3) * NECRO_DEMI_LICH_DAMAGE_PER_LEVEL);
         const maxHp = Math.max(1, m.health);
         const defense = NECRO_DEMI_LICH_DEFENSE_BASE + m.level * NECRO_DEMI_LICH_DEFENSE_PER_LEVEL;
         const demiNum = this.party.filter(p => p.isSummoned && p.summonType === 'demi_lich' && p.summonerId === m.id).length + 1;
@@ -6077,15 +6071,14 @@ export class CombatSystem {
             row: 'back',
             summonStats: {
                 defense,
-                magicMin: MAGIC_DAMAGE_MIN + magicBonus + m.level * NECRO_DEMI_LICH_DAMAGE_PER_LEVEL,
-                magicMax: MAGIC_DAMAGE_MAX + magicBonus + m.level * NECRO_DEMI_LICH_DAMAGE_PER_LEVEL,
+                magicMin: MAGIC_DAMAGE_MIN + magicBonus + demiLichLevelDamage,
+                magicMax: MAGIC_DAMAGE_MAX + magicBonus + demiLichLevelDamage,
                 necroLevel: m.level,
                 demiLich: true,
                 immune: ['stun', 'web', 'hold', 'poison'],
             },
         });
-        this.party.push(dl);
-        this._registerNewSummon(dl);
+        if (!this._addSummonToParty(dl)) return;
         this._addLog(`💀 ${m.name} calls forth a Demi-Lich! (HP:${maxHp} Def:${defense}, back row)`);
         this._advancePlayerTurn();
     }
@@ -6238,8 +6231,7 @@ export class CombatSystem {
                 ...(upgradeName ? { upgradeName, upgradeBonus: ranger.level * 0.01 } : {}),
             },
         });
-        this.party.push(beast);
-        this._registerNewSummon(beast);
+        if (!this._addSummonToParty(beast)) return;
         if (upgradeName) {
             this._addLog(`🦎✨ ${preset.icon} Beastlord summons a rare ${UPGRADE_LABELS_BL[upgradeName]}!`);
         } else {
@@ -6265,8 +6257,7 @@ export class CombatSystem {
                         magicMin: stats.magicMin, magicMax: stats.magicMax, defense: stats.defense, baseDefense: stats.baseDefense,
                         baseMaxHealth: stats.baseMaxHealth, stunChance: stats.stunChance, beastKind: beastId, beastlordSummoned: true },
                 });
-                this.party.push(packWolf);
-                this._registerNewSummon(packWolf);
+                if (!this._addSummonToParty(packWolf)) return;
                 extraCount++;
                 baseChance -= 0.05;
             }
@@ -6496,8 +6487,7 @@ export class CombatSystem {
                     permanent: true,
                 });
             }
-            this.party.push(beast);
-            this._registerNewSummon(beast);
+            if (!this._addSummonToParty(beast)) return;
             return beast;
         };
 
@@ -6577,6 +6567,15 @@ export class CombatSystem {
         const preset = BEAST_TYPES[beastId];
         if (!preset) return;
 
+        const vampireSubs = this.party.filter(p =>
+            p && p.isSummoned && p.summonerId === vampire.id && p.health > 0
+            && p.summonStats && p.summonStats.vampireBeast
+        ).length;
+        if (vampireSubs >= NECRO_VAMPIRE_SUBSUMMON_CAP) {
+            this._addLog(`⚠️ ${vampire.name} cannot command more than ${NECRO_VAMPIRE_SUBSUMMON_CAP} vampire-spawned minions.`);
+            return;
+        }
+
         const stats = rollBeastStats(beastId, necromancer.level);
 
         // Vampire bat is back-row; wolf is front-row
@@ -6611,8 +6610,7 @@ export class CombatSystem {
             },
         });
 
-        this.party.push(beast);
-        this._registerNewSummon(beast);
+        if (!this._addSummonToParty(beast)) return;
         this._addLog(`${preset.icon} ${vampire.name} summons a ${preset.name}!`);
     }
 
@@ -6995,12 +6993,14 @@ export class CombatSystem {
             // Strengthen the existing horror
             const oldStat    = existing.summonStats || {};
             const cc         = (oldStat.corpseCount || 1) + 1;
-            const newSkill   = necro.level + cc * NECRO_CORPSE_HORROR_SKILL_PER_CORPSE;
+            const skillCap   = (necro.level || 1) * NECRO_CORPSE_HORROR_SKILL_CAP_PER_LEVEL;
+            const defCap     = (necro.level || 1) * NECRO_CORPSE_HORROR_DEF_CAP_PER_LEVEL;
+            const newSkill   = Math.min(necro.level + cc * NECRO_CORPSE_HORROR_SKILL_PER_CORPSE, skillCap);
             const attackCap  = (necro.level || 1) + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS;
             const rawAttacks = cc * NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE;
             const newAttacks = Math.min(rawAttacks, attackCap);
             const baseDef    = Math.max(1, Math.floor(necro.level / NECRO_CORPSE_HORROR_DEF_DIVISOR));
-            const newDef     = baseDef + Math.max(0, cc - 1);
+            const newDef     = Math.min(baseDef + Math.max(0, cc - 1), defCap);
             const baseMin    = Math.max(1, Math.floor(necro.level / 6));
             const baseMax    = Math.max(2, Math.floor(necro.level / 3));
             const newMin     = baseMin + Math.floor(cc / 2);
@@ -7025,7 +7025,10 @@ export class CombatSystem {
             // Spawn a new Corpse Horror — 1 corpse
             const necroLvl  = necro.level;
             const baseDef   = Math.max(1, Math.floor(necroLvl / NECRO_CORPSE_HORROR_DEF_DIVISOR));
-            const initSkill = necroLvl + NECRO_CORPSE_HORROR_SKILL_PER_CORPSE; // necroLevel + 5
+            const initSkill = Math.min(
+                necroLvl + NECRO_CORPSE_HORROR_SKILL_PER_CORPSE,
+                necroLvl * NECRO_CORPSE_HORROR_SKILL_CAP_PER_LEVEL,
+            ); // necroLevel + 5, capped
             const horror    = new PartyMember({
                 name:        `${necro.name}'s Corpse Horror`,
                 classId:     'summoned',
@@ -7045,7 +7048,7 @@ export class CombatSystem {
                     meleeMin:    Math.max(1, Math.floor(necroLvl / 6)),
                     meleeMax:    Math.max(2, Math.floor(necroLvl / 3)),
                     meleeSkill:  initSkill,
-                    defense:     baseDef,
+                    defense:     Math.min(baseDef, necroLvl * NECRO_CORPSE_HORROR_DEF_CAP_PER_LEVEL),
                     attackCount: NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
                     rawAttackCount: NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE,
                     attackCap: necroLvl + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS,
@@ -7053,8 +7056,7 @@ export class CombatSystem {
                 },
             });
             horror.health = corpseHp;
-            this.party.push(horror);
-            this._registerNewSummon(horror);
+            this._addSummonToParty(horror);
             this._addLog(`\u{1F480}\u{1FA78} ${necro.name}'s Dark Apotheosis tears apart ${this._eName(enemy)} — a CORPSE HORROR lurches into being! (${corpseHp} HP, ${NECRO_CORPSE_HORROR_ATTACKS_PER_CORPSE} atk/rd, skill ${initSkill})`);
         }
         this._notify();
@@ -8354,8 +8356,7 @@ export class CombatSystem {
         const level = Math.max(1, actor?.level || 1);
         const makeId = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
         const add = (member) => {
-            this.party.push(member);
-            this._registerNewSummon(member);
+            if (!this._addSummonToParty(member)) return;
             return member;
         };
 
@@ -8504,8 +8505,7 @@ export class CombatSystem {
         });
         elemental.health = hp;
         const hagBuff = this._applyHagEyeRodElementalBuff(actor, elemental);
-        this.party.push(elemental);
-        this._registerNewSummon(elemental);
+        if (!this._addSummonToParty(elemental)) return;
         this._applyYetiTotemColdBuff();
         this._addLog(`${preset.icon || '✨'} ${actor.name} calls forth a ${preset.name}!${hagBuff ? ' Hag Eye Rod empowers it (+15% HP/damage, +5 def).' : ''}`);
         return true;
@@ -8796,8 +8796,7 @@ export class CombatSystem {
             });
             sq.summonStats    = { defense, meleeMin: sqMeleeMin, meleeMax: sqMeleeMax };
             sq.isInFormation  = !!m.isInFormation;
-            this.party.push(sq);
-            this._registerNewSummon(sq);
+            if (!this._addSummonToParty(sq)) return;
         }
         const attacks = Math.max(1, Math.floor(wl / WARRIOR_SQUIRE_ATTACKS_PER_LEVELS));
         this._addLog(`⚔️ ${m.name} calls for aid! ${squireCount} squire${squireCount > 1 ? 's' : ''} answer the call! (HP:${maxHp} ST:${maxSt} Def:${defense} Atk:${sqMeleeMin}-${sqMeleeMax} ×${attacks}/rnd)`);
@@ -9300,14 +9299,16 @@ export class CombatSystem {
 
         // ── Corpse Horror AI (Necromancer L30 Dark Apotheosis) ───────────────────
         if (m.summonType === 'corpse_horror') {
-            const attackCap = stats.attackCap || ((stats.necromancerLevel || m.level || 1) + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS);
+            const horrorLevel = stats.necromancerLevel || m.level || 1;
+            const attackCap = stats.attackCap || (horrorLevel + NECRO_CORPSE_HORROR_ATTACK_CAP_BONUS);
             const attackCount = Math.min(stats.attackCount || 2, attackCap);
+            const skill = Math.min(stats.meleeSkill || 0, horrorLevel * NECRO_CORPSE_HORROR_SKILL_CAP_PER_LEVEL);
             let firstHit = true;
             for (let atk = 0; atk < attackCount; atk++) {
                 const alive = this.aliveHostileEnemies;
                 if (alive.length === 0) break;
                 const t = alive[Math.floor(Math.random() * alive.length)];
-                const dmg = Math.max(1, randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 3) + (stats.meleeSkill || 0));
+                const dmg = Math.max(1, randomInt(stats.meleeMin ?? 1, stats.meleeMax ?? 3) + skill);
                 const dealt = this._damageSummonEnemy(t, dmg, false, false, { contactAttacker: m });
                 const enemyName = this._eName(t);
                 if (firstHit) {
@@ -10474,6 +10475,67 @@ export class CombatSystem {
         }
         entries.sort((a, b) => b.init - a.init || (Math.random() < 0.5 ? -1 : 1));
         return entries;
+    }
+
+    _getSummonOwner(member) {
+        if (!member || !member.summonerId) return null;
+        return (this.party || []).find(p => p && !p.isSummoned && p.id === member.summonerId) || null;
+    }
+
+    _isSummonCapExempt(member) {
+        if (!member || !member.isSummoned) return true;
+        if (member.isPersistent) return true;
+        if (member.summonType === 'corpse_horror') return true;
+        if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return true;
+        return false;
+    }
+
+    _getSummonCapForOwner(owner) {
+        const level = Math.max(1, owner?.level || 1);
+        return SUMMON_CAP_BASE + level * SUMMON_CAP_PER_LEVEL;
+    }
+
+    _canAddSummonForOwner(owner, pending = null) {
+        if (!owner || owner.isSummoned) return true;
+        if (this._isSummonCapExempt(pending)) return true;
+        const cap = this._getSummonCapForOwner(owner);
+        const owned = (this.party || []).filter(p =>
+            p && p.isSummoned && p.health > 0 && p.summonerId === owner.id && !this._isSummonCapExempt(p)
+        ).length;
+        return owned < cap;
+    }
+
+    _addSummonToParty(member) {
+        const owner = this._getSummonOwner(member);
+        if (!this._canAddSummonForOwner(owner, member)) {
+            const cap = this._getSummonCapForOwner(owner);
+            this._addLog(`⚠️ ${owner.name} cannot maintain more than ${cap} active summons.`);
+            return false;
+        }
+        this.party.push(member);
+        this._registerNewSummon(member);
+        return true;
+    }
+
+    _canManuallyUnsummon(member) {
+        if (!member || !member.isSummoned) return false;
+        if (member.summonType === 'corpse_horror') return false;
+        if (member.summonType === 'simulacrum' || member.summonType === 'shadow_simulacra') return false;
+        if (member.summonType === 'vermin_swarm' || member.summonType === 'acid_swarm') return false;
+        if (member.isPersistent) return false;
+        if (member.summonStats?.isBeastCompanion) return false;
+        return true;
+    }
+
+    dismissSummon(memberId) {
+        const idx = (this.party || []).findIndex(m => m && m.id === memberId);
+        const member = idx >= 0 ? this.party[idx] : null;
+        if (!this._canManuallyUnsummon(member)) return false;
+        this.party.splice(idx, 1);
+        this._initiativeOrder = (this._initiativeOrder || []).filter(slot => slot && slot.ref !== member);
+        this._addLog(`⚠️ ${member.name} is unsummoned.`);
+        this._notify();
+        return true;
     }
 
     /**
@@ -13584,7 +13646,7 @@ export class CombatSystem {
         // Ghost phaseStrike — bypasses armor and innate defense entirely.
         const armorBlock = opts.phaseStrike ? 0 : target.getArmorBlocking();
         const innateDef  = opts.phaseStrike ? 0
-            : target.getTotalDefense() + this._getSummonDefenseBonus(target) + this._getFormationShieldWallDefenseBonus(target);
+            : this._getCombatDefense(target) + this._getSummonDefenseBonus(target) + this._getFormationShieldWallDefenseBonus(target);
 
         if (opts.phaseStrike) {
             this._addLog(`\u{1F47B} ${eName} phases through ${target.name}'s defences!`);
@@ -17208,9 +17270,9 @@ export class CombatSystem {
         const isMegaBossWave = (wave === STATUE_EVENT_ROUND_MEGA_BOSS);
         const isBossWave     = (wave === STATUE_EVENT_ROUND_BOSS);
 
-        // Count living recruited (non-summoned) party members; statue waves spawn twice this many total enemies.
+        // Count living recruited (non-summoned) party members; statue waves spawn party size + 5 enemies.
         const livingCount = Math.max(1, this.party.filter(m => !m.isSummoned && m.health > 0).length);
-        const targetCount = livingCount * 2;
+        const targetCount = livingCount + 5;
 
         // Pick eligible enemy types for this theme
         const eligible = Object.entries(ENEMY_TYPES).filter(([, def]) =>
@@ -17400,7 +17462,17 @@ export class CombatSystem {
      */
     _getSummonDefenseBonus(target) {
         if (!target.isSummoned || !this._hasSummonBuff()) return 0;
+        if (target.summonType === 'corpse_horror') return 0;
         return Math.floor(((target.summonStats && target.summonStats.defense) || 0) * 0.2);
+    }
+
+    _getCombatDefense(target) {
+        const base = typeof target?.getTotalDefense === 'function' ? target.getTotalDefense() : 0;
+        if (target?.isSummoned && target.summonType === 'corpse_horror') {
+            const level = target.summonStats?.necromancerLevel || target.level || 1;
+            return Math.min(base, level * NECRO_CORPSE_HORROR_DEF_CAP_PER_LEVEL);
+        }
+        return base;
     }
 
     _skipDead() {
@@ -17443,8 +17515,13 @@ export class CombatSystem {
                     },
                 });
                 mini.health = miniHP;
-                this.party.push(mini);
-                this._addLog(`\u{1FAA1} ${m.name} splits into ${mini.name}!`);
+                const owner = this._getSummonOwner(mini);
+                if (this._canAddSummonForOwner(owner, mini)) {
+                    this.party.push(mini);
+                    this._addLog(`\u{1FAA1} ${m.name} splits into ${mini.name}!`);
+                } else if (owner) {
+                    this._addLog(`⚠️ ${owner.name} cannot maintain more than ${this._getSummonCapForOwner(owner)} active summons.`);
+                }
             }
             this.party.splice(i, 1);
         }
@@ -17762,8 +17839,7 @@ export class CombatSystem {
             row: 'back',
             summonStats: stats,
         });
-        this.party.push(demon);
-        this._registerNewSummon(demon);
+        if (!this._addSummonToParty(demon)) return;
         this._addLog(`\u{1F608} ${preset.name} claws into reality for ${warlock.name}! (HP ${demon.maxHealth}, atk ${stats.meleeMin}-${stats.meleeMax}, def ${stats.defense}${stats.eldritchAmuletBuff ? ', +15% dmg' : ''})`);
         if (this._initiativeOrder.length > 0) {
             const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
@@ -18141,8 +18217,7 @@ export class CombatSystem {
                     immune: pset.immune ? pset.immune.slice() : [],
                 },
             });
-            this.party.push(u);
-            this._registerNewSummon(u);
+            if (!this._addSummonToParty(u)) return;
             spawnedThisAction.push(u);
             return u;
         };
@@ -18207,8 +18282,7 @@ export class CombatSystem {
                     immune: pset.immune ? pset.immune.slice() : [],
                 },
             });
-            this.party.push(u);
-            this._registerNewSummon(u);
+            if (!this._addSummonToParty(u)) return;
             spawnedThisAction.push(u);
             return u;
         };
@@ -18380,8 +18454,7 @@ export class CombatSystem {
                     immune: ['stun', 'hold', 'web', 'paralyze', 'psychic', 'all_dots'],
                 },
             });
-            this.party.push(u);
-            this._registerNewSummon(u);
+            if (!this._addSummonToParty(u)) return;
             this._addLog(`\u{1F41C} ${m.name} calls forth a ${preset.name}! It erupts from the shadows!`);
             if (this._initiativeOrder.length > 0) {
                 const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
@@ -18616,8 +18689,7 @@ export class CombatSystem {
                     immune: preset.immune ? preset.immune.slice() : [],
                 },
             });
-            this.party.push(slime);
-            this._registerNewSummon(slime);
+            if (!this._addSummonToParty(slime)) return;
             if (this._initiativeOrder.length > 0 && !this._initiativeOrder.some(slot => slot.ref === slime)) {
                 const baseInit = this._initiativeOrder[this._initTurnIdx]?.init ?? 0;
                 this._initiativeOrder.splice(this._initTurnIdx + 1, 0, { kind: 'party', ref: slime, init: baseInit, skipThisRound: true });
