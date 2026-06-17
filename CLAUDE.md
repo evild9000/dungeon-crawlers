@@ -52,7 +52,7 @@ No build step — raw ES6 modules served directly. Three.js is the only dependen
 
 ### Character Classes (19 total)
 
-Warrior, Rogue, Ranger, Mage, Cleric, Bard, Druid, Paladin, Necromancer, Warlock, Photomancer, Artificer, Vermin Keeper, Shaman, Psion, Duelist, Swashbuckler, Monk, and more. Class logic lives in `src/entities/Classes.js`; ability resolution during combat lives in `src/systems/CombatSystem.js`.
+Warrior, Rogue, Ranger, Mage, Cleric, Bard, Druid, Paladin, Necromancer, Warlock, Photomancer, Artificer, Vermin Keeper, Barbarian, Monk, and more. Class logic lives in `src/entities/Classes.js`; ability resolution during combat lives in `src/systems/CombatSystem.js`.
 
 ### Summon/Minion Maintenance Costs
 
