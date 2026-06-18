@@ -43,7 +43,7 @@ function buildAbilityList(def) {
     }
     if (tags.includes('undead')) {
         lines.push('Undead: immune to stun and paralysis — undead physiology resists physical disruption; Trap Mastery stun procs will be resisted');
-        lines.push('Undead: immune to Photomancer Radiant Burst and its blind effect — the spell only affects living targets');
+        lines.push('Undead: Photomancer Radiant Burst deals searing light damage to undead, but undead cannot be blinded by it');
         lines.push('Undead: immune to mummy rot — no living flesh to decay');
         lines.push('Undead: can be held by treant or faerie queen — hold bypasses stun immunity');
         lines.push('Undead: immune to bleed and poison effects — no living blood or metabolism');
