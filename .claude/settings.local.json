@@ -157,7 +157,8 @@
       "Bash(curl -o scientists.png \"https://d8j0ntlcm91z4.cloudfront.net/user_32Txz7TvHvbACLpwNFTc90pZO6o/hf_20260526_232816_cb21a2ec-8131-441a-96de-175ad9d55f6a.png\")",
       "Bash(higgsfield account *)",
       "Bash(higgsfield model *)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\" -Force | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\){\"DIR\"}else{\"FILE\"}}} | Format-Table -AutoSize)"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\evild\\\\OneDrive\\\\Desktop\\\\Game test\" -Force | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\){\"DIR\"}else{\"FILE\"}}} | Format-Table -AutoSize)",
+      "Bash(npx skills *)"
     ]
   }
 }
